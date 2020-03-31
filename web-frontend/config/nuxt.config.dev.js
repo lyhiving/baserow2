@@ -4,6 +4,13 @@ import StyleLintPlugin from 'stylelint-webpack-plugin'
 import base from './nuxt.config.base.js'
 
 const config = {
+  vue: {
+    config: {
+      devtools: true,
+      performance: true
+    }
+  },
+  dev: true,
   build: {
     extend(config, ctx) {
       if (ctx.isDev && ctx.isClient) {
@@ -15,7 +22,6 @@ const config = {
         })
       }
     },
-
     plugins: [
       new StyleLintPlugin({
         syntax: 'scss'

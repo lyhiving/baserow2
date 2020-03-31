@@ -44,6 +44,12 @@ export default {
       clickTimestamp: null
     }
   },
+  watch: {
+    row() {
+      // @TODO docs
+      this.recycle()
+    }
+  },
   /**
    * Because the component can be destroyed if it moves out of the viewport we might
    * need to take some action if the the component is in a selected state.
@@ -131,6 +137,12 @@ export default {
       this.$nextTick(() => {
         this.selected = false
       })
+      document.body.removeEventListener('click', this.$el.clickOutsideEvent)
+    },
+    recycle() {
+      this.selected = false
+      this.clickTimestamp = null
+      this.$refs.column.recycle()
       document.body.removeEventListener('click', this.$el.clickOutsideEvent)
     }
   }

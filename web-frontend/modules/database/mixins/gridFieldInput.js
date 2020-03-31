@@ -94,6 +94,15 @@ export default {
      * Method that is called after saving the value. This can be overridden in the
      * component.
      */
-    afterSave() {}
+    afterSave() {},
+    /**
+     *
+     */
+    recycle() {
+      // @TODO might save
+      this.editing = false
+      this.copy = null
+      document.body.removeEventListener('keydown', this.$el.keydownEvent)
+    }
   }
 }

@@ -34,14 +34,15 @@
               :style="{ transform: `translateY(${rowsTop}px)` }"
             >
               <div
-                v-for="row in rows"
-                :key="'left-row-' + view.id + '-' + row.id"
+                v-for="v in visible"
+                v-show="v.visible"
+                :key="'left-row-' + view.id + '-' + v.id"
                 class="grid-view-row"
-                :class="{ 'grid-view-row-loading': row._.loading }"
+                :class="{ 'grid-view-row-loading': v.row._.loading }"
               >
                 <div class="grid-view-column" style="width: 60px;">
                   <div class="grid-view-row-info">
-                    <div class="grid-view-row-count">{{ row.id }}</div>
+                    <div class="grid-view-row-count">{{ v.row.id }}</div>
                     <a href="#" class="grid-view-row-more">
                       <i class="fas fa-expand"></i>
                     </a>
@@ -50,7 +51,7 @@
                 <GridViewField
                   v-if="primary !== null"
                   :field="primary"
-                  :row="row"
+                  :row="v.row"
                   :table="table"
                 ></GridViewField>
               </div>
@@ -139,23 +140,14 @@
               class="grid-view-rows"
               :style="{ transform: `translateY(${rowsTop}px)` }"
             >
-              <!-- @TODO figure out a faster way to render the rows on scroll. -->
-              <div
-                v-for="row in rows"
-                :key="'right-row-' + view.id + '-' + row.id"
-                class="grid-view-row"
-                :class="{ 'grid-view-row-loading': row._.loading }"
-              >
-                <GridViewField
-                  v-for="field in fields"
-                  :key="
-                    'right-row-field-' + view.id + '-' + row.id + '-' + field.id
-                  "
-                  :field="field"
-                  :row="row"
-                  :table="table"
-                ></GridViewField>
-              </div>
+              <GridViewRow
+                v-for="v in visible"
+                v-show="v.visible"
+                :key="'right-row-' + view.id + '-' + v.id"
+                :fields="fields"
+                :row="v.row"
+                :table="table"
+              ></GridViewRow>
             </div>
             <div class="grid-view-row">
               <div
@@ -184,6 +176,7 @@ import { mapGetters } from 'vuex'
 
 import CreateFieldContext from '@baserow/modules/database/components/field/CreateFieldContext'
 import GridViewFieldType from '@baserow/modules/database/components/view/grid/GridViewFieldType'
+import GridViewRow from '@baserow/modules/database/components/view/grid/GridViewRow'
 import GridViewField from '@baserow/modules/database/components/view/grid/GridViewField'
 import { notifyIf } from '@baserow/modules/core/utils/error'
 
@@ -192,6 +185,7 @@ export default {
   components: {
     CreateFieldContext,
     GridViewFieldType,
+    GridViewRow,
     GridViewField
   },
   props: {
@@ -224,6 +218,7 @@ export default {
   },
   computed: {
     ...mapGetters({
+      visible: 'view/grid/getVisible',
       rows: 'view/grid/getRows',
       count: 'view/grid/getCount',
       rowHeight: 'view/grid/getRowHeight',

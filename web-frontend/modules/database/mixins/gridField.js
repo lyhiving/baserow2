@@ -46,6 +46,10 @@ export default {
      * to do something here apart from triggering the selected state. A boolean
      * toggles its value for example.
      */
-    doubleClick() {}
+    doubleClick() {},
+    /**
+     *
+     */
+    recycle() {}
   }
 }

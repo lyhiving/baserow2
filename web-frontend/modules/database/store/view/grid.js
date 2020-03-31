@@ -11,6 +11,7 @@ export function populateRow(row) {
 export const state = () => ({
   loading: false,
   loaded: false,
+  visible: [],
   // Contains the buffered rows that we keep in memory. Depending on the
   // scrollOffset rows will be added or removed from this buffer. Most of the times,
   // it will contain 3 times the bufferRequestSize in rows.
@@ -95,6 +96,88 @@ export const mutations = {
     state.rowsStartIndex = startIndex
     state.rowsEndIndex = endIndex
     state.rowsTop = top
+
+    // const getVisible = (rows, old = []) => {
+    //   const reserved = []
+    //   const visible = []
+    //   let next = Math.max(-1, ...old.map(v => v.id))
+    //
+    //   old.forEach(v => {
+    //     const existing = rows.find(r => r.id === v.row.id)
+    //     if (existing === undefined) {
+    //       reserved.push(v.id)
+    //     }
+    //   })
+    //   rows.forEach(row => {
+    //     const existing = old.find(o => o.row.id === row.id)
+    //     let id = 0
+    //     if (existing === undefined) {
+    //       if (reserved.length > 0) {
+    //         id = reserved.splice(0, 1)[0]
+    //       } else {
+    //         next++
+    //         id = next
+    //       }
+    //       visible.push({
+    //         id,
+    //         row: row,
+    //         visible: true
+    //       })
+    //     } else {
+    //       visible.push(existing)
+    //     }
+    //   })
+    //   return visible
+    // }
+
+    const getVisible = (rows, old = [], min = 1) => {
+      const length = rows.length > min ? rows.length : min
+      const used = []
+      const visible = []
+
+      old.forEach(v => {
+        const existing = rows.find(r => r.id === v.row.id)
+        if (existing !== undefined) {
+          used.push(v.id)
+        }
+      })
+
+      const getId = () => {
+        let i = 0
+        while (used.includes(i)) {
+          i++
+        }
+        used.push(i)
+        return i
+      }
+
+      for (let i = 0; i < length; i++) {
+        if (rows.length > i) {
+          const existing = old.find(o => o.row.id === rows[i].id)
+          if (existing === undefined) {
+            visible.push({
+              id: getId(),
+              row: rows[i],
+              visible: true
+            })
+          } else {
+            visible.push(existing)
+          }
+        } else {
+          visible.push({
+            id: getId(),
+            row: { _: { loading: false } },
+            visible: false
+          })
+        }
+      }
+
+      return visible
+    }
+
+    const rows = state.rows.slice(state.rowsStartIndex, state.rowsEndIndex)
+    const min = state.rowPadding * 2 + 1
+    state.visible = getVisible(rows, state.visible, min)
   },
   DELETE_ROW_INDEX(state, index) {
     state.rows.splice(index, 1)
@@ -476,6 +559,9 @@ export const getters = {
   },
   getRowPadding(state) {
     return state.rowPadding
+  },
+  getVisible(state) {
+    return state.visible
   },
   getRows(state) {
     return state.rows.slice(state.rowsStartIndex, state.rowsEndIndex)

@@ -1,5 +1,6 @@
 export default {
   modules: ['@/modules/core/module.js', '@/modules/database/module.js'],
+  dev: false,
 
   env: {
     // The API base url, this will be prepended to the urls of the remote calls.
