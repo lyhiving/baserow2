@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Added contribution guidelines.
+* Select the first visible dropdown item when pressing the enter key.
 
 ## Released (2020-08-31)
 

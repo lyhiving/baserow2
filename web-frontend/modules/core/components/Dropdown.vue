@@ -24,6 +24,7 @@
           class="select__search-input"
           :placeholder="searchText"
           @keyup="search(query)"
+          @keydown.enter.prevent="selectFirst()"
         />
       </div>
       <ul class="select__items">
@@ -131,6 +132,17 @@ export default {
       this.$emit('input', value)
       this.$emit('change', value)
       this.hide()
+    },
+    /**
+     * Selects the first visible dropdown item.
+     */
+    selectFirst() {
+      const filtered = this.$children.filter((item) =>
+        item.isVisible(this.query)
+      )
+      if (filtered.length > 0) {
+        this.select(filtered[0].value)
+      }
     },
     /**
      * If not empty it will only show children that contain the given query.
