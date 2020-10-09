@@ -564,7 +564,7 @@ class EmailFieldType(FieldType):
 
     def get_serializer_field(self, instance, **kwargs):
         return serializers.EmailField(
-            required=False, 
+            required=False,
             allow_null=True,
             allow_blank=True,
             **kwargs
