@@ -91,6 +91,3 @@ __pycache__
 *.egg-info
 
 docker-compose.override.yml
-
-# Postgres data volume for db container
-pgdata

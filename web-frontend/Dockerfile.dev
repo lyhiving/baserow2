@@ -1,11 +1,12 @@
 FROM node:10
 
-ADD . /usr/src/web-frontend
+ADD . /web-frontend
 
-WORKDIR /usr/src/web-frontend
+WORKDIR /web-frontend
 
-# Dev server port
-EXPOSE 3000
+RUN apt-get update
+RUN apt-get -y install make
+RUN apt-get -y install curl
+RUN apt-get -y install gnupg2
 
-RUN yarn install
-CMD ["yarn", "dev"]
+CMD tail -f /dev/null
