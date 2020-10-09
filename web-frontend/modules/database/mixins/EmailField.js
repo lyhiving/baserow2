@@ -1,4 +1,4 @@
-import { isValidEmail, } from '@baserow/modules/core/utils/string'
+import { isValidEmail } from '@baserow/modules/core/utils/string'
 
 /**
  * This mixin contains some method overrides for validating and formatting the

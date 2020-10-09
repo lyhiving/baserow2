@@ -1,6 +1,6 @@
 import moment from 'moment'
 
-import { isValidURL, isValidEmail, } from '@baserow/modules/core/utils/string'
+import { isValidURL, isValidEmail } from '@baserow/modules/core/utils/string'
 import { Registerable } from '@baserow/modules/core/registry'
 
 import FieldNumberSubForm from '@baserow/modules/database/components/field/FieldNumberSubForm'
