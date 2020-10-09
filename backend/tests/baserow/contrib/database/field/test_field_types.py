@@ -425,15 +425,15 @@ def test_email_field_type(data_fixture):
         'number': 10
     }, model=model)
     row_2 = row_handler.create_row(user=user, table=table, values={
-        'name': 'bram@test.nl',
-        'email': 'http://www.baserow.io'
+        'name': 'http://www.baserow.io',
+        'email': 'bram@test.nl'
     }, model=model)
     row_3 = row_handler.create_row(user=user, table=table, values={
         'name': 'NOT AN EMAIL',
-        'email': 'http://www.baserow.io/blog/building-a-database'
+        'email': 'something@example.com'
     }, model=model)
     row_4 = row_handler.create_row(user=user, table=table, values={
-        'name': 'ftps://www.complex.website.com?querystring=test&something=else',
+        'name': 'testing@nowhere.org',
         'email': ''
     }, model=model)
     row_5 = row_handler.create_row(user=user, table=table, values={
@@ -450,29 +450,27 @@ def test_email_field_type(data_fixture):
     rows = model.objects.all()
 
     assert rows[0].name == 'test@test.nl'
-    assert rows[0].url == 'test@test.nl'
+    assert rows[0].email == 'test@test.nl'
     assert rows[0].number == ''
 
     assert rows[1].name == ''
-    assert rows[1].url == 'http://localhost'
+    assert rows[1].email == 'some@user.com'
     assert rows[1].number == ''
 
     assert rows[2].name == ''
-    assert rows[2].url == 'http://www.baserow.io'
+    assert rows[2].email == 'bram@test.nl'
     assert rows[2].number == ''
 
     assert rows[3].name == ''
-    assert rows[3].url == 'http://www.baserow.io/blog/building-a-database'
+    assert rows[3].email == 'something@example.com'
     assert rows[3].number == ''
 
-    assert (
-        rows[4].name == 'ftps://www.complex.website.com?querystring=test&something=else'
-    )
-    assert rows[4].url == ''
+    assert rows[4].name == 'testing@nowhere.org'
+    assert rows[4].email == ''
     assert rows[4].number == ''
 
     assert rows[5].name == ''
-    assert rows[5].url == ''
+    assert rows[5].email == ''
     assert rows[5].number == ''
 
     assert rows[6].name == ''
