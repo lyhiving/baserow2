@@ -1,18 +1,52 @@
-FROM python:3.6
+#
+# Minimal Docker image for a Django project
+#
+FROM python:3.7.6-alpine3.10
 
-ADD . /backend
+ADD . /usr/src/backend
 
-WORKDIR /backend
+# Ensure that Python outputs everything that's printed inside
+# the application rather than buffering it.
+ENV PYTHONUNBUFFERED 1
 
-ENV PYTHONPATH $PYTHONPATH:/backend/src
+# Include codebase in the PYTHONPATH
+ENV PYTHONPATH $PYTHONPATH:/usr/src/backend/src
+
+# Set the default workdir
+WORKDIR /usr/src/backend
+
+# Django port
+EXPOSE 8000
+
+ENV PYTHONPATH $PYTHONPATH:/backend/src/baserow
 ENV DJANGO_SETTINGS_MODULE='baserow.config.settings.dev'
 
-RUN apt-get update
-RUN apt-get -y install make
-RUN apt-get -y install curl
-RUN apt-get -y install gnupg2
+# Install system packages
+# eg: PostgreSQL client, git, gettext
+RUN apk add --no-cache --virtual .build-deps \
+    ca-certificates gcc g++ bash linux-headers musl-dev \
+    curl-dev libressl-dev git \
+    postgresql-dev postgresql-client gettext python-dev libffi-dev \
+    libjpeg-turbo-dev zlib-dev pcre-dev \
+    mariadb-dev
 
-RUN make install-dependencies
-RUN make install-dev-dependencies
+# Copy deployment files
+# Adding requirements.txt
+COPY requirements/base.txt requirements/dev.txt /deployment/
+RUN pip3 install -U pip
+RUN pip3 install -r /usr/src/backend/requirements/base.txt
+RUN pip3 install -r /usr/src/backend/requirements/dev.txt
 
-CMD tail -f /dev/null
+# Add the entrypoint.sh
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN dos2unix /usr/local/bin/entrypoint.sh && \
+    chmod a+x /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+# Add wait-for script
+# https://github.com/eficode/wait-for
+COPY wait-for /usr/local/bin/wait-for
+RUN dos2unix /usr/local/bin/wait-for && \
+    chmod a+x /usr/local/bin/wait-for
+
+CMD ["dev"]
