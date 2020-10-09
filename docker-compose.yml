@@ -23,9 +23,15 @@ services:
       context: ./backend/
       dockerfile: Dockerfile.dev
     volumes:
-      - ./backend:/backend
+      - ./backend:/usr/src/backend
     ports:
       - 8000:8000
+    environment:
+      - POSTGRES_USER=baserow
+      - POSTGRES_PASSWORD=baserow
+      - POSTGRES_DB=baserow
+      - IS_WSGI=False
+      - PORT=8000
     depends_on:
       - db
       - mjml
@@ -36,7 +42,8 @@ services:
       context: ./web-frontend/
       dockerfile: Dockerfile.dev
     volumes:
-      - ./web-frontend:/web-frontend
+      - ./web-frontend:/usr/src/web-frontend
+      - /usr/src/web-frontend/node_modules
     ports:
       - 3000:3000
     depends_on:
