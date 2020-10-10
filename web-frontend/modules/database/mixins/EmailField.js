@@ -2,7 +2,7 @@ import { isValidEmail } from '@baserow/modules/core/utils/string'
 
 /**
  * This mixin contains some method overrides for validating and formatting the
- * Email field. This mixin is used in both the GridViewFieldEmail and
+ * email field. This mixin is used in both the GridViewFieldEmail and
  * RowEditFieldEmail components.
  */
 export default {
@@ -15,7 +15,7 @@ export default {
         return null
       }
       if (!isValidEmail(this.copy)) {
-        return 'Invalid Email'
+        return 'Invalid email'
       }
       return null
     },

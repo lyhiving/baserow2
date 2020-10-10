@@ -7,7 +7,9 @@ from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD
 
 from django.shortcuts import reverse
 
-from baserow.contrib.database.fields.models import LongTextField, URLField, DateField, EmailField
+from baserow.contrib.database.fields.models import (
+    LongTextField, URLField, DateField, EmailField
+)
 
 
 @pytest.mark.django_db

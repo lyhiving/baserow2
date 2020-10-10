@@ -36,7 +36,7 @@ class EqualViewFilterType(ViewFilterType):
         URLFieldType.type,
         NumberFieldType.type,
         BooleanFieldType.type,
-        EmailFieldType.type,
+        EmailFieldType.type
     ]
 
     def get_filter(self, field_name, value, model_field):
@@ -71,7 +71,7 @@ class ContainsViewFilterType(ViewFilterType):
         TextFieldType.type,
         LongTextFieldType.type,
         URLFieldType.type,
-        EmailFieldType.type,
+        EmailFieldType.type
     ]
 
     def get_filter(self, field_name, value, model_field):
@@ -251,7 +251,7 @@ class EmptyViewFilterType(ViewFilterType):
         BooleanFieldType.type,
         DateFieldType.type,
         LinkRowFieldType.type,
-        EmailFieldType.type,
+        EmailFieldType.type
     ]
 
     def get_filter(self, field_name, value, model_field):

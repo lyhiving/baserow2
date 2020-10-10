@@ -580,7 +580,7 @@ class EmailFieldType(FieldType):
         if connection.vendor == 'postgresql':
             return r"""(
             case
-                when p_in::text ~* '[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}'
+                when p_in::text ~* '[A-Z0-9._+-]+@[A-Z0-9.-]+\.[A-Z]{2,}'
                 then p_in::text
                 else ''
                 end

@@ -8,7 +8,9 @@ from django.core.exceptions import ValidationError
 from django.utils.timezone import make_aware, datetime
 
 from baserow.contrib.database.fields.field_types import DateFieldType
-from baserow.contrib.database.fields.models import LongTextField, URLField, DateField, EmailField
+from baserow.contrib.database.fields.models import (
+    LongTextField, URLField, DateField, EmailField
+)
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.rows.handler import RowHandler
 
@@ -415,7 +417,7 @@ def test_email_field_type(data_fixture):
         }, model=model)
 
     row_0 = row_handler.create_row(user=user, table=table, values={
-        'name': 'test@test.nl',
+        'name': 'a.very.STRANGE@email.address.coM',
         'email': 'test@test.nl',
         'number': 5
     }, model=model)
@@ -441,15 +443,15 @@ def test_email_field_type(data_fixture):
     }, model=model)
     row_6 = row_handler.create_row(user=user, table=table, values={}, model=model)
 
-    # Convert to text field to a url field so we can check how the conversion of values
-    # went.
+    # Convert the text field to a url field so we can check how the conversion of
+    # values went.
     field_handler.update_field(user=user, field=field, new_type_name='email')
     field_handler.update_field(user=user, field=number, new_type_name='email')
 
     model = table.get_model(attribute_names=True)
     rows = model.objects.all()
 
-    assert rows[0].name == 'test@test.nl'
+    assert rows[0].name == 'a.very.STRANGE@email.address.coM'
     assert rows[0].email == 'test@test.nl'
     assert rows[0].number == ''
 
@@ -474,7 +476,7 @@ def test_email_field_type(data_fixture):
     assert rows[5].number == ''
 
     assert rows[6].name == ''
-    assert rows[6].url == ''
+    assert rows[6].email == ''
     assert rows[6].number == ''
 
     field_handler.delete_field(user=user, field=field_2)

@@ -10,7 +10,9 @@
   >
     <div v-show="!editing" class="grid-field-text">
       <template v-if="!selected">{{ value }}</template>
-      <a v-if="selected" :href="value" target="_blank">{{ value }}</a>
+      <a v-if="selected" :href="'mailto:' + value" target="_blank">
+        {{ value }}
+      </a>
     </div>
     <template v-if="editing">
       <input
