@@ -3,6 +3,7 @@ module.exports = {
   expand: true,
   forceExit: true,
   moduleNameMapper: {
+    '^@baserow/(.*)$': '<rootDir>/$1',
     '^@/(.*)$': '<rootDir>/$1',
     '^~/(.*)$': '<rootDir>/$1',
     '^vue$': 'vue/dist/vue.common.js',
