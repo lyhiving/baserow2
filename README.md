@@ -45,7 +45,6 @@ environment via `docker-compose`. Just clone the repository, run the following c
 and visit http://localhost:3000 in your browser.
 
 ```
-$ docker network create baserow_demo_default
 $ docker-compose -f docker-compose.demo.yml up
 ```
 
