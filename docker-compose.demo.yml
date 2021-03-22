@@ -9,19 +9,19 @@ services:
       - POSTGRES_PASSWORD=baserow
       - POSTGRES_DB=baserow
     networks:
-      - baserow_backend
+      - baserow_demo_backend
 
   redis:
     container_name: redis
     image: redis:6.0
     networks:
-      - baserow_backend
+      - baserow_demo_backend
 
   mjml:
     container_name: baserow-demo-mjml
     image: liminspace/mjml-tcpserver:latest
     networks:
-      - baserow_backend
+      - baserow_demo_backend
 
   backend:
     container_name: baserow-demo-backend
@@ -35,8 +35,8 @@ services:
       - redis
       - mjml
     networks:
-      - baserow_backend
-      - baserow_frontend
+      - baserow_demo_backend
+      - baserow_demo_frontend
 
   web-frontend:
     container_name: baserow-demo-web-frontend
@@ -48,10 +48,11 @@ services:
     depends_on:
       - backend
     networks:
-      - baserow_frontend
-      - baserow_backend
+      - baserow_demo_frontend
+      - baserow_demo_backend
 
 networks:
-  baserow_backend:
-  baserow_frontend:
+  baserow_demo_backend:
+    driver: bridge
+  baserow_demo_frontend:
     driver: bridge

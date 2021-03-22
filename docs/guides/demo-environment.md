@@ -55,7 +55,6 @@ while for the command finishes, this is because the image has to be created from
 scratch.
 
 ```
-$ docker network create baserow_demo_default
 $ docker-compose -f docker-compose.demo.yml up
 Building backend
 ...
