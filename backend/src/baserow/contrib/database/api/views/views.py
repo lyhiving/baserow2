@@ -444,7 +444,7 @@ class ViewFiltersView(APIView):
                     "ERROR_REQUEST_BODY_VALIDATION",
                     "ERROR_FIELD_NOT_IN_TABLE",
                     "ERROR_VIEW_FILTER_NOT_SUPPORTED",
-                    "ERROR_VIEW_FILTER_TYPE_NOT_ALLOWED_FOR_FIELD",
+                    "ERROR_VIEW_FILTER_TYPE_UNSUPPORTED_FIELD",
                 ]
             ),
             404: get_error_schema(["ERROR_VIEW_DOES_NOT_EXIST"]),
@@ -537,7 +537,7 @@ class ViewFilterView(APIView):
                     "ERROR_USER_NOT_IN_GROUP",
                     "ERROR_FIELD_NOT_IN_TABLE",
                     "ERROR_VIEW_FILTER_NOT_SUPPORTED",
-                    "ERROR_VIEW_FILTER_TYPE_NOT_ALLOWED_FOR_FIELD",
+                    "ERROR_VIEW_FILTER_TYPE_UNSUPPORTED_FIELD",
                 ]
             ),
             404: get_error_schema(["ERROR_VIEW_FILTER_DOES_NOT_EXIST"]),

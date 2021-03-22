@@ -541,7 +541,7 @@ def test_create_view_filter(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json["error"] == "ERROR_VIEW_FILTER_TYPE_NOT_ALLOWED_FOR_FIELD"
+    assert response_json["error"] == "ERROR_VIEW_FILTER_TYPE_UNSUPPORTED_FIELD"
     equal_filter_type.compatible_field_types = allowed
 
     response = api_client.post(
@@ -692,7 +692,7 @@ def test_update_view_filter(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json["error"] == "ERROR_VIEW_FILTER_TYPE_NOT_ALLOWED_FOR_FIELD"
+    assert response_json["error"] == "ERROR_VIEW_FILTER_TYPE_UNSUPPORTED_FIELD"
     equal_filter_type.compatible_field_types = allowed
 
     response = api_client.patch(

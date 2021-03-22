@@ -180,7 +180,7 @@ class RowsView(APIView):
                     "ERROR_ORDER_BY_FIELD_NOT_POSSIBLE",
                     "ERROR_FILTER_FIELD_NOT_FOUND",
                     "ERROR_VIEW_FILTER_TYPE_DOES_NOT_EXIST",
-                    "ERROR_VIEW_FILTER_TYPE_NOT_ALLOWED_FOR_FIELD",
+                    "ERROR_VIEW_FILTER_TYPE_UNSUPPORTED_FIELD",
                 ]
             ),
             401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
