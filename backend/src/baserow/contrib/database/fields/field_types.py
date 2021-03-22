@@ -17,54 +17,76 @@ from rest_framework import serializers
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
 from baserow.contrib.database.api.fields.serializers import (
-    LinkRowValueSerializer, FileFieldRequestSerializer, FileFieldResponseSerializer,
-    SelectOptionSerializer
+    LinkRowValueSerializer,
+    FileFieldRequestSerializer,
+    FileFieldResponseSerializer,
+    SelectOptionSerializer,
 )
 from baserow.contrib.database.api.fields.errors import (
-    ERROR_LINK_ROW_TABLE_NOT_IN_SAME_DATABASE, ERROR_LINK_ROW_TABLE_NOT_PROVIDED,
-    ERROR_INCOMPATIBLE_PRIMARY_FIELD_TYPE
+    ERROR_LINK_ROW_TABLE_NOT_IN_SAME_DATABASE,
+    ERROR_LINK_ROW_TABLE_NOT_PROVIDED,
+    ERROR_INCOMPATIBLE_PRIMARY_FIELD_TYPE,
 )
 
 from .handler import FieldHandler
 from .registries import FieldType, field_type_registry
 from .models import (
-    NUMBER_TYPE_INTEGER, NUMBER_TYPE_DECIMAL, DATE_FORMAT, DATE_TIME_FORMAT,
-    TextField, LongTextField, URLField, NumberField, BooleanField, DateField,
-    LinkRowField, EmailField, FileField,
-    SingleSelectField, SelectOption
+    NUMBER_TYPE_INTEGER,
+    NUMBER_TYPE_DECIMAL,
+    DATE_FORMAT,
+    DATE_TIME_FORMAT,
+    TextField,
+    LongTextField,
+    URLField,
+    NumberField,
+    BooleanField,
+    DateField,
+    LinkRowField,
+    EmailField,
+    FileField,
+    SingleSelectField,
+    SelectOption,
 )
 from .exceptions import (
-    LinkRowTableNotInSameDatabase, LinkRowTableNotProvided,
-    IncompatiblePrimaryFieldTypeError
+    LinkRowTableNotInSameDatabase,
+    LinkRowTableNotProvided,
+    IncompatiblePrimaryFieldTypeError,
 )
 from .fields import SingleSelectForeignKey
 
 
 class TextFieldType(FieldType):
-    type = 'text'
+    type = "text"
     model_class = TextField
-    allowed_fields = ['text_default']
-    serializer_field_names = ['text_default']
+    allowed_fields = ["text_default"]
+    serializer_field_names = ["text_default"]
 
     def get_serializer_field(self, instance, **kwargs):
-        return serializers.CharField(required=False, allow_null=True, allow_blank=True,
-                                     default=instance.text_default or None, **kwargs)
+        return serializers.CharField(
+            required=False,
+            allow_null=True,
+            allow_blank=True,
+            default=instance.text_default or None,
+            **kwargs,
+        )
 
     def get_model_field(self, instance, **kwargs):
-        return models.TextField(default=instance.text_default or None, blank=True,
-                                null=True, **kwargs)
+        return models.TextField(
+            default=instance.text_default or None, blank=True, null=True, **kwargs
+        )
 
     def random_value(self, instance, fake, cache):
         return fake.name()
 
 
 class LongTextFieldType(FieldType):
-    type = 'long_text'
+    type = "long_text"
     model_class = LongTextField
 
     def get_serializer_field(self, instance, **kwargs):
-        return serializers.CharField(required=False, allow_null=True, allow_blank=True,
-                                     **kwargs)
+        return serializers.CharField(
+            required=False, allow_null=True, allow_blank=True, **kwargs
+        )
 
     def get_model_field(self, instance, **kwargs):
         return models.TextField(blank=True, null=True, **kwargs)
@@ -74,29 +96,30 @@ class LongTextFieldType(FieldType):
 
 
 class URLFieldType(FieldType):
-    type = 'url'
+    type = "url"
     model_class = URLField
 
     def prepare_value_for_db(self, instance, value):
-        if value == '' or value is None:
-            return ''
+        if value == "" or value is None:
+            return ""
 
         validator = URLValidator()
         validator(value)
         return value
 
     def get_serializer_field(self, instance, **kwargs):
-        return serializers.URLField(required=False, allow_null=True, allow_blank=True,
-                                    **kwargs)
+        return serializers.URLField(
+            required=False, allow_null=True, allow_blank=True, **kwargs
+        )
 
     def get_model_field(self, instance, **kwargs):
-        return models.URLField(default='', blank=True, null=True, **kwargs)
+        return models.URLField(default="", blank=True, null=True, **kwargs)
 
     def random_value(self, instance, fake, cache):
         return fake.url()
 
     def get_alter_column_prepare_new_value(self, connection, from_field, to_field):
-        if connection.vendor == 'postgresql':
+        if connection.vendor == "postgresql":
             return r"""p_in = (
             case
                 when p_in::text ~* '(https?|ftps?)://(-\.)?([^\s/?\.#-]+\.?)+(/[^\s]*)?'
@@ -105,56 +128,58 @@ class URLFieldType(FieldType):
                 end
             );"""
 
-        return super().get_alter_column_prepare_new_value(connection, from_field,
-                                                          to_field)
+        return super().get_alter_column_prepare_new_value(
+            connection, from_field, to_field
+        )
 
 
 class NumberFieldType(FieldType):
     MAX_DIGITS = 50
 
-    type = 'number'
+    type = "number"
     model_class = NumberField
-    allowed_fields = ['number_type', 'number_decimal_places', 'number_negative']
-    serializer_field_names = ['number_type', 'number_decimal_places', 'number_negative']
+    allowed_fields = ["number_type", "number_decimal_places", "number_negative"]
+    serializer_field_names = ["number_type", "number_decimal_places", "number_negative"]
 
     def prepare_value_for_db(self, instance, value):
         if value is not None:
             value = Decimal(value)
 
         if value is not None and not instance.number_negative and value < 0:
-            raise ValidationError(f'The value for field {instance.id} cannot be '
-                                  f'negative.')
+            raise ValidationError(
+                f"The value for field {instance.id} cannot be " f"negative."
+            )
         return value
 
     def get_serializer_field(self, instance, **kwargs):
-        kwargs['decimal_places'] = (
+        kwargs["decimal_places"] = (
             0
-            if instance.number_type == NUMBER_TYPE_INTEGER else
-            instance.number_decimal_places
+            if instance.number_type == NUMBER_TYPE_INTEGER
+            else instance.number_decimal_places
         )
 
         if not instance.number_negative:
-            kwargs['min_value'] = 0
+            kwargs["min_value"] = 0
 
         return serializers.DecimalField(
-            max_digits=self.MAX_DIGITS + kwargs['decimal_places'],
+            max_digits=self.MAX_DIGITS + kwargs["decimal_places"],
             required=False,
             allow_null=True,
-            **kwargs
+            **kwargs,
         )
 
     def get_model_field(self, instance, **kwargs):
-        kwargs['decimal_places'] = (
+        kwargs["decimal_places"] = (
             0
-            if instance.number_type == NUMBER_TYPE_INTEGER else
-            instance.number_decimal_places
+            if instance.number_type == NUMBER_TYPE_INTEGER
+            else instance.number_decimal_places
         )
 
         return models.DecimalField(
-            max_digits=self.MAX_DIGITS + kwargs['decimal_places'],
+            max_digits=self.MAX_DIGITS + kwargs["decimal_places"],
             null=True,
             blank=True,
-            **kwargs
+            **kwargs,
         )
 
     def random_value(self, instance, fake, cache):
@@ -162,17 +187,17 @@ class NumberFieldType(FieldType):
             return fake.pyint(
                 min_value=-10000 if instance.number_negative else 0,
                 max_value=10000,
-                step=1
+                step=1,
             )
         elif instance.number_type == NUMBER_TYPE_DECIMAL:
             return fake.pydecimal(
                 min_value=-10000 if instance.number_negative else 0,
                 max_value=10000,
-                positive=not instance.number_negative
+                positive=not instance.number_negative,
             )
 
     def get_alter_column_prepare_new_value(self, connection, from_field, to_field):
-        if connection.vendor == 'postgresql':
+        if connection.vendor == "postgresql":
             decimal_places = 0
             if to_field.number_type == NUMBER_TYPE_DECIMAL:
                 decimal_places = to_field.number_decimal_places
@@ -182,13 +207,23 @@ class NumberFieldType(FieldType):
             if not to_field.number_negative:
                 function = f"greatest({function}, 0)"
 
-            return f'p_in = {function};'
+            return f"p_in = {function};"
 
-        return super().get_alter_column_prepare_new_value(connection, from_field,
-                                                          to_field)
+        return super().get_alter_column_prepare_new_value(
+            connection, from_field, to_field
+        )
 
-    def after_update(self, from_field, to_field, from_model, to_model, user, connection,
-                     altered_column, before):
+    def after_update(
+        self,
+        from_field,
+        to_field,
+        from_model,
+        to_model,
+        user,
+        connection,
+        altered_column,
+        before,
+    ):
         """
         The allowing of negative values isn't stored in the database field type. If
         the type hasn't changed, but the allowing of negative values has it means that
@@ -201,15 +236,13 @@ class NumberFieldType(FieldType):
             and not to_field.number_negative
             and from_field.number_negative
         ):
-            to_model.objects.filter(**{
-                f'field_{to_field.id}__lt': 0
-            }).update(**{
-                f'field_{to_field.id}': 0
-            })
+            to_model.objects.filter(**{f"field_{to_field.id}__lt": 0}).update(
+                **{f"field_{to_field.id}": 0}
+            )
 
 
 class BooleanFieldType(FieldType):
-    type = 'boolean'
+    type = "boolean"
     model_class = BooleanField
 
     def get_serializer_field(self, instance, **kwargs):
@@ -223,10 +256,10 @@ class BooleanFieldType(FieldType):
 
 
 class DateFieldType(FieldType):
-    type = 'date'
+    type = "date"
     model_class = DateField
-    allowed_fields = ['date_format', 'date_include_time', 'date_time_format']
-    serializer_field_names = ['date_format', 'date_include_time', 'date_time_format']
+    allowed_fields = ["date_format", "date_include_time", "date_time_format"]
+    serializer_field_names = ["date_format", "date_include_time", "date_time_format"]
 
     def prepare_value_for_db(self, instance, value):
         """
@@ -250,14 +283,15 @@ class DateFieldType(FieldType):
         if not value:
             return value
 
-        utc = timezone('UTC')
+        utc = timezone("UTC")
 
         if type(value) == str:
             try:
                 value = parser.parse(value)
             except ParserError:
-                raise ValidationError('The provided string could not converted to a'
-                                      'date.')
+                raise ValidationError(
+                    "The provided string could not converted to a" "date."
+                )
 
         if type(value) == date:
             value = make_aware(datetime(value.year, value.month, value.day), utc)
@@ -266,20 +300,21 @@ class DateFieldType(FieldType):
             value = value.astimezone(utc)
             return value if instance.date_include_time else value.date()
 
-        raise ValidationError('The value should be a date/time string, date object or '
-                              'datetime object.')
+        raise ValidationError(
+            "The value should be a date/time string, date object or " "datetime object."
+        )
 
     def get_serializer_field(self, instance, **kwargs):
-        kwargs['required'] = False
-        kwargs['allow_null'] = True
+        kwargs["required"] = False
+        kwargs["allow_null"] = True
         if instance.date_include_time:
             return serializers.DateTimeField(**kwargs)
         else:
             return serializers.DateField(**kwargs)
 
     def get_model_field(self, instance, **kwargs):
-        kwargs['null'] = True
-        kwargs['blank'] = True
+        kwargs["null"] = True
+        kwargs["blank"] = True
         if instance.date_include_time:
             return models.DateTimeField(**kwargs)
         else:
@@ -298,18 +333,19 @@ class DateFieldType(FieldType):
         """
 
         to_field_type = field_type_registry.get_by_model(to_field)
-        if to_field_type.type != self.type and connection.vendor == 'postgresql':
-            sql_type = 'date'
-            sql_format = DATE_FORMAT[from_field.date_format]['sql']
+        if to_field_type.type != self.type and connection.vendor == "postgresql":
+            sql_type = "date"
+            sql_format = DATE_FORMAT[from_field.date_format]["sql"]
 
             if from_field.date_include_time:
-                sql_type = 'timestamp'
-                sql_format += ' ' + DATE_TIME_FORMAT[from_field.date_time_format]['sql']
+                sql_type = "timestamp"
+                sql_format += " " + DATE_TIME_FORMAT[from_field.date_time_format]["sql"]
 
             return f"""p_in = TO_CHAR(p_in::{sql_type}, '{sql_format}');"""
 
-        return super().get_alter_column_prepare_old_value(connection, from_field,
-                                                          to_field)
+        return super().get_alter_column_prepare_old_value(
+            connection, from_field, to_field
+        )
 
     def get_alter_column_prepare_new_value(self, connection, from_field, to_field):
         """
@@ -320,15 +356,15 @@ class DateFieldType(FieldType):
         """
 
         from_field_type = field_type_registry.get_by_model(from_field)
-        if from_field_type.type != self.type and connection.vendor == 'postgresql':
-            sql_function = 'TO_DATE'
-            sql_format = DATE_FORMAT[to_field.date_format]['sql']
-            sql_type = 'date'
+        if from_field_type.type != self.type and connection.vendor == "postgresql":
+            sql_function = "TO_DATE"
+            sql_format = DATE_FORMAT[to_field.date_format]["sql"]
+            sql_type = "date"
 
             if to_field.date_include_time:
-                sql_function = 'TO_TIMESTAMP'
-                sql_format += ' ' + DATE_TIME_FORMAT[to_field.date_time_format]['sql']
-                sql_type = 'timestamp'
+                sql_function = "TO_TIMESTAMP"
+                sql_format += " " + DATE_TIME_FORMAT[to_field.date_time_format]["sql"]
+                sql_type = "timestamp"
 
             return f"""
                 begin
@@ -351,8 +387,9 @@ class DateFieldType(FieldType):
                 end;
             """
 
-        return super().get_alter_column_prepare_old_value(connection, from_field,
-                                                          to_field)
+        return super().get_alter_column_prepare_old_value(
+            connection, from_field, to_field
+        )
 
 
 class LinkRowFieldType(FieldType):
@@ -362,18 +399,21 @@ class LinkRowFieldType(FieldType):
     another link row field in the related table is automatically created.
     """
 
-    type = 'link_row'
+    type = "link_row"
     model_class = LinkRowField
-    allowed_fields = ['link_row_table', 'link_row_related_field',
-                      'link_row_relation_id']
-    serializer_field_names = ['link_row_table', 'link_row_related_field']
+    allowed_fields = [
+        "link_row_table",
+        "link_row_related_field",
+        "link_row_relation_id",
+    ]
+    serializer_field_names = ["link_row_table", "link_row_related_field"]
     serializer_field_overrides = {
-        'link_row_related_field': serializers.PrimaryKeyRelatedField(read_only=True)
+        "link_row_related_field": serializers.PrimaryKeyRelatedField(read_only=True)
     }
     api_exceptions_map = {
         LinkRowTableNotProvided: ERROR_LINK_ROW_TABLE_NOT_PROVIDED,
         LinkRowTableNotInSameDatabase: ERROR_LINK_ROW_TABLE_NOT_IN_SAME_DATABASE,
-        IncompatiblePrimaryFieldTypeError: ERROR_INCOMPATIBLE_PRIMARY_FIELD_TYPE
+        IncompatiblePrimaryFieldTypeError: ERROR_INCOMPATIBLE_PRIMARY_FIELD_TYPE,
     }
     can_order_by = False
     can_be_primary_field = False
@@ -393,22 +433,21 @@ class LinkRowFieldType(FieldType):
             primary_field_object = next(
                 object
                 for object in remote_model._field_objects.values()
-                if object['field'].primary
+                if object["field"].primary
             )
-            related_queryset = primary_field_object['type'].enhance_queryset(
+            related_queryset = primary_field_object["type"].enhance_queryset(
                 related_queryset,
-                primary_field_object['field'],
-                primary_field_object['name']
+                primary_field_object["field"],
+                primary_field_object["name"],
             )
         except StopIteration:
             # If the related model does not have a primary field then we also don't
             # need to enhance the queryset.
             pass
 
-        return queryset.prefetch_related(models.Prefetch(
-            name,
-            queryset=related_queryset
-        ))
+        return queryset.prefetch_related(
+            models.Prefetch(name, queryset=related_queryset)
+        )
 
     def get_serializer_field(self, instance, **kwargs):
         """
@@ -416,8 +455,9 @@ class LinkRowFieldType(FieldType):
         representing the related row ids.
         """
 
-        return serializers.ListField(child=serializers.IntegerField(min_value=0),
-                                     required=False, **kwargs)
+        return serializers.ListField(
+            child=serializers.IntegerField(min_value=0), required=False, **kwargs
+        )
 
     def get_response_serializer_field(self, instance, **kwargs):
         """
@@ -429,24 +469,28 @@ class LinkRowFieldType(FieldType):
 
         primary_field_name = None
 
-        if hasattr(instance, '_related_model'):
+        if hasattr(instance, "_related_model"):
             related_model = instance._related_model
             primary_field = next(
                 object
                 for object in related_model._field_objects.values()
-                if object['field'].primary
+                if object["field"].primary
             )
             if primary_field:
-                primary_field_name = primary_field['name']
+                primary_field_name = primary_field["name"]
 
-        return serializers.ListSerializer(child=LinkRowValueSerializer(
-            value_field_name=primary_field_name, required=False, **kwargs
-        ))
+        return serializers.ListSerializer(
+            child=LinkRowValueSerializer(
+                value_field_name=primary_field_name, required=False, **kwargs
+            )
+        )
 
     def get_serializer_help_text(self, instance):
-        return 'This field accepts an `array` containing the ids of the related rows.' \
-               'The response contains a list of objects containing the `id` and ' \
-               'the primary field\'s `value` as a string for display purposes.'
+        return (
+            "This field accepts an `array` containing the ids of the related rows."
+            "The response contains a list of objects containing the `id` and "
+            "the primary field's `value` as a string for display purposes."
+        )
 
     def get_model_field(self, instance, **kwargs):
         """
@@ -472,18 +516,18 @@ class LinkRowFieldType(FieldType):
             )
 
         instance._related_model = related_model
-        related_name = f'reversed_field_{instance.id}'
+        related_name = f"reversed_field_{instance.id}"
 
         # Try to find the related field in the related model in order to figure out what
         # the related name should be. If the related if is not found that means that it
         # has not yet been created.
         for related_field in related_model._field_objects.values():
             if (
-                isinstance(related_field['field'], self.model_class) and
-                related_field['field'].link_row_related_field and
-                related_field['field'].link_row_related_field.id == instance.id
+                isinstance(related_field["field"], self.model_class)
+                and related_field["field"].link_row_related_field
+                and related_field["field"].link_row_related_field.id == instance.id
             ):
-                related_name = related_field['name']
+                related_name = related_field["name"]
 
         # Note that the through model will not be registered with the apps because of
         # the `DatabaseConfig.prevent_generated_model_for_registering` hack.
@@ -494,17 +538,11 @@ class LinkRowFieldType(FieldType):
             null=True,
             blank=True,
             db_table=instance.through_table_name,
-            db_constraint=False
-        ).contribute_to_class(
-            model,
-            field_name
-        )
+            db_constraint=False,
+        ).contribute_to_class(model, field_name)
 
         model_field = model._meta.get_field(field_name)
-        model_field.do_related_class(
-            model_field.remote_field.model,
-            None
-        )
+        model_field.do_related_class(model_field.remote_field.model, None)
 
     def prepare_values(self, values, user):
         """
@@ -512,12 +550,12 @@ class LinkRowFieldType(FieldType):
         needs to be converted to a table instance.
         """
 
-        if 'link_row_table' in values and isinstance(values['link_row_table'], int):
+        if "link_row_table" in values and isinstance(values["link_row_table"], int):
             from baserow.contrib.database.table.handler import TableHandler
 
-            table = TableHandler().get_table(values['link_row_table'])
+            table = TableHandler().get_table(values["link_row_table"])
             table.database.group.has_user(user, raise_error=True)
-            values['link_row_table'] = table
+            values["link_row_table"] = table
 
         return values
 
@@ -528,18 +566,18 @@ class LinkRowFieldType(FieldType):
         raised.
         """
 
-        if 'link_row_table' not in values or not values['link_row_table']:
+        if "link_row_table" not in values or not values["link_row_table"]:
             raise LinkRowTableNotProvided(
-                'The link_row_table argument must be provided when creating a link_row '
-                'field.'
+                "The link_row_table argument must be provided when creating a link_row "
+                "field."
             )
 
-        link_row_table = values['link_row_table']
+        link_row_table = values["link_row_table"]
 
         if table.database_id != link_row_table.database_id:
             raise LinkRowTableNotInSameDatabase(
-                f'The link row table {link_row_table.id} is not in the same database '
-                f'as the table {table.id}.'
+                f"The link row table {link_row_table.id} is not in the same database "
+                f"as the table {table.id}."
             )
 
     def before_update(self, from_field, to_field_values, user):
@@ -549,18 +587,18 @@ class LinkRowFieldType(FieldType):
         """
 
         if (
-            'link_row_table' not in to_field_values or
-            not to_field_values['link_row_table']
+            "link_row_table" not in to_field_values
+            or not to_field_values["link_row_table"]
         ):
             return
 
-        link_row_table = to_field_values['link_row_table']
+        link_row_table = to_field_values["link_row_table"]
         table = from_field.table
 
         if from_field.table.database_id != link_row_table.database_id:
             raise LinkRowTableNotInSameDatabase(
-                f'The link row table {link_row_table.id} is not in the same database '
-                f'as the table {table.id}.'
+                f"The link row table {link_row_table.id} is not in the same database "
+                f"as the table {table.id}."
             )
 
     def after_create(self, field, model, user, connection, before):
@@ -580,20 +618,28 @@ class LinkRowFieldType(FieldType):
             name=field.table.name,
             link_row_table=field.table,
             link_row_related_field=field,
-            link_row_relation_id=field.link_row_relation_id
+            link_row_relation_id=field.link_row_relation_id,
         )
         field.save()
 
-    def before_schema_change(self, from_field, to_field, to_model, from_model,
-                             from_model_field, to_model_field, user):
+    def before_schema_change(
+        self,
+        from_field,
+        to_field,
+        to_model,
+        from_model,
+        from_model_field,
+        to_model_field,
+        user,
+    ):
         if not isinstance(to_field, self.model_class):
             # If we are not going to convert to another manytomany field the
             # related field can be deleted.
             from_field.link_row_related_field.delete()
         elif (
-            isinstance(to_field, self.model_class) and
-            isinstance(from_field, self.model_class) and
-            to_field.link_row_table.id != from_field.link_row_table.id
+            isinstance(to_field, self.model_class)
+            and isinstance(from_field, self.model_class)
+            and to_field.link_row_table.id != from_field.link_row_table.id
         ):
             # If the table has changed we have to change the following data in the
             # related field
@@ -605,16 +651,24 @@ class LinkRowFieldType(FieldType):
             )
             from_field.link_row_related_field.save()
 
-    def after_update(self, from_field, to_field, from_model, to_model, user, connection,
-                     altered_column, before):
+    def after_update(
+        self,
+        from_field,
+        to_field,
+        from_model,
+        to_model,
+        user,
+        connection,
+        altered_column,
+        before,
+    ):
         """
         If the old field is not already a link row field we have to create the related
         field into the related table.
         """
 
-        if (
-            not isinstance(from_field, self.model_class) and
-            isinstance(to_field, self.model_class)
+        if not isinstance(from_field, self.model_class) and isinstance(
+            to_field, self.model_class
         ):
             to_field.link_row_related_field = FieldHandler().create_field(
                 user=user,
@@ -624,7 +678,7 @@ class LinkRowFieldType(FieldType):
                 name=to_field.table.name,
                 link_row_table=to_field.table,
                 link_row_related_field=to_field,
-                link_row_relation_id=to_field.link_row_relation_id
+                link_row_relation_id=to_field.link_row_relation_id,
             )
             to_field.save()
 
@@ -641,8 +695,8 @@ class LinkRowFieldType(FieldType):
         return those ids in a list.
         """
 
-        model_name = f'table_{instance.link_row_table.id}'
-        count_name = f'table_{instance.link_row_table.id}_count'
+        model_name = f"table_{instance.link_row_table.id}"
+        count_name = f"table_{instance.link_row_table.id}_count"
 
         if model_name not in cache:
             cache[model_name] = instance.link_row_table.get_model()
@@ -663,12 +717,12 @@ class LinkRowFieldType(FieldType):
 
 
 class EmailFieldType(FieldType):
-    type = 'email'
+    type = "email"
     model_class = EmailField
 
     def prepare_value_for_db(self, instance, value):
-        if value == '' or value is None:
-            return ''
+        if value == "" or value is None:
+            return ""
 
         validator = EmailValidator()
         validator(value)
@@ -676,20 +730,17 @@ class EmailFieldType(FieldType):
 
     def get_serializer_field(self, instance, **kwargs):
         return serializers.EmailField(
-            required=False,
-            allow_null=True,
-            allow_blank=True,
-            **kwargs
+            required=False, allow_null=True, allow_blank=True, **kwargs
         )
 
     def get_model_field(self, instance, **kwargs):
-        return models.EmailField(default='', blank=True, null=True, **kwargs)
+        return models.EmailField(default="", blank=True, null=True, **kwargs)
 
     def random_value(self, instance, fake, cache):
         return fake.email()
 
     def get_alter_column_prepare_new_value(self, connection, from_field, to_field):
-        if connection.vendor == 'postgresql':
+        if connection.vendor == "postgresql":
             return r"""p_in = (
             case
                 when p_in::text ~* '[A-Z0-9._+-]+@[A-Z0-9.-]+\.[A-Z]{2,}'
@@ -698,12 +749,13 @@ class EmailFieldType(FieldType):
                 end
             );"""
 
-        return super().get_alter_column_prepare_new_value(connection, from_field,
-                                                          to_field)
+        return super().get_alter_column_prepare_new_value(
+            connection, from_field, to_field
+        )
 
 
 class FileFieldType(FieldType):
-    type = 'file'
+    type = "file"
     model_class = FileField
 
     def prepare_value_for_db(self, instance, value):
@@ -711,7 +763,7 @@ class FileFieldType(FieldType):
             return []
 
         if not isinstance(value, list):
-            raise ValidationError('The provided value must be a list.')
+            raise ValidationError("The provided value must be a list.")
 
         if len(value) == 0:
             return []
@@ -721,34 +773,35 @@ class FileFieldType(FieldType):
         # from it.
         provided_files = []
         for o in value:
-            if not isinstance(o, object) or not isinstance(o.get('name'), str):
-                raise ValidationError('Every provided value must at least contain '
-                                      'the file name as `name`.')
+            if not isinstance(o, object) or not isinstance(o.get("name"), str):
+                raise ValidationError(
+                    "Every provided value must at least contain "
+                    "the file name as `name`."
+                )
 
-            if 'visible_name' in o and not isinstance(o['visible_name'], str):
-                raise ValidationError('The provided `visible_name` must be a string.')
+            if "visible_name" in o and not isinstance(o["visible_name"], str):
+                raise ValidationError("The provided `visible_name` must be a string.")
 
             provided_files.append(o)
 
         # Create a list of the serialized UserFiles in the originally provided order
         # because that is also the order we need to store the serialized versions in.
         user_files = []
-        queryset = UserFile.objects.all().name(*[f['name'] for f in provided_files])
+        queryset = UserFile.objects.all().name(*[f["name"] for f in provided_files])
         for file in provided_files:
             try:
                 user_file = next(
                     user_file
                     for user_file in queryset
-                    if user_file.name == file['name']
+                    if user_file.name == file["name"]
                 )
                 serialized = user_file.serialize()
-                serialized['visible_name'] = (
-                    file.get('visible_name') or user_file.original_name
+                serialized["visible_name"] = (
+                    file.get("visible_name") or user_file.original_name
                 )
             except StopIteration:
                 raise UserFileDoesNotExist(
-                    file['name'],
-                    f"The provided file {file['name']} does not exist."
+                    file["name"], f"The provided file {file['name']} does not exist."
                 )
 
             user_files.append(serialized)
@@ -760,16 +813,18 @@ class FileFieldType(FieldType):
             child=FileFieldRequestSerializer(),
             required=False,
             allow_null=True,
-            **kwargs
+            **kwargs,
         )
 
     def get_response_serializer_field(self, instance, **kwargs):
         return FileFieldResponseSerializer(many=True, required=False, **kwargs)
 
     def get_serializer_help_text(self, instance):
-        return 'This field accepts an `array` containing objects with the name of ' \
-               'the file. The response contains an `array` of more detailed objects ' \
-               'related to the files.'
+        return (
+            "This field accepts an `array` containing objects with the name of "
+            "the file. The response contains an `array` of more detailed objects "
+            "related to the files."
+        )
 
     def get_model_field(self, instance, **kwargs):
         return JSONField(default=[], **kwargs)
@@ -780,7 +835,7 @@ class FileFieldType(FieldType):
         list.
         """
 
-        count_name = f'field_{instance.id}_count'
+        count_name = f"field_{instance.id}_count"
 
         if count_name not in cache:
             cache[count_name] = UserFile.objects.all().count()
@@ -794,25 +849,25 @@ class FileFieldType(FieldType):
         for i in range(0, randrange(0, 3)):
             instance = UserFile.objects.all()[randint(0, count - 1)]
             serialized = instance.serialize()
-            serialized['visible_name'] = serialized['name']
+            serialized["visible_name"] = serialized["name"]
             values.append(serialized)
 
         return values
 
 
 class SingleSelectFieldType(FieldType):
-    type = 'single_select'
+    type = "single_select"
     model_class = SingleSelectField
     can_have_select_options = True
-    allowed_fields = ['select_options']
-    serializer_field_names = ['select_options']
+    allowed_fields = ["select_options"]
+    serializer_field_names = ["select_options"]
     serializer_field_overrides = {
-        'select_options': SelectOptionSerializer(many=True, required=False)
+        "select_options": SelectOptionSerializer(many=True, required=False)
     }
 
     def enhance_queryset(self, queryset, field, name):
         return queryset.prefetch_related(
-            models.Prefetch(name, queryset=SelectOption.objects.using('default').all())
+            models.Prefetch(name, queryset=SelectOption.objects.using("default").all())
         )
 
     def prepare_value_for_db(self, instance, value):
@@ -830,12 +885,14 @@ class SingleSelectFieldType(FieldType):
 
         # If the select option is not found or if it does not belong to the right field
         # then the provided value is invalid and a validation error can be raised.
-        raise ValidationError(f'The provided value is not a valid option.')
+        raise ValidationError(f"The provided value is not a valid option.")
 
     def get_serializer_field(self, instance, **kwargs):
         return serializers.PrimaryKeyRelatedField(
-            queryset=SelectOption.objects.filter(field=instance), required=False,
-            allow_null=True, **kwargs
+            queryset=SelectOption.objects.filter(field=instance),
+            required=False,
+            allow_null=True,
+            **kwargs,
         )
 
     def get_response_serializer_field(self, instance, **kwargs):
@@ -843,40 +900,38 @@ class SingleSelectFieldType(FieldType):
 
     def get_serializer_help_text(self, instance):
         return (
-            'This field accepts an `integer` representing the chosen select option id '
-            'related to the field. Available ids can be found when getting or listing '
-            'the field. The response represents chosen field, but also the value and '
-            'color is exposed.'
+            "This field accepts an `integer` representing the chosen select option id "
+            "related to the field. Available ids can be found when getting or listing "
+            "the field. The response represents chosen field, but also the value and "
+            "color is exposed."
         )
 
     def get_model_field(self, instance, **kwargs):
         return SingleSelectForeignKey(
             to=SelectOption,
             on_delete=models.SET_NULL,
-            related_name='+',
-            related_query_name='+',
+            related_name="+",
+            related_query_name="+",
             db_constraint=False,
             null=True,
             blank=True,
-            **kwargs
+            **kwargs,
         )
 
     def before_create(self, table, primary, values, order, user):
-        if 'select_options' in values:
-            return values.pop('select_options')
+        if "select_options" in values:
+            return values.pop("select_options")
 
     def after_create(self, field, model, user, connection, before):
         if before and len(before) > 0:
             FieldHandler().update_field_select_options(user, field, before)
 
     def before_update(self, from_field, to_field_values, user):
-        if 'select_options' in to_field_values:
+        if "select_options" in to_field_values:
             FieldHandler().update_field_select_options(
-                user,
-                from_field,
-                to_field_values['select_options']
+                user, from_field, to_field_values["select_options"]
             )
-            to_field_values.pop('select_options')
+            to_field_values.pop("select_options")
 
     def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
         """
@@ -885,11 +940,11 @@ class SingleSelectFieldType(FieldType):
         """
 
         to_field_type = field_type_registry.get_by_model(to_field)
-        if to_field_type.type != self.type and connection.vendor == 'postgresql':
+        if to_field_type.type != self.type and connection.vendor == "postgresql":
             variables = {}
             values_mapping = []
             for option in from_field.select_options.all():
-                variable_name = f'option_{option.id}_value'
+                variable_name = f"option_{option.id}_value"
                 variables[variable_name] = option.value
                 values_mapping.append(f"('{int(option.id)}', %({variable_name})s)")
 
@@ -906,8 +961,9 @@ class SingleSelectFieldType(FieldType):
             """
             return sql, variables
 
-        return super().get_alter_column_prepare_old_value(connection, from_field,
-                                                          to_field)
+        return super().get_alter_column_prepare_old_value(
+            connection, from_field, to_field
+        )
 
     def get_alter_column_prepare_new_value(self, connection, from_field, to_field):
         """
@@ -916,11 +972,11 @@ class SingleSelectFieldType(FieldType):
         """
 
         from_field_type = field_type_registry.get_by_model(from_field)
-        if from_field_type.type != self.type and connection.vendor == 'postgresql':
+        if from_field_type.type != self.type and connection.vendor == "postgresql":
             variables = {}
             values_mapping = []
             for option in to_field.select_options.all():
-                variable_name = f'option_{option.id}_value'
+                variable_name = f"option_{option.id}_value"
                 variables[variable_name] = option.value
                 values_mapping.append(
                     f"(lower(%({variable_name})s), '{int(option.id)}')"
@@ -931,16 +987,20 @@ class SingleSelectFieldType(FieldType):
             if len(values_mapping) == 0:
                 return None
 
-            return f"""p_in = (
+            return (
+                f"""p_in = (
                 SELECT value FROM (
                     VALUES {','.join(values_mapping)}
                 ) AS values (key, value)
                 WHERE key = lower(p_in)
             );
-            """, variables
+            """,
+                variables,
+            )
 
-        return super().get_alter_column_prepare_old_value(connection, from_field,
-                                                          to_field)
+        return super().get_alter_column_prepare_old_value(
+            connection, from_field, to_field
+        )
 
     def get_order(self, field, field_name, view_sort):
         """
@@ -950,17 +1010,19 @@ class SingleSelectFieldType(FieldType):
         to the correct position.
         """
 
-        select_options = field.select_options.all().order_by('value')
+        select_options = field.select_options.all().order_by("value")
         options = [select_option.pk for select_option in select_options]
         options.insert(0, None)
 
-        if view_sort.order == 'DESC':
+        if view_sort.order == "DESC":
             options.reverse()
 
-        order = Case(*[
-            When(**{field_name: option, 'then': index})
-            for index, option in enumerate(options)
-        ])
+        order = Case(
+            *[
+                When(**{field_name: option, "then": index})
+                for index, option in enumerate(options)
+            ]
+        )
         return order
 
     def random_value(self, instance, fake, cache):
@@ -968,7 +1030,7 @@ class SingleSelectFieldType(FieldType):
         Selects a random choice out of the possible options.
         """
 
-        cache_entry_name = f'field_{instance.id}_options'
+        cache_entry_name = f"field_{instance.id}_options"
 
         if cache_entry_name not in cache:
             cache[cache_entry_name] = instance.select_options.all()

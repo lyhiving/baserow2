@@ -10,8 +10,10 @@ class PostgresqlLenientDatabaseSchemaEditor:
     format. If the casting still fails the value will be set to null.
     """
 
-    sql_alter_column_type = "ALTER COLUMN %(column)s TYPE %(type)s " \
-                            "USING pg_temp.try_cast(%(column)s::text)"
+    sql_alter_column_type = (
+        "ALTER COLUMN %(column)s TYPE %(type)s "
+        "USING pg_temp.try_cast(%(column)s::text)"
+    )
     sql_drop_try_cast = "DROP FUNCTION IF EXISTS pg_temp.try_cast(text, int)"
     sql_create_try_cast = """
         create or replace function pg_temp.try_cast(
@@ -34,14 +36,27 @@ class PostgresqlLenientDatabaseSchemaEditor:
         language plpgsql;
     """
 
-    def __init__(self, *args, alter_column_prepare_old_value='',
-                 alter_column_prepare_new_value=''):
+    def __init__(
+        self,
+        *args,
+        alter_column_prepare_old_value="",
+        alter_column_prepare_new_value="",
+    ):
         self.alter_column_prepare_old_value = alter_column_prepare_old_value
         self.alter_column_prepare_new_value = alter_column_prepare_new_value
         super().__init__(*args)
 
-    def _alter_field(self, model, old_field, new_field, old_type, new_type,
-                     old_db_params, new_db_params, strict=False):
+    def _alter_field(
+        self,
+        model,
+        old_field,
+        new_field,
+        old_type,
+        new_type,
+        old_db_params,
+        new_db_params,
+        strict=False,
+    ):
         if old_type != new_type:
             variables = {}
 
@@ -58,20 +73,33 @@ class PostgresqlLenientDatabaseSchemaEditor:
                 alter_column_prepare_new_value = self.alter_column_prepare_new_value
 
             self.execute(self.sql_drop_try_cast)
-            self.execute(self.sql_create_try_cast % {
-                "column": self.quote_name(new_field.column),
-                "type": new_type,
-                "alter_column_prepare_old_value": alter_column_prepare_old_value,
-                "alter_column_prepare_new_value": alter_column_prepare_new_value
-            }, variables)
+            self.execute(
+                self.sql_create_try_cast
+                % {
+                    "column": self.quote_name(new_field.column),
+                    "type": new_type,
+                    "alter_column_prepare_old_value": alter_column_prepare_old_value,
+                    "alter_column_prepare_new_value": alter_column_prepare_new_value,
+                },
+                variables,
+            )
 
-        return super()._alter_field(model, old_field, new_field, old_type, new_type,
-                                    old_db_params, new_db_params, strict)
+        return super()._alter_field(
+            model,
+            old_field,
+            new_field,
+            old_type,
+            new_type,
+            old_db_params,
+            new_db_params,
+            strict,
+        )
 
 
 @contextlib.contextmanager
-def lenient_schema_editor(connection, alter_column_prepare_old_value=None,
-                          alter_column_prepare_new_value=None):
+def lenient_schema_editor(
+    connection, alter_column_prepare_old_value=None, alter_column_prepare_new_value=None
+):
     """
     A contextual function that yields a modified version of the connection's schema
     editor. This temporary version is more lenient then the regular editor. Normally
@@ -93,18 +121,18 @@ def lenient_schema_editor(connection, alter_column_prepare_old_value=None,
         `postgresql` is supported.
     """
 
-    vendor_schema_editor_mapping = {'postgresql': PostgresqlLenientDatabaseSchemaEditor}
+    vendor_schema_editor_mapping = {"postgresql": PostgresqlLenientDatabaseSchemaEditor}
     schema_editor_class = vendor_schema_editor_mapping.get(connection.vendor)
 
     if not schema_editor_class:
-        raise ValueError(f'The provided connection vendor is not supported. We only '
-                         f'support {", ".join(vendor_schema_editor_mapping.keys())}.')
+        raise ValueError(
+            f"The provided connection vendor is not supported. We only "
+            f'support {", ".join(vendor_schema_editor_mapping.keys())}.'
+        )
 
     regular_schema_editor = connection.SchemaEditorClass
     schema_editor_class = type(
-        'LenientDatabaseSchemaEditor',
-        (schema_editor_class, regular_schema_editor),
-        {}
+        "LenientDatabaseSchemaEditor", (schema_editor_class, regular_schema_editor), {}
     )
 
     connection.SchemaEditorClass = schema_editor_class
@@ -112,10 +140,10 @@ def lenient_schema_editor(connection, alter_column_prepare_old_value=None,
     kwargs = {}
 
     if alter_column_prepare_old_value:
-        kwargs['alter_column_prepare_old_value'] = alter_column_prepare_old_value
+        kwargs["alter_column_prepare_old_value"] = alter_column_prepare_old_value
 
     if alter_column_prepare_new_value:
-        kwargs['alter_column_prepare_new_value'] = alter_column_prepare_new_value
+        kwargs["alter_column_prepare_new_value"] = alter_column_prepare_new_value
 
     try:
         with connection.schema_editor(**kwargs) as schema_editor:

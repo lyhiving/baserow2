@@ -12,8 +12,8 @@ class TablesDatabaseRouter(object):
     def user_table_database_if_generated_table_database(model):
         return (
             settings.USER_TABLE_DATABASE
-            if hasattr(model, '_generated_table_model') else
-            None
+            if hasattr(model, "_generated_table_model")
+            else None
         )
 
     def db_for_read(self, model, **hints):
@@ -28,7 +28,7 @@ class TablesDatabaseRouter(object):
         database table can make references to for example a select option.
         """
 
-        allowed = ('default', settings.USER_TABLE_DATABASE)
+        allowed = ("default", settings.USER_TABLE_DATABASE)
         if obj1._state.db in allowed and obj2._state.db in allowed:
             return True
         return None

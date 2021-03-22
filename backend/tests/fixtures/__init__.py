@@ -11,7 +11,15 @@ from .field import FieldFixtures
 from .token import TokenFixtures
 
 
-class Fixtures(SettingsFixtures, UserFixtures, UserFileFixtures, GroupFixtures,
-               ApplicationFixtures, TableFixtures, ViewFixtures, FieldFixtures,
-               TokenFixtures):
+class Fixtures(
+    SettingsFixtures,
+    UserFixtures,
+    UserFileFixtures,
+    GroupFixtures,
+    ApplicationFixtures,
+    TableFixtures,
+    ViewFixtures,
+    FieldFixtures,
+    TokenFixtures,
+):
     fake = Faker()

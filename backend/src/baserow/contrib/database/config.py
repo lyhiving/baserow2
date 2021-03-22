@@ -8,7 +8,7 @@ from .fields.registries import field_type_registry, field_converter_registry
 
 
 class DatabaseConfig(AppConfig):
-    name = 'baserow.contrib.database'
+    name = "baserow.contrib.database"
 
     def prevent_generated_model_for_registering(self):
         """
@@ -30,9 +30,8 @@ class DatabaseConfig(AppConfig):
         original = self.apps.register_model
 
         def register_model(app_label, model):
-            if (
-                not hasattr(model, '_generated_table_model') and
-                not hasattr(model._meta.auto_created, '_generated_table_model')
+            if not hasattr(model, "_generated_table_model") and not hasattr(
+                model._meta.auto_created, "_generated_table_model"
             ):
                 return original(app_label, model)
 
@@ -42,13 +41,22 @@ class DatabaseConfig(AppConfig):
         self.prevent_generated_model_for_registering()
 
         from .plugins import DatabasePlugin
+
         plugin_registry.register(DatabasePlugin())
 
         from .fields.field_types import (
-            TextFieldType, LongTextFieldType, URLFieldType, NumberFieldType,
-            BooleanFieldType, DateFieldType, LinkRowFieldType, EmailFieldType,
-            FileFieldType, SingleSelectFieldType
+            TextFieldType,
+            LongTextFieldType,
+            URLFieldType,
+            NumberFieldType,
+            BooleanFieldType,
+            DateFieldType,
+            LinkRowFieldType,
+            EmailFieldType,
+            FileFieldType,
+            SingleSelectFieldType,
         )
+
         field_type_registry.register(TextFieldType())
         field_type_registry.register(LongTextFieldType())
         field_type_registry.register(URLFieldType())
@@ -61,20 +69,31 @@ class DatabaseConfig(AppConfig):
         field_type_registry.register(SingleSelectFieldType())
 
         from .fields.field_converters import LinkRowFieldConverter, FileFieldConverter
+
         field_converter_registry.register(LinkRowFieldConverter())
         field_converter_registry.register(FileFieldConverter())
 
         from .views.view_types import GridViewType
+
         view_type_registry.register(GridViewType())
 
         from .views.view_filters import (
-            EqualViewFilterType, NotEqualViewFilterType, EmptyViewFilterType,
-            NotEmptyViewFilterType, DateEqualViewFilterType, DateNotEqualViewFilterType,
-            HigherThanViewFilterType, LowerThanViewFilterType, ContainsViewFilterType,
-            FilenameContainsViewFilterType, ContainsNotViewFilterType,
-            BooleanViewFilterType, SingleSelectEqualViewFilterType,
-            SingleSelectNotEqualViewFilterType
+            EqualViewFilterType,
+            NotEqualViewFilterType,
+            EmptyViewFilterType,
+            NotEmptyViewFilterType,
+            DateEqualViewFilterType,
+            DateNotEqualViewFilterType,
+            HigherThanViewFilterType,
+            LowerThanViewFilterType,
+            ContainsViewFilterType,
+            FilenameContainsViewFilterType,
+            ContainsNotViewFilterType,
+            BooleanViewFilterType,
+            SingleSelectEqualViewFilterType,
+            SingleSelectNotEqualViewFilterType,
         )
+
         view_filter_type_registry.register(EqualViewFilterType())
         view_filter_type_registry.register(NotEqualViewFilterType())
         view_filter_type_registry.register(FilenameContainsViewFilterType())
@@ -91,9 +110,11 @@ class DatabaseConfig(AppConfig):
         view_filter_type_registry.register(NotEmptyViewFilterType())
 
         from .application_types import DatabaseApplicationType
+
         application_type_registry.register(DatabaseApplicationType())
 
         from .ws.pages import TablePageType
+
         page_registry.register(TablePageType())
 
         # The signals must always be imported last because they use the registries

@@ -8,7 +8,7 @@ from .api.serializers import DatabaseSerializer
 
 
 class DatabaseApplicationType(ApplicationType):
-    type = 'database'
+    type = "database"
     model_class = Database
     instance_serializer_class = DatabaseSerializer
 
@@ -18,7 +18,7 @@ class DatabaseApplicationType(ApplicationType):
         handler.
         """
 
-        database_tables = database.table_set.all().select_related('database__group')
+        database_tables = database.table_set.all().select_related("database__group")
         table_handler = TableHandler()
 
         for table in database_tables:
@@ -28,5 +28,5 @@ class DatabaseApplicationType(ApplicationType):
         from .api import urls as api_urls
 
         return [
-            path('database/', include(api_urls, namespace=self.type)),
+            path("database/", include(api_urls, namespace=self.type)),
         ]

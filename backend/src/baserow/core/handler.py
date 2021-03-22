@@ -6,19 +6,35 @@ from django.conf import settings
 from baserow.core.user.utils import normalize_email_address
 
 from .models import (
-    Settings, Group, GroupUser, GroupInvitation, Application,
-    GROUP_USER_PERMISSION_CHOICES, GROUP_USER_PERMISSION_ADMIN
+    Settings,
+    Group,
+    GroupUser,
+    GroupInvitation,
+    Application,
+    GROUP_USER_PERMISSION_CHOICES,
+    GROUP_USER_PERMISSION_ADMIN,
 )
 from .exceptions import (
-    GroupDoesNotExist, ApplicationDoesNotExist, BaseURLHostnameNotAllowed,
-    GroupInvitationEmailMismatch, GroupInvitationDoesNotExist, GroupUserDoesNotExist,
-    GroupUserAlreadyExists, IsNotAdminError
+    GroupDoesNotExist,
+    ApplicationDoesNotExist,
+    BaseURLHostnameNotAllowed,
+    GroupInvitationEmailMismatch,
+    GroupInvitationDoesNotExist,
+    GroupUserDoesNotExist,
+    GroupUserAlreadyExists,
+    IsNotAdminError,
 )
 from .utils import extract_allowed, set_allowed_attrs
 from .registries import application_type_registry
 from .signals import (
-    application_created, application_updated, application_deleted, group_created,
-    group_updated, group_deleted, group_user_updated, group_user_deleted
+    application_created,
+    application_updated,
+    application_deleted,
+    group_created,
+    group_updated,
+    group_deleted,
+    group_user_updated,
+    group_user_deleted,
 )
 from .emails import GroupInvitationEmail
 
@@ -84,7 +100,7 @@ class CoreHandler:
         try:
             group = base_queryset.get(id=group_id)
         except Group.DoesNotExist:
-            raise GroupDoesNotExist(f'The group with id {group_id} does not exist.')
+            raise GroupDoesNotExist(f"The group with id {group_id} does not exist.")
 
         return group
 
@@ -98,14 +114,14 @@ class CoreHandler:
         :rtype: GroupUser
         """
 
-        group_values = extract_allowed(kwargs, ['name'])
+        group_values = extract_allowed(kwargs, ["name"])
         group = Group.objects.create(**group_values)
         last_order = GroupUser.get_last_order(user)
         group_user = GroupUser.objects.create(
             group=group,
             user=user,
             order=last_order,
-            permissions=GROUP_USER_PERMISSION_ADMIN
+            permissions=GROUP_USER_PERMISSION_ADMIN,
         )
 
         group_created.send(self, group=group, user=user)
@@ -127,10 +143,10 @@ class CoreHandler:
         """
 
         if not isinstance(group, Group):
-            raise ValueError('The group is not an instance of Group.')
+            raise ValueError("The group is not an instance of Group.")
 
-        group.has_user(user, 'ADMIN', raise_error=True)
-        group = set_allowed_attrs(kwargs, ['name'], group)
+        group.has_user(user, "ADMIN", raise_error=True)
+        group = set_allowed_attrs(kwargs, ["name"], group)
         group.save()
 
         group_updated.send(self, group=group, user=user)
@@ -150,9 +166,9 @@ class CoreHandler:
         """
 
         if not isinstance(group, Group):
-            raise ValueError('The group is not an instance of Group.')
+            raise ValueError("The group is not an instance of Group.")
 
-        group.has_user(user, 'ADMIN', raise_error=True)
+        group.has_user(user, "ADMIN", raise_error=True)
 
         # Load the group users before the group is deleted so that we can pass those
         # along with the signal.
@@ -161,14 +177,15 @@ class CoreHandler:
 
         # Select all the applications so we can delete them via the handler which is
         # needed in order to call the pre_delete method for each application.
-        applications = group.application_set.all().select_related('group')
+        applications = group.application_set.all().select_related("group")
         for application in applications:
             self.delete_application(user, application)
 
         group.delete()
 
-        group_deleted.send(self, group_id=group_id, group=group,
-                           group_users=group_users, user=user)
+        group_deleted.send(
+            self, group_id=group_id, group=group, group_users=group_users, user=user
+        )
 
     def order_groups(self, user, group_ids):
         """
@@ -181,10 +198,9 @@ class CoreHandler:
         """
 
         for index, group_id in enumerate(group_ids):
-            GroupUser.objects.filter(
-                user=user,
-                group_id=group_id
-            ).update(order=index + 1)
+            GroupUser.objects.filter(user=user, group_id=group_id).update(
+                order=index + 1
+            )
 
     def get_group_user(self, group_user_id, base_queryset=None):
         """
@@ -204,10 +220,11 @@ class CoreHandler:
             base_queryset = GroupUser.objects
 
         try:
-            group_user = base_queryset.select_related('group').get(id=group_user_id)
+            group_user = base_queryset.select_related("group").get(id=group_user_id)
         except GroupUser.DoesNotExist:
-            raise GroupUserDoesNotExist(f'The group user with id {group_user_id} does '
-                                        f'not exist.')
+            raise GroupUserDoesNotExist(
+                f"The group user with id {group_user_id} does " f"not exist."
+            )
 
         return group_user
 
@@ -224,10 +241,10 @@ class CoreHandler:
         """
 
         if not isinstance(group_user, GroupUser):
-            raise ValueError('The group user is not an instance of GroupUser.')
+            raise ValueError("The group user is not an instance of GroupUser.")
 
-        group_user.group.has_user(user, 'ADMIN', raise_error=True)
-        group_user = set_allowed_attrs(kwargs, ['permissions'], group_user)
+        group_user.group.has_user(user, "ADMIN", raise_error=True)
+        group_user = set_allowed_attrs(kwargs, ["permissions"], group_user)
         group_user.save()
 
         group_user_updated.send(self, group_user=group_user, user=user)
@@ -245,14 +262,15 @@ class CoreHandler:
         """
 
         if not isinstance(group_user, GroupUser):
-            raise ValueError('The group user is not an instance of GroupUser.')
+            raise ValueError("The group user is not an instance of GroupUser.")
 
-        group_user.group.has_user(user, 'ADMIN', raise_error=True)
+        group_user.group.has_user(user, "ADMIN", raise_error=True)
         group_user_id = group_user.id
         group_user.delete()
 
-        group_user_deleted.send(self, group_user_id=group_user_id,
-                                group_user=group_user, user=user)
+        group_user_deleted.send(
+            self, group_user_id=group_user_id, group_user=group_user, user=user
+        )
 
     def get_group_invitation_signer(self):
         """
@@ -264,7 +282,7 @@ class CoreHandler:
         :rtype: URLSafeSerializer
         """
 
-        return URLSafeSerializer(settings.SECRET_KEY, 'group-invite')
+        return URLSafeSerializer(settings.SECRET_KEY, "group-invite")
 
     def send_group_invitation_email(self, invitation, base_url):
         """
@@ -284,21 +302,19 @@ class CoreHandler:
         parsed_base_url = urlparse(base_url)
         if parsed_base_url.hostname != settings.PUBLIC_WEB_FRONTEND_HOSTNAME:
             raise BaseURLHostnameNotAllowed(
-                f'The hostname {parsed_base_url.netloc} is not allowed.'
+                f"The hostname {parsed_base_url.netloc} is not allowed."
             )
 
         signer = self.get_group_invitation_signer()
         signed_invitation_id = signer.dumps(invitation.id)
 
-        if not base_url.endswith('/'):
-            base_url += '/'
+        if not base_url.endswith("/"):
+            base_url += "/"
 
         public_accept_url = urljoin(base_url, signed_invitation_id)
 
         email = GroupInvitationEmail(
-            invitation,
-            public_accept_url,
-            to=[invitation.email]
+            invitation, public_accept_url, to=[invitation.email]
         )
         email.send()
 
@@ -328,12 +344,12 @@ class CoreHandler:
             base_queryset = GroupInvitation.objects
 
         try:
-            group_invitation = base_queryset.select_related(
-                'group', 'invited_by'
-            ).get(id=group_invitation_id)
+            group_invitation = base_queryset.select_related("group", "invited_by").get(
+                id=group_invitation_id
+            )
         except GroupInvitation.DoesNotExist:
             raise GroupInvitationDoesNotExist(
-                f'The group invitation with id {group_invitation_id} does not exist.'
+                f"The group invitation with id {group_invitation_id} does not exist."
             )
 
         return group_invitation
@@ -357,18 +373,19 @@ class CoreHandler:
             base_queryset = GroupInvitation.objects
 
         try:
-            group_invitation = base_queryset.select_related('group', 'invited_by').get(
+            group_invitation = base_queryset.select_related("group", "invited_by").get(
                 id=group_invitation_id
             )
         except GroupInvitation.DoesNotExist:
             raise GroupInvitationDoesNotExist(
-                f'The group invitation with id {group_invitation_id} does not exist.'
+                f"The group invitation with id {group_invitation_id} does not exist."
             )
 
         return group_invitation
 
-    def create_group_invitation(self, user, group, email, permissions, message,
-                                base_url):
+    def create_group_invitation(
+        self, user, group, email, permissions, message, base_url
+    ):
         """
         Creates a new group invitation for the given email address and sends out an
         email containing the invitation.
@@ -396,25 +413,26 @@ class CoreHandler:
         :rtype: GroupInvitation
         """
 
-        group.has_user(user, 'ADMIN', raise_error=True)
+        group.has_user(user, "ADMIN", raise_error=True)
 
         if permissions not in dict(GROUP_USER_PERMISSION_CHOICES):
-            raise ValueError('Incorrect permissions provided.')
+            raise ValueError("Incorrect permissions provided.")
 
         email = normalize_email_address(email)
 
         if GroupUser.objects.filter(group=group, user__email=email).exists():
-            raise GroupUserAlreadyExists(f'The user {email} is already part of the '
-                                         f'group.')
+            raise GroupUserAlreadyExists(
+                f"The user {email} is already part of the " f"group."
+            )
 
         invitation, created = GroupInvitation.objects.update_or_create(
             group=group,
             email=email,
             defaults={
-                'message': message,
-                'permissions': permissions,
-                'invited_by': user
-            }
+                "message": message,
+                "permissions": permissions,
+                "invited_by": user,
+            },
         )
 
         self.send_group_invitation_email(invitation, base_url)
@@ -440,10 +458,10 @@ class CoreHandler:
         :rtype: GroupInvitation
         """
 
-        invitation.group.has_user(user, 'ADMIN', raise_error=True)
+        invitation.group.has_user(user, "ADMIN", raise_error=True)
 
         if permissions not in dict(GROUP_USER_PERMISSION_CHOICES):
-            raise ValueError('Incorrect permissions provided.')
+            raise ValueError("Incorrect permissions provided.")
 
         invitation.permissions = permissions
         invitation.save()
@@ -463,7 +481,7 @@ class CoreHandler:
             group or doesn't have right permissions in the group.
         """
 
-        invitation.group.has_user(user, 'ADMIN', raise_error=True)
+        invitation.group.has_user(user, "ADMIN", raise_error=True)
         invitation.delete()
 
     def reject_group_invitation(self, user, invitation):
@@ -482,8 +500,8 @@ class CoreHandler:
 
         if user.username != invitation.email:
             raise GroupInvitationEmailMismatch(
-                'The email address of the invitation does not match the one of the '
-                'user.'
+                "The email address of the invitation does not match the one of the "
+                "user."
             )
 
         invitation.delete()
@@ -508,17 +526,17 @@ class CoreHandler:
 
         if user.username != invitation.email:
             raise GroupInvitationEmailMismatch(
-                'The email address of the invitation does not match the one of the '
-                'user.'
+                "The email address of the invitation does not match the one of the "
+                "user."
             )
 
         group_user, created = GroupUser.objects.update_or_create(
             user=user,
             group=invitation.group,
             defaults={
-                'order': GroupUser.get_last_order(user),
-                'permissions': invitation.permissions
-            }
+                "order": GroupUser.get_last_order(user),
+                "permissions": invitation.permissions,
+            },
         )
         invitation.delete()
 
@@ -545,12 +563,12 @@ class CoreHandler:
             base_queryset = Application.objects
 
         try:
-            application = base_queryset.select_related(
-                'group', 'content_type'
-            ).get(id=application_id)
+            application = base_queryset.select_related("group", "content_type").get(
+                id=application_id
+            )
         except Application.DoesNotExist:
             raise ApplicationDoesNotExist(
-                f'The application with id {application_id} does not exist.'
+                f"The application with id {application_id} does not exist."
             )
 
         return application
@@ -572,19 +590,21 @@ class CoreHandler:
         :rtype: Application
         """
 
-        group.has_user(user,  raise_error=True)
+        group.has_user(user, raise_error=True)
 
         # Figure out which model is used for the given application type.
         application_type = application_type_registry.get(type_name)
         model = application_type.model_class
-        application_values = extract_allowed(kwargs, ['name'])
+        application_values = extract_allowed(kwargs, ["name"])
         last_order = model.get_last_order(group)
 
-        instance = model.objects.create(group=group, order=last_order,
-                                        **application_values)
+        instance = model.objects.create(
+            group=group, order=last_order, **application_values
+        )
 
-        application_created.send(self, application=instance, user=user,
-                                 type_name=type_name)
+        application_created.send(
+            self, application=instance, user=user, type_name=type_name
+        )
 
         return instance
 
@@ -604,11 +624,11 @@ class CoreHandler:
         """
 
         if not isinstance(application, Application):
-            raise ValueError('The application is not an instance of Application.')
+            raise ValueError("The application is not an instance of Application.")
 
         application.group.has_user(user, raise_error=True)
 
-        application = set_allowed_attrs(kwargs, ['name'], application)
+        application = set_allowed_attrs(kwargs, ["name"], application)
         application.save()
 
         application_updated.send(self, application=application, user=user)
@@ -627,7 +647,7 @@ class CoreHandler:
         """
 
         if not isinstance(application, Application):
-            raise ValueError('The application is not an instance of Application')
+            raise ValueError("The application is not an instance of Application")
 
         application.group.has_user(user, raise_error=True)
 
@@ -638,5 +658,6 @@ class CoreHandler:
 
         application.delete()
 
-        application_deleted.send(self, application_id=application_id,
-                                 application=application, user=user)
+        application_deleted.send(
+            self, application_id=application_id, application=application, user=user
+        )

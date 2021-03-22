@@ -1,6 +1,10 @@
 from .registry import (
-    Instance, Registry, ModelInstanceMixin, ModelRegistryMixin, APIUrlsRegistryMixin,
-    APIUrlsInstanceMixin
+    Instance,
+    Registry,
+    ModelInstanceMixin,
+    ModelRegistryMixin,
+    APIUrlsRegistryMixin,
+    APIUrlsInstanceMixin,
 )
 from .exceptions import ApplicationTypeAlreadyRegistered, ApplicationTypeDoesNotExist
 
@@ -89,7 +93,7 @@ class PluginRegistry(APIUrlsRegistryMixin, Registry):
     register extra api and root urls.
     """
 
-    name = 'plugin'
+    name = "plugin"
 
     @property
     def urls(self):
@@ -159,7 +163,7 @@ class ApplicationTypeRegistry(APIUrlsRegistryMixin, ModelRegistryMixin, Registry
     register api related urls.
     """
 
-    name = 'application'
+    name = "application"
     does_not_exist_exception_class = ApplicationTypeDoesNotExist
     already_registered_exception_class = ApplicationTypeAlreadyRegistered
 

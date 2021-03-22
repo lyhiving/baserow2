@@ -1,16 +1,24 @@
 from baserow.core.registry import (
-    Instance, Registry, ModelInstanceMixin, ModelRegistryMixin,
-    CustomFieldsInstanceMixin, CustomFieldsRegistryMixin, APIUrlsRegistryMixin,
-    APIUrlsInstanceMixin
+    Instance,
+    Registry,
+    ModelInstanceMixin,
+    ModelRegistryMixin,
+    CustomFieldsInstanceMixin,
+    CustomFieldsRegistryMixin,
+    APIUrlsRegistryMixin,
+    APIUrlsInstanceMixin,
 )
 from .exceptions import (
-    ViewTypeAlreadyRegistered, ViewTypeDoesNotExist, ViewFilterTypeAlreadyRegistered,
-    ViewFilterTypeDoesNotExist
+    ViewTypeAlreadyRegistered,
+    ViewTypeDoesNotExist,
+    ViewFilterTypeAlreadyRegistered,
+    ViewFilterTypeDoesNotExist,
 )
 
 
-class ViewType(APIUrlsInstanceMixin, CustomFieldsInstanceMixin, ModelInstanceMixin,
-               Instance):
+class ViewType(
+    APIUrlsInstanceMixin, CustomFieldsInstanceMixin, ModelInstanceMixin, Instance
+):
     """
     This abstract class represents a custom view type that can be added to the
     view type registry. It must be extended so customisation can be done. Each view type
@@ -58,15 +66,16 @@ class ViewType(APIUrlsInstanceMixin, CustomFieldsInstanceMixin, ModelInstanceMix
     """
 
 
-class ViewTypeRegistry(APIUrlsRegistryMixin, CustomFieldsRegistryMixin,
-                       ModelRegistryMixin, Registry):
+class ViewTypeRegistry(
+    APIUrlsRegistryMixin, CustomFieldsRegistryMixin, ModelRegistryMixin, Registry
+):
     """
     With the view type registry it is possible to register new view types.  A view type
     is an abstraction made specifically for Baserow. If added to the registry a user can
     create new views based on this type.
     """
 
-    name = 'view'
+    name = "view"
     does_not_exist_exception_class = ViewTypeDoesNotExist
     already_registered_exception_class = ViewTypeAlreadyRegistered
 
@@ -118,7 +127,7 @@ class ViewFilterType(Instance):
         :rtype: Q
         """
 
-        raise NotImplementedError('Each must have his own get_filter method.')
+        raise NotImplementedError("Each must have his own get_filter method.")
 
     def get_annotation(self, field_name, value):
         """
@@ -148,7 +157,7 @@ class ViewFilterTypeRegistry(Registry):
     and all the rows must match those filters.
     """
 
-    name = 'view_filter'
+    name = "view_filter"
     does_not_exist_exception_class = ViewFilterTypeDoesNotExist
     already_registered_exception_class = ViewFilterTypeAlreadyRegistered
 

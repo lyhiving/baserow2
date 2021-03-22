@@ -6,12 +6,14 @@ from baserow.core.user_files.models import UserFile
 
 from .managers import GroupQuerySet
 from .mixins import (
-    OrderableMixin, PolymorphicContentTypeMixin, CreatedAndUpdatedOnMixin
+    OrderableMixin,
+    PolymorphicContentTypeMixin,
+    CreatedAndUpdatedOnMixin,
 )
-from .exceptions import UserNotInGroupError, UserInvalidGroupPermissionsError
+from .exceptions import UserNotInGroup, UserInvalidGroupPermissions
 
 
-__all__ = ['UserFile']
+__all__ = ["UserFile"]
 
 
 User = get_user_model()
@@ -19,11 +21,11 @@ User = get_user_model()
 
 # The difference between an admin and member right now is that an admin has
 # permissions to update, delete and manage the members of a group.
-GROUP_USER_PERMISSION_ADMIN = 'ADMIN'
-GROUP_USER_PERMISSION_MEMBER = 'MEMBER'
+GROUP_USER_PERMISSION_ADMIN = "ADMIN"
+GROUP_USER_PERMISSION_MEMBER = "MEMBER"
 GROUP_USER_PERMISSION_CHOICES = (
-    (GROUP_USER_PERMISSION_ADMIN, 'Admin'),
-    (GROUP_USER_PERMISSION_MEMBER, 'Member')
+    (GROUP_USER_PERMISSION_ADMIN, "Admin"),
+    (GROUP_USER_PERMISSION_MEMBER, "Member"),
 )
 
 
@@ -39,14 +41,14 @@ class Settings(models.Model):
 
     allow_new_signups = models.BooleanField(
         default=True,
-        help_text='Indicates whether new users can create a new account when signing '
-                  'up.'
+        help_text="Indicates whether new users can create a new account when signing "
+        "up.",
     )
 
 
 class Group(CreatedAndUpdatedOnMixin, models.Model):
     name = models.CharField(max_length=100)
-    users = models.ManyToManyField(User, through='GroupUser')
+    users = models.ManyToManyField(User, through="GroupUser")
 
     objects = GroupQuerySet.as_manager()
 
@@ -72,19 +74,16 @@ class Group(CreatedAndUpdatedOnMixin, models.Model):
         if permissions and not isinstance(permissions, list):
             permissions = [permissions]
 
-        queryset = GroupUser.objects.filter(
-            user_id=user.id,
-            group_id=self.id
-        )
+        queryset = GroupUser.objects.filter(user_id=user.id, group_id=self.id)
 
         if raise_error:
             try:
                 group_user = queryset.get()
             except GroupUser.DoesNotExist:
-                raise UserNotInGroupError(user, self)
+                raise UserNotInGroup(user, self)
 
             if permissions is not None and group_user.permissions not in permissions:
-                raise UserInvalidGroupPermissionsError(user, self, permissions)
+                raise UserInvalidGroupPermissions(user, self, permissions)
         else:
             if permissions is not None:
                 queryset = queryset.filter(permissions__in=permissions)
@@ -92,33 +91,33 @@ class Group(CreatedAndUpdatedOnMixin, models.Model):
             return queryset.exists()
 
     def __str__(self):
-        return f'<Group id={self.id}, name={self.name}>'
+        return f"<Group id={self.id}, name={self.name}>"
 
 
 class GroupUser(CreatedAndUpdatedOnMixin, OrderableMixin, models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        help_text='The user that has access to the group.'
+        help_text="The user that has access to the group.",
     )
     group = models.ForeignKey(
         Group,
         on_delete=models.CASCADE,
-        help_text='The group that the user has access to.'
+        help_text="The group that the user has access to.",
     )
     order = models.PositiveIntegerField(
-        help_text='Unique order that the group has for the user.'
+        help_text="Unique order that the group has for the user."
     )
     permissions = models.CharField(
         default=GROUP_USER_PERMISSION_MEMBER,
         max_length=32,
         choices=GROUP_USER_PERMISSION_CHOICES,
-        help_text='The permissions that the user has within the group.'
+        help_text="The permissions that the user has within the group.",
     )
 
     class Meta:
-        unique_together = [['user', 'group']]
-        ordering = ('order',)
+        unique_together = [["user", "group"]]
+        ordering = ("order",)
 
     @classmethod
     def get_last_order(cls, user):
@@ -130,50 +129,51 @@ class GroupInvitation(CreatedAndUpdatedOnMixin, models.Model):
     group = models.ForeignKey(
         Group,
         on_delete=models.CASCADE,
-        help_text='The group that the user will get access to once the invitation is '
-                  'accepted.'
+        help_text="The group that the user will get access to once the invitation is "
+        "accepted.",
     )
     invited_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        help_text='The user that created the invitation.'
+        help_text="The user that created the invitation.",
     )
     email = models.EmailField(
         db_index=True,
-        help_text='The email address of the user that the invitation is meant for. '
-                  'Only a user with that email address can accept it.'
+        help_text="The email address of the user that the invitation is meant for. "
+        "Only a user with that email address can accept it.",
     )
     permissions = models.CharField(
         default=GROUP_USER_PERMISSION_MEMBER,
         max_length=32,
         choices=GROUP_USER_PERMISSION_CHOICES,
-        help_text='The permissions that the user is going to get within the group '
-                  'after accepting the invitation.'
+        help_text="The permissions that the user is going to get within the group "
+        "after accepting the invitation.",
     )
     message = models.TextField(
         blank=True,
-        help_text='An optional message that the invitor can provide. This will be '
-                  'visible to the receiver of the invitation.'
+        help_text="An optional message that the invitor can provide. This will be "
+        "visible to the receiver of the invitation.",
     )
 
     class Meta:
-        ordering = ('id',)
+        ordering = ("id",)
 
 
-class Application(CreatedAndUpdatedOnMixin, OrderableMixin,
-                  PolymorphicContentTypeMixin, models.Model):
+class Application(
+    CreatedAndUpdatedOnMixin, OrderableMixin, PolymorphicContentTypeMixin, models.Model
+):
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     order = models.PositiveIntegerField()
     content_type = models.ForeignKey(
         ContentType,
-        verbose_name='content type',
-        related_name='applications',
-        on_delete=models.SET(get_default_application_content_type)
+        verbose_name="content type",
+        related_name="applications",
+        on_delete=models.SET(get_default_application_content_type),
     )
 
     class Meta:
-        ordering = ('order',)
+        ordering = ("order",)
 
     @classmethod
     def get_last_order(cls, group):
