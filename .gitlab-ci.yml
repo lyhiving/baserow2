@@ -45,7 +45,7 @@ backend-pytest:
   services:
     - name: postgres:11.3
       alias: db
-    - name: liminspace/mjml-tcpserver:latest
+    - name: liminspace/mjml-tcpserver:0.10
       alias: mjml
   variables:
     POSTGRES_USER: baserow
@@ -64,5 +64,5 @@ backend-setup:
   script:
     - pip install -e ./backend
     - python -c 'import baserow'
-    - export DJANGO_SETTINGS_MODULE='baserow.config.settings.demo'
+    - export DJANGO_SETTINGS_MODULE='baserow.config.settings.base'
     - timeout --preserve-status 10s gunicorn --workers=1 -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker baserow.config.asgi:application

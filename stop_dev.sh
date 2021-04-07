@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker-compose kill
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml kill

@@ -1,17 +1,17 @@
-# Demo environment
+# Running Baserow locally 
 
-If you just want to try out Baserow on your local computer, it is best to start the 
-demo environment via `docker-compose`.
+If you just want to try out Baserow on your local computer, it is best to use 
+`docker-compose`.
 
 ## Installing requirements
 
 If you haven't already installed docker and docker-compose on your computer you can do
 so by following the instructions on https://docs.docker.com/desktop/.
 
-If you haven't already installed git you can do so by following the instructions on 
+You will also need git installed which you can do by following the instructions on 
 https://www.linode.com/docs/development/version-control/how-to-install-git-on-linux-mac-and-windows/.
 
-Once you have finished installing all the required software you should able to run the
+Once you have finished installing all the required software you should be able to run the
 following commands in your terminal.
 
 ```
@@ -26,22 +26,22 @@ git version 2.24.3 (Apple Git-128)
 If all commands return something similar as described in the example, then you are 
 ready to proceed!
 
-## Starting demo environment
+## Starting baserow using docker-compose 
 
-> Note that this has only been tested on MacOS Catalina. If you run into any issues 
-> with other operating systems, feel free to contact us via the form on
+> Note that this has only been tested on MacOS Catalina and Ubuntu 20.04. If you run 
+> into any issues with other operating systems, feel free to contact us via the form on
 > https://baserow.io/contact.
 
-For example purposes I have created a directory in my home folder named `baserow-demo`.
+For example purposes I have created a directory in my home folder named `baserow`.
 You can of course follow the steps in any directory, but in this tutorial I will assume
-the working directory is `~/baserow-demo`.
+the working directory is `~/baserow`.
 
 First we have to clone the repository. Execute the following commands to clone the 
 master branch. If you are not familiar with git clone, this will download a copy 
 Baserow's code to your computer.
 
 ```
-$ cd ~/baserow-demo
+$ cd ~/baserow
 $ git clone https://gitlab.com/bramw/baserow.git
 Cloning into 'baserow'...
 ...
@@ -50,24 +50,20 @@ $ cd baserow
 
 Now that we have our copy of the repo and have changed directories to the newly 
 created `baserow`, we can bring up the containers. You just have to execute the 
-docker-compose command using the `docker-compose.demo.yml` file. It might take a 
-while for the command finishes, this is because the image has to be created from 
-scratch.
+docker-compose up command. It might take a while for the command to finish, this is 
+because the image has to be built from scratch.
 
 ```
-$ docker network create baserow_demo_default
-$ docker-compose -f docker-compose.demo.yml up
+$ docker-compose up
 Building backend
 ...
-Starting baserow_db_1   ... done
-Starting baserow_mjml_1 ... done
+Starting db             ... done
+Starting mjml           ... done
 Starting backend        ... done
+Starting celery         ... done
 Starting web-frontend   ... done
 ```
 
 Once everything has finished, you can visit http://localhost:3000 in your browser
 and you should be redirected to the login screen. From here you can create a new account
 and start using the software.
-
-> I strongly discourage running these images in production. These are just for demo
-> purposes only.

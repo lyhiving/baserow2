@@ -1,0 +1,32 @@
+version: "3.7"
+
+services:
+
+  backend:
+    build:
+      context: ./backend/
+      dockerfile: ./docker/Dockerfile.dev
+    image: baserow_backend_dev:latest
+    volumes:
+      - ./backend:/backend
+    # Open stdin and tty so when attaching key input works as expected.
+    stdin_open: true
+    tty: true
+
+  celery:
+    image: baserow_backend_dev:latest
+    command: celery-dev
+    volumes:
+      - ./backend:/backend
+    stdin_open: true
+    tty: true
+
+  web-frontend:
+    build:
+      context: ./web-frontend/
+      dockerfile: ./docker/Dockerfile.dev
+    image: web-frontend_dev:latest
+    volumes:
+      - ./web-frontend:/web-frontend
+    stdin_open: true
+    tty: true

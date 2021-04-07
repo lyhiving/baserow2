@@ -22,8 +22,7 @@ new_tab() {
   if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     if [ -x "$(command -v gnome-terminal)" ]; then
       gnome-terminal \
-      --tab --title="$TAB_NAME" --working-directory=`pwd` -- $COMMAND -c \
-      "echo '$CONTAINER_COMMAND'; $CONTAINER_COMMAND; exec bash"
+      --tab --title="$TAB_NAME" --working-directory="$(pwd)" -- /bin/bash -c "$COMMAND"
     else
       if $PRINT_WARNING; then
           echo -e "\nWARNING: gnome-terminal is the only currently supported way of opening
@@ -37,7 +36,6 @@ new_tab() {
         -e "tell application \"Terminal\"" \
         -e "tell application \"System Events\" to keystroke \"t\" using {command down}" \
         -e "do script \"printf '\\\e]1;$TAB_NAME\\\a'; $COMMAND\" in front window" \
-        -e "do script \"$CONTAINER_COMMAND\" in front window" \
         -e "end tell" > /dev/null
   else
     if $PRINT_WARNING; then
@@ -49,20 +47,68 @@ new_tab() {
   fi
 }
 
-docker-compose up -d
+show_help() {
+    echo """
+./start_dev.sh starts the baserow development environment and by default attempts to
+open terminal tabs which are attached to the running dev containers.
 
-new_tab "Backend" \
-        "docker exec -it backend bash" \
-        "python src/baserow/manage.py runserver 0.0.0.0:8000"
+Usage: ./start_dev.sh [optional start dev commands] [docker-compose commands]
 
-new_tab "Backend celery" \
-        "docker exec -it backend bash" \
-        "watchmedo auto-restart --directory=./ --pattern=*.py --recursive -- celery -A baserow worker -l INFO"
+The ./start_dev.sh Commands are:
+dont_attach   : Don't attach to the running dev containers after starting them
+restart       : Stop the dev environment first before relaunching
+help          : Show this message
+"""
+}
 
-new_tab "Web frontend" \
-        "docker exec -it web-frontend bash" \
-        "yarn run dev"
+while true; do
+case "$1" in
+    dont_migrate)
+        echo "./start_dev: Automatic migration on startup has been disabled."
+        shift
+        export DONT_MIGRATE="true"
+    ;;
+    dont_attach)
+        echo "./start_dev: Configured to not attach to running dev containers."
+        shift
+        dont_attach=true
+    ;;
+    restart)
+        echo "./start_dev: Restarting Dev Environment"
+        shift
+        restart=true
+    ;;
+    help)
+        show_help
+        exit 0
+    ;;
+    *)
+        break
+    ;;
+esac
+done
 
-new_tab "Web frontend eslint" \
-        "docker exec -it web-frontend bash" \
-        "yarn run eslint --fix"
+CURRENT_UID=$(id -u)
+CURRENT_GID=$(id -g)
+export CURRENT_UID
+export CURRENT_GID
+
+if [ "$restart" = true ] ; then
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
+fi
+
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d "$@"
+
+if [ "$dont_attach" != true ] ; then
+  new_tab "Backend" \
+          "docker logs backend && docker attach backend"
+
+  new_tab "Backend celery" \
+          "docker logs celery && docker attach celery"
+
+  new_tab "Web frontend" \
+          "docker logs web-frontend && docker attach web-frontend"
+
+  new_tab "Web frontend eslint" \
+          "docker exec -it web-frontend eslint-fix"
+fi

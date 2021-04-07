@@ -25,8 +25,8 @@ New to Baserow? This is the place to start.
 
 Need some help with setting things up?
 
-* [Local demo](./guides/demo-environment.md): Run a local demo on your computer using 
-  `docker-compose`.
+* [Running Locally](guides/running-baserow-locally.md): Run baserow on your computer 
+  using `docker-compose up`.
 * [Install on Ubuntu](./guides/installation/install-on-ubuntu.md): A step by step guide
   on how to install Baserow on an Ubuntu server.
 * [Install on Cloudron](guides/installation/install-on-cloudron.md): Instructions on

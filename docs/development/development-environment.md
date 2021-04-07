@@ -9,9 +9,8 @@ start the app with the least amount of hassle.
 If you haven't already installed docker and docker-compose on your computer you can do
 so by following the instructions on https://docs.docker.com/desktop/.
 
-If you haven't already installed git you can do so by following the instructions on
-https://www.linode.com/docs/development/version-control/how-to-install-git-on-linux-mac-and-windows/
-.
+You will also need git installed which you can do by following the instructions on
+https://www.linode.com/docs/development/version-control/how-to-install-git-on-linux-mac-and-windows/.
 
 Once you have finished installing all the required software you should be able to run
 the following commands in your terminal.
@@ -42,9 +41,10 @@ master branch. If you are not familiar with git clone, this will download a copy
 Baserow's code to your computer.
 
 > Note that if you have already started the
-> [demo environment](../guides/demo-environment.md) once, you might need to rebuild
-> the images for the development environment by using the command
-> `docker-compose up -d --build` because they have container name conflicts.
+> [running baserow locally guide](../guides/running-baserow-locally.md) once, you might 
+> need to rebuild the images for the development environment by using the command
+> `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build` 
+> or just `./start_dev.sh no_attach --build` because they have container name conflicts.
 
 ```
 $ cd ~/baserow
@@ -56,12 +56,12 @@ $ cd baserow
 
 Now that we have our copy of the repo and have changed directories to the newly
 created `baserow`, we can bring up the containers. You just have to execute the
-docker-compose command using the `docker-compose.demo.yml` file. It might take a while
-for the command to finish, this is because the image has to be built from scratch.
+docker-compose command using the `docker-compose.yml` file. It might take a while
+for the command to finish, this is because the images have to be built from scratch.
 
 ```
-$ docker network create baserow_default
-$ docker-compose up -d
+$ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+$ # Or instead ./start_dev.sh 
 Building backend
 ...
 Starting db    ... done

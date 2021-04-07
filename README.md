@@ -34,39 +34,39 @@ development.
 
 [Become a GitHub Sponsor](https://github.com/sponsors/bram2w)
 
-## Try out a demo
+## Try out Baserow on your machine 
 
 If you just want to try out Baserow, you can create an account on the SaaS version at
 https://baserow.io. Just click on the create account or register button at the 
 homepage.
 
-If you want to try out Baserow on your own computer, you can easily start a demo 
+If you want to try out Baserow on your own computer, you can easily start a local 
 environment via `docker-compose`. Just clone the repository, run the following commands
 and visit http://localhost:3000 in your browser.
 
 ```
-$ docker network create baserow_demo_default
-$ docker-compose -f docker-compose.demo.yml up
+$ docker-compose up
 ```
 
-More detailed instructions and more information about the demo environment can be found
-[here](./docs/guides/demo-environment.md) or at 
-https://baserow.io/docs/guides/demo-environment.
+More detailed instructions and more information about running baserow locally check 
+[here](docs/guides/running-baserow-locally.md) or at 
+https://baserow.io/docs/guides/running-baserow-locally.
 
 ## Development environment
 
 If you want to contribute to Baserow you need to setup the development environment. 
-Execute the following commands to start the backend API server.
+Execute the following commands to start a development version of the baserow environment
+which has debug and hot re-loading features enabled.
 
 > Note that the container might have a different name like `backend_1`.
 
 ```
-$ docker network create baserow_default
-$ docker-compose up -d
-$ docker exec -it backend bash
-$ python src/baserow/manage.py migrate
-$ python src/baserow/manage.py runserver 0.0.0.0:8000
+$ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
+
+Or use the helper script included in the root of this repository `./start_dev.sh`. 
+start_dev will do additional things like opening terminal tabs attached to baserows dev
+containers allowing you to easily stop services, run migrations etc.
 
 Visit http://localhost:8000/api/groups/ in your browser and you should see a JSON 
 response containing "Authentication credentials were not provided.". This means that it
