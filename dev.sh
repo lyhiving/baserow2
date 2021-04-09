@@ -49,12 +49,12 @@ new_tab() {
 
 show_help() {
     echo """
-./start_dev.sh starts the baserow development environment and by default attempts to
+./dev.sh starts the baserow development environment and by default attempts to
 open terminal tabs which are attached to the running dev containers.
 
-Usage: ./start_dev.sh [optional start dev commands] [docker-compose commands]
+Usage: ./dev.sh [optional start dev commands] [docker-compose commands]
 
-The ./start_dev.sh Commands are:
+The ./dev.sh Commands are:
 dont_attach   : Don't attach to the running dev containers after starting them
 restart       : Stop the dev environment first before relaunching
 help          : Show this message
@@ -118,7 +118,6 @@ esac
 done
 
 CURRENT_UID=$(id -u)
-#CURRENT_UID=1234
 CURRENT_GID=$(id -g)
 export CURRENT_UID
 export CURRENT_GID
@@ -158,6 +157,6 @@ if [ "$dont_attach" != true ] && [ "$up" = true ] ; then
   new_tab "Web frontend" \
           "docker logs web-frontend && docker attach web-frontend"
 
-  new_tab "Web frontend eslint" \
-          "docker exec -it web-frontend eslint-fix"
+  new_tab "Web frontend lint" \
+          "docker run -it web-frontend_dev lint-fix"
 fi

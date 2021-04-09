@@ -1,5 +1,6 @@
 FROM python:3.7-slim-buster
 
+# Default to 1000 as this is probably the running users UID.
 ARG UID
 ENV UID=${UID:-1000}
 ARG GID

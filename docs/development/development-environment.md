@@ -44,7 +44,7 @@ Baserow's code to your computer.
 > [running baserow locally guide](../guides/running-baserow-locally.md) once, you might 
 > need to rebuild the images for the development environment by using the command
 > `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build` 
-> or just `./start_dev.sh no_attach --build` because they have container name conflicts.
+> or just `./dev.sh no_attach --build` because they have container name conflicts.
 
 ```
 $ cd ~/baserow
@@ -61,7 +61,7 @@ for the command to finish, this is because the images have to be built from scra
 
 ```
 $ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-$ # Or instead ./start_dev.sh 
+$ # Or instead ./dev.sh 
 Building backend
 ...
 Starting db    ... done

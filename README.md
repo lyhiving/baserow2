@@ -64,7 +64,7 @@ which has debug and hot re-loading features enabled.
 $ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
-Or use the helper script included in the root of this repository `./start_dev.sh`. 
+Or use the helper script included in the root of this repository `./dev.sh`. 
 start_dev will do additional things like opening terminal tabs attached to baserows dev
 containers allowing you to easily stop services, run migrations etc.
 

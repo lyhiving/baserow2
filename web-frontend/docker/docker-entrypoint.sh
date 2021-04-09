@@ -36,7 +36,9 @@ case "$1" in
       exec make lint
     ;;
     lint-fix)
-      exec yarn run eslint --fix
+      CMD="yarn run eslint --fix"
+      echo "$CMD"
+      exec bash --init-file <(echo "history -s $CMD; $CMD")
     ;;
     bash)
       exec /bin/bash "${@:2}"
