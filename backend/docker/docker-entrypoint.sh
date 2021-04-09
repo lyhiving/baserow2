@@ -49,6 +49,7 @@ show_help() {
     echo """
 Usage: docker run <imagename> COMMAND
 Commands
+local     : Start django using a prod ready gunicorn server
 dev       : Start a normal Django development server
 bash      : Start a bash shell
 manage    : Start manage.py
