@@ -81,7 +81,7 @@ $ sudo -i
 # Clone the baserow project
 $ mkdir /baserow
 $ cd /baserow
-$ git clone https://gitlab.com/bramw/baserow/ .
+$ git clone https://gitlab.com/bramw/baserow.git .
 ```
 
 The password used for the `baserow` user does not have to be the same as the one used
@@ -193,6 +193,9 @@ $ export DATABASE_HOST="localhost"
 
 # Create database schema
 $ baserow migrate
+
+# Sync the template files with the database
+$ baserow sync_templates
 
 $ deactivate
 ```
@@ -306,6 +309,7 @@ $ export DJANGO_SETTINGS_MODULE='baserow.config.settings.base'
 $ export DATABASE_PASSWORD='yourpassword'
 $ export DATABASE_HOST='localhost'
 $ baserow migrate
+$ baserow sync_templates
 $ deactivate
 $ cd web-frontend
 $ yarn install

@@ -2,6 +2,11 @@
   <div
     ref="wrapper"
     class="grid-view__column"
+    :class="{
+      'grid-view__column--matches-search':
+        props.row._.matchSearch &&
+        props.row._.fieldSearchMatches.includes(props.field.id.toString()),
+    }"
     :style="data.style"
     @click="$options.methods.select($event, parent, props.field.id)"
   >
@@ -19,6 +24,7 @@
       :field="props.field"
       :value="props.row['field_' + props.field.id]"
       :state="props.state"
+      :read-only="props.readOnly"
     />
     <component
       :is="$options.methods.getComponent(parent, props)"
@@ -27,6 +33,7 @@
       :field="props.field"
       :value="props.row['field_' + props.field.id]"
       :selected="parent.isCellSelected(props.field.id)"
+      :read-only="props.readOnly"
       @update="(...args) => $options.methods.update(listeners, props, ...args)"
       @edit="(...args) => $options.methods.edit(listeners, props, ...args)"
       @unselect="$options.methods.unselect(parent, props)"

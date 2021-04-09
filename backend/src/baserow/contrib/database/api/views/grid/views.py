@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.pagination import LimitOffsetPagination
 
 from drf_spectacular.utils import extend_schema
@@ -31,6 +31,12 @@ from .serializers import GridViewFilterSerializer
 
 class GridViewView(APIView):
     permission_classes = (IsAuthenticated,)
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+
+        return super().get_permissions()
 
     @extend_schema(
         parameters=[
@@ -71,7 +77,14 @@ class GridViewView(APIView):
                 name='size', location=OpenApiParameter.QUERY, type=OpenApiTypes.INT,
                 description='Can only be used in combination with the `page` parameter '
                             'and defines how many rows should be returned.'
-            )
+            ),
+            OpenApiParameter(
+                name='search',
+                location=OpenApiParameter.QUERY,
+                type=OpenApiTypes.STR,
+                description='If provided only rows with data that matches the search '
+                            'query are going to be returned.'
+            ),
         ],
         tags=['Database table grid view'],
         operation_id='list_database_table_grid_view_rows',
@@ -113,9 +126,12 @@ class GridViewView(APIView):
         `field_options` are provided in the include GET parameter.
         """
 
+        search = request.GET.get('search')
+
         view_handler = ViewHandler()
         view = view_handler.get_view(view_id, GridView)
-        view.table.database.group.has_user(request.user, raise_error=True)
+        view.table.database.group.has_user(request.user, raise_error=True,
+                                           allow_if_template=True)
 
         model = view.table.get_model()
         queryset = model.objects.all().enhance_by_fields()
@@ -123,6 +139,8 @@ class GridViewView(APIView):
         # Applies the view filters and sortings to the queryset if there are any.
         queryset = view_handler.apply_filters(view, queryset)
         queryset = view_handler.apply_sorting(view, queryset)
+        if search:
+            queryset = queryset.search_all_fields(search)
 
         if 'count' in request.GET:
             return Response({'count': queryset.count()})

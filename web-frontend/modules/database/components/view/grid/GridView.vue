@@ -16,6 +16,8 @@
       :view="view"
       :include-field-width-handles="false"
       :include-row-details="true"
+      :read-only="readOnly"
+      :store-prefix="storePrefix"
       :style="{ width: leftWidth + 'px' }"
       @refresh="$emit('refresh', $event)"
       @row-hover="setRowHover($event.row, $event.value)"
@@ -45,15 +47,18 @@
       :grid="view"
       :field="primary"
       :width="leftFieldsWidth"
+      :store-prefix="storePrefix"
     ></GridViewFieldWidthHandle>
     <GridViewSection
       ref="right"
       class="grid-view__right"
-      :fields="fields"
+      :fields="visibleFields"
       :table="table"
       :view="view"
       :include-add-field="true"
       :can-order-fields="true"
+      :read-only="readOnly"
+      :store-prefix="storePrefix"
       :style="{ left: leftWidth + 'px' }"
       @refresh="$emit('refresh', $event)"
       @row-hover="setRowHover($event.row, $event.value)"
@@ -69,13 +74,13 @@
     ></GridViewSection>
     <Context ref="rowContext">
       <ul class="context__menu">
-        <li>
+        <li v-if="!readOnly">
           <a @click=";[addRow(selectedRow), $refs.rowContext.hide()]">
             <i class="context__menu-icon fas fa-fw fa-arrow-up"></i>
             Insert row above
           </a>
         </li>
-        <li>
+        <li v-if="!readOnly">
           <a @click=";[addRowAfter(selectedRow), $refs.rowContext.hide()]">
             <i class="context__menu-icon fas fa-fw fa-arrow-down"></i>
             Insert row below
@@ -94,7 +99,7 @@
             Enlarge row
           </a>
         </li>
-        <li>
+        <li v-if="!readOnly">
           <a @click="deleteRow(selectedRow)">
             <i class="context__menu-icon fas fa-fw fa-trash"></i>
             Delete row
@@ -108,6 +113,7 @@
       :primary="primary"
       :fields="fields"
       :rows="allRows"
+      :read-only="readOnly"
       @update="updateValue"
       @hidden="rowEditModalHidden"
       @field-updated="$emit('refresh', $event)"
@@ -124,6 +130,7 @@ import GridViewSection from '@baserow/modules/database/components/view/grid/Grid
 import GridViewFieldWidthHandle from '@baserow/modules/database/components/view/grid/GridViewFieldWidthHandle'
 import RowEditModal from '@baserow/modules/database/components/row/RowEditModal'
 import gridViewHelpers from '@baserow/modules/database/mixins/gridViewHelpers'
+import { GridViewType } from '@baserow/modules/database/viewTypes'
 
 export default {
   name: 'GridView',
@@ -154,6 +161,10 @@ export default {
       type: Object,
       required: true,
     },
+    readOnly: {
+      type: Boolean,
+      required: true,
+    },
   },
   data() {
     return {
@@ -162,6 +173,43 @@ export default {
     }
   },
   computed: {
+    /**
+     * Returns only the visible fields in the correct order.
+     */
+    visibleFields() {
+      return this.fields
+        .filter((field) => {
+          const exists = Object.prototype.hasOwnProperty.call(
+            this.fieldOptions,
+            field.id
+          )
+          return !exists || (exists && !this.fieldOptions[field.id].hidden)
+        })
+        .sort((a, b) => {
+          const orderA = this.fieldOptions[a.id]
+            ? this.fieldOptions[a.id].order
+            : GridViewType.getMaxPossibleOrderValue()
+          const orderB = this.fieldOptions[b.id]
+            ? this.fieldOptions[b.id].order
+            : GridViewType.getMaxPossibleOrderValue()
+
+          // First by order.
+          if (orderA > orderB) {
+            return 1
+          } else if (orderA < orderB) {
+            return -1
+          }
+
+          // Then by id.
+          if (a.id < b.id) {
+            return -1
+          } else if (a.id > b.id) {
+            return 1
+          } else {
+            return 0
+          }
+        })
+    },
     leftFields() {
       return [this.primary]
     },
@@ -174,10 +222,6 @@ export default {
     leftWidth() {
       return this.leftFieldsWidth + this.gridViewRowDetailsWidth
     },
-    ...mapGetters({
-      allRows: 'view/grid/getAllRows',
-      count: 'view/grid/getCount',
-    }),
   },
   watch: {
     fieldOptions: {
@@ -192,6 +236,15 @@ export default {
       // When a field is added or removed, we want to update the scrollbars.
       this.fieldsUpdated()
     },
+  },
+  beforeCreate() {
+    this.$options.computed = {
+      ...(this.$options.computed || {}),
+      ...mapGetters({
+        allRows: this.$options.propsData.storePrefix + 'view/grid/getAllRows',
+        count: this.$options.propsData.storePrefix + 'view/grid/getCount',
+      }),
+    }
   },
   created() {
     // When the grid view is created we want to update the scrollbars.
@@ -225,8 +278,11 @@ export default {
      * to update the scrollbars.
      */
     fieldsUpdated() {
-      if (this.$refs.scrollbars) {
-        this.$refs.scrollbars.update()
+      const scrollbars = this.$refs.scrollbars
+      // Vue can sometimes trigger this via watch before the child component
+      // scrollbars has been created, check it exists and has the expected method
+      if (scrollbars && scrollbars.update) {
+        scrollbars.update()
       }
     },
     /**
@@ -235,7 +291,7 @@ export default {
      */
     async updateValue({ field, row, value, oldValue }) {
       try {
-        await this.$store.dispatch('view/grid/updateValue', {
+        await this.$store.dispatch(this.storePrefix + 'view/grid/updateValue', {
           table: this.table,
           view: this.view,
           fields: this.fields,
@@ -256,16 +312,11 @@ export default {
     editValue({ field, row, value, oldValue }) {
       const overrides = {}
       overrides[`field_${field.id}`] = value
-      this.$store.dispatch('view/grid/updateMatchFilters', {
+      this.$store.dispatch(this.storePrefix + 'view/grid/onRowChange', {
         view: this.view,
         row,
-        overrides,
-      })
-      this.$store.dispatch('view/grid/updateMatchSortings', {
-        view: this.view,
         fields: this.fields,
         primary: this.primary,
-        row,
         overrides,
       })
     },
@@ -307,11 +358,16 @@ export default {
       this.$refs.left.$refs.body.scrollTop = top
       this.$refs.right.$refs.body.scrollTop = top
 
-      this.$store.dispatch('view/grid/fetchByScrollTopDelayed', {
-        gridId: this.view.id,
-        scrollTop: this.$refs.left.$refs.body.scrollTop,
-        windowHeight: this.$refs.left.$refs.body.clientHeight,
-      })
+      this.$store.dispatch(
+        this.storePrefix + 'view/grid/fetchByScrollTopDelayed',
+        {
+          gridId: this.view.id,
+          scrollTop: this.$refs.left.$refs.body.scrollTop,
+          windowHeight: this.$refs.left.$refs.body.clientHeight,
+          fields: this.fields,
+          primary: this.primary,
+        }
+      )
     },
     /**
      * Called when the user scrolls horizontally. If the user scrolls we might want to
@@ -327,11 +383,12 @@ export default {
     },
     async addRow(before = null) {
       try {
-        await this.$store.dispatch('view/grid/create', {
+        await this.$store.dispatch(this.storePrefix + 'view/grid/create', {
           view: this.view,
           table: this.table,
           // We need a list of all fields including the primary one here.
-          fields: [this.primary].concat(...this.fields),
+          fields: this.fields,
+          primary: this.primary,
           values: {},
           before,
         })
@@ -345,7 +402,9 @@ export default {
      * next row is not found, we can safely assume it is the last row and add it last.
      */
     addRowAfter(row) {
-      const rows = this.$store.getters['view/grid/getAllRows']
+      const rows = this.$store.getters[
+        this.storePrefix + 'view/grid/getAllRows'
+      ]
       const index = rows.findIndex((r) => r.id === row.id)
       let nextRow = null
 
@@ -361,10 +420,12 @@ export default {
         // We need a small helper function that calculates the current scrollTop because
         // the delete action will recalculate the visible scroll range and buffer.
         const getScrollTop = () => this.$refs.left.$refs.body.scrollTop
-        await this.$store.dispatch('view/grid/delete', {
+        await this.$store.dispatch(this.storePrefix + 'view/grid/delete', {
           table: this.table,
           grid: this.view,
           row,
+          fields: this.fields,
+          primary: this.primary,
           getScrollTop,
         })
       } catch (error) {
@@ -376,14 +437,17 @@ export default {
       // row at a time we can remember which was hovered last and set the hover state to
       // false if it differs.
       if (this.lastHoveredRow !== null && this.lastHoveredRow.id !== row.id) {
-        this.$store.dispatch('view/grid/setRowHover', {
+        this.$store.dispatch(this.storePrefix + 'view/grid/setRowHover', {
           row: this.lastHoveredRow,
           value: false,
         })
         this.lastHoveredRow = null
       }
 
-      this.$store.dispatch('view/grid/setRowHover', { row, value })
+      this.$store.dispatch(this.storePrefix + 'view/grid/setRowHover', {
+        row,
+        value,
+      })
       this.lastHoveredRow = row
     },
     showRowContext(event, row) {
@@ -412,7 +476,7 @@ export default {
         return
       }
 
-      this.$store.dispatch('view/grid/refreshRow', {
+      this.$store.dispatch(this.storePrefix + 'view/grid/refreshRow', {
         grid: this.view,
         fields: this.fields,
         primary: this.primary,
@@ -475,7 +539,10 @@ export default {
         this.$refs.scrollbars.updateHorizontal()
       }
 
-      this.$store.dispatch('view/grid/addRowSelectedBy', { row, field })
+      this.$store.dispatch(this.storePrefix + 'view/grid/addRowSelectedBy', {
+        row,
+        field,
+      })
     },
     /**
      * When a cell is unselected need to change the selected state of the row.
@@ -485,14 +552,17 @@ export default {
       // cell within a row is selected, we want to wait for that selected state tot
       // change. This will make sure that the row is stays selected.
       this.$nextTick(() => {
-        this.$store.dispatch('view/grid/removeRowSelectedBy', {
-          grid: this.view,
-          fields: this.fields,
-          primary: this.primary,
-          row,
-          field,
-          getScrollTop: () => this.$refs.left.$refs.body.scrollTop,
-        })
+        this.$store.dispatch(
+          this.storePrefix + 'view/grid/removeRowSelectedBy',
+          {
+            grid: this.view,
+            fields: this.fields,
+            primary: this.primary,
+            row,
+            field,
+            getScrollTop: () => this.$refs.left.$refs.body.scrollTop,
+          }
+        )
       })
     },
     /**
@@ -501,7 +571,7 @@ export default {
      * direction and will select that one.
      */
     selectNextCell({ row, field, direction = 'next' }) {
-      const fields = this.fields
+      const fields = this.visibleFields
       const primary = this.primary
       let nextFieldId = -1
       let nextRowId = -1
@@ -535,7 +605,9 @@ export default {
 
       if (direction === 'below' || direction === 'above') {
         nextFieldId = field.id
-        const rows = this.$store.getters['view/grid/getAllRows']
+        const rows = this.$store.getters[
+          this.storePrefix + 'view/grid/getAllRows'
+        ]
         const index = rows.findIndex((r) => r.id === row.id)
 
         if (index !== -1 && direction === 'below' && rows.length > index + 1) {
@@ -552,7 +624,7 @@ export default {
         return
       }
 
-      this.$store.dispatch('view/grid/setSelectedCell', {
+      this.$store.dispatch(this.storePrefix + 'view/grid/setSelectedCell', {
         rowId: nextRowId,
         fieldId: nextFieldId,
       })
@@ -563,12 +635,15 @@ export default {
      * or wants to sort on a field.
      */
     async refresh() {
-      await this.$store.dispatch('view/grid/visibleByScrollTop', {
-        scrollTop: this.$refs.right.$refs.body.scrollTop,
-        windowHeight: this.$refs.right.$refs.body.clientHeight,
-      })
+      await this.$store.dispatch(
+        this.storePrefix + 'view/grid/visibleByScrollTop',
+        {
+          scrollTop: this.$refs.right.$refs.body.scrollTop,
+          windowHeight: this.$refs.right.$refs.body.clientHeight,
+        }
+      )
       this.$nextTick(() => {
-        this.$refs.scrollbars.update()
+        this.fieldsUpdated()
       })
     },
   },

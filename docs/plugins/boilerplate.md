@@ -15,7 +15,7 @@ python and pip.
 ```
 $ cd ~/baserow
 $ pip install cookiecutter
-$ git clone git@gitlab.com:bramw/baserow.git
+$ git clone https://gitlab.com/bramw/baserow.git
 Cloning into 'baserow'...
 ```
 
@@ -56,12 +56,13 @@ Starting my-baserow-plugin-web-frontend ... done
 ```
 
 The development environment is now running, but the development servers have not yet 
-been started. First we will apply all the migrations and start the Django backend 
-development server by executing the following commands.
+been started. First we will apply all the migrations, sync the templates and start the
+Django backend development server by executing the following commands.
 
 ```
 $ docker exec -it my-baserow-plugin-backend bash
 $ baserow migrate
+$ baserow sync_templates
 $ baserow runserver 0.0.0.0:8000
 ```
 
