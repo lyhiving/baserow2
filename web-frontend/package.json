@@ -7,6 +7,7 @@
   "license": "MIT",
   "scripts": {
     "build": "nuxt build",
+    "build-local": "nuxt build --config-file ./config/nuxt.config.local.js",
     "dev": "nuxt --hostname 0.0.0.0",
     "start": "nuxt start --hostname 0.0.0.0",
     "eslint": "eslint --ext .js,.vue .",

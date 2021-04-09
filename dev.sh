@@ -61,22 +61,51 @@ help          : Show this message
 """
 }
 
+build=false
+up=true
+migrate=true
+sync_templates=true
 while true; do
 case "$1" in
     dont_migrate)
-        echo "./start_dev: Automatic migration on startup has been disabled."
+        echo "./dev.sh: Automatic migration on startup has been disabled."
         shift
-        export DONT_MIGRATE="true"
+        migrate=false
+    ;;
+    dont_sync)
+        echo "./dev.sh: Automatic template syncing on startup has been disabled."
+        shift
+        sync_templates=false
     ;;
     dont_attach)
-        echo "./start_dev: Configured to not attach to running dev containers."
+        echo "./dev.sh: Configured to not attach to running dev containers."
         shift
         dont_attach=true
     ;;
     restart)
-        echo "./start_dev: Restarting Dev Environment"
+        echo "./dev.sh: Restarting Dev Environment"
         shift
-        restart=true
+        down=true
+        up=true
+    ;;
+    stop)
+        echo "./dev.sh: Stopping Dev Environment"
+        shift
+        up=false
+        down=true
+    ;;
+    kill)
+        echo "./dev.sh: Killing Dev Environment"
+        shift
+        up=false
+        kill=true
+    ;;
+    build_only)
+        echo "./dev.sh: Only Building Dev Environment (use 'up --build' instead to
+        rebuild and up)"
+        shift
+        build=true
+        up=false
     ;;
     help)
         show_help
@@ -89,17 +118,37 @@ esac
 done
 
 CURRENT_UID=$(id -u)
+#CURRENT_UID=1234
 CURRENT_GID=$(id -g)
 export CURRENT_UID
 export CURRENT_GID
 
-if [ "$restart" = true ] ; then
+
+if [ "$migrate" = true ] ; then
+export MIGRATE_ON_STARTUP="true"
+fi
+
+if [ "$sync_templates" = true ] ; then
+export SYNC_TEMPLATES_ON_STARTUP="true"
+fi
+
+if [ "$down" = true ] ; then
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
 fi
 
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d "$@"
+if [ "$kill" = true ] ; then
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml kill
+fi
 
-if [ "$dont_attach" != true ] ; then
+if [ "$build" = true ] ; then
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml build "$@"
+fi
+
+if [ "$up" = true ] ; then
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d "$@"
+fi
+
+if [ "$dont_attach" != true ] && [ "$up" = true ] ; then
   new_tab "Backend" \
           "docker logs backend && docker attach backend"
 

@@ -4,16 +4,6 @@
 # http://stackoverflow.com/questions/19622198/what-does-set-e-mean-in-a-bash-script
 set -e
 
-CURRENT_UID=${CURRENT_UID:-9999}
-CURRENT_GID=${CURRENT_GID:-9999}
-groupadd -g "$CURRENT_GID" baserow_docker_group || echo "Group $CURRENT_GID already exists, not creating."
-useradd --shell /bin/bash -u "$CURRENT_UID" -g "$CURRENT_GID" -o -c "" -m baserow_docker_user  || echo "User $CURRENT_UID already exists, not creating."
-export HOME=/home/baserow_docker_user
-
-# Fixup the working directory as it was probably built in the docker image as root but
-# the application user needs access.
-#chown "$CURRENT_UID":"$CURRENT_GID" -R .
-
 # Check if the required PostgreSQL environment variables are set
 
 # Used by docker-entrypoint.sh to start the dev server
@@ -71,15 +61,22 @@ help      : Show this message
 """
 }
 
-exec_as_correct_user(){
-  exec gosu "$CURRENT_UID" "$@"
+run_setup_commands_if_configured(){
+if [ "$MIGRATE_ON_STARTUP" = "true" ] ; then
+  echo "python src/baserow/manage.py migrate"
+  python src/baserow/manage.py migrate
+fi
+if [ "$SYNC_TEMPLATES_ON_STARTUP" = "true" ] ; then
+  echo "python src/baserow/manage.py sync_templates"
+  python src/baserow/manage.py sync_templates
+fi
 }
 
 # Run
 case "$1" in
     dev)
         wait_for_postgres
-        [ -z "$DONT_MIGRATE" ] && python src/baserow/manage.py migrate
+        run_setup_commands_if_configured
         echo "Running Development Server on 0.0.0.0:${PORT}"
         echo "Press CTRL-p CTRL-q to close this session without stopping the container."
         CMD="python src/baserow/manage.py runserver 0.0.0.0:${PORT}"
@@ -87,35 +84,33 @@ case "$1" in
         # The below command lets devs attach to this container, press ctrl-c and only
         # the server will stop. Additionally they will be able to use bash history to
         # re-run the containers run server command after they have done what they want.
-        echo "history -s $CMD; $CMD" > /tmp/initfile
-        chown "$CURRENT_UID":"$CURRENT_GID" /tmp/initfile
-        exec_as_correct_user bash --init-file /tmp/initfile
+        exec bash --init-file <(echo "history -s $CMD; $CMD")
     ;;
     local)
         wait_for_postgres
-        [ -z "$DONT_MIGRATE" ] && python src/baserow/manage.py migrate
-        exec_as_correct_user gunicorn --workers=3 -b 0.0.0.0:"${PORT}" -k uvicorn.workers.UvicornWorker baserow.config.asgi:application
+        run_setup_commands_if_configured
+        exec gunicorn --workers=3 -b 0.0.0.0:"${PORT}" -k uvicorn.workers.UvicornWorker baserow.config.asgi:application
     ;;
     bash)
-        exec_as_correct_user /bin/bash "${@:2}"
+        exec /bin/bash "${@:2}"
     ;;
     manage)
-        exec_as_correct_user python src/baserow/manage.py "${@:2}"
+        exec python src/baserow/manage.py "${@:2}"
     ;;
     python)
-        exec_as_correct_user python "${@:2}"
+        exec python "${@:2}"
     ;;
     shell)
-        exec_as_correct_user python manage.py shell
+        exec python manage.py shell
     ;;
     lint)
-        exec_as_correct_user make lint
+        exec make lint
     ;;
     celery)
-        exec_as_correct_user celery -A baserow worker -l INFO
+        exec celery -A baserow worker -l INFO
     ;;
     celery-dev)
-        exec_as_correct_user watchmedo auto-restart --directory=./ --pattern=*.py --recursive -- celery -A baserow worker -l INFO
+        exec watchmedo auto-restart --directory=./ --pattern=*.py --recursive -- celery -A baserow worker -l INFO
     ;;
     *)
         show_help

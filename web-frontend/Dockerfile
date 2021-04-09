@@ -1,31 +1,47 @@
-FROM node:10
+FROM node:10-buster
 
+ARG UID
+ENV UID=${UID:-9999}
+ARG GID
+ENV GID=${GID:-9999}
+
+# Perform all OS package installation and cleanup in one single command to reduce the
+# size of the created layer.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     gnupg2 \
     dos2unix \
-    gosu \
+    tini \
     && apt-get autoclean \
     && apt-get clean \
     && apt-get autoremove \
     && rm -rf /var/lib/apt/lists/*
 
-COPY package.json yarn.lock /web-frontend/
+# The node image already creates a non-root user to run as, update its ids so they
+# match the provided UID and GID we wish to build and run this image with.
+RUN groupmod -g ${UID} node && usermod -u ${UID} -g ${GID} node
+
+USER $UID:$GID
+
+# Create and install the dependencies in separate ADD commands
+ADD --chown=$UID:$GID package.json yarn.lock /web-frontend/
 
 WORKDIR /web-frontend
 
+# Don't install dev dependencies
 RUN yarn install --production=true
 
-COPY docker/docker-entrypoint.sh /docker/docker-entrypoint.sh
-RUN dos2unix /docker/docker-entrypoint.sh && \
-    chmod a+x /docker/docker-entrypoint.sh
+ADD --chown=$UID:$GID . /web-frontend/
 
-ADD . /web-frontend
+RUN yarn run build-local
 
-RUN yarn run build
+RUN dos2unix /web-frontend/docker/docker-entrypoint.sh && \
+    chmod a+x /web-frontend/docker/docker-entrypoint.sh
 
-ENTRYPOINT ["/docker/docker-entrypoint.sh"]
+# tini installed above protects us from zombie processes and ensures the default signal
+# handlers work, see https://github.com/krallin/tini.
+ENTRYPOINT ["/usr/bin/tini", "--", "/web-frontend/docker/docker-entrypoint.sh"]
 CMD ["local"]
 

@@ -37,9 +37,8 @@ services:
       context: ./backend/
     image: baserow_backend:latest
     environment:
-      - DONT_MIGRATE
-      - CURRENT_UID
-      - CURRENT_GID
+      - MIGRATE_ON_STARTUP
+      - SYNC_TEMPLATES_ON_STARTUP
       - DATABASE_USER=${DATABASE_USER:-baserow}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD:-baserow}
       - DATABASE_NAME=${DATABASE_NAME:-baserow}
@@ -48,18 +47,13 @@ services:
     depends_on:
       - db
       - mjml
-    init: true
     networks:
       local:
 
   celery:
     container_name: celery
     image: baserow_backend:latest
-    environment:
-      - CURRENT_UID
-      - CURRENT_GID
     command: celery
-    init: true
     depends_on:
       - backend
     networks:
@@ -70,14 +64,10 @@ services:
     build:
       context: ./web-frontend/
     image: baserow_web-frontend:latest
-    environment:
-      - CURRENT_UID
-      - CURRENT_GID
     ports:
       - "${WEB_FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
-    init: true
     networks:
       local:
 
