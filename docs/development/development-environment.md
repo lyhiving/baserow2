@@ -127,3 +127,13 @@ Both the web-frontend and backend containers need to keep running while you are
 developing. They also monitor file changes and update automatically so you don't need to
 worry about reloading. Go and make some changes yourself. You should see the result
 right away.
+
+## Fixing git blame 
+
+A large formatting only commit was made to the repo when we converted to use the black 
+auto-formatter. You don't want to see this commit in git blame, so run the command below 
+to get your local git to ignore that commit in blame for this repo:
+
+```bash
+$ git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
