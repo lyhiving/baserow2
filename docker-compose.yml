@@ -25,7 +25,7 @@ services:
 
   mjml:
     container_name: mjml
-    image: liminspace/mjml-tcpserver:0.10
+    image: liminspace/mjml-tcpserver:2.2.0
     ports:
       - "${MJML_PORT:-28101}:28101"
     networks:
