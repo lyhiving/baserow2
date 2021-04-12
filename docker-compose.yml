@@ -25,7 +25,9 @@ services:
 
   mjml:
     container_name: mjml
-    image: liminspace/mjml-tcpserver:2.2.0
+    image: liminspace/mjml-tcpserver:0.10
+    # mjml is based off the node image which creates a non root node user we can run as
+    user: "1000:1000"
     ports:
       - "${MJML_PORT:-28101}:28101"
     networks:
