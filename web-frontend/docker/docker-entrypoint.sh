@@ -4,7 +4,7 @@
 # http://stackoverflow.com/questions/19622198/what-does-set-e-mean-in-a-bash-script
 set -e
 
-# Define help message
+
 show_help() {
     echo """
 Usage: docker run <imagename> COMMAND
@@ -19,7 +19,6 @@ help     : Show this message
 }
 
 
-# Run
 case "$1" in
     dev)
         CMD="yarn run dev"

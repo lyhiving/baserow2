@@ -4,7 +4,7 @@
 # http://stackoverflow.com/questions/19622198/what-does-set-e-mean-in-a-bash-script
 set -e
 
-# Check if the required PostgreSQL environment variables are set
+
 
 # Used by docker-entrypoint.sh to start the dev server
 # If not configured you'll receive this: CommandError: "0.0.0.0:" is not a valid port number or address:port pair.
@@ -44,7 +44,7 @@ done
 }
 
 
-# Define help message
+
 show_help() {
     echo """
 Usage: docker run <imagename> COMMAND
@@ -73,7 +73,6 @@ if [ "$SYNC_TEMPLATES_ON_STARTUP" = "true" ] ; then
 fi
 }
 
-# Run
 case "$1" in
     dev)
         wait_for_postgres
@@ -102,7 +101,7 @@ case "$1" in
         exec python "${@:2}"
     ;;
     shell)
-        exec python manage.py shell
+        exec python src/baserow/manage.py shell
     ;;
     lint)
         exec make lint
