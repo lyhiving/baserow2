@@ -9,8 +9,6 @@ print_manual_instructions(){
   CONTAINER_COMMAND=$2
   echo -e "\nOpen a new tab/terminal and run:"
   echo "    $COMMAND"
-  echo "Then inside the container run:"
-  echo "    $CONTAINER_COMMAND"
 }
 
 PRINT_WARNING=true

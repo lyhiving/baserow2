@@ -21,7 +21,7 @@ RUN apt-get update && \
 
 # The node image already creates a non-root user to run as, update its ids so they
 # match the provided UID and GID we wish to build and run this image with.
-RUN groupmod -g ${UID} node && usermod -u ${UID} -g ${GID} node
+RUN groupmod -g ${GID} node && usermod -u ${UID} -g ${GID} node
 
 USER $UID:$GID
 
