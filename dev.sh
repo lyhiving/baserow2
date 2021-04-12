@@ -123,10 +123,18 @@ export CURRENT_GID
 
 if [ "$migrate" = true ] ; then
 export MIGRATE_ON_STARTUP="true"
+else
+# Because of the defaults set in the docker-compose file we need to explicitly turn
+# this off as just not setting it will get the default "true" value.
+export MIGRATE_ON_STARTUP="false"
 fi
 
 if [ "$sync_templates" = true ] ; then
 export SYNC_TEMPLATES_ON_STARTUP="true"
+else
+# Because of the defaults set in the docker-compose file we need to explicitly turn
+# this off as just not setting it will get the default "true" value.
+export SYNC_TEMPLATES_ON_STARTUP="false"
 fi
 
 if [ "$down" = true ] ; then
