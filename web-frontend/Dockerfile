@@ -30,8 +30,8 @@ ADD --chown=$UID:$GID package.json yarn.lock /web-frontend/
 
 WORKDIR /web-frontend
 
-# Don't install dev dependencies
-RUN yarn install --production=true
+# We still need dev-dependencies as we will be running a nuxt build below
+RUN yarn install
 
 ADD --chown=$UID:$GID . /web-frontend/
 
