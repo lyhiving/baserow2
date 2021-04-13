@@ -107,6 +107,8 @@ class TableHandler:
         with connection.schema_editor() as schema_editor:
             model = table.get_model()
             schema_editor.create_model(model)
+            for index in model._meta.indexes:
+                schema_editor.add_index(model, index)
 
         if data is not None:
             self.fill_initial_table_data(user, table, fields, data, model)
@@ -278,6 +280,8 @@ class TableHandler:
         connection = connections[settings.USER_TABLE_DATABASE]
         with connection.schema_editor() as schema_editor:
             model = table.get_model()
+            for index in model._meta.indexes:
+                schema_editor.remove_index(model, index)
             schema_editor.delete_model(model)
 
         table.delete()

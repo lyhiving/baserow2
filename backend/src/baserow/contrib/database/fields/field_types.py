@@ -55,6 +55,11 @@ from .models import (
     PhoneNumberField,
 )
 from .registries import FieldType, field_type_registry
+from .indexes import (
+    ContainsIndex,
+    ContainsAsTextIndex,
+    # DateContainsAsTextIndex,
+)
 
 
 class TextFieldType(FieldType):
@@ -77,6 +82,13 @@ class TextFieldType(FieldType):
             default=instance.text_default or None, blank=True, null=True, **kwargs
         )
 
+    def get_table_indexes(self, instance, field_name):
+        return [
+            ContainsIndex(
+                fields=[field_name], name=f"field_{instance.id}_contains__index"
+            )
+        ]
+
     def random_value(self, instance, fake, cache):
         return fake.name()
 
@@ -95,6 +107,13 @@ class LongTextFieldType(FieldType):
 
     def get_model_field(self, instance, **kwargs):
         return models.TextField(blank=True, null=True, **kwargs)
+
+    def get_table_indexes(self, instance, field_name):
+        return [
+            ContainsIndex(
+                fields=[field_name], name=f"field_{instance.id}_contains__index"
+            )
+        ]
 
     def random_value(self, instance, fake, cache):
         return fake.text()
@@ -122,6 +141,13 @@ class URLFieldType(FieldType):
 
     def get_model_field(self, instance, **kwargs):
         return models.URLField(default="", blank=True, null=True, **kwargs)
+
+    def get_table_indexes(self, instance, field_name):
+        return [
+            ContainsIndex(
+                fields=[field_name], name=f"field_{instance.id}_contains__index"
+            )
+        ]
 
     def random_value(self, instance, fake, cache):
         return fake.url()
@@ -192,6 +218,13 @@ class NumberFieldType(FieldType):
             blank=True,
             **kwargs,
         )
+
+    def get_table_indexes(self, instance, field_name):
+        return [
+            ContainsAsTextIndex(
+                fields=[field_name], name=f"field_{instance.id}_contains_text__index"
+            )
+        ]
 
     def random_value(self, instance, fake, cache):
         if instance.number_type == NUMBER_TYPE_INTEGER:
@@ -319,6 +352,15 @@ class DateFieldType(FieldType):
             return models.DateTimeField(**kwargs)
         else:
             return models.DateField(**kwargs)
+
+    # def get_table_indexes(self, instance, field_name):
+    #     return [
+    #         DateContainsAsTextIndex(
+    #             fields=[field_name],
+    #             name=f"field_{instance.id}_contains__index",
+    #             date_format=instance.get_psql_format(),
+    #         )
+    #     ]
 
     def random_value(self, instance, fake, cache):
         if instance.date_include_time:
@@ -828,6 +870,13 @@ class EmailFieldType(FieldType):
     def get_model_field(self, instance, **kwargs):
         return models.EmailField(default="", blank=True, null=True, **kwargs)
 
+    def get_table_indexes(self, instance, field_name):
+        return [
+            ContainsIndex(
+                fields=[field_name], name=f"field_{instance.id}_contains__index"
+            )
+        ]
+
     def random_value(self, instance, fake, cache):
         return fake.email()
 
@@ -923,6 +972,9 @@ class FileFieldType(FieldType):
 
     def get_model_field(self, instance, **kwargs):
         return JSONField(default=[], **kwargs)
+
+    def get_table_indexes(self, instance, field_name):
+        return []
 
     def random_value(self, instance, fake, cache):
         """
@@ -1263,6 +1315,13 @@ class PhoneNumberFieldType(FieldType):
             validators=[self.simple_phone_number_validator],
             **kwargs,
         )
+
+    def get_table_indexes(self, instance, field_name):
+        return [
+            ContainsIndex(
+                fields=[field_name], name=f"field_{instance.id}_contains__index"
+            )
+        ]
 
     def random_value(self, instance, fake, cache):
         return fake.phone_number()

@@ -14,6 +14,7 @@ from baserow.contrib.database.fields.field_filters import (
     FILTER_TYPE_OR,
 )
 from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.contrib.database.fields.indexes import AsTextIndex
 from baserow.contrib.database.views.exceptions import ViewFilterTypeNotAllowedForField
 from baserow.contrib.database.views.registries import view_filter_type_registry
 from baserow.core.mixins import OrderableMixin, CreatedAndUpdatedOnMixin
@@ -240,6 +241,11 @@ class Table(CreatedAndUpdatedOnMixin, OrderableMixin, models.Model):
                 "db_table": f"database_table_{self.id}",
                 "app_label": app_label,
                 "ordering": ["order", "id"],
+                "indexes": [
+                    AsTextIndex(
+                        fields=["id"], name=f"table_" f"{self.id}_id_as_text__index"
+                    ),
+                ],
             },
         )
 
@@ -316,6 +322,11 @@ class Table(CreatedAndUpdatedOnMixin, OrderableMixin, models.Model):
             # to be passed along to the model field.
             attrs[field_name] = field_type.get_model_field(
                 field, db_column=field.db_column, verbose_name=field.name
+            )
+
+            # @TODO docs
+            attrs["Meta"].indexes.extend(
+                field_type.get_table_indexes(field, field_name)
             )
 
         # Create the model class.

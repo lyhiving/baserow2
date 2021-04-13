@@ -119,6 +119,8 @@ class FieldHandler:
 
             if do_schema_change:
                 schema_editor.add_field(to_model, model_field)
+                for index in field_type.get_table_indexes(instance, instance.db_column):
+                    schema_editor.add_index(to_model, index)
 
         field_type.after_create(instance, to_model, user, connection, before)
 
@@ -324,6 +326,8 @@ class FieldHandler:
         with connection.schema_editor() as schema_editor:
             from_model = field.table.get_model(field_ids=[], fields=[field])
             model_field = from_model._meta.get_field(field.db_column)
+            for index in field_type.get_table_indexes(field, field.db_column):
+                schema_editor.remove_index(from_model, index)
             schema_editor.remove_field(from_model, model_field)
 
         field_id = field.id

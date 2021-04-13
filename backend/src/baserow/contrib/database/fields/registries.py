@@ -188,6 +188,20 @@ class FieldType(
 
         raise NotImplementedError("Each must have his own get_model_field method.")
 
+    def get_table_indexes(self, instance, field_name):
+        """
+        Returns a list of indexes that will be added to the table
+
+        :param instance: The field instance for which to get the table indexes.
+        :type instance: Field
+        :param field_name: The given name of the field in the model.
+        :type field_name: str
+        :return: The indexes that need to be added to the table.
+        :rtype: list
+        """
+
+        return []
+
     def after_model_generation(self, instance, model, field_name, manytomany_models):
         """
         After the model is generated the after_model_generation method of each field
