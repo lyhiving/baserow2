@@ -1,0 +1,77 @@
+version: "3.7"
+
+services:
+  db:
+    container_name: db
+    image: postgres:11.3
+    environment:
+      - POSTGRES_USER=baserow
+      - POSTGRES_PASSWORD=baserow
+      - POSTGRES_DB=baserow
+    ports:
+      - 5432:5432
+
+  redis:
+    container_name: redis
+    image: redis:6.0
+    ports:
+      - 6379:6379
+
+  mjml:
+    container_name: mjml
+    image: liminspace/mjml-tcpserver:latest
+    ports:
+      - 28101:28101
+
+  backend:
+    container_name: backend
+    build:
+      context: backend
+    volumes:
+      - ../backend:/backend
+      - ./backend:/premium/backend
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+      - mjml
+      - backend-base-build
+
+  web-frontend:
+    container_name: web-frontend
+    build:
+      context: web-frontend
+    volumes:
+      - ../web-frontend:/web-frontend
+      - ./web-frontend:/premium/web-frontend
+    image: baserow_web-frontend_premium:latest
+    ports:
+      - 3000:3000
+    depends_on:
+      - backend
+      - web-frontend-base-build
+
+  # The two services below simply exist to ensure the baserow core images are built and
+  # upto date as just building the prem images above might use an old core image!
+  web-frontend-base-build:
+    build:
+      context: ../web-frontend
+      dockerfile: ../web-frontend/Dockerfile.dev
+    image: baserow_web-frontend:latest
+    volumes:
+      - ../web-frontend:/web-frontend
+    command: /bin/bash -c "exit 0"
+
+  backend-base-build:
+    build:
+      context: ../backend
+      dockerfile: ../backend/Dockerfile.dev
+    image: baserow_backend:latest
+    volumes:
+      - ./backend:/backend
+    command: /bin/bash -c "exit 0"
+
+networks:
+  default:
+    external:
+      name: baserow_default

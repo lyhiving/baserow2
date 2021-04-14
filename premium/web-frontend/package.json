@@ -1,0 +1,24 @@
+{
+  "name": "baserow_premium",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Baserow Premium: open source no-code database web frontend.",
+  "author": "Bram Wiepjes (Baserow)",
+  "license": "The Baserow Premium Edition license (See LICENSE FILE)",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt --hostname 0.0.0.0",
+    "start": "nuxt start --hostname 0.0.0.0",
+    "demo": "nuxt start --hostname 0.0.0.0 --config-file config/nuxt.config.demo.js",
+    "eslint": "eslint --ext .js,.vue .",
+    "stylelint": "stylelint **/*.scss --syntax scss",
+    "jest": "jest -i --verbose false",
+    "jest-all": "jest -i --verbose false test/"
+  },
+  "dependencies": {
+    "baserow":  "file:../../web-frontend"
+  },
+  "devDependencies": {
+    "baserow":  "file:../../web-frontend"
+  }
+}
