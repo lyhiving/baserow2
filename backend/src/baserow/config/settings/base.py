@@ -32,8 +32,9 @@ INSTALLED_APPS = [
     "baserow.contrib.database",
 ]
 
-ADDITIONAL_APPS = os.getenv("ADDITIONAL_APPS", "")
-INSTALLED_APPS += ADDITIONAL_APPS.split(",")
+ADDITIONAL_APPS = os.getenv("ADDITIONAL_APPS", None)
+if ADDITIONAL_APPS is not None:
+    INSTALLED_APPS += ADDITIONAL_APPS.split(",")
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
