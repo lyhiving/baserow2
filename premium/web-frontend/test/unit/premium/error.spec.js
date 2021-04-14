@@ -1,5 +1,5 @@
 import Error from '@baserow/modules/core/components/Error'
-import {bootstrapVueContext} from '@baserow/test/helpers/components'
+import { bootstrapVueContext } from '@baserow/test/helpers/components'
 
 describe('Error Component Tests', () => {
   let vueContext = null

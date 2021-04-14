@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import {config} from '@vue/test-utils'
+import { config } from '@vue/test-utils'
 
 Vue.config.silent = true
 
