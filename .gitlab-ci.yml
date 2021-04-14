@@ -14,6 +14,7 @@ web-frontend-eslint:
     - make install-dependencies
     - make eslint
     - cd ../premium/web-frontend
+    - make install-dependencies
     - make eslint
 
 web-frontend-stylelint:
@@ -24,6 +25,7 @@ web-frontend-stylelint:
     - make install-dependencies
     - make stylelint
     - cd ../premium/web-frontend
+    - make install-dependencies
     - make stylelint
 
 web-frontend-test:
@@ -34,6 +36,7 @@ web-frontend-test:
     - make install-dependencies
     - make test
     - cd ../premium/web-frontend
+    - make install-dependencies
     - make test
 
 backend-flake8:
