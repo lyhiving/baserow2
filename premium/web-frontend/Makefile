@@ -1,3 +1,6 @@
+install-dependencies:
+	yarn install
+
 eslint:
 	yarn run eslint || exit;
 
