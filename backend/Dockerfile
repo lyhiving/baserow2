@@ -25,7 +25,7 @@ RUN apt-get update && \
 
 USER $UID:$GID
 
-ADD --chown=$UID:$GID requirements/base.txt /requirements/
+ADD --chown=$UID:$GID ./backend/requirements/base.txt /requirements/
 # Disable the path warn as we set the correct path in the entrypoint when it is easy
 # to know the users $HOME/.local/bin location. Changing path in the docker image does
 # not work as we do not know where $HOME when using an ENV command.
@@ -39,7 +39,7 @@ WORKDIR /backend
 # Ensure that Python outputs everything that's printed inside
 # the application rather than buffering it.
 ENV PYTHONUNBUFFERED 1
-ENV PYTHONPATH $PYTHONPATH:/backend/src
+ENV PYTHONPATH $PYTHONPATH:/backend/src:/backend/plugins/premium/src
 ENV DJANGO_SETTINGS_MODULE='baserow.config.settings.base'
 
 RUN dos2unix /backend/docker/docker-entrypoint.sh && \

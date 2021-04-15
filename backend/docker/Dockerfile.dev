@@ -6,7 +6,7 @@ ENV UID=${UID:-1000}
 ARG GID
 ENV GID=${GID:-1000}
 
-# We might be running as a user which already exists in this image. In that situtation
+# We might be running as a user which already exists in this image. In that situation
 # Everything is OK and we should just continue on.
 RUN groupadd -g $GID baserow_docker_group || exit 0
 RUN useradd --shell /bin/bash -u $UID -g $GID -o -c "" -m baserow_docker_user || exit 0
@@ -26,7 +26,7 @@ RUN apt-get update && \
 
 USER $UID:$GID
 
-ADD --chown=$UID:$GID requirements/base.txt requirements/dev.txt /requirements/
+ADD --chown=$UID:$GID ./backend/requirements /requirements
 # Disable the path warn as we set the correct path in the entrypoint when it is easy
 # to know the users $HOME/.local/bin location. Changing path in the docker image does
 # not work as we do not know where $HOME when using an ENV command.
@@ -40,7 +40,7 @@ WORKDIR /backend
 # Ensure that Python outputs everything that's printed inside
 # the application rather than buffering it.
 ENV PYTHONUNBUFFERED 1
-ENV PYTHONPATH $PYTHONPATH:/backend/src
+ENV PYTHONPATH $PYTHONPATH:/backend/src:/backend/plugins/premium/src
 ENV DJANGO_SETTINGS_MODULE='baserow.config.settings.base'
 
 RUN dos2unix /backend/docker/docker-entrypoint.sh && \

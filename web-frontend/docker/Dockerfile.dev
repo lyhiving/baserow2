@@ -28,7 +28,7 @@ RUN usermod -u ${UID} -g ${GID} node || exit 0
 USER $UID:$GID
 
 # Create and install the dependencies in separate ADD commands
-ADD --chown=$UID:$GID package.json yarn.lock /web-frontend/
+ADD --chown=$UID:$GID ./web-frontend/package.json ./web-frontend/yarn.lock /web-frontend/
 
 WORKDIR /web-frontend
 
