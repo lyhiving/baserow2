@@ -4,7 +4,7 @@ import { routes } from './routes'
 
 export default function () {
   // Register new alias to the web-frontend directory.
-  this.options.alias["@baserow_premium"] = path.resolve(__dirname, './')
+  this.options.alias['@baserow_premium'] = path.resolve(__dirname, './')
 
   // Remove the existing index route and add our own routes.
   this.extendRoutes((configRoutes) => {

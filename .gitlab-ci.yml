@@ -10,10 +10,8 @@ web-frontend-eslint:
   stage: lint
   image: node:10
   script:
+    - mkdir web-frontend/plugins && cp -r premium/web-frontend web-frontend/plugins/premium
     - cd web-frontend
-    - make install-dependencies
-    - make eslint
-    - cd ../premium/web-frontend
     - make install-dependencies
     - make eslint
 
@@ -21,10 +19,8 @@ web-frontend-stylelint:
   stage: lint
   image: node:10
   script:
+    - mkdir web-frontend/plugins && cp -r premium/web-frontend web-frontend/plugins/premium
     - cd web-frontend
-    - make install-dependencies
-    - make stylelint
-    - cd ../premium/web-frontend
     - make install-dependencies
     - make stylelint
 
@@ -32,10 +28,8 @@ web-frontend-test:
   stage: test
   image: node:10
   script:
+    - mkdir web-frontend/plugins && cp -r premium/web-frontend web-frontend/plugins/premium
     - cd web-frontend
-    - make install-dependencies
-    - make test
-    - cd ../premium/web-frontend
     - make install-dependencies
     - make test
 
@@ -43,11 +37,10 @@ backend-flake8:
   stage: lint
   image: python:3.7
   script:
+    - mkdir backend/plugins && cp -r premium/backend backend/plugins/premium
     - cd backend
     - make install-dependencies
     - make install-dev-dependencies
-    - make lint
-    - cd ../premium/backend
     - make lint
 
 backend-pytest:
@@ -63,12 +56,11 @@ backend-pytest:
     POSTGRES_PASSWORD: baserow
     POSTGRES_DB: baserow
   script:
+    - mkdir backend/plugins && cp -r premium/backend backend/plugins/premium
     - cd backend
     - make install-dependencies
     - make install-dev-dependencies
-    - export PYTHONPATH=$CI_PROJECT_DIR/backend/src:$CI_PROJECT_DIR/premium/backend/src
-    - make test
-    - cd ../premium/backend
+    - export PYTHONPATH=$CI_PROJECT_DIR/backend/src:$CI_PROJECT_DIR/backend/plugins/premium/src
     - make test
 
 backend-setup:

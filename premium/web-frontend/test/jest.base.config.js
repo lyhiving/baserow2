@@ -4,7 +4,7 @@ module.exports = {
   expand: true,
   forceExit: true,
   moduleNameMapper: {
-    '^@baserow/(.*)$': 'baserow/$1',
+    '^@baserow/(.*)$': '<rootDir>/../../$1',
     '^@baserow_premium/(.*)$': '<rootDir>/$1',
     '^@/(.*)$': '<rootDir>/$1',
     '^~/(.*)$': '<rootDir>/$1',

@@ -1,11 +1,11 @@
 FROM python:3.7
 
 ADD ./backend /backend
-ADD ./premium/backend /premium/backend
+ADD ./premium/backend /backend/plugins/premium
 
 WORKDIR /backend
 
-ENV PYTHONPATH $PYTHONPATH:/backend/src:/premium/backend/src
+ENV PYTHONPATH $PYTHONPATH:/backend/src:/backend/plugins/premium/src
 ENV DJANGO_SETTINGS_MODULE='baserow.config.settings.dev'
 
 RUN apt-get update

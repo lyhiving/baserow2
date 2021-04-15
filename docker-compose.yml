@@ -31,7 +31,9 @@ services:
     image: baserow_backend:latest
     volumes:
       - ./backend:/backend
-      - ./premium/backend/:/premium/backend
+      - ./premium/backend/:/backend/plugins/premium
+    environment:
+      - ADDITIONAL_APPS
     ports:
       - 8000:8000
     depends_on:
@@ -45,7 +47,9 @@ services:
       dockerfile: ./web-frontend/Dockerfile.dev
     volumes:
       - ./web-frontend:/web-frontend
-      - ./premium/web-frontend/:/premium/web-frontend
+      - ./premium/web-frontend/:/web-frontend/plugins/premium
+    environment:
+      - ADDITIONAL_MODULES
     ports:
       - 3000:3000
     depends_on:
