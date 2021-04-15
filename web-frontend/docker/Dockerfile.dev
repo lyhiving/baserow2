@@ -21,6 +21,7 @@ RUN apt-get update && \
 
 # The node image already creates a non-root user to run as, update its ids so they
 # match the provided UID and GID we wish to build and run this image with.
+# If GID or UID already exist that's OK no need to stop the build.
 RUN groupmod -g ${GID} node || exit 0
 RUN usermod -u ${UID} -g ${GID} node || exit 0
 
@@ -33,7 +34,8 @@ WORKDIR /web-frontend
 
 RUN yarn install
 
-ADD --chown=$UID:$GID . /web-frontend/
+ADD --chown=$UID:$GID ./web-frontend /web-frontend/
+ADD --chown=$UID:$GID ./premium/web-frontend /web-frontend/plugins/premium
 
 RUN dos2unix /web-frontend/docker/docker-entrypoint.sh && \
     chmod a+x /web-frontend/docker/docker-entrypoint.sh

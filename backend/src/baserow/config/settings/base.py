@@ -1,5 +1,5 @@
-import os
 import datetime
+import os
 from urllib.parse import urlparse, urljoin
 
 from corsheaders.defaults import default_headers
@@ -31,6 +31,10 @@ INSTALLED_APPS = [
     "baserow.ws",
     "baserow.contrib.database",
 ]
+
+ADDITIONAL_APPS = os.getenv("ADDITIONAL_APPS", None)
+if ADDITIONAL_APPS is not None:
+    INSTALLED_APPS += ADDITIONAL_APPS.split(",")
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

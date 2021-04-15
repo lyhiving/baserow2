@@ -35,7 +35,8 @@ WORKDIR /web-frontend
 # We still need dev-dependencies as we will be running a nuxt build below
 RUN yarn install
 
-ADD --chown=$UID:$GID . /web-frontend/
+ADD --chown=$UID:$GID ./web-frontend /web-frontend/
+ADD --chown=$UID:$GID ./premium/web-frontend /web-frontend/plugins/premium
 
 RUN yarn run build-local
 

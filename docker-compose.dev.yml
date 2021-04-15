@@ -4,8 +4,8 @@ services:
 
   backend:
     build:
-      context: ./backend/
-      dockerfile: ./docker/Dockerfile.dev
+      context: .
+      dockerfile: ./backend/docker/Dockerfile.dev
       args:
         # We allow configuring the UID/GID here so you can run as the dev's actual user
         # reducing the chance the containers screw up the bind mounted folders.
@@ -14,6 +14,7 @@ services:
     image: baserow_backend_dev:latest
     volumes:
       - ./backend:/backend
+      - ./premium/backend/:/backend/plugins/premium
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
     tty: true
@@ -23,14 +24,15 @@ services:
     command: celery-dev
     volumes:
       - ./backend:/backend
+      - ./premium/backend/:/backend/plugins/premium
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
     tty: true
 
   web-frontend:
     build:
-      context: ./web-frontend/
-      dockerfile: ./docker/Dockerfile.dev
+      context: .
+      dockerfile: ./web-frontend/docker/Dockerfile.dev
       args:
         # We allow configuring the UID/GID here so you can run as the dev's actual user
         # reducing the chance the containers screw up the bind mounted folders.
@@ -39,6 +41,8 @@ services:
     image: web-frontend_dev:latest
     volumes:
       - ./web-frontend:/web-frontend
+      - ./premium/web-frontend/:/web-frontend/plugins/premium
+
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
     tty: true

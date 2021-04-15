@@ -36,7 +36,8 @@ services:
   backend:
     container_name: backend
     build:
-      context: ./backend/
+      dockerfile: ./backend/Dockerfile
+      context: .
     image: baserow_backend:latest
     environment:
       - MIGRATE_ON_STARTUP=${MIGRATE_ON_STARTUP:-true}
@@ -44,6 +45,7 @@ services:
       - DATABASE_USER=${DATABASE_USER:-baserow}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD:-baserow}
       - DATABASE_NAME=${DATABASE_NAME:-baserow}
+      - ADDITIONAL_APPS
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -64,8 +66,11 @@ services:
   web-frontend:
     container_name: web-frontend
     build:
-      context: ./web-frontend/
+      context: .
+      dockerfile: ./web-frontend/Dockerfile
     image: baserow_web-frontend:latest
+    environment:
+      - ADDITIONAL_MODULES
     ports:
       - "${WEB_FRONTEND_PORT:-3000}:3000"
     depends_on:

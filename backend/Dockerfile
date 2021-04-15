@@ -31,7 +31,8 @@ ADD --chown=$UID:$GID requirements/base.txt /requirements/
 # not work as we do not know where $HOME when using an ENV command.
 RUN pip3 install --no-warn-script-location -r /requirements/base.txt
 
-ADD --chown=$UID:$GID . /backend
+ADD --chown=$UID:$GID ./backend /backend
+ADD --chown=$UID:$GID ./premium/backend /backend/plugins/premium
 
 WORKDIR /backend
 
