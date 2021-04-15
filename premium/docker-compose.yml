@@ -56,7 +56,7 @@ services:
   web-frontend-base-build:
     build:
       context: ../web-frontend
-      dockerfile: ../web-frontend/Dockerfile.dev
+      dockerfile: Dockerfile.dev
     image: baserow_web-frontend:latest
     volumes:
       - ../web-frontend:/web-frontend
@@ -65,7 +65,7 @@ services:
   backend-base-build:
     build:
       context: ../backend
-      dockerfile: ../backend/Dockerfile.dev
+      dockerfile: Dockerfile.dev
     image: baserow_backend:latest
     volumes:
       - ./backend:/backend
