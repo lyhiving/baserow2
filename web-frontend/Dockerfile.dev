@@ -1,6 +1,7 @@
 FROM node:10
 
-ADD . /web-frontend
+ADD ./web-frontend /web-frontend
+ADD ./premium/web-frontend /premium/web-frontend
 
 WORKDIR /web-frontend
 
