@@ -1,5 +1,9 @@
 # Changelog
 
+# Unreleased
+
+* Reworked Baserow's Docker setup to be easier to use, faster to build and more secure.
+
 ## Released (2021-04-08)
 
 * Added support for importing tables from XML files.

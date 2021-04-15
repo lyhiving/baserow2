@@ -1,5 +1,5 @@
 install-dependencies:
-	apt-get update && apt-get install -y libpq-dev postgresql postgresql-contrib
+	apt-get update && apt-get install -y libpq-dev
 	pip install -r requirements/base.txt
 
 install-dev-dependencies:

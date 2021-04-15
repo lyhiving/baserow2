@@ -1,4 +1,8 @@
 #!/bin/bash
+# Bash strict mode: http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -euo pipefail
+IFS=$'\n\t'
+
 
 tabname() {
   printf "\e]1;$1\a"
@@ -6,8 +10,7 @@ tabname() {
 
 print_manual_instructions(){
   COMMAND=$1
-  CONTAINER_COMMAND=$2
-  echo -e "\nOpen a new tab/terminal and run:"
+  echo -e "\nTo inspect the now running dev environment open a new tab/terminal and run:"
   echo "    $COMMAND"
 }
 
@@ -15,7 +18,6 @@ PRINT_WARNING=true
 new_tab() {
   TAB_NAME=$1
   COMMAND=$2
-  CONTAINER_COMMAND=$3
 
   if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     if [ -x "$(command -v gnome-terminal)" ]; then
@@ -27,7 +29,7 @@ new_tab() {
           multiple tabs/terminals for linux by this script, add support for your setup!"
           PRINT_WARNING=false
       fi
-      print_manual_instructions "$COMMAND" "$CONTAINER_COMMAND"
+      print_manual_instructions "$COMMAND"
     fi
   elif [[ "$OSTYPE" == "darwin"* ]]; then
     osascript \
@@ -38,10 +40,10 @@ new_tab() {
   else
     if $PRINT_WARNING; then
         echo -e "\nWARNING: The OS '$OSTYPE' is not supported yet for creating tabs to setup
-        baserow's dev environemnt, please add support!"
+        baserow's dev environment, please add support!"
         PRINT_WARNING=false
     fi
-    print_manual_instructions "$COMMAND" "$CONTAINER_COMMAND"
+    print_manual_instructions "$COMMAND"
   fi
 }
 
@@ -50,21 +52,29 @@ show_help() {
 ./dev.sh starts the baserow development environment and by default attempts to
 open terminal tabs which are attached to the running dev containers.
 
-Usage: ./dev.sh [optional start dev commands] [docker-compose commands]
+Usage: ./dev.sh [optional start dev commands] [optional docker-compose up commands]
 
 The ./dev.sh Commands are:
-dont_attach   : Don't attach to the running dev containers after starting them
-restart       : Stop the dev environment first before relaunching
-help          : Show this message
+restart       : Stop the dev environment first before relaunching.
+down          : Down the dev environment and don't up after.
+kill          : Kill the dev environment and don't up after.
+build_only    : Build the dev environment and don't up after.
+dont_migrate  : Disable automatic database migration on baserow startup.
+dont_sync     : Disable automatic template sync on baserow startup.
+dont_attach   : Don't attach to the running dev containers after starting them.
+help          : Show this message.
 """
 }
 
+dont_attach=false
+down=false
+kill=false
 build=false
 up=true
 migrate=true
 sync_templates=true
 while true; do
-case "$1" in
+case "${1:-noneleft}" in
     dont_migrate)
         echo "./dev.sh: Automatic migration on startup has been disabled."
         shift
@@ -86,7 +96,7 @@ case "$1" in
         down=true
         up=true
     ;;
-    stop)
+    down)
         echo "./dev.sh: Stopping Dev Environment"
         shift
         up=false
@@ -164,5 +174,5 @@ if [ "$dont_attach" != true ] && [ "$up" = true ] ; then
           "docker logs web-frontend && docker attach web-frontend"
 
   new_tab "Web frontend lint" \
-          "docker run -it web-frontend_dev lint-fix"
+          "docker exec -it web-frontend /bin/bash /web-frontend/docker/docker-entrypoint.sh lint-fix"
 fi

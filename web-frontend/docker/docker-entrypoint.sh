@@ -1,8 +1,7 @@
 #!/bin/bash
-
-# Exit immediately if a command exits with a non-zero status.
-# http://stackoverflow.com/questions/19622198/what-does-set-e-mean-in-a-bash-script
-set -e
+# Bash strict mode: http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -euo pipefail
+IFS=$'\n\t'
 
 
 show_help() {

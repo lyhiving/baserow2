@@ -21,7 +21,9 @@ RUN apt-get update && \
 
 # The node image already creates a non-root user to run as, update its ids so they
 # match the provided UID and GID we wish to build and run this image with.
-RUN groupmod -g ${GID} node && usermod -u ${UID} -g ${GID} node
+# If GID or UID already exist that's OK no need to stop the build.
+RUN groupmod -g ${GID} node || exit 0
+RUN usermod -u ${UID} -g ${GID} node || exit 0
 
 USER $UID:$GID
 
@@ -42,6 +44,6 @@ RUN dos2unix /web-frontend/docker/docker-entrypoint.sh && \
 
 # tini installed above protects us from zombie processes and ensures the default signal
 # handlers work, see https://github.com/krallin/tini.
-ENTRYPOINT ["/usr/bin/tini", "--", "/web-frontend/docker/docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/web-frontend/docker/docker-entrypoint.sh"]
 CMD ["local"]
 

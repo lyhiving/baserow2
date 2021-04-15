@@ -21,7 +21,8 @@ RUN apt-get update && \
 
 # The node image already creates a non-root user to run as, update its ids so they
 # match the provided UID and GID we wish to build and run this image with.
-RUN groupmod -g ${GID} node && usermod -u ${UID} -g ${GID} node
+RUN groupmod -g ${GID} node || exit 0
+RUN usermod -u ${UID} -g ${GID} node || exit 0
 
 USER $UID:$GID
 
@@ -30,7 +31,6 @@ ADD --chown=$UID:$GID package.json yarn.lock /web-frontend/
 
 WORKDIR /web-frontend
 
-# Install dev dependencies
 RUN yarn install
 
 ADD --chown=$UID:$GID . /web-frontend/

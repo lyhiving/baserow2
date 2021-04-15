@@ -1,8 +1,7 @@
 #!/bin/bash
-
-# Exit immediately if a command exits with a non-zero status.
-# http://stackoverflow.com/questions/19622198/what-does-set-e-mean-in-a-bash-script
-set -e
+# Bash strict mode: http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -euo pipefail
+IFS=$'\n\t'
 
 
 
@@ -13,6 +12,8 @@ DATABASE_USER="${DATABASE_USER:-postgres}"
 DATABASE_HOST="${DATABASE_HOST:-db}"
 DATABASE_PORT="${DATABASE_PORT:-5432}"
 
+# Ensure the installed python dependencies are on the path and available.
+export PATH="$PATH:$HOME/.local/bin"
 
 postgres_ready() {
 python << END
@@ -24,7 +25,7 @@ try:
         user="${DATABASE_USER}",
         password="${DATABASE_PASSWORD}",
         host="${DATABASE_HOST}",
-        port="${POSTGRES_PORT}",
+        port="${DATABASE_PORT}",
     )
 except psycopg2.OperationalError:
     sys.exit(-1)
@@ -33,9 +34,6 @@ END
 }
 
 wait_for_postgres() {
-[ -z "$DATABASE_NAME" ] && echo "ERROR: Need to set DATABASE_NAME" && exit 1;
-[ -z "$DATABASE_PASSWORD" ] && echo "ERROR: Need to set DATABASE_PASSWORD" && exit 1;
-
 until postgres_ready; do
   >&2 echo 'Waiting for PostgreSQL to become available...'
   sleep 1
