@@ -201,5 +201,5 @@ if [ "$dont_attach" != true ] && [ "$up" = true ] ; then
           "docker logs web-frontend && docker attach web-frontend"
 
   new_tab "Web frontend lint" \
-          "docker exec -it web-frontend /bin/bash /web-frontend/docker/docker-entrypoint.sh lint-fix"
+          "docker exec -it web-frontend /bin/bash /baserow/web-frontend/docker/docker-entrypoint.sh lint-fix"
 fi
