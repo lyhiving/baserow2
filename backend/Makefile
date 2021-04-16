@@ -8,6 +8,8 @@ install-dev-dependencies:
 lint:
 	flake8 src tests plugins && black . --check || exit;
 
+lint-python: lint
+
 format:
 	black . || exit;
 

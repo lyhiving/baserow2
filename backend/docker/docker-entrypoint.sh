@@ -3,8 +3,6 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-
-
 # Used by docker-entrypoint.sh to start the dev server
 # If not configured you'll receive this: CommandError: "0.0.0.0:" is not a valid port number or address:port pair.
 PORT="${PORT:-8000}"
@@ -63,12 +61,12 @@ help      : Show this message
 
 run_setup_commands_if_configured(){
 if [ "$MIGRATE_ON_STARTUP" = "true" ] ; then
-  echo "python src/baserow/manage.py migrate"
-  python src/baserow/manage.py migrate
+  echo "python /baserow/backend/src/baserow/manage.py migrate"
+  python /baserow/backend/src/baserow/manage.py migrate
 fi
 if [ "$SYNC_TEMPLATES_ON_STARTUP" = "true" ] ; then
-  echo "python src/baserow/manage.py sync_templates"
-  python src/baserow/manage.py sync_templates
+  echo "python /baserow/backend/src/baserow/manage.py sync_templates"
+  python /baserow/backend/src/baserow/manage.py sync_templates
 fi
 }
 
@@ -78,7 +76,7 @@ case "$1" in
         run_setup_commands_if_configured
         echo "Running Development Server on 0.0.0.0:${PORT}"
         echo "Press CTRL-p CTRL-q to close this session without stopping the container."
-        CMD="python src/baserow/manage.py runserver 0.0.0.0:${PORT}"
+        CMD="python /baserow/backend/src/baserow/manage.py runserver 0.0.0.0:${PORT}"
         echo "$CMD"
         # The below command lets devs attach to this container, press ctrl-c and only
         # the server will stop. Additionally they will be able to use bash history to
@@ -94,22 +92,22 @@ case "$1" in
         exec /bin/bash "${@:2}"
     ;;
     manage)
-        exec python src/baserow/manage.py "${@:2}"
+        exec python /baserow/backend/src/baserow/manage.py "${@:2}"
     ;;
     python)
         exec python "${@:2}"
     ;;
     shell)
-        exec python src/baserow/manage.py shell
+        exec python /baserow/backend/src/baserow/manage.py shell
     ;;
     lint)
-        exec make lint
+        exec make lint-python
     ;;
     celery)
         exec celery -A baserow worker -l INFO
     ;;
     celery-dev)
-        exec watchmedo auto-restart --directory=./ --pattern=*.py --recursive -- celery -A baserow worker -l INFO
+        exec watchmedo auto-restart --directory=/baserow/backend --pattern=*.py --recursive -- celery -A baserow worker -l INFO
     ;;
     *)
         show_help

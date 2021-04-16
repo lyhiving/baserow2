@@ -28,23 +28,23 @@ RUN usermod -u ${UID} -g ${GID} node || exit 0
 USER $UID:$GID
 
 # Create and install the dependencies in separate ADD commands
-ADD --chown=$UID:$GID ./web-frontend/package.json ./web-frontend/yarn.lock /web-frontend/
+ADD --chown=$UID:$GID ./web-frontend/package.json ./web-frontend/yarn.lock /baserow/web-frontend/
 
-WORKDIR /web-frontend
+WORKDIR /baserow/web-frontend
 
 # We still need dev-dependencies as we will be running a nuxt build below
 RUN yarn install
 
-ADD --chown=$UID:$GID ./web-frontend /web-frontend/
-ADD --chown=$UID:$GID ./premium/web-frontend /web-frontend/plugins/premium
+ADD --chown=$UID:$GID ./web-frontend /baserow/web-frontend/
+ADD --chown=$UID:$GID ./premium/web-frontend /baserow/web-frontend/plugins/premium
 
 RUN yarn run build-local
 
-RUN dos2unix /web-frontend/docker/docker-entrypoint.sh && \
-    chmod a+x /web-frontend/docker/docker-entrypoint.sh
+RUN dos2unix /baserow/web-frontend/docker/docker-entrypoint.sh && \
+    chmod a+x /baserow/web-frontend/docker/docker-entrypoint.sh
 
 # tini installed above protects us from zombie processes and ensures the default signal
 # handlers work, see https://github.com/krallin/tini.
-ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/web-frontend/docker/docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/baserow/web-frontend/docker/docker-entrypoint.sh"]
 CMD ["local"]
 

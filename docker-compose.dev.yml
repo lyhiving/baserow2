@@ -13,8 +13,8 @@ services:
         GID: "${CURRENT_GID:-}"
     image: baserow_backend_dev:latest
     volumes:
-      - ./backend:/backend
-      - ./premium/backend/:/backend/plugins/premium
+      - ./backend:/baserow/backend
+      - ./premium/backend/:/baserow/backend/plugins/premium
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
     tty: true
@@ -23,8 +23,8 @@ services:
     image: baserow_backend_dev:latest
     command: celery-dev
     volumes:
-      - ./backend:/backend
-      - ./premium/backend/:/backend/plugins/premium
+      - ./backend:/baserow/backend
+      - ./premium/backend/:/baserow/backend/plugins/premium
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
     tty: true
@@ -38,10 +38,10 @@ services:
         # reducing the chance the containers screw up the bind mounted folders.
         UID: "${CURRENT_UID:-}"
         GID: "${CURRENT_GID:-}"
-    image: web-frontend_dev:latest
+    image: baserow_web-frontend_dev:latest
     volumes:
-      - ./web-frontend:/web-frontend
-      - ./premium/web-frontend/:/web-frontend/plugins/premium
+      - ./web-frontend:/baserow/web-frontend
+      - ./premium/web-frontend/:/baserow/web-frontend/plugins/premium
 
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true

@@ -32,7 +32,7 @@ case "$1" in
       exec yarn run start
     ;;
     lint)
-      exec make lint
+      exec make lint-javascript
     ;;
     lint-fix)
       CMD="yarn run eslint --fix"

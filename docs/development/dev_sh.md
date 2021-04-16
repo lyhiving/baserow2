@@ -1,9 +1,12 @@
-## Dev.sh
+## ./dev.sh
 
-By default `dev.sh` will start the dev env, attach into the running containers and make
-sure the containers are running as your actual user.
+`dev.sh` is a helper bash script which makes working with baserow's development
+environment a breeze.
 
-### Example Dev.sh usage:
+By default running `./dev.sh` will start the dev env, attach into the running containers
+and make sure the containers are running as your actual user.
+
+### Example ./dev.sh usage:
 
 ```bash
 $ ./dev.sh # same as the up command above but also ensures the containers run as the running user!
@@ -25,7 +28,7 @@ $ ./dev.sh kill # kills (the old stop_dev.sh)
 $ POSTGRES_PORT=5555 REDIS_PORT=6666 MJML_PORT=7777 ./dev.sh
 ```
 
-### Why Dev.sh ensures the containers run as you
+### Why ./dev.sh ensures the containers run as you
 
 In dev mode Baserow's source control directories are mounted from your local git repo
 into the containers. By mounting these the containers will see source code changes and

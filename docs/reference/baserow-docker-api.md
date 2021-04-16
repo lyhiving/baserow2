@@ -1,14 +1,15 @@
-# Baserow and Docker
+# Baserow's Docker API
 
 Baserow uses docker and docker-compose when running the local or development
 environments. Below you will find details on how this is structured, how to configure
 baserow running this way and usage references.
 
-# Baserow's Docker Files
+## Baserow's Docker Files
 
 Below are the files used by our docker setup and what they are responsible for:
 
 The Local Env:
+
 - `docker-compose.yml`: A compose file which starts Baserow in local mode with no
   development features enabled.
 - `./backend/Dockerfile`: The backend's Dockerfile for local mode. See below for
@@ -17,21 +18,23 @@ The Local Env:
   for supported command line arguments.
 
 The Dev Env:
+
 - `docker-compose.dev.yml`: A compose file which overrides parts of `docker-compose.yml`
   to enable development features, do not use this in production.
 - `./backend/docker/Dockerfile.dev`: The backends's Dockerfile for dev mode.
 - `./web-frontend/docker/Dockerfile.dev`: The web-frontend's Dockerfile for dev mode.
 
 Both Envs:
+
 - `./backend/docker/docker-entrypoint.sh`: The entrypoint script used for both of the
   backend images.
 - `./web-frontend/docker/docker-entrypoint.sh`: The entrypoint script used for both of
   the web-frontend images.
 
-# Baserow Backend Image CLI Reference
+## Backend Image CLI
 
-The backend image provides various commands used to change what process is started
-inside the container.
+The `baserow_backend` and `baserow_backend_dev` images provide various commands used to
+change what process is started inside the container.
 
 ```bash
 Usage: docker run <imagename> COMMAND
@@ -57,10 +60,10 @@ $ docker-compose run backend COMMAND
 $ ./dev.sh run backend COMMAND
 ```
 
-# Baserow Web Frontend Image CLI Reference
+## Web Frontend CLI
 
-The web-frontend image provides various commands used to change what process is started
-inside the container.
+The `baserow_web-frontend` and `baserow_web-frontend_dev` images provide various commands
+used to change what process is started inside the container.
 
 ```bash
 Usage: docker run <imagename> COMMAND
@@ -82,7 +85,7 @@ $ docker-compose run web-frontend COMMAND
 $ ./dev.sh run web-frontend COMMAND
 ```
 
-# Environment Variables
+## Environment Variables
 
 See [the introduction](../getting-started/introduction.md) for the environment variables
 supported specifically by the backend and web-frontend processes. Below are the
@@ -96,7 +99,7 @@ $ # or using dev.sh
 $ POSTGRES_PORT=5555 MIGRATE_ON_STARTUP=false ./dev.sh
 ```
 
-## Variables Available In Local and Dev
+### Local and Dev Variables
 
 Port configuration (these only work when used with the docker-compose files):
 
@@ -119,7 +122,7 @@ Backend configuration:
   it will run the baserow management command `sync_templates` which loads any templates
   found in ./backend/templates into Baserow.
 
-### Variables Only Available in Dev
+### Dev Only Variables 
 
 - `UID` (default `1000` or your user id when using `./dev.sh`) : Sets which user id will
   be used to build Baserow's images with and the user id which will be used to run the

@@ -1,4 +1,4 @@
-# Development environment
+# Running the dev environment
 
 If you want to contribute to Baserow you need to setup the development environment on
 your local computer. The best way to do this is via `docker-compose` so that you can
@@ -43,7 +43,7 @@ git version 2.24.3 (Apple Git-128)
 If all commands return something similar as described in the example, then you are ready
 to proceed!
 
-## Starting development environment
+## Starting the dev environment
 
 > If you run into any issues starting your development environment feel free to contact
 > us via the form on https://baserow.io/contact.
@@ -100,7 +100,7 @@ of Baserow at http://localhost:8000/api/redoc/ . To check that it is working cor
 when you visit http://localhost:8000/api/groups/ in a browser you should see the error
 "Authentication credentials were not provided." as no JWT was provided.
 
-## Attaching to the the Dev Environment
+## Attaching to the dev environment
 
 The dev environment consists of a number of docker containers, see:
 
@@ -152,12 +152,12 @@ For further reading on how to work with docker containers and django check out:
 - [docker's cli reference](https://docs.docker.com/engine/reference/run/)
 - [docker composes reference](https://docs.docker.com/compose/)
 
-## Baserow Further Reading
+## Baserow further reading
 
-- See [contributing](../../CONTRIBUTING.md) for info on how to get started contributing
+- See [contributing](../development/CONTRIBUTING.md) for info on how to get started contributing
   to baserow.
 - See [introduction](../getting-started/introduction.md) for more details on Baserow's
   architecture.
-- See [docker usage](../reference/baserow-docker-api.md) for more detail on how
+- See [baserow docker api](../reference/baserow-docker-api.md) for more detail on how
   Baserow's docker setup can be used and configured.
 - See [dev.sh](../development/dev_sh.md) for further detail on what dev.sh does and why

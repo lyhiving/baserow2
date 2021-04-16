@@ -25,13 +25,13 @@ New to Baserow? This is the place to start.
 
 Need some help with setting things up?
 
-* [Running Locally](guides/running-baserow-locally.md): Run baserow on your computer
-  using `docker-compose up`.
-* [Running the Dev Env](guides/running-the-dev-environment.md): Run baserow for
-  development on your computer using `docker-compose up`.
+* [Running Locally](guides/running-baserow-locally.md): A step-by-step guide to run
+  Baserow on your computer.
+* [Running the Dev Environment](guides/running-the-dev-environment.md): A step-by-step guide to
+  run Baserow for development.
 * [Install on Ubuntu](./guides/installation/install-on-ubuntu.md): A step-by-step guide
-  on how to install Baserow on an Ubuntu server.
-* [Install on Cloudron](guides/installation/install-on-cloudron.md): Instructions on how
+  to install Baserow on an Ubuntu server.
+* [Install on Cloudron](guides/installation/install-on-cloudron.md): Instructions
   to manually install Baserow on Cloudron.
 
 ## Development
@@ -40,6 +40,7 @@ Everything related to contributing and developing for Baserow.
 
 * [Development environment](./development/development-environment.md): More detailed
   information on baserow's local development environment.
+* [Contributing](./development/CONTRIBUTING.md): How to contribute to Baserow.
 * [Directory structure](./development/directory-structure.md): The structure of all the
   directories in the Baserow repository explained.
 * [Tools](./development/tools.md): The tools (flake8, pytest, eslint, etc) and how to
@@ -51,12 +52,12 @@ Everything related to contributing and developing for Baserow.
 * [dev.sh](./development/dev_sh.md): Further details on how to use Baserow's `./dev.sh`
   helper script.
 
-## FAQs and How To Guides
+## FAQs 
 
 * [Baserow Docker How To](./guides/baserow-docker-how-to.md): Common operations and
   solutions for working with baserow's docker environments.
 
-## Reference Documents
+## Reference 
 
 * [Baserow Docker API](./reference/baserow-docker-api.md): An API reference with all
   supported environment variables, command line arguments and usage patterns for

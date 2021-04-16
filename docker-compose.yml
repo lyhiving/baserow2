@@ -50,6 +50,7 @@ services:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       - db
+      - redis
       - mjml
     networks:
       local:

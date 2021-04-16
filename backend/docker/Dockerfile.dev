@@ -26,25 +26,27 @@ RUN apt-get update && \
 
 USER $UID:$GID
 
-ADD --chown=$UID:$GID ./backend/requirements /requirements
+ADD --chown=$UID:$GID ./backend/requirements /baserow/requirements
 # Disable the path warn as we set the correct path in the entrypoint when it is easy
 # to know the users $HOME/.local/bin location. Changing path in the docker image does
 # not work as we do not know where $HOME when using an ENV command.
-RUN pip3 install --no-warn-script-location -r /requirements/base.txt -r /requirements/dev.txt
+RUN pip3 install --no-warn-script-location -r /baserow/requirements/base.txt -r /baserow/requirements/dev.txt
 
-ADD --chown=$UID:$GID ./backend /backend
-ADD --chown=$UID:$GID ./premium/backend /backend/plugins/premium
+ADD --chown=$UID:$GID ./docs /baserow/docs
+ADD --chown=$UID:$GID ./CONTRIBUTING.md /baserow/docs/development/CONTRIBUTING.md
+ADD --chown=$UID:$GID ./backend /baserow/backend
+ADD --chown=$UID:$GID ./premium/backend /baserow/backend/plugins/premium
 
-WORKDIR /backend
+WORKDIR /baserow/backend
 
 # Ensure that Python outputs everything that's printed inside
 # the application rather than buffering it.
 ENV PYTHONUNBUFFERED 1
-ENV PYTHONPATH $PYTHONPATH:/backend/src:/backend/plugins/premium/src
+ENV PYTHONPATH $PYTHONPATH:/baserow/backend/src:/baserow/backend/plugins/premium/src
 ENV DJANGO_SETTINGS_MODULE='baserow.config.settings.base'
 
-RUN dos2unix /backend/docker/docker-entrypoint.sh && \
-    chmod a+x /backend/docker/docker-entrypoint.sh
+RUN dos2unix /baserow/backend/docker/docker-entrypoint.sh && \
+    chmod a+x /baserow/backend/docker/docker-entrypoint.sh
 
-ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/backend/docker/docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/bin/bash", "/baserow/backend/docker/docker-entrypoint.sh"]
 CMD ["dev"]
