@@ -3,8 +3,21 @@
 `dev.sh` is a helper bash script which makes working with baserow's development
 environment a breeze.
 
-By default running `./dev.sh` will start the dev env, attach into the running containers
-and make sure the containers are running as your actual user.
+By default, running `./dev.sh` will start the dev env, attach into the running
+containers and make sure the containers are running as your actual user.
+
+Additionally, Baserow's dev containers are especially configured to make the attaching
+experience smooth and useful. In the per container tabs opened by using `./dev.sh`:
+
+* The output of docker logs will be shown at the top letting you see everything that has
+  happened in the container so far.
+* You can press ctrl-c to stop the process running inside the container leaving you in a
+  bash session inside the container, but not stop the container itself. This is useful
+  as you often want to stop the dev server, run a management command and quickly restart
+  it.
+* The bash session you are left in after pressing ctrl-c will have a history populated,
+  so you can press up to get the command that the container was running before you
+  pressed ctrl-c!
 
 ### Example ./dev.sh usage:
 

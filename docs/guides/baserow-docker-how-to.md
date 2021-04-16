@@ -3,7 +3,7 @@
 Find below a list of FAQs and common operations when working with Baserow's docker
 environment.
 
-See [baserow's baserow docker api](../getting-started/docker-usage.md) for the full details on
+See [baserow's docker api](../reference/baserow-docker-api.md) for the full details on
 what commands and environment variables baserow's docker-compose and docker image's
 support.
 

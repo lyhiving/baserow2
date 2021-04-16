@@ -8,7 +8,7 @@ baserow running this way and usage references.
 
 Below are the files used by our docker setup and what they are responsible for:
 
-The Local Env:
+### The Local Env
 
 - `docker-compose.yml`: A compose file which starts Baserow in local mode with no
   development features enabled.
@@ -17,14 +17,14 @@ The Local Env:
 - `./web-frontend/Dockerfile`: The web-frontend's Dockerfile for local mode. See below
   for supported command line arguments.
 
-The Dev Env:
+### The Dev Env
 
 - `docker-compose.dev.yml`: A compose file which overrides parts of `docker-compose.yml`
   to enable development features, do not use this in production.
 - `./backend/docker/Dockerfile.dev`: The backends's Dockerfile for dev mode.
 - `./web-frontend/docker/Dockerfile.dev`: The web-frontend's Dockerfile for dev mode.
 
-Both Envs:
+### For Both Envs
 
 - `./backend/docker/docker-entrypoint.sh`: The entrypoint script used for both of the
   backend images.
@@ -120,7 +120,7 @@ Backend configuration:
   perform a django migration before launching the backend server.
 - `SYNC_TEMPLATES_ON_STARTUP` (default `true`) : When `true` on backend server startup
   it will run the baserow management command `sync_templates` which loads any templates
-  found in ./backend/templates into Baserow.
+  found in `./backend/templates` into Baserow.
 
 ### Dev Only Variables 
 
