@@ -45,7 +45,9 @@ environment via `docker-compose`. Just clone the repository, run the following c
 and visit http://localhost:3000 in your browser.
 
 ```
-$ docker-compose up
+$ git clone https://gitlab.com/bramw/baserow.git
+$ cd baserow
+$ docker-compose up 
 ```
 
 More detailed instructions and more information about running baserow locally check 
@@ -58,36 +60,12 @@ If you want to contribute to Baserow you need to setup the development environme
 Execute the following commands to start a development version of the baserow environment
 which has debug and hot re-loading features enabled.
 
-> Note that the container might have a different name like `backend_1`.
-
 ```
-$ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-```
-
-Or use the helper script included in the root of this repository `./dev.sh`. 
-start_dev will do additional things like opening terminal tabs attached to baserows dev
-containers allowing you to easily stop services, run migrations etc.
-
-Visit http://localhost:8000/api/groups/ in your browser and you should see a JSON 
-response containing "Authentication credentials were not provided.". This means that it
-is working!
-
-In order to process asynchronous tasks you also need to start a Celery worker this is
-mainly used for the real time collaboration. Open a new tab or window and execute the
-following commands. 
-
-```
-$ docker exec -it backend bash
-$ watchmedo auto-restart --directory=./ --pattern=*.py --recursive -- celery -A baserow worker -l INFO
-```
-
-In order to start the web-frontend environment you may execute the following commands.
-
-```
-$ docker network create baserow_default
-$ docker exec -it web-frontend bash
-$ yarn install
-$ yarn dev
+$ git clone https://gitlab.com/bramw/baserow.git
+$ cd baserow
+$ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+$ # OR use our ./dev.sh script which also ensures your dev containers run as your user
+$ ./dev.sh --build
 ```
 
 The Baserow development environment is now running. Visit http://localhost:3000 in your
