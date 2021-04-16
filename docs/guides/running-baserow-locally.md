@@ -3,15 +3,25 @@
 If you just want to try out Baserow on your local computer, it is best to use 
 `docker-compose`.
 
+### Quickstart 
+If you are familiar with git and docker-compose run these commands to launch baserow 
+locally, otherwise please start from the Installing Requirements section below.
+```bash
+$ git clone https://gitlab.com/bramw/baserow.git
+$ cd baserow
+$ docker-compose up
+```
+
 ## Installing requirements
 
 If you haven't already installed docker and docker-compose on your computer you can do
-so by following the instructions on https://docs.docker.com/desktop/.
+so by following the instructions on https://docs.docker.com/desktop/ and 
+https://docs.docker.com/compose/install/.
 
 You will also need git installed which you can do by following the instructions on 
 https://www.linode.com/docs/development/version-control/how-to-install-git-on-linux-mac-and-windows/.
 
-Once you have finished installing all the required software you should be able to run the
+After installing all the required software you should be able to run the
 following commands in your terminal.
 
 ```
@@ -50,7 +60,7 @@ $ cd baserow
 
 Now that we have our copy of the repo and have changed directories to the newly 
 created `baserow`, we can bring up the containers. You just have to execute the 
-docker-compose up command. It might take a while for the command to finish, this is 
+`docker-compose up` command. It might take a while for the command to finish, this is 
 because the image has to be built from scratch.
 
 ```
@@ -67,3 +77,9 @@ Starting web-frontend   ... done
 Once everything has finished, you can visit http://localhost:3000 in your browser
 and you should be redirected to the login screen. From here you can create a new account
 and start using the software.
+
+## Further Reading
+- See [docker how to guide](baserow-docker-how-to.md) for a larger collection of
+  useful operations and commands.
+- See [docker usage](../reference/baserow-docker-api.md) for more detail on how
+  Baserow's docker setup can be used and configured.

@@ -70,6 +70,7 @@ dont_attach=false
 down=false
 kill=false
 build=false
+run=false
 up=true
 migrate=true
 sync_templates=true
@@ -108,6 +109,13 @@ case "${1:-noneleft}" in
         up=false
         kill=true
     ;;
+    run)
+        echo "./dev.sh: docker-compose running the provided commands"
+        shift
+        up=false
+        dont_attach=true
+        run=true
+    ;;
     build_only)
         echo "./dev.sh: Only Building Dev Environment (use 'up --build' instead to
         rebuild and up)"
@@ -131,6 +139,7 @@ export CURRENT_UID
 export CURRENT_GID
 
 
+if [[ -z "${MIGRATE_ON_STARTUP:-}" ]]; then
 if [ "$migrate" = true ] ; then
 export MIGRATE_ON_STARTUP="true"
 else
@@ -138,13 +147,20 @@ else
 # this off as just not setting it will get the default "true" value.
 export MIGRATE_ON_STARTUP="false"
 fi
+else
+  echo "./dev.sh Using the already set value for the env variable MIGRATE_ON_STARTUP = $MIGRATE_ON_STARTUP"
+fi
 
+if [[ -z "${SYNC_TEMPLATES_ON_STARTUP:-}" ]]; then
 if [ "$sync_templates" = true ] ; then
 export SYNC_TEMPLATES_ON_STARTUP="true"
 else
 # Because of the defaults set in the docker-compose file we need to explicitly turn
 # this off as just not setting it will get the default "true" value.
 export SYNC_TEMPLATES_ON_STARTUP="false"
+fi
+else
+  echo "./dev.sh Using the already set value for the env variable SYNC_TEMPLATES_ON_STARTUP = $SYNC_TEMPLATES_ON_STARTUP"
 fi
 
 if [ "$down" = true ] ; then
@@ -161,6 +177,10 @@ fi
 
 if [ "$up" = true ] ; then
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d "$@"
+fi
+
+if [ "$run" = true ] ; then
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml run "$@"
 fi
 
 if [ "$dont_attach" != true ] && [ "$up" = true ] ; then

@@ -5,6 +5,7 @@ IFS=$'\n\t'
 
 
 show_help() {
+# If you change this please update ./docs/reference/baserow-docker-api.md
     echo """
 Usage: docker run <imagename> COMMAND
 Commands
