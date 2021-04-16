@@ -9,8 +9,8 @@ services:
       args:
         # We allow configuring the UID/GID here so you can run as the dev's actual user
         # reducing the chance the containers screw up the bind mounted folders.
-        UID: "${CURRENT_UID:-}"
-        GID: "${CURRENT_GID:-}"
+        UID: "${UID:-}"
+        GID: "${GID:-}"
     image: baserow_backend_dev:latest
     volumes:
       - ./backend:/baserow/backend
@@ -36,8 +36,8 @@ services:
       args:
         # We allow configuring the UID/GID here so you can run as the dev's actual user
         # reducing the chance the containers screw up the bind mounted folders.
-        UID: "${CURRENT_UID:-}"
-        GID: "${CURRENT_GID:-}"
+        UID: "${UID:-}"
+        GID: "${GID:-}"
     image: baserow_web-frontend_dev:latest
     volumes:
       - ./web-frontend:/baserow/web-frontend

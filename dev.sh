@@ -133,10 +133,17 @@ case "${1:-noneleft}" in
 esac
 done
 
-CURRENT_UID=$(id -u)
-CURRENT_GID=$(id -g)
-export CURRENT_UID
-export CURRENT_GID
+# Set various env variables to sensible defaults if they have not already been set by
+# the user.
+if [[ -z "${UID:-}" ]]; then
+UID=$(id -u)
+export UID
+fi
+
+if [[ -z "${GID:-}" ]]; then
+export GID
+GID=$(id -g)
+fi
 
 
 if [[ -z "${MIGRATE_ON_STARTUP:-}" ]]; then
