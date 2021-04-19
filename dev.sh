@@ -133,6 +133,20 @@ case "${1:-noneleft}" in
 esac
 done
 
+OWNERS=$(find . ! -user "$USER" -printf "%u %p\n")
+
+if [[ $OWNERS ]]; then
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+NC=$(tput sgr0) # No Color
+echo "${RED}WARNING: Files not owned by your current user: $USER found in this repo.
+They are probably build files creating by the old Baserow Docker images owned by root.
+This will cause file permission errors when Baserow starts up.${NC}"
+echo "Please run the following command to fix file permissions in this repository before using ./dev.sh:
+  ${GREEN}sudo chown $USER -R .${NC}"
+exit;
+fi
+
 # Set various env variables to sensible defaults if they have not already been set by
 # the user.
 if [[ -z "${UID:-}" ]]; then
