@@ -139,9 +139,14 @@ if [[ $OWNERS ]]; then
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 NC=$(tput sgr0) # No Color
+# shellcheck disable=SC2028
 echo "${RED}WARNING: Files not owned by your current user: $USER found in this repo.
-They are probably build files creating by the old Baserow Docker images owned by root.
-This will cause file permission errors when Baserow starts up.${NC}"
+This will cause file permission errors when Baserow starts up.${NC}
+
+They are probably build files created by the old Baserow Docker images owned by root.
+Run the following command to show which files are causing this:
+  find . ! -user $USER -printf \"%u %p\n\"
+"
 echo "Please run the following command to fix file permissions in this repository before using ./dev.sh:
   ${GREEN}sudo chown $USER -R .${NC}"
 exit;
