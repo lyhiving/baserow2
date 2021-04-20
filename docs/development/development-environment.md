@@ -13,8 +13,6 @@ found in the root of the Baserow repo.
   Baserow's docker setup can be used and configured.
 - See [dev.sh](../development/dev_sh.md) for further detail on the CLI tool for managing
   the dev environment.
-- See [contributing](../development/CONTRIBUTING.md) for info on how to get started
-  contributing to baserow.
 
 ## Fixing git blame
 

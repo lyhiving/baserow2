@@ -34,7 +34,6 @@ ADD --chown=$UID:$GID ./backend/requirements/base.txt /baserow/requirements/
 RUN pip3 install --no-warn-script-location -r /baserow/requirements/base.txt
 
 ADD --chown=$UID:$GID ./docs /baserow/docs
-ADD --chown=$UID:$GID ./CONTRIBUTING.md /baserow/docs/development/CONTRIBUTING.md
 ADD --chown=$UID:$GID ./backend /baserow/backend
 ADD --chown=$UID:$GID ./premium/backend /baserow/backend/plugins/premium
 

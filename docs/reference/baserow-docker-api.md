@@ -16,6 +16,7 @@ Below are the files used by our docker setup and what they are responsible for:
   supported command line arguments. Also used to run the celery worker.
 - `./web-frontend/Dockerfile`: The web-frontend's Dockerfile for local mode. See below
   for supported command line arguments.
+- `./media/Dockerfile`: A simple nginx image used to serve uploaded user files only.
 
 ### The Dev Env
 

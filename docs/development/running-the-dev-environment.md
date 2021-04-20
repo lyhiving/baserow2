@@ -154,8 +154,6 @@ For further reading on how to work with docker containers and django check out:
 
 ## Baserow further reading
 
-- See [contributing](../development/CONTRIBUTING.md) for info on how to get started contributing
-  to baserow.
 - See [introduction](../getting-started/introduction.md) for more details on Baserow's
   architecture.
 - See [baserow docker api](../reference/baserow-docker-api.md) for more detail on how

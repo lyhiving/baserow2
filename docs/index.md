@@ -36,11 +36,10 @@ Need some help with setting things up?
 
 Everything related to contributing and developing for Baserow.
 
-* [Running the Dev Environment](development/running-the-dev-environment.md): A 
-  step-by-step guide to run Baserow for development.
 * [Development environment](./development/development-environment.md): More detailed
   information on baserow's local development environment.
-* [Contributing](./development/CONTRIBUTING.md): How to contribute to Baserow.
+* [Running the Dev Environment](development/running-the-dev-environment.md): A
+  step-by-step guide to run Baserow for development.
 * [Directory structure](./development/directory-structure.md): The structure of all the
   directories in the Baserow repository explained.
 * [Tools](./development/tools.md): The tools (flake8, pytest, eslint, etc) and how to

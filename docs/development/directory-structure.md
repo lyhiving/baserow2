@@ -128,3 +128,10 @@ https://baserow.io/docs.
 
 Contains a cookiecutter boilerplate for a Baserow plugin. More information can be found
 on the [plugin boilerplate page](../plugins/boilerplate.md).
+
+## media
+
+Contains a nginx based docker image which is used in Baserow's docker setup to serve
+any uploaded user files. This is needed as Django will not serve media files when
+not in debug mode and instead requires you to run your own web server to serve these
+assets.
