@@ -123,7 +123,7 @@ bash history to get the original command to restart the containers main process.
 
 ## Other useful commands
 
-See the [docker how to guide](baserow-docker-how-to.md) for a larger collection of
+See the [docker how to guide](../guides/baserow-docker-how-to.md) for a larger collection of
 useful operations and commands, below is a quick example of some of the more common
 ones:
 
@@ -160,4 +160,4 @@ For further reading on how to work with docker containers and django check out:
   architecture.
 - See [baserow docker api](../reference/baserow-docker-api.md) for more detail on how
   Baserow's docker setup can be used and configured.
-- See [dev.sh](../development/dev_sh.md) for further detail on what dev.sh does and why
+- See [dev.sh](dev_sh.md) for further detail on what dev.sh does and why

@@ -43,6 +43,7 @@ environment variable:
 - For `mjml` set `MJML_PORT` which defaults to `28101`
 - For `backend` set `BACKEND_PORT` which defaults to `8000`
 - For `web-frontend` set `WEB_FRONTEND_PORT` which defaults to `3000`
+- For `media` set `MEDIA_PORT` which defaults to `4000`
 
 This is how to set these variables in bash:
 

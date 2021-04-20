@@ -113,6 +113,8 @@ Port configuration (these only work when used with the docker-compose files):
   your local network.
 - `WEB_FRONTEND_PORT` (default `3000`) : The port the `web-frontend` container will bind
   to on your local network.
+- `MEDIA_PORT` (default `4000`) : The port the `media` nginx container will bind to on 
+  your local network.
 
 Backend configuration:
 

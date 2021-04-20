@@ -1,9 +1,9 @@
 # Running Baserow locally 
 
 If you just want to try out Baserow on your local computer, it is best to use 
-`docker-compose`. The provided `docker-compose.yml` file will launch a close to 
-production version of Baserow and can be used to run Baserow locally or as a starting 
-point for building your own production Baserow setup.
+`docker-compose`. The provided `docker-compose.yml` file will launch a production 
+version of Baserow and can be used to run Baserow locally or as a starting point for 
+building your own production Baserow setup.
 
 
 ### Quickstart 
