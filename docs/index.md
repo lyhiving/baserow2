@@ -38,6 +38,8 @@ Need some help with setting things up?
 
 Everything related to contributing and developing for Baserow.
 
+* [Running the Dev Environment](guides/running-the-dev-environment.md): A step-by-step 
+  guide to run Baserow for development.
 * [Development environment](./development/development-environment.md): More detailed
   information on baserow's local development environment.
 * [Contributing](./development/CONTRIBUTING.md): How to contribute to Baserow.

@@ -8,6 +8,11 @@ tabname() {
   printf "\e]1;$1\a"
 }
 
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+NC=$(tput sgr0) # No Color
+
 print_manual_instructions(){
   COMMAND=$1
   echo -e "\nTo inspect the now running dev environment open a new tab/terminal and run:"
@@ -25,7 +30,7 @@ new_tab() {
       --tab --title="$TAB_NAME" --working-directory="$(pwd)" -- /bin/bash -c "$COMMAND"
     else
       if $PRINT_WARNING; then
-          echo -e "\nWARNING: gnome-terminal is the only currently supported way of opening
+          echo -e "\n${YELLOW}./dev.sh WARNING${NC}: gnome-terminal is the only currently supported way of opening
           multiple tabs/terminals for linux by this script, add support for your setup!"
           PRINT_WARNING=false
       fi
@@ -39,7 +44,7 @@ new_tab() {
         -e "end tell" > /dev/null
   else
     if $PRINT_WARNING; then
-        echo -e "\nWARNING: The OS '$OSTYPE' is not supported yet for creating tabs to setup
+        echo -e "\n${WARNING}./dev.sh WARNING${NC}: The OS '$OSTYPE' is not supported yet for creating tabs to setup
         baserow's dev environment, please add support!"
         PRINT_WARNING=false
     fi
@@ -55,14 +60,15 @@ open terminal tabs which are attached to the running dev containers.
 Usage: ./dev.sh [optional start dev commands] [optional docker-compose up commands]
 
 The ./dev.sh Commands are:
-restart       : Stop the dev environment first before relaunching.
-down          : Down the dev environment and don't up after.
-kill          : Kill the dev environment and don't up after.
-build_only    : Build the dev environment and don't up after.
-dont_migrate  : Disable automatic database migration on baserow startup.
-dont_sync     : Disable automatic template sync on baserow startup.
-dont_attach   : Don't attach to the running dev containers after starting them.
-help          : Show this message.
+restart         : Stop the dev environment first before relaunching.
+down            : Down the dev environment and don't up after.
+kill            : Kill the dev environment and don't up after.
+build_only      : Build the dev environment and don't up after.
+dont_migrate    : Disable automatic database migration on baserow startup.
+dont_sync       : Disable automatic template sync on baserow startup.
+dont_attach     : Don't attach to the running dev containers after starting them.
+ignore_ownership: Don't exit if there are files in the repo owned by a different user.
+help            : Show this message.
 """
 }
 
@@ -74,6 +80,7 @@ run=false
 up=true
 migrate=true
 sync_templates=true
+exit_if_other_owners_found=true
 while true; do
 case "${1:-noneleft}" in
     dont_migrate)
@@ -123,6 +130,11 @@ case "${1:-noneleft}" in
         build=true
         up=false
     ;;
+    ignore_ownership)
+        echo "./dev.sh: Continuing if files in repo are not owned by $USER."
+        shift
+        exit_if_other_owners_found=false
+    ;;
     help)
         show_help
         exit 0
@@ -133,23 +145,29 @@ case "${1:-noneleft}" in
 esac
 done
 
-OWNERS=$(find . ! -user "$USER" -printf "%u %p\n")
+OWNERS=$(find . ! -user "$USER")
 
 if [[ $OWNERS ]]; then
-RED=$(tput setaf 1)
-GREEN=$(tput setaf 2)
-NC=$(tput sgr0) # No Color
-# shellcheck disable=SC2028
-echo "${RED}WARNING: Files not owned by your current user: $USER found in this repo.
-This will cause file permission errors when Baserow starts up.${NC}
+if [[ "$exit_if_other_owners_found" = true ]]; then
+echo "${RED}./dev.sh ERROR${NC}: Files not owned by your current user: $USER found in this repo.
+This will cause file permission errors when Baserow starts up.
 
 They are probably build files created by the old Baserow Docker images owned by root.
 Run the following command to show which files are causing this:
-  find . ! -user $USER -printf \"%u %p\n\"
-"
-echo "Please run the following command to fix file permissions in this repository before using ./dev.sh:
-  ${GREEN}sudo chown $USER -R .${NC}"
+  find . ! -user $USER
+
+Please run the following command to fix file permissions in this repository before using ./dev.sh:
+  ${GREEN}sudo chown $USER -R .${NC}
+
+OR you can ignore this check by running with the ignore_ownership arg:
+  ${YELLOW}./dev.sh ignore_ownership ...${NC}"
 exit;
+else
+
+echo "${YELLOW}./dev.sh WARNING${NC}: Files not owned by your current user: $USER found in this repo.
+Continuing as 'ignore_ownership' argument provided."
+fi
+
 fi
 
 # Set various env variables to sensible defaults if they have not already been set by
@@ -188,6 +206,10 @@ fi
 else
   echo "./dev.sh Using the already set value for the env variable SYNC_TEMPLATES_ON_STARTUP = $SYNC_TEMPLATES_ON_STARTUP"
 fi
+
+echo "./dev.sh running docker-compose commands:
+------------------------------------------------
+"
 
 if [ "$down" = true ] ; then
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml down

@@ -100,6 +100,3 @@ venv/
 
 web-frontend/plugins/
 backend/plugins/
-# Sometimes this file can be mounted here by docker, we only want to keep the version
-# in the root of the repo.
-docs/development/CONTRIBUTING.md

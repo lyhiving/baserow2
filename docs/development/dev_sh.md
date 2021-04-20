@@ -18,8 +18,28 @@ experience smooth and useful. In the per container tabs opened by using `./dev.s
 * The bash session you are left in after pressing ctrl-c will have a history populated,
   so you can press up to get the command that the container was running before you
   pressed ctrl-c!
+  
+### Usage
 
-### Example ./dev.sh usage:
+```bash
+./dev.sh starts the baserow development environment and by default attempts to
+open terminal tabs which are attached to the running dev containers.
+
+Usage: ./dev.sh [optional start dev commands] [optional docker-compose up commands]
+
+The ./dev.sh Commands are:
+restart         : Stop the dev environment first before relaunching.
+down            : Down the dev environment and don't up after.
+kill            : Kill the dev environment and don't up after.
+build_only      : Build the dev environment and don't up after.
+dont_migrate    : Disable automatic database migration on baserow startup.
+dont_sync       : Disable automatic template sync on baserow startup.
+dont_attach     : Don't attach to the running dev containers after starting them.
+ignore_ownership: Don't exit if there are files in the repo owned by a different user.
+help            : Show this message.
+```
+
+### Examples of ./dev.sh usage:
 
 ```bash
 $ ./dev.sh # same as the up command above but also ensures the containers run as the running user!
@@ -35,7 +55,7 @@ $ ./dev.sh run backend manage migrate
 # Any commands found after the last `./dev.sh` command will be passed to the `docker-compose up` call made by dev.sh
 # This lets you say do --build on the end or any other docker-compose commands using dev.sh!
 $ ./dev.sh restart {EXTRA_COMMANDS_PASSED_TO_UP}  
-$ ./dev.sh stop # stops
+$ ./dev.sh down # downs the env
 $ ./dev.sh kill # kills (the old stop_dev.sh)
 # Bind to different ports on the host manage incase you are already running them and they clash! (also works with just docker-compose up)
 $ POSTGRES_PORT=5555 REDIS_PORT=6666 MJML_PORT=7777 ./dev.sh

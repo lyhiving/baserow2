@@ -107,7 +107,19 @@ case "$1" in
         exec celery -A baserow worker -l INFO
     ;;
     celery-dev)
-        exec watchmedo auto-restart --directory=/baserow/backend --pattern=*.py --recursive -- celery -A baserow worker -l INFO
+        # Ensure we watch all possible python source code locations for changes.
+        directory_args=''
+        for i in $(echo "$PYTHONPATH" | tr ":" "\n")
+        do
+          directory_args="$directory_args -d=$i"
+        done
+
+        CMD="watchmedo auto-restart $directory_args --pattern=*.py --recursive -- celery -A baserow worker -l INFO"
+        echo "$CMD"
+        # The below command lets devs attach to this container, press ctrl-c and only
+        # the server will stop. Additionally they will be able to use bash history to
+        # re-run the containers run server command after they have done what they want.
+        exec bash --init-file <(echo "history -s $CMD; $CMD")
     ;;
     *)
         show_help
