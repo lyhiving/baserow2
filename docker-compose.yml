@@ -53,8 +53,9 @@ services:
       - db
       - redis
       - mjml
+      - media-volume-fixer
     volumes:
-      - baserow_media:/media
+      - media:/baserow/media
     networks:
       local:
 
@@ -65,7 +66,7 @@ services:
     depends_on:
       - backend
     volumes:
-      - baserow_media:/media
+      - media:/baserow/media
     networks:
       local:
 
@@ -90,14 +91,28 @@ services:
     build: media
     ports:
       - "${MEDIA_PORT:-4000}:80"
+    depends_on:
+      - media-volume-fixer
     volumes:
-      - baserow_media:/media
+      - media:/baserow/media
+    networks:
+      local:
+
+  # When switching between dev and local the media files in the media volume will be
+  # owned by different users. Ensure that we chown them to the user appropriate for the
+  # environment here.
+  media-volume-fixer:
+    container_name: media-volume-fixer
+    image: bash:4.4
+    command: chown 9999:9999 -R /baserow/media
+    volumes:
+      - media:/baserow/media
     networks:
       local:
 
 volumes:
   pgdata:
-  baserow_media:
+  media:
 
 networks:
   local:

@@ -23,8 +23,6 @@ RUN apt-get update && \
     && apt-get autoremove \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /media && chown $UID:$GID /media
-
 USER $UID:$GID
 
 ADD --chown=$UID:$GID ./backend/requirements/base.txt /baserow/requirements/

@@ -46,3 +46,6 @@ services:
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
     tty: true
+
+  media-volume-fixer:
+    command: chown ${UID:-1000}:${GID:-1000} -R /baserow/media
