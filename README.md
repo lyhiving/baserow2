@@ -65,7 +65,7 @@ $ git clone https://gitlab.com/bramw/baserow.git
 $ cd baserow
 $ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 $ # OR use our ./dev.sh script which also ensures your dev containers run as your user
-$ ./dev.sh --build
+$ ./dev.sh up -d --build
 ```
 
 The Baserow development environment is now running. Visit http://localhost:3000 in your

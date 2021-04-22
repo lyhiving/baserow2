@@ -1,9 +1,11 @@
 ## ./dev.sh
 
 `dev.sh` is a helper bash script which makes working with baserow's development
-environment a breeze.
+environment a breeze. You can think of it as a simple docker-compose wrapper which 
+sets some environment variables up, checks some helpful things and then passes your 
+commands to docker-compose with the correct compose files set.
 
-By default, running `./dev.sh` will start the dev env, attach into the running
+By default, running `./dev.sh up -d` will start the dev env, attach into the running
 containers and make sure the containers are running as your actual user.
 
 Additionally, Baserow's dev containers are especially configured to make the attaching
@@ -22,16 +24,12 @@ experience smooth and useful. In the per container tabs opened by using `./dev.s
 ### Usage
 
 ```bash
-./dev.sh starts the baserow development environment and by default attempts to
+./dev.sh up -d starts the baserow development environment and by default attempts to
 open terminal tabs which are attached to the running dev containers.
 
-Usage: ./dev.sh [optional start dev commands] [optional docker-compose up commands]
+Usage: ./dev.sh [optional dev.sh commands] [normal docker-compose commands]
 
 The ./dev.sh Commands are:
-restart         : Stop the dev environment first before relaunching.
-down            : Down the dev environment and don't up after.
-kill            : Kill the dev environment and don't up after.
-build_only      : Build the dev environment and don't up after.
 dont_migrate    : Disable automatic database migration on baserow startup.
 dont_sync       : Disable automatic template sync on baserow startup.
 dont_attach     : Don't attach to the running dev containers after starting them.
@@ -42,23 +40,23 @@ help            : Show this message.
 ### Examples of ./dev.sh usage:
 
 ```bash
-$ ./dev.sh # same as the up command above but also ensures the containers run as the running user!
-$ ./dev.sh --build # ups and rebuilds
+$ ./dev.sh up -d # same as the up command above but also ensures the containers run as the running user!
+$ ./dev.sh up -d --build # ups and rebuilds
 $ ./dev.sh restart # stops and then ups
 $ ./dev.sh restart --build # stops, builds, ups
-$ ./dev.sh build_only # just builds
-$ ./dev.sh dont_attach # does not create tabs and attach to the containers at the end
+$ ./dev.sh build # just builds
+$ ./dev.sh dont_attach up -d # does not create tabs and attach to the containers at the end
 $ ./dev.sh dont_attach restart --build # You can combine multiple arguments like so
-$ ./dev.sh dont_migrate # ups but doesn't migrate automatically on startup
+$ ./dev.sh dont_migrate up -d # ups but doesn't migrate automatically on startup
 $ ./dev.sh dont_migrate dont_sync dont_attach restart --build # even more flags!
 $ ./dev.sh run backend manage migrate
-# Any commands found after the last `./dev.sh` command will be passed to the `docker-compose up` call made by dev.sh
+# Any commands found after the last `./dev.sh` flag will be passed to the `docker-compose` call made by dev.sh
 # This lets you say do --build on the end or any other docker-compose commands using dev.sh!
-$ ./dev.sh restart {EXTRA_COMMANDS_PASSED_TO_UP}  
+$ ./dev.sh dont_attach {EXTRA_COMMANDS_PASSED_TO_DOCKER_COMPOSE}  
 $ ./dev.sh down # downs the env
 $ ./dev.sh kill # kills (the old stop_dev.sh)
 # Bind to different ports on the host manage incase you are already running them and they clash! (also works with just docker-compose up)
-$ POSTGRES_PORT=5555 REDIS_PORT=6666 MJML_PORT=7777 ./dev.sh
+$ POSTGRES_PORT=5555 REDIS_PORT=6666 MJML_PORT=7777 ./dev.sh up -d
 ```
 
 ### Why ./dev.sh ensures the containers run as you

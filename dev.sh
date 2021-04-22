@@ -57,13 +57,9 @@ show_help() {
 ./dev.sh starts the baserow development environment and by default attempts to
 open terminal tabs which are attached to the running dev containers.
 
-Usage: ./dev.sh [optional start dev commands] [optional docker-compose up commands]
+Usage: ./dev.sh [optional dev.sh commands] [docker-compose commands]
 
 The ./dev.sh Commands are:
-restart         : Stop the dev environment first before relaunching.
-down            : Down the dev environment and don't up after.
-kill            : Kill the dev environment and don't up after.
-build_only      : Build the dev environment and don't up after.
 dont_migrate    : Disable automatic database migration on baserow startup.
 dont_sync       : Disable automatic template sync on baserow startup.
 dont_attach     : Don't attach to the running dev containers after starting them.
@@ -73,11 +69,6 @@ help            : Show this message.
 }
 
 dont_attach=false
-down=false
-kill=false
-build=false
-run=false
-up=true
 migrate=true
 sync_templates=true
 exit_if_other_owners_found=true
@@ -97,38 +88,6 @@ case "${1:-noneleft}" in
         echo "./dev.sh: Configured to not attach to running dev containers."
         shift
         dont_attach=true
-    ;;
-    restart)
-        echo "./dev.sh: Restarting Dev Environment"
-        shift
-        down=true
-        up=true
-    ;;
-    down)
-        echo "./dev.sh: Stopping Dev Environment"
-        shift
-        up=false
-        down=true
-    ;;
-    kill)
-        echo "./dev.sh: Killing Dev Environment"
-        shift
-        up=false
-        kill=true
-    ;;
-    run)
-        echo "./dev.sh: docker-compose running the provided commands"
-        shift
-        up=false
-        dont_attach=true
-        run=true
-    ;;
-    build_only)
-        echo "./dev.sh: Only Building Dev Environment (use 'up --build' instead to
-        rebuild and up)"
-        shift
-        build=true
-        up=false
     ;;
     ignore_ownership)
         echo "./dev.sh: Continuing if files in repo are not owned by $USER."
@@ -210,28 +169,11 @@ fi
 echo "./dev.sh running docker-compose commands:
 ------------------------------------------------
 "
+set -x
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml "$@"
+set +x
 
-if [ "$down" = true ] ; then
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml down
-fi
-
-if [ "$kill" = true ] ; then
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml kill
-fi
-
-if [ "$build" = true ] ; then
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml build "$@"
-fi
-
-if [ "$up" = true ] ; then
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d "$@"
-fi
-
-if [ "$run" = true ] ; then
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml run "$@"
-fi
-
-if [ "$dont_attach" != true ] && [ "$up" = true ] ; then
+if [ "$dont_attach" != true ] ; then
   new_tab "Backend" \
           "docker logs backend && docker attach backend"
 

@@ -50,7 +50,7 @@ This is how to set these variables in bash:
 ```bash
 $ POSTGRES_PORT=5555 REDIS_PORT=6666 MJML_PORT=7777 docker-compose up 
 $ # or using dev.sh
-$ POSTGRES_PORT=5555 REDIS_PORT=6666 MJML_PORT=7777 ./dev.sh
+$ POSTGRES_PORT=5555 REDIS_PORT=6666 MJML_PORT=7777 ./dev.sh up -d
 ```
 
 ### Change the container user
@@ -79,8 +79,8 @@ variable to `false` (or any value which is not `true`) like so:
 ```bash
 $ MIGRATE_ON_STARTUP=false docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 $ # Or instead using ./dev.sh 
-$ ./dev.sh dont_migrate  # dev.sh supports this as an explicit argument.
-$ MIGRATE_ON_STARTUP=false ./dev.sh # or dev.sh will pass through whatever you have set. 
+$ ./dev.sh dont_migrate up -d  # dev.sh supports this as an explicit argument.
+$ MIGRATE_ON_STARTUP=false ./dev.sh up -d # or dev.sh will pass through whatever you have set. 
 ```
 
 ### Run a one off migration
@@ -101,7 +101,7 @@ not `true`) like so:
 ```bash
 $ SYNC_TEMPLATES_ON_STARTUP=false docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 $ # Or instead using ./dev.sh 
-$ ./dev.sh dont_sync # dev.sh supports this as an explicit argument.
+$ ./dev.sh dont_sync up -d # dev.sh supports this as an explicit argument.
 $ SYNC_TEMPLATES_ON_STARTUP=false ./dev.sh # or dev.sh it will pass through whatever you have set. 
 ```
 

@@ -15,7 +15,7 @@ $ git clone https://gitlab.com/bramw/baserow.git
 $ cd baserow
 $ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 $ # OR use our ./dev.sh script which also ensures your dev containers run as your user
-$ ./dev.sh --build
+$ ./dev.sh up -d --build
 ```
 
 ## Installing requirements
@@ -60,7 +60,7 @@ Baserow's code to your computer.
 > [running baserow locally guide](../guides/running-baserow-locally.md) once, you might
 > need to rebuild the images for the development environment by using the command
 > `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
-> or just `./dev.sh build_only` because they have container name conflicts.
+> or just `./dev.sh build` because they have container name conflicts.
 
 ```
 $ cd ~/baserow
@@ -78,8 +78,8 @@ the command to finish, this is because the images have to be built from scratch.
 ```
 $ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 $ # Or instead you can use ./dev.sh which also ensures the dev environment runs as you 
-$ ./dev.sh 
-$ # Run ./dev.sh for more details on what it can do! 
+$ ./dev.sh up -d
+$ # Run ./dev.sh help for more details on what it can do! 
 Building backend
 ...
 Starting db    ... done

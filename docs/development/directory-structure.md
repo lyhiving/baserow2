@@ -19,7 +19,7 @@ This whole directory is also added to the backend container.
 * `requirements/dev.txt`: file containing the Python packages that are needed for 
   Baserow development.
 * `.flake8`: contains the flake8 linter configuration.
-* `baserow`: is actually a python file, that just calls the management.py file in the 
+* `baserow`: is actually a python file, that just calls the `management.py` file in the 
   source directory. This file is registered as a command via the `setup.py`. When 
   someone adds Baserow as a dependency they can use the command `baserow migrate` which
   is the same as `python src/baserow/manage.py migrate`.
@@ -46,7 +46,7 @@ The src directory contains the full source code of the Baserow backend module.
 * `config`: is a module that contains base settings and some settings that are for
    specific environments. It also contains the root url config that includes the api 
    under the namespace `api` and adds a `_health` route for health checking. There is
-   also a wsgi.py file which can be used to expose the applications.
+   also a `wsgi.py` file which can be used to expose the applications.
 * `contrib`: contains extra apps that can be installed. For now it only contains the
   backend part of the database plugin. This app is installed by default, but it is
   optional.
@@ -54,7 +54,7 @@ The src directory contains the full source code of the Baserow backend module.
   concepts that are reused throughout the backend. It also contains the code for the 
   group and application concepts that are at the core of Baserow. Of course there are
   also helper classes, functions, and decorators that can be reused.
-* `manage.py`: the Django manage.py file to execute management commands.
+* `manage.py`: the Django `manage.py` file to execute management commands.
 
 ### tests
 

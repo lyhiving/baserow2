@@ -47,6 +47,9 @@ services:
       - DATABASE_NAME=${DATABASE_NAME:-baserow}
       - ADDITIONAL_APPS
       - MEDIA_URL=http://localhost:${MEDIA_PORT:-4000}/media/
+      - EMAIL_SMTP
+      - EMAIL_SMTP_HOST
+      - EMAIL_SMTP_PORT
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -63,6 +66,11 @@ services:
     container_name: celery
     image: baserow_backend:latest
     command: celery
+    environment:
+      - ADDITIONAL_APPS
+      - EMAIL_SMTP
+      - EMAIL_SMTP_HOST
+      - EMAIL_SMTP_PORT
     depends_on:
       - backend
     volumes:

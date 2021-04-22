@@ -1,0 +1,9 @@
+version: "3.7"
+
+services:
+  fake-smtp-server:
+    image: reachfive/fake-smtp-server:0.8.1
+    networks:
+      local:
+    ports:
+      - 1080:1080

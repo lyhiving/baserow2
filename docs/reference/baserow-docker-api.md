@@ -97,7 +97,7 @@ All of these variables can be set like so:
 ```bash
 $ POSTGRES_PORT=5555 REDIS_PORT=6666 MJML_PORT=7777 docker-compose up 
 $ # or using dev.sh
-$ POSTGRES_PORT=5555 MIGRATE_ON_STARTUP=false ./dev.sh
+$ POSTGRES_PORT=5555 MIGRATE_ON_STARTUP=false ./dev.sh up -d
 ```
 
 ### Local and Dev Variables

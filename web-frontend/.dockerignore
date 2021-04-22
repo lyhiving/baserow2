@@ -1,2 +1,4 @@
 .nuxt/
-coverage
+node_modules/
+coverage/
+plugins/

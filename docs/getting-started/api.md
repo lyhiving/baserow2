@@ -49,7 +49,7 @@ curl -X POST -H 'Content-Type: application/json' -i https://api.baserow.io/api/u
 The server should respond with a `200` status code which means your account has been 
 created. The provided email address will be your username. More information about this 
 endpoint can be found in the API spec at 
-https://api.baserpw.io/api/redoc/#operation/create_user.
+https://api.baserow.io/api/redoc/#operation/create_user.
 
 Now that you have created an account, you need a JWT token to authorize each following
 request. This can be requested using the following example.
