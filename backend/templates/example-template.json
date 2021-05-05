@@ -1,0 +1,185 @@
+{
+  "baserow_template_version": 1,
+  "name": "Example Template",
+  "icon": "address-book",
+  "keywords": ["example", "template", "demo"],
+  "categories": ["Local Business", "New Category"],
+  "export": [
+    {
+      "id": 35,
+      "name": "Applicant tracker",
+      "order": 1,
+      "type": "database",
+      "tables": [
+        {
+          "id": 37,
+          "name": "Table 1",
+          "order": 1,
+          "fields": [
+            {
+              "id": 114,
+              "type": "text",
+              "name": "Name",
+              "order": 0,
+              "primary": true,
+              "text_default": ""
+            },
+            {
+              "id": 115,
+              "type": "long_text",
+              "name": "Notes",
+              "order": 1,
+              "primary": false
+            },
+            {
+              "id": 116,
+              "type": "boolean",
+              "name": "Active",
+              "order": 2,
+              "primary": false
+            }
+          ],
+          "views": [
+            {
+              "id": 37,
+              "type": "grid",
+              "name": "Grid",
+              "order": 1,
+              "filter_type": "AND",
+              "filters_disabled": false,
+              "filters": [],
+              "sortings": [],
+              "field_options": [
+                {
+                  "id": 182,
+                  "field_id": 114,
+                  "width": 200,
+                  "hidden": false,
+                  "order": 32767
+                },
+                {
+                  "id": 180,
+                  "field_id": 115,
+                  "width": 400,
+                  "hidden": false,
+                  "order": 32767
+                },
+                {
+                  "id": 181,
+                  "field_id": 116,
+                  "width": 100,
+                  "hidden": false,
+                  "order": 32767
+                }
+              ]
+            }
+          ],
+          "rows": [
+            {
+              "id": 1,
+              "order": "1.00000000000000000000",
+              "field_114": "Tesla",
+              "field_115": null,
+              "field_116": "true"
+            },
+            {
+              "id": 2,
+              "order": "2.00000000000000000000",
+              "field_114": "Amazon",
+              "field_115": null,
+              "field_116": "false"
+            }
+          ]
+        },
+        {
+          "id": 38,
+          "name": "Table 2",
+          "order": 2,
+          "fields": [
+            {
+              "id": 117,
+              "type": "text",
+              "name": "Name",
+              "order": 0,
+              "primary": true,
+              "text_default": ""
+            },
+            {
+              "id": 118,
+              "type": "long_text",
+              "name": "Notes",
+              "order": 1,
+              "primary": false
+            },
+            {
+              "id": 120,
+              "type": "text",
+              "name": "Test",
+              "order": 3,
+              "primary": false,
+              "text_default": ""
+            }
+          ],
+          "views": [
+            {
+              "id": 38,
+              "type": "grid",
+              "name": "Grid",
+              "order": 1,
+              "filter_type": "AND",
+              "filters_disabled": false,
+              "filters": [],
+              "sortings": [],
+              "field_options": [
+                {
+                  "id": 185,
+                  "field_id": 117,
+                  "width": 200,
+                  "hidden": false,
+                  "order": 2
+                },
+                {
+                  "id": 183,
+                  "field_id": 118,
+                  "width": 400,
+                  "hidden": false,
+                  "order": 1
+                },
+                {
+                  "id": 186,
+                  "field_id": 120,
+                  "width": 200,
+                  "hidden": false,
+                  "order": 0
+                }
+              ]
+            }
+          ],
+          "rows": [
+            {
+              "id": 1,
+              "order": "1.00000000000000000000",
+              "field_117": "Tesla",
+              "field_118": null,
+              "field_120": null
+            },
+            {
+              "id": 2,
+              "order": "2.00000000000000000000",
+              "field_117": "Amazon",
+              "field_118": null,
+              "field_120": null
+            },
+            {
+              "id": 3,
+              "order": "3.00000000000000000000",
+              "field_117": "",
+              "field_118": "",
+              "field_120": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
