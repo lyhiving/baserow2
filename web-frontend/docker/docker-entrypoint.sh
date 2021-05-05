@@ -18,6 +18,7 @@ help     : Show this message
 """
 }
 
+
 case "$1" in
     dev)
         CMD="yarn run dev"

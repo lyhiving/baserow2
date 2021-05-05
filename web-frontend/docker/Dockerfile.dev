@@ -32,7 +32,6 @@ ADD --chown=$UID:$GID ./web-frontend/package.json ./web-frontend/yarn.lock /base
 
 WORKDIR /baserow/web-frontend
 
-
 RUN yarn install
 
 ADD --chown=$UID:$GID ./web-frontend /baserow/web-frontend/
