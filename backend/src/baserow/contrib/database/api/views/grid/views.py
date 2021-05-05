@@ -10,6 +10,7 @@ from baserow.api.decorators import map_exceptions, allowed_includes, validate_bo
 from baserow.api.errors import ERROR_USER_NOT_IN_GROUP
 from baserow.api.pagination import PageNumberPagination
 from baserow.api.schemas import get_error_schema
+from baserow.contrib.database.export.handler import ExportHandler
 from baserow.core.exceptions import UserNotInGroup
 from baserow.contrib.database.api.rows.serializers import (
     get_row_serializer_class,
@@ -19,7 +20,10 @@ from baserow.contrib.database.api.rows.serializers import (
 from baserow.contrib.database.api.rows.serializers import (
     get_example_row_serializer_class,
 )
-from baserow.contrib.database.api.views.grid.serializers import GridViewSerializer
+from baserow.contrib.database.api.views.grid.serializers import (
+    GridViewSerializer,
+    GridViewExportSerializer,
+)
 from baserow.contrib.database.views.exceptions import (
     ViewDoesNotExist,
     UnrelatedFieldError,
@@ -28,7 +32,22 @@ from baserow.contrib.database.views.handler import ViewHandler
 from baserow.contrib.database.views.models import GridView
 
 from .errors import ERROR_GRID_DOES_NOT_EXIST, ERROR_UNRELATED_FIELD
+from .grid_view_handler import GridViewHandler
 from .serializers import GridViewFilterSerializer
+
+
+class GridViewExportView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, view_id):
+        view = ViewHandler().get_view(view_id, GridView)
+        job = ExportHandler().get_export_job(request.user, view, "csv")
+        return Response(GridViewExportSerializer(job).data)
+
+    def put(self, request, view_id):
+        view = ViewHandler().get_view(view_id, GridView)
+        job = ExportHandler().start_export_job(request.user, view, "csv")
+        return Response(GridViewExportSerializer(job).data)
 
 
 class GridViewView(APIView):
@@ -148,18 +167,10 @@ class GridViewView(APIView):
 
         view_handler = ViewHandler()
         view = view_handler.get_view(view_id, GridView)
-        view.table.database.group.has_user(
-            request.user, raise_error=True, allow_if_template=True
-        )
 
+        handler = GridViewHandler()
         model = view.table.get_model()
-        queryset = model.objects.all().enhance_by_fields()
-
-        # Applies the view filters and sortings to the queryset if there are any.
-        queryset = view_handler.apply_filters(view, queryset)
-        queryset = view_handler.apply_sorting(view, queryset)
-        if search:
-            queryset = queryset.search_all_fields(search)
+        queryset = handler.get_rows(request.user, view, search)
 
         if "count" in request.GET:
             return Response({"count": queryset.count()})

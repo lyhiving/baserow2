@@ -241,6 +241,8 @@ USER_FILES_DIRECTORY = "user_files"
 USER_THUMBNAILS_DIRECTORY = "thumbnails"
 USER_FILE_SIZE_LIMIT = 1024 * 1024 * 20  # 20MB
 
+EXPORT_FILES_DIRECTORY = "export_files"
+
 EMAIL_BACKEND = "djcelery_email.backends.CeleryEmailBackend"
 
 if os.getenv("EMAIL_SMTP", ""):

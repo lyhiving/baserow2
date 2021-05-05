@@ -1,35 +1,20 @@
 <template>
   <Context ref="context" class="hidings">
     <div>
-      <ul class="context__menu margin-bottom-0">
-        <li v-for="field in fields" :key="field.id" class="hidings__item">
-          <SwitchInput
-            :value="!isHidden(field.id)"
-            :disabled="readOnly"
-            @input="updateFieldOptionsOfField(field, { hidden: !$event })"
-          >
-            <i
-              class="fas fa-fw switch__icon"
-              :class="'fa-' + field._.type.iconClass"
-            ></i>
-            <span>{{ field.name }}</span>
-          </SwitchInput>
+      <ul class="context__menu">
+        <li>
+          <button class="button button--primary">
+            <i class="fas fa-file-csv"></i>
+            Export to CSV
+          </button>
+        </li>
+        <li>
+          <button class="button button--primary">
+            <i class="fas fa-file-code"></i>
+            Export to XML
+          </button>
         </li>
       </ul>
-    </div>
-    <div v-if="!readOnly" class="hidings__footer">
-      <button
-        class="button button--ghost hidings__footer-button"
-        @click="!noneSelected && updateAllFieldOptions({ hidden: true })"
-      >
-        Hide all
-      </button>
-      <button
-        class="button button--ghost"
-        @click="!allSelected && updateAllFieldOptions({ hidden: false })"
-      >
-        Show all
-      </button>
     </div>
   </Context>
 </template>
