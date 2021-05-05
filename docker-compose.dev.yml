@@ -15,6 +15,7 @@ services:
     volumes:
       - ./backend:/baserow/backend
       - ./premium/backend/:/baserow/backend/plugins/premium
+      - backend-dev-plugins:/baserow/backend/plugins
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
     tty: true
@@ -25,6 +26,7 @@ services:
     volumes:
       - ./backend:/baserow/backend
       - ./premium/backend/:/baserow/backend/plugins/premium
+      - backend-dev-plugins:/baserow/backend/plugins
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
     tty: true
@@ -42,6 +44,8 @@ services:
     volumes:
       - ./web-frontend:/baserow/web-frontend
       - ./premium/web-frontend/:/baserow/web-frontend/plugins/premium
+      - web-frontend-dev-node-modules:/baserow/web-frontend/node_modules
+      - web-frontend-dev-plugins:/baserow/web-frontend/plugins
 
     # Open stdin and tty so when attaching key input works as expected.
     stdin_open: true
@@ -49,3 +53,10 @@ services:
 
   media-volume-fixer:
     command: chown ${UID:-1000}:${GID:-1000} -R /baserow/media
+
+# Give names to the volumes declared in the docker dev images so we dont end up with hundreds
+# of anonymous volumes.
+volumes:
+  web-frontend-dev-node-modules:
+  web-frontend-dev-plugins:
+  backend-dev-plugins:

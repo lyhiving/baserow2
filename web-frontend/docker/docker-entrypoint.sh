@@ -18,6 +18,15 @@ help     : Show this message
 """
 }
 
+# If the image is running with a volume mounted into /baserow/web-frontend/ it will overwrite 
+# the images node_modules folder. If the user has mounted in a folder without their own 
+# node_modules we will copy in the preinstalled image modules for them. This happens on a 
+# clean first checkout and run of a dev environment.
+if [ -d "/baserow/web-frontend-modules/" ] && [ ! -d "/baserow/web-frontend/node_modules/" ]; then
+	echo "Setting up preinstalled yarn modules from image into web-frontend/node_modules"
+	mv /baserow/web-frontend-modules/ /baserow/web-frontend/node_modules/
+fi
+
 
 case "$1" in
     dev)
