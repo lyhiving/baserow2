@@ -64,6 +64,9 @@ services:
   celery:
     container_name: celery
     image: baserow_backend:latest
+    build:
+      dockerfile: ./backend/Dockerfile
+      context: .
     command: celery
     depends_on:
       - backend

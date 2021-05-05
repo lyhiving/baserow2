@@ -22,6 +22,14 @@ services:
 
   celery:
     image: baserow_backend_dev:latest
+    build:
+      context: .
+      dockerfile: ./backend/docker/Dockerfile.dev
+      args:
+        # We allow configuring the UID/GID here so you can run as the dev's actual user
+        # reducing the chance the containers screw up the bind mounted folders.
+        UID: "${UID:-}"
+        GID: "${GID:-}"
     command: celery-dev
     volumes:
       - ./backend:/baserow/backend
