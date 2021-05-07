@@ -24,7 +24,7 @@ def test_field_type_changed(storage_mock, data_fixture):
         field=option_field, value="B", color="red"
     )
     date_field = data_fixture.create_date_field(
-        table=table, date_include_time=True, date_format="ISO", name="date_field"
+        table=table, date_include_time=True, date_format="US", name="date_field"
     )
     grid_view = data_fixture.create_grid_view(table=table)
     data_fixture.create_view_filter(
@@ -48,7 +48,7 @@ def test_field_type_changed(storage_mock, data_fixture):
         values={
             text_field.id: "atest",
             date_field.id: "2020-02-01 01:23",
-            option_field.id: option_b.id,
+            option_field.id: option_a.id,
         },
     )
 
@@ -64,9 +64,14 @@ def test_field_type_changed(storage_mock, data_fixture):
         status="exporting",
     )
     export_view_inner(user.id, grid_view.id, "csv")
-    expected = "\ufeffID,text_field,option_field,date_field\r\n'\n '2,atest,2,2020-02-01T01:23:00+00:00\r\n'\n '1,test,2,2020-02-01T01:23:00+00:00\r\n"
-    print(expected)
-    assert stub_file.getvalue().decode("utf-8") == expected
+    expected = (
+        "\ufeff"
+        "ID,text_field,option_field,date_field\r\n"
+        "2,atest,A,02/01/2020 01:23:00+00:00\r\n"
+        "1,test,B,02/01/2020 01:23:00+00:00\r\n"
+    )
+    actual = stub_file.getvalue().decode("utf-8")
+    assert actual == expected
     close()
 
     job.refresh_from_db()

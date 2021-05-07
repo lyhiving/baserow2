@@ -304,6 +304,10 @@ class DateFieldType(FieldType):
             "The value should be a date/time string, date object or " "datetime object."
         )
 
+    def get_csv_serializer_field(self, instance, **kwargs):
+        kwargs["format"] = instance.get_python_format()
+        return self.get_serializer_field(instance, **kwargs)
+
     def get_serializer_field(self, instance, **kwargs):
         kwargs["required"] = False
         kwargs["allow_null"] = True
@@ -998,6 +1002,9 @@ class SingleSelectFieldType(FieldType):
         # If the select option is not found or if it does not belong to the right field
         # then the provided value is invalid and a validation error can be raised.
         raise ValidationError(f"The provided value is not a valid option.")
+
+    def get_csv_serializer_field(self, instance, **kwargs):
+        return serializers.CharField(max_length=255, required=True, source="value")
 
     def get_serializer_field(self, instance, **kwargs):
         return serializers.PrimaryKeyRelatedField(
