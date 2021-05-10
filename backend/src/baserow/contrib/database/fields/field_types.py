@@ -477,6 +477,9 @@ class LinkRowFieldType(FieldType):
             models.Prefetch(name, queryset=related_queryset)
         )
 
+    def get_csv_serializer_field(self, instance, **kwargs):
+        return self.get_response_serializer_field(instance, **kwargs)
+
     def get_serializer_field(self, instance, **kwargs):
         """
         If the value is going to be updated we want to accept a list of integers
@@ -1004,7 +1007,9 @@ class SingleSelectFieldType(FieldType):
         raise ValidationError(f"The provided value is not a valid option.")
 
     def get_csv_serializer_field(self, instance, **kwargs):
-        return serializers.CharField(max_length=255, required=True, source="value")
+        return serializers.CharField(
+            max_length=255, required=True, source=f"field_{instance.id}.value"
+        )
 
     def get_serializer_field(self, instance, **kwargs):
         return serializers.PrimaryKeyRelatedField(
