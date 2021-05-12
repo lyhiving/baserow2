@@ -179,7 +179,7 @@ SPECTACULAR_SETTINGS = {
         "name": "MIT",
         "url": "https://gitlab.com/bramw/baserow/-/blob/master/LICENSE",
     },
-    "VERSION": "1.1.0",
+    "VERSION": "1.2.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "TAGS": [
         {"name": "Settings"},
@@ -267,3 +267,5 @@ APPLICATION_TEMPLATES_DIR = os.path.join(BASE_DIR, "../../../templates")
 # The template that must be selected when the user first opens the templates select
 # modal.
 DEFAULT_APPLICATION_TEMPLATE = "project-management"
+
+MAX_FIELD_LIMIT = 1500
