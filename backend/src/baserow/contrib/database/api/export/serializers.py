@@ -42,13 +42,21 @@ SUPPORTED_CSV_ENCODINGS = [
     ("iso-8859-3", "Latin 3 (ISO-8859-3)"),
 ]
 SUPPORTED_CSV_COLUMN_SEPARATORS = [
-    (",", ","),
-    (";", ";"),
-    ("|", "|"),
-    ("\t", "<tab>"),
-    ("\x1e", "record separator (30)"),
-    ("\x1f", "unit separator (30)"),
+    ("comma", ","),
+    ("semi", ";"),
+    ("pipe", "|"),
+    ("tab", "<tab>"),
+    ("record_separator", "record separator (30)"),
+    ("unit_separator", "unit separator (30)"),
 ]
+SUPPORTED_CSV_COLUMN_SEPARATORS_TO_REAL = {
+    "comma": ",",
+    "semi": ";",
+    "pipe": "|",
+    "tab": "\t",
+    "record_separator": "\x1e",
+    "unit_separator": "\x1f",
+}
 
 
 class ExportedFileURLSerializerMixin(serializers.Serializer):

@@ -54,7 +54,7 @@ class CsvTableExporter(TableExporter):
 
     def export_table(self, requesting_user, table, export_options, export_file):
         table.database.group.has_user(
-            requesting_user.user, raise_error=True, allow_if_template=True
+            requesting_user, raise_error=True, allow_if_template=True
         )
         model = table.get_model()
         queryset = model.objects.all().enhance_by_fields()

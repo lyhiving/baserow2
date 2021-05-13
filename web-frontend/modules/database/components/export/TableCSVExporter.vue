@@ -5,18 +5,21 @@
         <div class="control">
           <label class="control__label">Column separator</label>
           <div class="control__elements">
-            <Dropdown v-model="localValue.csvColumnSeparator">
-              <DropdownItem name="," value=","></DropdownItem>
-              <DropdownItem name=";" value=";"></DropdownItem>
-              <DropdownItem name="|" value="|"></DropdownItem>
-              <DropdownItem name="<tab>" value="\t"></DropdownItem>
+            <Dropdown
+              v-model="localValue.csvColumnSeparator"
+              :disabled="loading"
+            >
+              <DropdownItem name="," value="comma"></DropdownItem>
+              <DropdownItem name=";" value="semi"></DropdownItem>
+              <DropdownItem name="|" value="pipe"></DropdownItem>
+              <DropdownItem name="<tab>" value="tab"></DropdownItem>
               <DropdownItem
                 name="record separator (30)"
-                :value="String.fromCharCode(30)"
+                value="record_separator"
               ></DropdownItem>
               <DropdownItem
                 name="unit separator (31)"
-                :value="String.fromCharCode(31)"
+                value="unit_separator"
               ></DropdownItem>
             </Dropdown>
           </div>
@@ -26,7 +29,7 @@
         <div class="control">
           <label class="control__label">Encoding</label>
           <div class="control__elements">
-            <Dropdown v-model="localValue.csvEncoding">
+            <Dropdown v-model="localValue.csvEncoding" :disabled="loading">
               <DropdownItem name="Unicode (UTF-8)" value="utf-8"></DropdownItem>
               <DropdownItem
                 name="Arabic (ISO-8859-6)"
@@ -163,7 +166,9 @@
         <div class="control">
           <label class="control__label">First row is header</label>
           <div class="control__elements">
-            <Checkbox v-model="localValue.csvFirstRowHeader">yes</Checkbox>
+            <Checkbox v-model="localValue.csvFirstRowHeader" :disabled="loading"
+              >yes</Checkbox
+            >
           </div>
         </div>
       </div>
@@ -179,13 +184,17 @@ export default {
       type: Object,
       required: true,
     },
+    loading: {
+      type: Boolean,
+      required: true,
+    },
   },
   data() {
     return {
       localValue: {
         csvFirstRowHeader: true,
         csvEncoding: 'utf-8',
-        csvColumnSeparator: ',',
+        csvColumnSeparator: 'comma',
       },
     }
   },

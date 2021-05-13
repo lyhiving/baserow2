@@ -5,13 +5,12 @@
       <div class="row">
         <div class="col col-12">
           <div class="control">
-            <label class="control__label"
-              >Select the view or table to export:</label
-            >
+            <label class="control__label">Select the view to export:</label>
             <div class="control__elements">
               <ExportTableDropdown
+                v-model="view"
+                :loading="loading"
                 :table="table"
-                :selected-view="view"
               ></ExportTableDropdown>
             </div>
           </div>
@@ -27,8 +26,11 @@
                 >
                   <a
                     class="choice-items__link"
-                    :class="{ active: exporter === exporterType.type }"
-                    @click="exporter = exporterType.type"
+                    :class="{
+                      active: exporter === exporterType.type,
+                      disabled: loading,
+                    }"
+                    @click="!loading ? (exporter = exporterType.type) : null"
                   >
                     <i
                       class="choice-items__icon fas"
@@ -42,41 +44,46 @@
           </div>
         </div>
       </div>
-      <component :is="exporterComponent" v-model="exporterOptions" />
-      <div>
-        <p></p>
-        <div class="actions">
+      <component
+        :is="exporterComponent"
+        v-model="exporterOptions"
+        :loading="loading"
+      />
+      <div class="row">
+        <div class="col col-8 export-table-modal__actions">
           <div v-if="job !== null" class="export-table-modal__loading-bar">
             <div
               class="export-table-modal__loading-bar-inner"
               :style="{
                 width: `${job.progress_percentage * 100}%`,
-              }
+                'transition-duration':
+                  job.progress_percentage === 1 ? '0s' : '1s',
+              }"
             ></div>
           </div>
-          <div class="export-table-modal__export-button">
-            <button
-              v-if="job === null"
-              class="button button--large button--primary"
-              :class="{ 'button--loading': loading }"
-              :disabled="loading"
-            >
-              Export
-            </button>
-            <button
-              v-else-if="jobIsRunning"
-              class="button button--large button--primary button--loading"
-              :disabled="loading"
-            ></button>
-            <a
-              v-else-if="job.status === 'completed'"
-              class="button button--large button--success"
-              :disabled="loading"
-              :href="job.url"
-            >
-              Download
-            </a>
-          </div>
+        </div>
+        <div class="col col-4 align-right export-table-modal__actions">
+          <button
+            v-if="job === null"
+            class="button button--large button--primary export-table-modal__export-button"
+            :class="{ 'button--loading': loading }"
+            :disabled="loading || !exporter"
+          >
+            Export
+          </button>
+          <button
+            v-else-if="jobIsRunning"
+            class="button button--large button--primary button--loading export-table-modal__export-button"
+            :disabled="loading"
+          ></button>
+          <a
+            v-else-if="job.status === 'completed'"
+            class="button button--large button--success export-table-modal__export-button"
+            :href="job.url"
+            @click="$emit('downloaded')"
+          >
+            Download
+          </a>
         </div>
       </div>
     </form>
@@ -147,23 +154,30 @@ export default {
         if (!this.jobIsRunning) {
           clearInterval(this.pollInterval)
         }
-        if (this.job.status === 'failed') {
+        if (this.job.status === 'failed' || this.job.status === 'cancelled') {
+          const title =
+            this.job.status === 'failed' ? 'Export Failed' : 'Export Cancelled'
+          const message =
+            this.job.status === 'failed'
+              ? 'The export failed due to a server error.'
+              : 'The export was cancelled.'
           this.job = null
           const handler = {
             handler: {
               getMessage() {
                 return {
-                  title: 'Export Failed.',
-                  message: 'Something went wrong on the server.',
+                  title,
+                  message,
                 }
               },
               handled() {},
             },
           }
+          this.loading = false
           this.handleError(handler, 'application')
         }
       } catch (error) {
-        console.log(error)
+        this.loading = false
         this.handleError(error, 'application')
       }
     },
@@ -178,13 +192,14 @@ export default {
           this.exporter,
           this.exporterOptions
         )
-        this.loading = false
         this.job = data
         if (this.pollInterval !== null) {
           clearInterval(this.pollInterval)
         }
         if (this.jobIsRunning) {
           this.pollInterval = setInterval(this.getLatestJobInfo, 1000)
+        } else if (this.job.status !== 'completed') {
+          this.loading = false
         }
       } catch (error) {
         this.loading = false

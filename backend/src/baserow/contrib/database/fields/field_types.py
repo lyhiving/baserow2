@@ -953,6 +953,9 @@ class FileFieldType(FieldType):
             **kwargs,
         )
 
+    def get_csv_serializer_field(self, instance, **kwargs):
+        return TodoReplaceMeFkSubListField("visible_name")
+
     def get_response_serializer_field(self, instance, **kwargs):
         return FileFieldResponseSerializer(many=True, required=False, **kwargs)
 

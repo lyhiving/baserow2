@@ -74,7 +74,16 @@ class TodoReplaceMeFkSubListField(ListField):
         self.sub = sub
 
     def to_representation(self, obj):
-        return ",".join([str(getattr(element, self.sub)) for element in obj.all()])
+        if hasattr(obj, "all"):
+            obj = obj.all()
+        values = []
+        for element in obj:
+            if isinstance(element, dict):
+                value = element[self.sub]
+            else:
+                value = getattr(element, self.sub)
+            values.append(value)
+        return ",".join(values)
 
 
 class LinkRowValueOnlySerializer(serializers.Serializer):

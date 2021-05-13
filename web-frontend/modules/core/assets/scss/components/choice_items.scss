@@ -33,6 +33,14 @@
     color: $color-primary-900;
   }
 
+  &.disabled {
+    color: $color-neutral-400;
+
+    &:hover {
+      cursor: inherit;
+    }
+  }
+
   &.active {
     color: $color-primary-900;
     background-color: $color-primary-100;

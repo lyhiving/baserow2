@@ -14,6 +14,7 @@ from baserow.contrib.database.api.export.errors import (
 from baserow.contrib.database.api.export.serializers import (
     CreateExportJobSerializer,
     GetExportJobSerializer,
+    SUPPORTED_CSV_COLUMN_SEPARATORS_TO_REAL,
 )
 from baserow.contrib.database.api.tables.errors import ERROR_TABLE_DOES_NOT_EXIST
 from baserow.contrib.database.api.views.errors import ERROR_VIEW_DOES_NOT_EXIST
@@ -48,6 +49,12 @@ class ExportTableView(APIView):
 
 
 def _export(user, table, view, exporter_type, export_options):
+    if "csv_column_separator" in export_options:
+        export_options[
+            "csv_column_separator"
+        ] = SUPPORTED_CSV_COLUMN_SEPARATORS_TO_REAL[
+            export_options["csv_column_separator"]
+        ]
     job = ExportHandler().create_pending_export_job(
         user, table, view, exporter_type, export_options
     )
