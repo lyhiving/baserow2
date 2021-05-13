@@ -1,0 +1,19 @@
+.export-table-modal__loading-bar {
+  @include fixed-height(9px, 12px);
+
+  flex-basis: 100%;
+  border-radius: 5px;
+  background-color: $color-neutral-100;
+}
+
+.export-table-modal__loading-bar-inner {
+  background-color: $color-success-300;
+  border-radius: 5px;
+  height: 100%;
+  transition-duration: 1s;
+}
+
+.export-table-modal__export-button {
+  flex-shrink: 2;
+  text-align: right;
+}

@@ -27,6 +27,7 @@ from baserow.contrib.database.api.fields.serializers import (
     FileFieldRequestSerializer,
     FileFieldResponseSerializer,
     SelectOptionSerializer,
+    TodoReplaceMeFkSubListField,
 )
 from baserow.core.models import UserFile
 from baserow.core.user_files.handler import UserFileHandler
@@ -483,7 +484,26 @@ class LinkRowFieldType(FieldType):
         )
 
     def get_csv_serializer_field(self, instance, **kwargs):
-        return self.get_response_serializer_field(instance, **kwargs)
+        """
+        If a model has already been generated it will be added as a property to the
+        instance. If that is the case then we can extract the primary field from the
+        model and we can pass the name along to the LinkRowValueSerializer. It will
+        be used to include the primary field's value in the response as a string.
+        """
+
+        primary_field_name = None
+
+        if hasattr(instance, "_related_model"):
+            related_model = instance._related_model
+            primary_field = next(
+                object
+                for object in related_model._field_objects.values()
+                if object["field"].primary
+            )
+            if primary_field:
+                primary_field_name = primary_field["name"]
+
+        return TodoReplaceMeFkSubListField(sub=primary_field_name)
 
     def get_serializer_field(self, instance, **kwargs):
         """
@@ -1062,7 +1082,7 @@ class SingleSelectFieldType(FieldType):
 
     def get_csv_serializer_field(self, instance, **kwargs):
         return serializers.CharField(
-            max_length=255, required=True, source=f"field_{instance.id}.value"
+            max_length=255, required=False, source=f"field_{instance.id}.value"
         )
 
     def get_serializer_field(self, instance, **kwargs):

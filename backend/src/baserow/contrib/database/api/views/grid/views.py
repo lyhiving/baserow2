@@ -1,28 +1,24 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.pagination import LimitOffsetPagination
-
-from drf_spectacular.utils import extend_schema
 from drf_spectacular.openapi import OpenApiParameter, OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from baserow.api.decorators import map_exceptions, allowed_includes, validate_body
 from baserow.api.errors import ERROR_USER_NOT_IN_GROUP
 from baserow.api.pagination import PageNumberPagination
 from baserow.api.schemas import get_error_schema
-from baserow.contrib.database.export.handler import ExportHandler
-from baserow.core.exceptions import UserNotInGroup
+from baserow.contrib.database.api.rows.serializers import (
+    get_example_row_serializer_class,
+)
 from baserow.contrib.database.api.rows.serializers import (
     get_row_serializer_class,
     RowSerializer,
     example_pagination_row_serializer_class_with_field_options,
 )
-from baserow.contrib.database.api.rows.serializers import (
-    get_example_row_serializer_class,
-)
 from baserow.contrib.database.api.views.grid.serializers import (
     GridViewSerializer,
-    GridViewExportSerializer,
 )
 from baserow.contrib.database.views.exceptions import (
     ViewDoesNotExist,
@@ -30,24 +26,10 @@ from baserow.contrib.database.views.exceptions import (
 )
 from baserow.contrib.database.views.handler import ViewHandler
 from baserow.contrib.database.views.models import GridView
-
+from baserow.core.exceptions import UserNotInGroup
 from .errors import ERROR_GRID_DOES_NOT_EXIST, ERROR_UNRELATED_FIELD
 from .grid_view_handler import GridViewHandler
 from .serializers import GridViewFilterSerializer
-
-
-class GridViewExportView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request, view_id):
-        view = ViewHandler().get_view(view_id, GridView)
-        job = ExportHandler().get_export_job(request.user, view, "csv")
-        return Response(GridViewExportSerializer(job).data)
-
-    def put(self, request, view_id):
-        view = ViewHandler().get_view(view_id, GridView)
-        job = ExportHandler().start_export_job(request.user, view, "csv")
-        return Response(GridViewExportSerializer(job).data)
 
 
 class GridViewView(APIView):

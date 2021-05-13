@@ -17,6 +17,7 @@
         v-for="view in search(views)"
         :key="view.id"
         :view="view"
+        :table="table"
         :read-only="readOnly"
         @selected="selectedView"
       ></ViewsContextItem>

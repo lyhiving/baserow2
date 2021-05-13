@@ -4,7 +4,6 @@ from drf_spectacular.openapi import OpenApiSerializerFieldExtension
 
 from rest_framework import serializers
 
-from baserow.contrib.database.export.models import ExportJob
 from baserow.contrib.database.views.models import GridView, GridViewFieldOptions
 from .schemas import grid_view_field_options_schema
 
@@ -118,9 +117,3 @@ class GridViewFilterSerializer(serializers.Serializer):
         child=serializers.IntegerField(),
         help_text="Only rows related to the provided ids are added to the response.",
     )
-
-
-class GridViewExportSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ExportJob
-        fields = "__all__"

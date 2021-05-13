@@ -42,6 +42,7 @@ import fieldStore from '@baserow/modules/database/store/field'
 import gridStore from '@baserow/modules/database/store/view/grid'
 
 import { registerRealtimeEvents } from '@baserow/modules/database/realtime'
+import { CSVExporterType } from '@baserow/modules/database/exporterTypes'
 
 export default ({ store, app }) => {
   store.registerModule('table', tableStore)
@@ -81,6 +82,7 @@ export default ({ store, app }) => {
   app.$registry.register('importer', new PasteImporterType())
   app.$registry.register('importer', new XMLImporterType())
   app.$registry.register('settings', new APITokenSettingsType())
+  app.$registry.register('exporter', new CSVExporterType())
 
   registerRealtimeEvents(app.$realtime)
 }

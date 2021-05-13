@@ -4,6 +4,7 @@ from drf_spectacular.utils import extend_schema_field
 from drf_spectacular.types import OpenApiTypes
 
 from rest_framework import serializers
+from rest_framework.fields import ListField
 
 from baserow.api.user_files.validators import user_file_name_validator
 from baserow.api.user_files.serializers import UserFileURLAndThumbnailsSerializerMixin
@@ -61,6 +62,31 @@ class UpdateFieldSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "name": {"required": False},
         }
+
+
+class TodoReplaceMeFkSubListField(ListField):
+    """
+    String representation of an array field.
+    """
+
+    def __init__(self, sub, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
+        self.sub = sub
+
+    def to_representation(self, obj):
+        return ",".join([str(getattr(element, self.sub)) for element in obj.all()])
+
+
+class LinkRowValueOnlySerializer(serializers.Serializer):
+    def __init__(self, *args, **kwargs):
+        value_field_name = kwargs.pop("value_field_name", "value")
+        super().__init__(*args, **kwargs)
+        self.fields["value"] = serializers.CharField(
+            help_text="The primary field's value as a string of the row in the "
+            "related table.",
+            source=value_field_name,
+            required=False,
+        )
 
 
 class LinkRowValueSerializer(serializers.Serializer):
