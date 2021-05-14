@@ -1,5 +1,4 @@
 from collections import defaultdict
-
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint
@@ -28,10 +27,11 @@ from baserow.contrib.database.api.fields.serializers import (
     FileFieldResponseSerializer,
     SelectOptionSerializer,
     TodoReplaceMeFkSubListField,
+    StringRelatedSubField,
 )
 from baserow.core.models import UserFile
-from baserow.core.user_files.handler import UserFileHandler
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
+from baserow.core.user_files.handler import UserFileHandler
 from .exceptions import (
     LinkRowTableNotInSameDatabase,
     LinkRowTableNotProvided,
@@ -503,7 +503,7 @@ class LinkRowFieldType(FieldType):
             if primary_field:
                 primary_field_name = primary_field["name"]
 
-        return TodoReplaceMeFkSubListField(sub=primary_field_name)
+        return StringRelatedSubField(sub_field_name=primary_field_name, many=True)
 
     def get_serializer_field(self, instance, **kwargs):
         """

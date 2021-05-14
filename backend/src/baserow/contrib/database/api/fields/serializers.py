@@ -5,6 +5,7 @@ from drf_spectacular.types import OpenApiTypes
 
 from rest_framework import serializers
 from rest_framework.fields import ListField
+from rest_framework.relations import RelatedField
 
 from baserow.api.user_files.validators import user_file_name_validator
 from baserow.api.user_files.serializers import UserFileURLAndThumbnailsSerializerMixin
@@ -84,6 +85,21 @@ class TodoReplaceMeFkSubListField(ListField):
                 value = getattr(element, self.sub)
             values.append(value)
         return ",".join(values)
+
+
+class StringRelatedSubField(RelatedField):
+    """
+    A read only field that represents its targets using the string representation of
+    a sub field in the target.
+    """
+
+    def __init__(self, sub_field_name, **kwargs):
+        self.sub_field_name = sub_field_name
+        kwargs["read_only"] = True
+        super().__init__(**kwargs)
+
+    def to_representation(self, value):
+        return str(getattr(value, self.sub_field_name))
 
 
 class LinkRowValueOnlySerializer(serializers.Serializer):

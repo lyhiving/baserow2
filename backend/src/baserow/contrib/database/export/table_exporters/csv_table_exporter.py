@@ -25,6 +25,7 @@ class CsvTableExporter(TableExporter):
 
     def export_view(self, requesting_user, view, export_options, export_file):
         grid_view = ViewHandler().get_view(view.id, GridView)
+        # Export to some sort of default queryset function
         rows = GridViewHandler().get_rows(requesting_user, grid_view, search=None)
         ordered_field_names = []
         ordered_field_headers = []
@@ -39,9 +40,6 @@ class CsvTableExporter(TableExporter):
             field = f"field_{field_id}"
             ordered_field_names.append(field)
             ordered_field_headers.append(model._field_objects[field_id]["field"].name)
-
-        ordered_field_names.insert(0, "id")
-        ordered_field_headers.insert(0, "ID")
 
         return self._construct_csv_file_generator(
             model,
@@ -64,8 +62,6 @@ class CsvTableExporter(TableExporter):
         ordered_field_headers = [
             field_object["field"].name for field_object in model._field_objects.values()
         ]
-        ordered_field_names.insert(0, "id")
-        ordered_field_headers.insert(0, "ID")
         return self._construct_csv_file_generator(
             model,
             ordered_field_names,
@@ -84,33 +80,34 @@ class CsvTableExporter(TableExporter):
         export_options,
         export_file,
     ):
-        row_serializer = get_row_serializer_class(
-            model,
-            serializers.ModelSerializer,
-            field_names=ordered_field_names,
-            serializer_type="csv",
-        )
+        ordered_field_names.insert(0, "id")
+        ordered_field_headers.insert(0, "ID")
+        field_serializers = [
+            _generate_field_serializer(field_object)
+            for field_object in model._field_objects.values()
+            if field_object["name"] in ordered_field_names
+        ]
+        field_serializers.insert(0, lambda i: ("id", str(i.id)))
         return (
             csv_file_generator(
                 rows,
                 ordered_field_names,
                 ordered_field_headers,
                 export_file,
-                row_serializer=row_serializer,
+                field_serializers,
                 **export_options,
             ),
             rows.count(),
         )
 
 
-def csv_file_generator(queryset, field_names, field_headers, file_obj, **kwargs):
+def csv_file_generator(
+    queryset, field_names, field_headers, file_obj, field_serializers, **kwargs
+):
     """
     The main worker function. Writes CSV data to a file object based on the
     contents of the queryset and yields each row.
     """
-
-    # process keyword arguments to pull out the ones used by this function
-    row_serializer = kwargs.get("row_serializer", {})
 
     csv_kwargs = {"encoding": "utf-8"}
 
@@ -125,8 +122,6 @@ def csv_file_generator(queryset, field_names, field_headers, file_obj, **kwargs)
     if csv_kwargs["encoding"] == "utf-8":
         yield file_obj.write(b"\xef\xbb\xbf")
 
-    values_qs = queryset
-
     writer = csv.DictWriter(file_obj, field_names, **csv_kwargs)
 
     name_map = {}
@@ -135,6 +130,38 @@ def csv_file_generator(queryset, field_names, field_headers, file_obj, **kwargs)
 
     yield writer.writerow(name_map)
 
-    for record in values_qs.all().iterator(chunk_size=2000):
-        serialized = row_serializer(record)
-        yield writer.writerow(serialized.data)
+    iterator = queryset.all()
+    for record in iterator:
+        data = {}
+        for f in field_serializers:
+            key, value = f(record)
+            data[key] = value
+
+        yield writer.writerow(data)
+
+
+def _generate_field_serializer(field_object):
+    csv_serializer = field_object["type"].get_csv_serializer_field(
+        field_object["field"]
+    )
+
+    def csv_serializer_func(row):
+        attr = getattr(row, field_object["name"])
+        if hasattr(attr, "all"):
+            attr = attr.all()
+
+        if attr is None:
+            result = ""
+        else:
+            # We use the to_representation method directly instead of constructing a
+            # whole serializer class for performance reasons.
+            result = csv_serializer.to_representation(attr)
+
+        if isinstance(result, list):
+            result = ",".join(result)
+        return (
+            field_object["name"],
+            result,
+        )
+
+    return csv_serializer_func

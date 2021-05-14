@@ -30,7 +30,26 @@ services:
         # reducing the chance the containers screw up the bind mounted folders.
         UID: "${UID:-}"
         GID: "${GID:-}"
-    command: celery-dev
+    command: celery-dev -Q celery
+    volumes:
+      - ./backend:/baserow/backend
+      - ./premium/backend/:/baserow/backend/plugins/premium
+      - backend-dev-plugins:/baserow/backend/plugins
+    # Open stdin and tty so when attaching key input works as expected.
+    stdin_open: true
+    tty: true
+
+  celery-export-worker:
+    image: baserow_backend_dev:latest
+    build:
+      context: .
+      dockerfile: ./backend/docker/Dockerfile.dev
+      args:
+        # We allow configuring the UID/GID here so you can run as the dev's actual user
+        # reducing the chance the containers screw up the bind mounted folders.
+        UID: "${UID:-}"
+        GID: "${GID:-}"
+    command: celery-dev -Q export
     volumes:
       - ./backend:/baserow/backend
       - ./premium/backend/:/baserow/backend/plugins/premium

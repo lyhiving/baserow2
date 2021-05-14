@@ -79,6 +79,9 @@ REDIS_URL = (
 )
 
 CELERY_BROKER_URL = REDIS_URL
+CELERY_TASK_ROUTES = {
+    "baserow.contrib.database.export.tasks.run_export_job": {"queue": "export"}
+}
 
 CHANNEL_LAYERS = {
     "default": {

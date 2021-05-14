@@ -67,7 +67,21 @@ services:
     build:
       dockerfile: ./backend/Dockerfile
       context: .
-    command: celery
+    command: celery -Q celery
+    depends_on:
+      - backend
+    volumes:
+      - media:/baserow/media
+    networks:
+      local:
+
+  celery-export-worker:
+    container_name: celery-export-worker
+    image: baserow_backend:latest
+    build:
+      dockerfile: ./backend/Dockerfile
+      context: .
+    command: celery -Q export
     depends_on:
       - backend
     volumes:
