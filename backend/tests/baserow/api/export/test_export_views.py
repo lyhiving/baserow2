@@ -65,7 +65,7 @@ def test_field_type_changed(data_fixture, api_client, tmpdir):
                     "exporter_options": {
                         "csv_encoding": "utf-8",
                         "csv_include_header": "True",
-                        "csv_column_separator": ",",
+                        "csv_column_separator": "comma",
                     },
                 },
                 format="json",
