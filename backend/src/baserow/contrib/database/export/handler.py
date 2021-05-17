@@ -52,9 +52,11 @@ class ExportHandler:
         job.status = EXPORT_JOB_EXPORTING_STATUS
         job.save()
         exporter = table_exporter_registry.get(job.exporter_type)
-        exported_file_name = str(uuid.uuid4()) + ".csv"
+
+        exported_file_name = str(uuid.uuid4()) + exporter.file_extension
         storage_location = self.export_file_path(exported_file_name)
-        with _create_storage_dir_if_missing_open(storage_location) as file:
+
+        with _create_storage_dir_if_missing_and_open(storage_location) as file:
             if job.view:
                 export_iter, total_writes = exporter.export_view(
                     job.user, job.view, job.export_options, file
@@ -106,7 +108,7 @@ class ExportHandler:
         return job
 
 
-def _create_storage_dir_if_missing_open(storage_location):
+def _create_storage_dir_if_missing_and_open(storage_location):
     try:
         return default_storage.open(storage_location, "wb+")
     except FileNotFoundError:
