@@ -43,7 +43,6 @@ class Migration(migrations.Migration):
                     "error",
                     models.TextField(
                         blank=True,
-                        choices=[("EXAMPLE_ERROR", "EXAMPLE_ERROR")],
                         null=True,
                     ),
                 ),

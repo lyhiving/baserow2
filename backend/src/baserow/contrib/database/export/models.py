@@ -35,7 +35,7 @@ class ExportJob(models.Model):
         null=True,
         blank=True,
     )
-    error = models.TextField(choices=EXPORT_JOB_ERRORS, null=True, blank=True)
+    error = models.TextField(null=True, blank=True)
     # After this time the exported file is no longer guaranteed to exist and will be
     # deleted by a clean up job.
     expires_at = models.DateTimeField()
