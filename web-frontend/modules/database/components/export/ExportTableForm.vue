@@ -8,13 +8,13 @@
             <label class="control__label">Select the view to export:</label>
             <div class="control__elements">
               <ExportTableDropdown
-                v-model="view"
+                v-model="selectedView"
                 :loading="loading"
                 :table="table"
               ></ExportTableDropdown>
             </div>
           </div>
-          <div class="control">
+          <div v-if="exporterTypes.length > 0" class="control">
             <label class="control__label"
               >To which format would you like to export?</label
             >
@@ -30,7 +30,7 @@
                       active: exporter === exporterType.type,
                       disabled: loading,
                     }"
-                    @click="!loading ? (exporter = exporterType.type) : null"
+                    @click="switchToExporterType(exporterType)"
                   >
                     <i
                       class="choice-items__icon fas"
@@ -117,11 +117,12 @@ export default {
       exporterOptions: {},
       job: null,
       pollInterval: null,
+      selectedView: this.view,
     }
   },
   computed: {
     exporterTypes() {
-      return this.getExporterTypes(this.view)
+      return this.getExporterTypes(this.selectedView)
     },
     exporterComponent() {
       return this.exporter === ''
@@ -134,13 +135,46 @@ export default {
       )
     },
   },
+  watch: {
+    selectedView() {
+      this.switchToFirstAvailableExporterType()
+    },
+  },
   created() {
-    this.exporter = this.getExporterTypes(this.view)[0].type || ''
+    this.switchToFirstAvailableExporterType()
   },
   destroyed() {
     clearInterval(this.pollInterval)
   },
   methods: {
+    switchToFirstAvailableExporterType() {
+      const startingExporterType =
+        this.exporterTypes.length > 0 ? this.exporterTypes[0].type : ''
+
+      // If there is a currently selected export type and the new view / table also
+      // supports that type then keep it selected.
+      if (
+        this.exporter !== '' &&
+        this.exporterTypes.find((t) => t.type === this.exporter) !== undefined
+      ) {
+        return
+      }
+      this.switchToExporterType(startingExporterType)
+    },
+    switchToExporterType(exporterType) {
+      if (this.loading) {
+        return
+      }
+
+      this.hideError()
+      this.exporter = exporterType
+      if (this.exporterTypes.length === 0) {
+        this.showError(
+          'No supported exporters found',
+          'Please switch to another view or table.'
+        )
+      }
+    },
     getExporterTypes(view) {
       const types = Object.values(this.$registry.getAll('exporter'))
       return types.filter((exporterType) => {
@@ -166,19 +200,8 @@ export default {
               ? 'The export failed due to a server error.'
               : 'The export was cancelled.'
           this.job = null
-          const handler = {
-            handler: {
-              getMessage() {
-                return {
-                  title,
-                  message,
-                }
-              },
-              handled() {},
-            },
-          }
           this.loading = false
-          this.handleError(handler, 'application')
+          this.showError(title, message)
         }
       } catch (error) {
         this.loading = false
@@ -191,8 +214,8 @@ export default {
 
       try {
         const { data } = await ExporterService(this.$client).export(
-          this.view === null ? this.table.id : null,
-          this.view !== null ? this.view.id : null,
+          this.selectedView === null ? this.table.id : null,
+          this.selectedView !== null ? this.selectedView.id : null,
           this.exporter,
           this.exporterOptions
         )
