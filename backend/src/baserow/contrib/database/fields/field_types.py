@@ -26,7 +26,6 @@ from baserow.contrib.database.api.fields.serializers import (
     FileFieldRequestSerializer,
     FileFieldResponseSerializer,
     SelectOptionSerializer,
-    TodoReplaceMeFkSubListField,
     StringRelatedSubField,
 )
 from baserow.core.models import UserFile
@@ -57,6 +56,7 @@ from .models import (
     PhoneNumberField,
 )
 from .registries import FieldType, field_type_registry
+from ..api.export.serializers import FileNameAndURLSerializer
 
 
 class TextFieldType(FieldType):
@@ -954,7 +954,7 @@ class FileFieldType(FieldType):
         )
 
     def get_csv_serializer_field(self, instance, **kwargs):
-        return TodoReplaceMeFkSubListField("visible_name")
+        return FileNameAndURLSerializer(many=True)
 
     def get_response_serializer_field(self, instance, **kwargs):
         return FileFieldResponseSerializer(many=True, required=False, **kwargs)

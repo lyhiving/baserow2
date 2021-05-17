@@ -29,6 +29,7 @@ def test_can_export_simple_view_to_simple_csv(
     date_field = data_fixture.create_date_field(
         table=table, date_include_time=True, date_format="US", name="date_field"
     )
+    file_field = data_fixture.create_file_field(table=table, name="File")
     price_field = data_fixture.create_number_field(
         table=table,
         name="Price",
@@ -69,28 +70,37 @@ def test_can_export_simple_view_to_simple_csv(
             other_table_primary_text_field.id: "link-other-test",
         },
     )
-    row_handler.create_row(
-        user=user,
-        table=table,
-        values={
-            text_field.id: "test",
-            date_field.id: "2020-02-01 01:23",
-            option_field.id: option_b.id,
-            link_field.id: [first_linked_row.id, second_linked_row.id],
-            price_field.id: Decimal(10.2),
+    model = table.get_model()
+    row = model.objects.create(
+        **{
+            f"field_{text_field.id}": "test",
+            f"field_{date_field.id}": "2020-02-01 01:23",
+            f"field_{option_field.id}": option_b,
+            f"field_{price_field.id}": Decimal(10.2),
+            f"field_{file_field.id}": [
+                {
+                    "name": "hashed_name.txt",
+                    "visible_name": "a.txt",
+                }
+            ],
         },
     )
-    row_handler.create_row(
-        user=user,
-        table=table,
-        values={
-            text_field.id: "atest",
-            date_field.id: "2020-02-01 01:23",
-            option_field.id: option_a.id,
-            link_field.id: [second_linked_row.id],
-            price_field.id: Decimal(-10.2),
+    getattr(row, f"field_{link_field.id}").add(
+        first_linked_row.id, second_linked_row.id
+    )
+    row2 = model.objects.create(
+        **{
+            f"field_{text_field.id}": "atest",
+            f"field_{date_field.id}": "2020-02-01 01:23",
+            f"field_{option_field.id}": option_a,
+            f"field_{price_field.id}": Decimal(-10.2),
+            f"field_{file_field.id}": [
+                {"name": "hashed_name.txt", "visible_name": "a.txt"},
+                {"name": "hashed_name2.txt", "visible_name": "b.txt"},
+            ],
         },
     )
+    getattr(row2, f"field_{link_field.id}").add(second_linked_row.id)
 
     stub_file = BytesIO()
     storage_mock.open.return_value = stub_file
@@ -100,32 +110,39 @@ def test_can_export_simple_view_to_simple_csv(
     handler = ExportHandler()
 
     job = handler.create_pending_export_job(user, table, grid_view, "csv", {})
-    with django_assert_num_queries(44):
+    upload_url_prefix = "http://localhost:8000/media/user_files/"
+    f2 = (
+        f'"a.txt ({upload_url_prefix}hashed_name.txt),'
+        f'b.txt ({upload_url_prefix}hashed_name2.txt)"'
+    )
+    f1 = f"a.txt ({upload_url_prefix}hashed_name.txt)"
+    with django_assert_num_queries(46):
         handler.run_export_job(job)
     expected = (
         "\ufeff"
-        "ID,text_field,option_field,date_field,Price,Customer\r\n"
-        "2,atest,A,02/01/2020 01:23,-10.20,link-other-test\r\n"
-        '1,test,B,02/01/2020 01:23,10.20,"link-test,link-other-test"\r\n'
+        "ID,text_field,option_field,date_field,File,Price,Customer\r\n"
+        f"2,atest,A,02/01/2020 01:23,{f2},-10.20,link-other-test\r\n"
+        f'1,test,B,02/01/2020 01:23,{f1},10.20,"link-test,link-other-test"\r\n'
     )
     actual = stub_file.getvalue().decode("utf-8")
+    print(actual)
+    print(expected)
     assert actual == expected
     close()
 
     job.refresh_from_db()
     assert job.status == "completed"
 
-    row_handler.create_row(
-        user=user,
-        table=table,
-        values={
-            text_field.id: "atest3",
-            date_field.id: "2020-02-01 01:23",
-            option_field.id: option_a.id,
-            link_field.id: [second_linked_row.id],
-            price_field.id: Decimal(-100.2),
+    row3 = model.objects.create(
+        **{
+            f"field_{text_field.id}": "atest3",
+            f"field_{date_field.id}": "2020-02-01 01:23",
+            f"field_{option_field.id}": option_a,
+            f"field_{price_field.id}": Decimal(-100.2),
+            f"field_{file_field.id}": [],
         },
     )
+    getattr(row3, f"field_{link_field.id}").add(second_linked_row.id)
     stub_file = BytesIO()
     storage_mock.open.return_value = stub_file
     close = stub_file.close
@@ -134,14 +151,14 @@ def test_can_export_simple_view_to_simple_csv(
     handler = ExportHandler()
 
     job = handler.create_pending_export_job(user, table, grid_view, "csv", {})
-    with django_assert_num_queries(44):
+    with django_assert_num_queries(46):
         handler.run_export_job(job)
     expected = (
         "\ufeff"
-        "ID,text_field,option_field,date_field,Price,Customer\r\n"
-        "2,atest,A,02/01/2020 01:23,-10.20,link-other-test\r\n"
-        "3,atest3,A,02/01/2020 01:23,-100.20,link-other-test\r\n"
-        '1,test,B,02/01/2020 01:23,10.20,"link-test,link-other-test"\r\n'
+        "ID,text_field,option_field,date_field,File,Price,Customer\r\n"
+        f"2,atest,A,02/01/2020 01:23,{f2},-10.20,link-other-test\r\n"
+        "3,atest3,A,02/01/2020 01:23,,-100.20,link-other-test\r\n"
+        f'1,test,B,02/01/2020 01:23,{f1},10.20,"link-test,link-other-test"\r\n'
     )
     actual = stub_file.getvalue().decode("utf-8")
     assert actual == expected

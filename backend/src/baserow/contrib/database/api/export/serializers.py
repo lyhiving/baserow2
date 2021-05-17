@@ -2,9 +2,11 @@ from django.core.files.storage import default_storage
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers, fields
+from rest_framework.relations import RelatedField
 
 from baserow.contrib.database.export.handler import ExportHandler
 from baserow.contrib.database.export.models import ExportJob
+from baserow.core.user_files.handler import UserFileHandler
 
 SUPPORTED_CSV_ENCODINGS = [
     ("utf-8", "Unicode (UTF-8)"),
@@ -108,3 +110,25 @@ class CreateExportJobSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExportJob
         fields = ["exporter_type", "exporter_options"]
+
+
+class FileNameAndURLSerializer(RelatedField):
+    def __init__(self, **kwargs):
+        kwargs["read_only"] = True
+        super().__init__(**kwargs)
+
+    def to_representation(self, value):
+        url = self.get_url(value)
+        visible_name = value["visible_name"]
+        if url is None:
+            return visible_name
+        else:
+            return visible_name + f" ({url})"
+
+    def get_url(self, instance):
+        if "name" in instance:
+            path = UserFileHandler().user_file_path(instance["name"])
+            url = default_storage.url(path)
+            return url
+        else:
+            return None

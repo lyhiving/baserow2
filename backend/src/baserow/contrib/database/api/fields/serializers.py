@@ -1,16 +1,13 @@
 from django.utils.functional import lazy
-
-from drf_spectacular.utils import extend_schema_field
 from drf_spectacular.types import OpenApiTypes
-
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-from rest_framework.fields import ListField
 from rest_framework.relations import RelatedField
 
-from baserow.api.user_files.validators import user_file_name_validator
 from baserow.api.user_files.serializers import UserFileURLAndThumbnailsSerializerMixin
-from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.api.user_files.validators import user_file_name_validator
 from baserow.contrib.database.fields.models import Field
+from baserow.contrib.database.fields.registries import field_type_registry
 
 
 class FieldSerializer(serializers.ModelSerializer):
@@ -63,28 +60,6 @@ class UpdateFieldSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "name": {"required": False},
         }
-
-
-class TodoReplaceMeFkSubListField(ListField):
-    """
-    String representation of an array field.
-    """
-
-    def __init__(self, sub, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
-        self.sub = sub
-
-    def to_representation(self, obj):
-        if hasattr(obj, "all"):
-            obj = obj.all()
-        values = []
-        for element in obj:
-            if isinstance(element, dict):
-                value = element[self.sub]
-            else:
-                value = getattr(element, self.sub)
-            values.append(value)
-        return ",".join(values)
 
 
 class StringRelatedSubField(RelatedField):
