@@ -6,6 +6,7 @@ from django.core.files.storage import default_storage
 from os.path import join
 
 from django.conf import settings
+from django.core.paginator import Paginator
 from django.utils import timezone
 
 from baserow.contrib.database.export.models import (
@@ -58,29 +59,35 @@ class ExportHandler:
 
         with _create_storage_dir_if_missing_and_open(storage_location) as file:
             if job.view:
-                export_iter, total_writes = exporter.export_view(
+                qs, export_func = exporter.export_view(
                     job.user, job.view, job.export_options, file
                 )
             else:
-                export_iter, total_writes = exporter.export_table(
+                qs, export_func = exporter.export_table(
                     job.user, job.table, job.export_options, file
                 )
 
             last_percentage_update = time.perf_counter()
-            for i, _ in enumerate(export_iter):
+            # TODO: How do we pick a chunk size?
+            # TODO: Are we ok with the export being inconstant when someone updates
+            #  rows during an export run?
+            paginator = Paginator(qs.all(), 2000)
+            for page in paginator.page_range:
+                for row in paginator.page(page).object_list:
+                    export_func(row)
                 current_time = time.perf_counter()
                 # Update every X seconds to match the clients long poll frequency
                 if (
                     current_time - last_percentage_update
                     > EXPORT_JOB_UPDATE_FREQUENCY_SECONDS
-                    or i == total_writes
+                    or page == paginator.num_pages
                 ):
                     last_percentage_update = time.perf_counter()
                     job.refresh_from_db()
                     if job.is_cancelled():
                         raise ExportJobCanceledException()
                     else:
-                        job.progress_percentage = i / total_writes
+                        job.progress_percentage = page / paginator.num_pages
                         print(f"Updating percentage to {job.progress_percentage}")
                         job.save()
         return exported_file_name

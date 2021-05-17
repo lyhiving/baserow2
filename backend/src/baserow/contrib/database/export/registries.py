@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, BinaryIO, Generator, Iterable, Tuple
+from typing import List, Dict, Any, BinaryIO, Iterable, Tuple, Callable
 
 from django.contrib.auth import get_user_model
-from django.db.models import QuerySet
 
 from baserow.contrib.database.api.views.grid.grid_view_handler import GridViewHandler
 from baserow.contrib.database.table.models import Table, FieldObject
@@ -13,7 +12,8 @@ from baserow.core.registry import Instance, Registry
 User = get_user_model()
 
 
-ExportHandlerResult = Tuple[Generator[None, None, None], int]
+ExporterFunc = Callable[[Any], None]
+ExportHandlerResult = Tuple[Any, ExporterFunc]
 
 
 class TableExporter(Instance, ABC):
@@ -62,9 +62,8 @@ class TableExporter(Instance, ABC):
             id_ = model._field_objects[field_id]
             ordered_field_objects.append(id_)
 
-        return self.make_file_output_generator(
+        return rows, self.make_file_output_generator(
             ordered_field_objects,
-            rows,
             export_options,
             export_file,
         )
@@ -81,9 +80,8 @@ class TableExporter(Instance, ABC):
         )
         model = table.get_model()
         queryset = model.objects.all().enhance_by_fields()
-        return self.make_file_output_generator(
+        return queryset, self.make_file_output_generator(
             model._field_objects.values(),
-            queryset,
             export_options,
             export_file,
         )
@@ -92,10 +90,9 @@ class TableExporter(Instance, ABC):
     def make_file_output_generator(
         self,
         ordered_field_objects: Iterable[FieldObject],
-        rows: QuerySet,
         export_options: Dict[str, Any],
         export_file: BinaryIO,
-    ) -> ExportHandlerResult:
+    ) -> ExporterFunc:
         pass
 
 

@@ -1,11 +1,10 @@
-from typing import List, Dict, BinaryIO, Callable, Any, Generator, Iterable
+from typing import List, Dict, BinaryIO, Callable, Any, Iterable
 
 import unicodecsv as csv
-from django.db.models import QuerySet
 
 from baserow.contrib.database.export.registries import (
     TableExporter,
-    ExportHandlerResult,
+    ExporterFunc,
 )
 from baserow.contrib.database.table.models import FieldObject
 from baserow.contrib.database.views.view_types import GridViewType
@@ -30,10 +29,9 @@ class CsvTableExporter(TableExporter):
     def make_file_output_generator(
         self,
         ordered_field_objects: Iterable[FieldObject],
-        rows: QuerySet,
         export_options: Dict[any, str],
         export_file: BinaryIO,
-    ) -> ExportHandlerResult:
+    ) -> ExporterFunc:
         ordered_field_database_names = ["id"]
         field_database_name_to_header_value_map = {"id": "ID"}
         ordered_database_field_serializers = [lambda row: ("id", str(row.id))]
@@ -48,21 +46,16 @@ class CsvTableExporter(TableExporter):
                 field_database_name
             ] = field_display_name
 
-        return (
-            csv_file_generator(
-                rows,
-                ordered_field_database_names,
-                field_database_name_to_header_value_map,
-                export_file,
-                ordered_database_field_serializers,
-                **export_options,
-            ),
-            rows.count(),
+        return csv_file_generator(
+            ordered_field_database_names,
+            field_database_name_to_header_value_map,
+            export_file,
+            ordered_database_field_serializers,
+            **export_options,
         )
 
 
 def csv_file_generator(
-    queryset: QuerySet,
     ordered_field_database_names: List[str],
     field_database_name_to_header_value_map: Dict[str, str],
     file_obj: BinaryIO,
@@ -70,12 +63,12 @@ def csv_file_generator(
     csv_encoding="utf-8",
     csv_column_separator=",",
     csv_include_header=True,
-) -> Generator[None, None, None]:
+) -> ExporterFunc:
 
     # add BOM to support CSVs in MS Excel (for Windows only)
     # TODO is this right??
     if csv_encoding == "utf-8":
-        yield file_obj.write(b"\xef\xbb\xbf")
+        file_obj.write(b"\xef\xbb\xbf")
 
     writer = csv.DictWriter(
         file_obj,
@@ -85,15 +78,17 @@ def csv_file_generator(
     )
 
     if csv_include_header:
-        yield writer.writerow(field_database_name_to_header_value_map)
+        writer.writerow(field_database_name_to_header_value_map)
 
-    for record in queryset.all():
+    def write_row(row):
         data = {}
         for f in field_serializers:
-            key, value = f(record)
+            key, value = f(row)
             data[key] = value
 
-        yield writer.writerow(data)
+        writer.writerow(data)
+
+    return write_row
 
 
 def _generate_field_serializer(field_object: FieldObject) -> Callable[[Any], Any]:
