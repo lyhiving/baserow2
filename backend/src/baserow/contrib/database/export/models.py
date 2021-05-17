@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 
-from baserow.contrib.database.export.exceptions import EXPORT_JOB_ERRORS
 from baserow.contrib.database.table.models import Table
 from baserow.contrib.database.views.models import View
 
