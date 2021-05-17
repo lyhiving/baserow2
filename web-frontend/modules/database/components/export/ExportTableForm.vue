@@ -204,7 +204,15 @@ export default {
           this.showError(title, message)
         }
       } catch (error) {
+        // We could preserve the job and do some sort of exponential polling backoff
+        // here as the error might be a transient one. However having all clients
+        // instantly stop applying load to the server if a problem occurs seems
+        // more prudent and worth loosing potentially recoverable export jobs.
         this.loading = false
+        this.job = null
+        if (this.pollInterval) {
+          clearInterval(this.pollInterval)
+        }
         this.handleError(error, 'application')
       }
     },
@@ -230,6 +238,10 @@ export default {
         }
       } catch (error) {
         this.loading = false
+        this.job = null
+        if (this.pollInterval) {
+          clearInterval(this.pollInterval)
+        }
         this.handleError(error, 'application')
       }
     },
