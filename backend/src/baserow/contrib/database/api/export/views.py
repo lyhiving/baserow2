@@ -11,14 +11,13 @@ from baserow.api.errors import (
     ERROR_USER_INVALID_GROUP_PERMISSIONS,
 )
 from baserow.api.schemas import get_error_schema
-from baserow.api.utils import PolymorphicMappingSerializer
 from baserow.contrib.database.api.export.errors import (
     ExportJobDoesNotExistException,
     ERROR_EXPORT_JOB_DOES_NOT_EXIST,
 )
 from baserow.contrib.database.api.export.serializers import (
-    CreateExportJobSerializer,
     GetExportJobSerializer,
+    CreateExportJobSerializer,
 )
 from baserow.contrib.database.api.tables.errors import ERROR_TABLE_DOES_NOT_EXIST
 from baserow.contrib.database.api.views.errors import ERROR_VIEW_DOES_NOT_EXIST
@@ -50,7 +49,7 @@ class ExportTableView(APIView):
         description=(
             "Exports the specified table to any of the supported exported file formats"
         ),
-        request=PolymorphicMappingSerializer("Export", CreateExportJobSerializer),
+        request=CreateExportJobSerializer,
         responses={
             200: GetExportJobSerializer,
             400: get_error_schema(
@@ -60,7 +59,7 @@ class ExportTableView(APIView):
                     "ERROR_USER_INVALID_GROUP_PERMISSIONS",
                 ]
             ),
-            404: ["ERROR_TABLE_DOES_NOT_EXIST"],
+            404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
         },
     )
     @transaction.atomic
@@ -110,7 +109,7 @@ class ExportViewView(APIView):
         description=(
             "Exports the specified view to any of the supported exported file formats"
         ),
-        request=PolymorphicMappingSerializer("Export", CreateExportJobSerializer),
+        request=CreateExportJobSerializer,
         responses={
             200: GetExportJobSerializer,
             400: get_error_schema(
@@ -120,7 +119,7 @@ class ExportViewView(APIView):
                     "ERROR_USER_INVALID_GROUP_PERMISSIONS",
                 ]
             ),
-            404: ["ERROR_VIEW_DOES_NOT_EXIST"],
+            404: get_error_schema(["ERROR_VIEW_DOES_NOT_EXIST"]),
         },
     )
     @transaction.atomic
@@ -159,14 +158,13 @@ class ExportJobView(APIView):
                 name="job_id",
                 location=OpenApiParameter.PATH,
                 type=OpenApiTypes.INT,
-                description="Exports the job with this id if you have permissions "
-                "to access it.",
+                description="The job id to get.",
             )
         ],
         tags=["Export"],
-        operation_id="export_view",
+        operation_id="get_export_job",
         description=(
-            "Exports the specified view to any of the supported exported file formats"
+            "Returns information on the specified export job if the user has access."
         ),
         responses={
             200: GetExportJobSerializer,
@@ -175,7 +173,7 @@ class ExportJobView(APIView):
                     "ERROR_REQUEST_BODY_VALIDATION",
                 ]
             ),
-            404: ["ERROR_VIEW_DOES_NOT_EXIST", "ERROR_EXPORT_JOB_DOES_NOT_EXIST"],
+            404: get_error_schema(["ERROR_EXPORT_JOB_DOES_NOT_EXIST"]),
         },
     )
     @transaction.atomic

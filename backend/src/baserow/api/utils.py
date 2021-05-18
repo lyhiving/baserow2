@@ -1,18 +1,15 @@
 from collections import Mapping
 from contextlib import contextmanager
+from typing import Dict
 
-from django.core.exceptions import ImproperlyConfigured
 from django.utils.encoding import force_text
-
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.fields import empty
-from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework.request import Request
-from six import string_types
+from rest_framework.serializers import ModelSerializer, Serializer
 
 from baserow.core.exceptions import InstanceTypeDoesNotExist
-
 from .exceptions import RequestBodyValidationException
 
 
@@ -251,53 +248,55 @@ class PolymorphicCustomFieldRegistrySerializer:
         self.many = many
 
 
-class PolymorphicMappingSerializer:
+class PolymorphicMappingSerializer(Serializer):
     """
-    A placeholder class for the `PolymorphicMappingSerializerExtension` extension class.
+    API docs for this serializer are extended by the
+    `PolymorphicMappingSerializerExtension` extension class.
+
+    Given a mapping class of type names to serializers this class will
+    serialize a given data dict by extracting a specific type name from
+    data[self.type_field_name] and looking up the correct serializer in the mapping.
+
+    The implementation is a modified version of
+    https://github.com/apirobot/django-rest-polymorphic's serializer
     """
 
-    def __init__(self, component_name, mapping, type_field_name="type", many=False):
-        self.read_only = False
+    def __init__(
+        self,
+        component_name: str,
+        mapping: Dict[str, Serializer],
+        type_field_name="type",
+        many=False,
+        *args,
+        **kwargs,
+    ):
         self.component_name = component_name
         self.mapping = mapping
         self.type_field_name = type_field_name
+
+        # Set these so the api extension class can access them
         self.many = many
+        self.read_only = False
 
+        # Pass on the arguments actually used by the base class.
+        kwargs["read_only"] = self.read_only
+        kwargs["many"] = many
 
-# Modified version of https://github.com/apirobot/django-rest-polymorphic's serializer.
-# We customize it to instead work off a text resource instead of a model instance.
-class PolymorphicTextResourceSerializer(Serializer):
-    resource_serializer_mapping = None
-    resource_type_field_name = "resourcetype"
-
-    def __new__(cls, *args, **kwargs):
-        if cls.resource_serializer_mapping is None:
-            raise ImproperlyConfigured(
-                "`{cls}` is missing a "
-                "`{cls}.resource_serializer_mapping` attribute".format(cls=cls.__name__)
-            )
-        if not isinstance(cls.resource_type_field_name, string_types):
-            raise ImproperlyConfigured(
-                "`{cls}.resource_type_field_name` must be a string".format(
-                    cls=cls.__name__
-                )
-            )
-        return super().__new__(cls, *args, **kwargs)
-
-    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for resource, serializer in self.resource_serializer_mapping.items():
+
+        # Instantiate any serializers which were provided as classes.
+        for resource, serializer in self.mapping.items():
             if callable(serializer):
                 serializer = serializer(*args, **kwargs)
                 serializer.parent = self
 
-            self.resource_serializer_mapping[resource] = serializer
+            self.mapping[resource] = serializer
 
     # ----------
     # Public API
 
     def to_resource_type(self, model_or_instance):
-        return getattr(model_or_instance, self.resource_type_field_name)
+        return getattr(model_or_instance, self.type_field_name)
 
     def to_representation(self, instance):
         if isinstance(instance, Mapping):
@@ -308,7 +307,7 @@ class PolymorphicTextResourceSerializer(Serializer):
             serializer = self._get_serializer_from_resource_type(instance)
 
         ret = serializer.to_representation(instance)
-        ret[self.resource_type_field_name] = resource_type
+        ret[self.type_field_name] = resource_type
         return ret
 
     def to_internal_value(self, data):
@@ -316,16 +315,16 @@ class PolymorphicTextResourceSerializer(Serializer):
         serializer = self._get_serializer_from_resource_type(resource_type)
 
         ret = serializer.to_internal_value(data)
-        ret[self.resource_type_field_name] = resource_type
+        ret[self.type_field_name] = resource_type
         return ret
 
     def create(self, validated_data):
-        resource_type = validated_data.pop(self.resource_type_field_name)
+        resource_type = validated_data.pop(self.type_field_name)
         serializer = self._get_serializer_from_resource_type(resource_type)
         return serializer.create(validated_data)
 
     def update(self, instance, validated_data):
-        resource_type = validated_data.pop(self.resource_type_field_name)
+        resource_type = validated_data.pop(self.type_field_name)
         serializer = self._get_serializer_from_resource_type(resource_type)
         return serializer.update(instance, validated_data)
 
@@ -345,7 +344,7 @@ class PolymorphicTextResourceSerializer(Serializer):
         resource_type = self._get_resource_type_from_mapping(data)
         serializer = self._get_serializer_from_resource_type(resource_type)
         validated_data = serializer.run_validation(data)
-        validated_data[self.resource_type_field_name] = resource_type
+        validated_data[self.type_field_name] = resource_type
         return validated_data
 
     # --------------
@@ -353,22 +352,22 @@ class PolymorphicTextResourceSerializer(Serializer):
 
     def _get_resource_type_from_mapping(self, mapping):
         try:
-            return mapping[self.resource_type_field_name]
+            return mapping[self.type_field_name]
         except KeyError:
             raise ValidationError(
                 {
-                    self.resource_type_field_name: "This field is required",
+                    self.type_field_name: "This field is required",
                 }
             )
 
     def _get_serializer_from_resource_type(self, resource_type):
 
-        if resource_type in self.resource_serializer_mapping:
-            return self.resource_serializer_mapping[resource_type]
+        if resource_type in self.mapping:
+            return self.mapping[resource_type]
 
         raise ValidationError(
             {
-                self.resource_type_field_name: "This field must be one of the "
+                self.type_field_name: "This field must be one of the "
                 "supported resources",
             }
         )

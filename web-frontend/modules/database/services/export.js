@@ -5,7 +5,7 @@ export default (client) => {
       if (exporterType === 'csv') {
         exporterOptionsJson = {
           csv_include_header: exporterOptions.csvFirstRowHeader,
-          csv_encoding: exporterOptions.csvEncoding,
+          csv_charset: exporterOptions.csvEncoding,
           csv_column_separator: exporterOptions.csvColumnSeparator,
         }
       } else {

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, BinaryIO, Iterable, Tuple, Callable
+from typing import List, Dict, Any, BinaryIO, Iterable, Tuple, Callable, Type
 
 from django.contrib.auth import get_user_model
 
@@ -10,7 +10,6 @@ from baserow.contrib.database.views.models import GridView, View
 from baserow.core.registry import Instance, Registry
 
 User = get_user_model()
-
 
 ExporterFunc = Callable[[Any], None]
 ExportHandlerResult = Tuple[Any, ExporterFunc]
@@ -38,6 +37,11 @@ class TableExporter(Instance, ABC):
     @property
     @abstractmethod
     def supported_views(self) -> List[str]:
+        pass
+
+    @property
+    @abstractmethod
+    def option_serializer_class(self) -> Type["BaseExporterOptionSerializer"]:
         pass
 
     def export_view(
@@ -103,6 +107,12 @@ class TableExporterRegistry(Registry):
     """
 
     name = "table_exporter"
+
+    def get_option_serializer_map(self):
+        return {
+            table_exporter_type.type: table_exporter_type.option_serializer_class
+            for table_exporter_type in self.registry.values()
+        }
 
 
 table_exporter_registry = TableExporterRegistry()

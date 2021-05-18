@@ -1,13 +1,18 @@
 from django.core.files.storage import default_storage
+from django.utils.functional import lazy
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers, fields
 
-from baserow.api.utils import PolymorphicTextResourceSerializer
+from baserow.api.utils import PolymorphicMappingSerializer
 from baserow.contrib.database.export.handler import ExportHandler
 from baserow.contrib.database.export.models import ExportJob
 
-SUPPORTED_CSV_ENCODINGS = [
+# Please keep in sync with
+# web-frontend/modules/core/components/helpers/CharsetDropdown.vue:
+from baserow.contrib.database.export.registries import table_exporter_registry
+
+SUPPORTED_CSV_CHARSETS = [
     ("utf-8", "Unicode (UTF-8)"),
     ("iso-8859-6", "Arabic (ISO-8859-6)"),
     ("windows-1256", "Arabic (Windows-1256)"),
@@ -98,8 +103,12 @@ class DisplayChoiceField(serializers.ChoiceField):
         return self._choices[obj]
 
 
-class RequestCsvOptionsSerializer(serializers.Serializer):
-    csv_encoding = fields.ChoiceField(choices=SUPPORTED_CSV_ENCODINGS)
+class BaseExporterOptionSerializer(serializers.Serializer):
+    exporter_type = fields.CharField()
+
+
+class RequestCsvOptionSerializer(BaseExporterOptionSerializer):
+    csv_charset = fields.ChoiceField(choices=SUPPORTED_CSV_CHARSETS)
     # For ease of use we expect the JSON to contain human typeable forms of each
     # different separator instead of the unicode character itself. By using the
     # DisplayChoiceField we can then map this to the actual separator character by
@@ -108,7 +117,8 @@ class RequestCsvOptionsSerializer(serializers.Serializer):
     csv_include_header = fields.BooleanField()
 
 
-class CreateExportJobSerializer(PolymorphicTextResourceSerializer):
-    resource_type_field_name = "exporter_type"
-
-    resource_serializer_mapping = {"csv": RequestCsvOptionsSerializer}
+CreateExportJobSerializer = PolymorphicMappingSerializer(
+    "Export",
+    lazy(table_exporter_registry.get_option_serializer_map, dict)(),
+    type_field_name="exporter_type",
+)

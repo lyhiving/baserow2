@@ -1,7 +1,11 @@
-from typing import List, Dict, BinaryIO, Callable, Any, Iterable
+from typing import List, Dict, BinaryIO, Callable, Any, Iterable, Type
 
 import unicodecsv as csv
 
+from baserow.contrib.database.api.export.serializers import (
+    RequestCsvOptionSerializer,
+    BaseExporterOptionSerializer,
+)
 from baserow.contrib.database.export.registries import (
     TableExporter,
     ExporterFunc,
@@ -11,6 +15,9 @@ from baserow.contrib.database.views.view_types import GridViewType
 
 
 class CsvTableExporter(TableExporter):
+    @property
+    def option_serializer_class(self) -> Type[BaseExporterOptionSerializer]:
+        return RequestCsvOptionSerializer
 
     type = "csv"
 
@@ -60,20 +67,20 @@ def csv_file_generator(
     field_database_name_to_header_value_map: Dict[str, str],
     file_obj: BinaryIO,
     field_serializers: List[Callable[[Any], Any]],
-    csv_encoding="utf-8",
+    csv_charset="utf-8",
     csv_column_separator=",",
     csv_include_header=True,
 ) -> ExporterFunc:
 
     # add BOM to support CSVs in MS Excel (for Windows only)
     # TODO is this right??
-    if csv_encoding == "utf-8":
+    if csv_charset == "utf-8":
         file_obj.write(b"\xef\xbb\xbf")
 
     writer = csv.DictWriter(
         file_obj,
         ordered_field_database_names,
-        encoding=csv_encoding,
+        encoding=csv_charset,
         delimiter=csv_column_separator,
     )
 

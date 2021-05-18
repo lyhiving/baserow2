@@ -62,7 +62,7 @@ def test_field_type_changed(data_fixture, api_client, tmpdir):
                 ),
                 data={
                     "exporter_type": "csv",
-                    "csv_encoding": "utf-8",
+                    "csv_charset": "utf-8",
                     "csv_include_header": "True",
                     "csv_column_separator": "comma",
                 },

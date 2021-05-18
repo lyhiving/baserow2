@@ -9,7 +9,7 @@ from baserow.contrib.database.api.export.serializers import CreateExportJobSeria
 def test_polymorphic_export_options_serializer_allows_correct_data(data_fixture):
     initial_data = {
         "exporter_type": "csv",
-        "csv_encoding": "utf-8",
+        "csv_charset": "utf-8",
         "csv_column_separator": "comma",
         "csv_include_header": False,
     }
@@ -20,7 +20,7 @@ def test_polymorphic_export_options_serializer_allows_correct_data(data_fixture)
 
     assert data == {
         "exporter_type": "csv",
-        "csv_encoding": "utf-8",
+        "csv_charset": "utf-8",
         "csv_column_separator": ",",
         "csv_include_header": False,
     }
@@ -31,7 +31,7 @@ def test_polymorphic_export_options_serializer_fails_on_missing_exporter_type(
     data_fixture,
 ):
     initial_data = {
-        "csv_encoding": "utf-8",
+        "csv_charset": "utf-8",
         "csv_column_separator": "comma",
         "csv_include_header": False,
     }
@@ -48,7 +48,7 @@ def test_polymorphic_export_options_serializer_fails_on_unknown_exporter_type(
 ):
     initial_data = {
         "exporter_type": "csvv",
-        "csv_encoding": "utf-8",
+        "csv_charset": "utf-8",
         "csv_column_separator": "comma",
         "csv_include_header": False,
     }

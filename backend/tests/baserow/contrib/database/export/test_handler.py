@@ -224,7 +224,7 @@ def test_field_type_changed(storage_mock, data_fixture):
         table,
         grid_view,
         "csv",
-        {"csv_encoding": "iso-2022-jp", "csv_column_separator": "\t"},
+        {"csv_charset": "iso-2022-jp", "csv_column_separator": "\t"},
     )
     handler.run_export_job(job)
     expected = (
