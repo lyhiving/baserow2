@@ -62,11 +62,9 @@ def test_field_type_changed(data_fixture, api_client, tmpdir):
                 ),
                 data={
                     "exporter_type": "csv",
-                    "exporter_options": {
-                        "csv_encoding": "utf-8",
-                        "csv_include_header": "True",
-                        "csv_column_separator": "comma",
-                    },
+                    "csv_encoding": "utf-8",
+                    "csv_include_header": "True",
+                    "csv_column_separator": "comma",
                 },
                 format="json",
                 HTTP_AUTHORIZATION=f"JWT {token}",
@@ -89,8 +87,9 @@ def test_field_type_changed(data_fixture, api_client, tmpdir):
                 format="json",
                 HTTP_AUTHORIZATION=f"JWT {token}",
             )
-            filename = response.json()["exported_file_name"]
-            assert response.json() == {
+            json = response.json()
+            filename = json["exported_file_name"]
+            assert json == {
                 "id": job_id,
                 "error": None,
                 "expires_at": "2020-01-02T13:00:00Z",

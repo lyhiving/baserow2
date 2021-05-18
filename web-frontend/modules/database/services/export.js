@@ -1,16 +1,24 @@
 export default (client) => {
   return {
     export(tableId, viewId, exporterType, exporterOptions) {
-      const exporterOptionsJson = {
-        csv_include_header: exporterOptions.csvFirstRowHeader,
-        csv_encoding: exporterOptions.csvEncoding,
-        csv_column_separator: exporterOptions.csvColumnSeparator,
+      let exporterOptionsJson = {}
+      if (exporterType === 'csv') {
+        exporterOptionsJson = {
+          csv_include_header: exporterOptions.csvFirstRowHeader,
+          csv_encoding: exporterOptions.csvEncoding,
+          csv_column_separator: exporterOptions.csvColumnSeparator,
+        }
+      } else {
+        throw new Error(
+          `Unsupported type ${exporterType} given to export service.`
+        )
       }
+
       const tableOrView = viewId !== null ? 'view' : 'table'
       const id = viewId !== null ? viewId : tableId
       return client.post(`/database/export/${tableOrView}/${id}/`, {
         exporter_type: exporterType,
-        exporter_options: exporterOptionsJson,
+        ...exporterOptionsJson,
       })
     },
     get(jobId) {

@@ -27,6 +27,7 @@ from baserow.contrib.database.api.fields.serializers import (
     FileFieldResponseSerializer,
     SelectOptionSerializer,
     StringRelatedSubField,
+    FileNameAndURLSerializer,
 )
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
@@ -56,7 +57,6 @@ from .models import (
     PhoneNumberField,
 )
 from .registries import FieldType, field_type_registry
-from ..api.export.serializers import FileNameAndURLSerializer
 
 
 class TextFieldType(FieldType):

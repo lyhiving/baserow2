@@ -23,8 +23,24 @@ EXPORT_JOB_UPDATE_FREQUENCY_SECONDS = 1
 
 
 def _check_and_update_job(job, last_update_time, current_row, total_rows):
+    """
+    Given a job and a time.perf_counter param which should be the last time this
+    function was called will update the progress percentage of the job if enough time
+    has elapsed. Will also raise a ExportJobCanceledException exception if the job
+    has been cancelled, but will only check this if enough time has elapsed since the
+    last check.
+    :param job: The job to check and update progress for.
+    :param last_update_time: a time.perf_counter value of the last time this function was
+        called.
+    :param current_row: An int indicating the current row this export job has
+        exported upto
+    :param total_rows: An int of the total number of rows this job is exporting.
+    :return: An updated time.perf_counter indicating the last time the check was run
+    """
+
     current_time = time.perf_counter()
-    # Update every X seconds to match the clients long poll frequency
+    # We check only every so often as we don't need per row granular updates as the
+    # client is only polling every X seconds also.
     enough_time_has_passed = (
         current_time - last_update_time > EXPORT_JOB_UPDATE_FREQUENCY_SECONDS
     )
@@ -41,6 +57,18 @@ def _check_and_update_job(job, last_update_time, current_row, total_rows):
 
 
 def _export_all_rows(job, qs, export_row_func):
+    """
+    Iterates through the given queryset using a paginator to ensure constant memory
+    usage. Calls export_row_fun on every item returned from the queryset. Will update
+    the provided job as we progress through the iteration with the current progress.
+
+    Raises ExportJobCanceledException if the job is cancelled during the iteration
+    and export of the queryset.
+
+    :param job:
+    :param qs:
+    :param export_row_func:
+    """
     last_check = time.perf_counter()
     # TODO: How do we pick a chunk size?
     # TODO: Are we ok with the export being inconstant when someone updates
@@ -54,10 +82,43 @@ def _export_all_rows(job, qs, export_row_func):
             last_check = _check_and_update_job(job, last_check, i, paginator.count)
 
 
+def _create_storage_dir_if_missing_and_open(storage_location):
+    """
+    Attempts to open the provided storage location in binary overwriting write mode.
+    If it encounters a FileNotFound error will attempt to create the folder structure
+    leading upto to the storage location and then open again.
+
+    :param storage_location: The storage location to open and ensure folders for.
+    :return: The open file descriptor for the storage_location
+    """
+    try:
+        return default_storage.open(storage_location, "wb+")
+    except FileNotFoundError:
+        # django's file system storage will not attempt to creating a missing
+        # EXPORT_FILES_DIRECTORY and instead will throw a FileNotFoundError.
+        # So we first save an empty file which will create any missing directories
+        # and then open again.
+        default_storage.save(storage_location, BytesIO())
+        return default_storage.open(storage_location, "wb")
+
+
 class ExportHandler:
     def create_pending_export_job(
         self, user, table, view, exporter_type, export_options
     ):
+        """
+        Creates a new pending export job configured with the providing options but does
+        not start the job. Will cancel any previously running jobs for this user.
+
+        :param user: The user who the export job is being run for.
+        :param table: The table on which the job is being run.
+        :param view: An optional view of the table to export instead of the table
+        itself.
+        :param exporter_type: The specific exporter type to use.
+        :param export_options: Options to configure the exporter typ.e
+        :return:
+        """
+
         self.cancel_unfinished_jobs(user)
 
         job = ExportJob.objects.create(
@@ -72,6 +133,14 @@ class ExportHandler:
         return job
 
     def run_export_job(self, job):
+        """
+        Given an export job will run the export and store the result in the configured
+        storage.
+
+        :param job: The job to run.
+        :return: An updated ExportJob instance with the exported file name.
+        """
+
         try:
             exported_file_name = self._run_export_job(job)
         except Exception as e:
@@ -81,6 +150,13 @@ class ExportHandler:
         return self.finished_export_job(job, exported_file_name)
 
     def _run_export_job(self, job):
+        """
+        Using the jobs exporter type exports all data into a new file placed in the
+        default storage.
+
+        :rtype: The filename of the resulting export stored in the default storage.
+        """
+
         job.status = EXPORT_JOB_EXPORTING_STATUS
         job.save()
         exporter = table_exporter_registry.get(job.exporter_type)
@@ -104,11 +180,27 @@ class ExportHandler:
 
     @staticmethod
     def cancel_unfinished_jobs(user):
+        """
+        Will cancel any in progress jobs by setting their status to cancelled. Any
+        tasks currently running these jobs are expected to periodically check if they
+        have been cancelled and stop accordingly.
+
+        :param user: The user to cancel all unfinished jobs for.
+        :return The number of jobs cancelled.
+        """
+
         jobs = ExportJob.unfinished_jobs(user=user)
-        jobs.update(status=EXPORT_JOB_CANCELLED_STATUS)
+        return jobs.update(status=EXPORT_JOB_CANCELLED_STATUS)
 
     @staticmethod
     def finished_export_job(export_job, exported_file_name):
+        """
+        Marks the provided job as finished with the result being the provided file name.
+        :param export_job: The job to update to be finished.
+        :param exported_file_name: The file name to set on the job.
+        :return: The updated finished job.
+        """
+
         export_job.status = "completed"
         export_job.exported_file_name = exported_file_name
         export_job.expires_at = timezone.now() + timezone.timedelta(hours=1)
@@ -117,10 +209,23 @@ class ExportHandler:
 
     @staticmethod
     def export_file_path(exported_file_name):
+        """
+        Given an export file name returns the path to where that export file should be
+        put in storage.
+        :param exported_file_name: The name of the file to generate a path for.
+        :return: The path where this export file should be put in storage.
+        """
+
         return join(settings.EXPORT_FILES_DIRECTORY, exported_file_name)
 
     @staticmethod
     def failed_export_job(job, e):
+        """
+        Marks the given export job as failed and stores the exception in the job.
+        :param job: The job to mark as failed
+        :param e: The exception causing the failure
+        :return: The updated failed job.
+        """
         job.status = EXPORT_JOB_FAILED_STATUS
         job.progress_percentage = 0.0
         job.exported_file_name = None
@@ -128,15 +233,3 @@ class ExportHandler:
         job.expires_at = timezone.now() + timezone.timedelta(minutes=10)
         job.save()
         return job
-
-
-def _create_storage_dir_if_missing_and_open(storage_location):
-    try:
-        return default_storage.open(storage_location, "wb+")
-    except FileNotFoundError:
-        # django's file system storage will not attempt to creating a missing
-        # EXPORT_FILES_DIRECTORY and instead will throw a FileNotFoundError.
-        # So we first save an empty file which will create any missing directories
-        # and then open again.
-        default_storage.save(storage_location, BytesIO())
-        return default_storage.open(storage_location, "wb")

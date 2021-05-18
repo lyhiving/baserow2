@@ -5,6 +5,6 @@ from baserow.contrib.database.export.models import ExportJob
 
 
 @app.task(bind=True)
-def run_export_job(self, export_job_id):
-    job = ExportJob.objects.get(id=export_job_id)
+def run_export_job(self, job_id):
+    job = ExportJob.objects.get(id=job_id)
     ExportHandler().run_export_job(job)

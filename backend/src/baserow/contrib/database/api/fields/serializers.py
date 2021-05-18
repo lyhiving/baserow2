@@ -1,3 +1,4 @@
+from django.core.files.storage import default_storage
 from django.utils.functional import lazy
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
@@ -8,6 +9,7 @@ from baserow.api.user_files.serializers import UserFileURLAndThumbnailsSerialize
 from baserow.api.user_files.validators import user_file_name_validator
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.core.user_files.handler import UserFileHandler
 
 
 class FieldSerializer(serializers.ModelSerializer):
@@ -64,7 +66,7 @@ class UpdateFieldSerializer(serializers.ModelSerializer):
 
 class StringRelatedSubField(RelatedField):
     """
-    A read only field that represents its targets using the string representation of
+    A read only field that serializes its target to the string representation of
     a sub field in the target.
     """
 
@@ -130,3 +132,30 @@ class FileFieldResponseSerializer(
 
     def get_instance_attr(self, instance, name):
         return instance[name]
+
+
+class FileNameAndURLSerializer(RelatedField):
+    """
+    Serializes to the following format for a given file: f"{file.visible_name} ({the
+    files storage location url}"
+    """
+
+    def __init__(self, **kwargs):
+        kwargs["read_only"] = True
+        super().__init__(**kwargs)
+
+    def to_representation(self, value):
+        url = self.get_url(value)
+        visible_name = value["visible_name"]
+        if url is None:
+            return visible_name
+        else:
+            return visible_name + f" ({url})"
+
+    def get_url(self, instance):
+        if "name" in instance:
+            path = UserFileHandler().user_file_path(instance["name"])
+            url = default_storage.url(path)
+            return url
+        else:
+            return None

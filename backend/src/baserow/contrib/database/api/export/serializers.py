@@ -2,11 +2,10 @@ from django.core.files.storage import default_storage
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers, fields
-from rest_framework.relations import RelatedField
 
+from baserow.api.utils import PolymorphicTextResourceSerializer
 from baserow.contrib.database.export.handler import ExportHandler
 from baserow.contrib.database.export.models import ExportJob
-from baserow.core.user_files.handler import UserFileHandler
 
 SUPPORTED_CSV_ENCODINGS = [
     ("utf-8", "Unicode (UTF-8)"),
@@ -47,18 +46,10 @@ SUPPORTED_CSV_COLUMN_SEPARATORS = [
     ("comma", ","),
     ("semi", ";"),
     ("pipe", "|"),
-    ("tab", "<tab>"),
-    ("record_separator", "record separator (30)"),
-    ("unit_separator", "unit separator (30)"),
+    ("tab", "\t"),
+    ("record_separator", "\x1e"),
+    ("unit_separator", "\x1f"),
 ]
-SUPPORTED_CSV_COLUMN_SEPARATORS_TO_REAL = {
-    "comma": ",",
-    "semi": ";",
-    "pipe": "|",
-    "tab": "\t",
-    "record_separator": "\x1e",
-    "unit_separator": "\x1f",
-}
 
 
 class ExportedFileURLSerializerMixin(serializers.Serializer):
@@ -97,38 +88,27 @@ class GetExportJobSerializer(
         ]
 
 
-# noinspection PyAbstractClass
-class ExportOptionsSerializer(serializers.Serializer):
+class DisplayChoiceField(serializers.ChoiceField):
+    """
+    Just like a choice field but returns the second value of each choice tuple when
+    serialized.
+    """
+
+    def to_representation(self, obj):
+        return self._choices[obj]
+
+
+class RequestCsvOptionsSerializer(serializers.Serializer):
     csv_encoding = fields.ChoiceField(choices=SUPPORTED_CSV_ENCODINGS)
-    csv_column_separator = fields.ChoiceField(choices=SUPPORTED_CSV_COLUMN_SEPARATORS)
+    # For ease of use we expect the JSON to contain human typeable forms of each
+    # different separator instead of the unicode character itself. By using the
+    # DisplayChoiceField we can then map this to the actual separator character by
+    # having those be the second value of each choice tuple.
+    csv_column_separator = DisplayChoiceField(choices=SUPPORTED_CSV_COLUMN_SEPARATORS)
     csv_include_header = fields.BooleanField()
 
 
-class CreateExportJobSerializer(serializers.ModelSerializer):
-    exporter_options = ExportOptionsSerializer()
+class CreateExportJobSerializer(PolymorphicTextResourceSerializer):
+    resource_type_field_name = "exporter_type"
 
-    class Meta:
-        model = ExportJob
-        fields = ["exporter_type", "exporter_options"]
-
-
-class FileNameAndURLSerializer(RelatedField):
-    def __init__(self, **kwargs):
-        kwargs["read_only"] = True
-        super().__init__(**kwargs)
-
-    def to_representation(self, value):
-        url = self.get_url(value)
-        visible_name = value["visible_name"]
-        if url is None:
-            return visible_name
-        else:
-            return visible_name + f" ({url})"
-
-    def get_url(self, instance):
-        if "name" in instance:
-            path = UserFileHandler().user_file_path(instance["name"])
-            url = default_storage.url(path)
-            return url
-        else:
-            return None
+    resource_serializer_mapping = {"csv": RequestCsvOptionsSerializer}
