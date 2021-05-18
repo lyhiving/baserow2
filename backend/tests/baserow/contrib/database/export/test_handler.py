@@ -109,7 +109,9 @@ def test_can_export_simple_view_to_simple_csv(
 
     handler = ExportHandler()
 
-    job = handler.create_pending_export_job(user, table, grid_view, "csv", {})
+    job = handler.create_pending_export_job(
+        user, table, grid_view, {"exporter_type": "csv"}
+    )
     upload_url_prefix = "http://localhost:8000/media/user_files/"
     f2 = (
         f'"a.txt ({upload_url_prefix}hashed_name.txt),'
@@ -150,7 +152,9 @@ def test_can_export_simple_view_to_simple_csv(
 
     handler = ExportHandler()
 
-    job = handler.create_pending_export_job(user, table, grid_view, "csv", {})
+    job = handler.create_pending_export_job(
+        user, table, grid_view, {"exporter_type": "csv"}
+    )
     with django_assert_num_queries(46):
         handler.run_export_job(job)
     expected = (
@@ -223,8 +227,11 @@ def test_field_type_changed(storage_mock, data_fixture):
         user,
         table,
         grid_view,
-        "csv",
-        {"csv_charset": "iso-2022-jp", "csv_column_separator": "\t"},
+        {
+            "exporter_type": "csv",
+            "csv_charset": "iso-2022-jp",
+            "csv_column_separator": "\t",
+        },
     )
     handler.run_export_job(job)
     expected = (

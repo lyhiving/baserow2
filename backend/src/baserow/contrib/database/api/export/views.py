@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from baserow.api.decorators import validate_body, map_exceptions
+from baserow.api.decorators import map_exceptions
 from baserow.api.errors import (
     ERROR_USER_NOT_IN_GROUP,
     ERROR_USER_INVALID_GROUP_PERMISSIONS,
@@ -40,19 +40,17 @@ CreateExportJobSerializer = PolymorphicMappingSerializer(
 )
 
 
-def _create_and_start_new_job(user, table, view, exporter_type, export_options):
-    job = ExportHandler().create_pending_export_job(
-        user, table, view, exporter_type, export_options
-    )
+def _create_and_start_new_job(user, table, view, export_options):
+    job = ExportHandler().create_pending_export_job(user, table, view, export_options)
     run_export_job.delay(job.id)
     return Response(GetExportJobSerializer(job).data)
 
 
-def _validate_options(exporter_type, data):
+def _validate_options(data):
     option_serializers = table_exporter_registry.get_option_serializer_map()
-    serializer = option_serializers[exporter_type]
+    validated_exporter_type = validate_data(ExporterTypeSerializer, data)
+    serializer = option_serializers[validated_exporter_type["exporter_type"]]
     option_data = validate_data(serializer, data)
-    option_data.pop("exporter_type")
     return option_data
 
 
@@ -88,7 +86,6 @@ class ExportTableView(APIView):
         },
     )
     @transaction.atomic
-    @validate_body(ExporterTypeSerializer)
     @map_exceptions(
         {
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
@@ -96,19 +93,16 @@ class ExportTableView(APIView):
             UserInvalidGroupPermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
         }
     )
-    def post(self, request, data, table_id):
+    def post(self, request, table_id):
         """
         Starts a new export job for the provided table, export type and options.
         """
         table = TableHandler().get_table(table_id)
         table.database.group.has_user(request.user, raise_error=True)
 
-        exporter_type = data["exporter_type"]
-        option_data = _validate_options(exporter_type, request.data)
+        option_data = _validate_options(request.data)
 
-        return _create_and_start_new_job(
-            request.user, table, None, exporter_type, option_data
-        )
+        return _create_and_start_new_job(request.user, table, None, option_data)
 
 
 class ExportViewView(APIView):
@@ -143,7 +137,6 @@ class ExportViewView(APIView):
         },
     )
     @transaction.atomic
-    @validate_body(ExporterTypeSerializer)
     @map_exceptions(
         {
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
@@ -151,21 +144,19 @@ class ExportViewView(APIView):
             UserInvalidGroupPermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
         }
     )
-    def post(self, request, view_id, data):
+    def post(self, request, view_id):
         """
         Starts a new export job for the provided view, export type and options.
         """
         view = ViewHandler().get_view(view_id)
         view.table.database.group.has_user(request.user, raise_error=True)
 
-        exporter_type = data["exporter_type"]
-        option_data = _validate_options(exporter_type, request.data)
+        option_data = _validate_options(request.data)
 
         return _create_and_start_new_job(
             request.user,
             view.table,
             view,
-            exporter_type,
             option_data,
         )
 

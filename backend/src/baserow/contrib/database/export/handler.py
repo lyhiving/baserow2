@@ -105,9 +105,7 @@ def _create_storage_dir_if_missing_and_open(storage_location):
 
 
 class ExportHandler:
-    def create_pending_export_job(
-        self, user, table, view, exporter_type, export_options
-    ):
+    def create_pending_export_job(self, user, table, view, export_options):
         """
         Creates a new pending export job configured with the providing options but does
         not start the job. Will cancel any previously running jobs for this user.
@@ -115,14 +113,15 @@ class ExportHandler:
         :param user: The user who the export job is being run for.
         :param table: The table on which the job is being run.
         :param view: An optional view of the table to export instead of the table
-        itself.
-        :param exporter_type: The specific exporter type to use.
-        :param export_options: Options to configure the exporter typ.e
+            itself.
+        :param export_options: A dict containing exporter_type and the relevant options
+            for that type.
         :return:
         """
 
         self.cancel_unfinished_jobs(user)
 
+        exporter_type = export_options.pop("exporter_type")
         job = ExportJob.objects.create(
             user=user,
             table=table,
