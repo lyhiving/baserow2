@@ -237,7 +237,7 @@ if "INITIAL_TABLE_DATA_LIMIT" in os.environ:
 
 MEDIA_URL_PATH = "/media/"
 MEDIA_URL = os.getenv("MEDIA_URL", urljoin(PUBLIC_BACKEND_URL, MEDIA_URL_PATH))
-MEDIA_ROOT = os.getenv("MEDIA_ROOT", "/baserow/media")
+MEDIA_ROOT = os.getenv("MEDIA_ROOT", "/baserow/volumes/media")
 
 # Indicates the directory where the user files and user thumbnails are stored.
 USER_FILES_DIRECTORY = "user_files"

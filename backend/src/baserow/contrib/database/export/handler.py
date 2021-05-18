@@ -1,3 +1,4 @@
+import logging
 import time
 import uuid
 from io import BytesIO
@@ -6,7 +7,10 @@ from os.path import join
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 from baserow.contrib.database.export.models import (
     ExportJob,
@@ -14,6 +18,7 @@ from baserow.contrib.database.export.models import (
     EXPORT_JOB_CANCELLED_STATUS,
     EXPORT_JOB_PENDING_STATUS,
     EXPORT_JOB_FAILED_STATUS,
+    EXPORT_JOB_DELETED_STATUS,
 )
 from .exceptions import ExportJobCanceledException
 from .registries import table_exporter_registry
@@ -235,3 +240,16 @@ class ExportHandler:
         job.expires_at = timezone.now() + timezone.timedelta(minutes=10)
         job.save()
         return job
+
+    @staticmethod
+    def clean_up_old_jobs():
+        jobs = ExportJob.expired_jobs_with_files(timezone.now())
+        logger.info(f"Cleaning up {jobs.count()} old jobs")
+        for job in jobs:
+            with transaction.atomic():
+                default_storage.delete(
+                    ExportHandler.export_file_path(job.exported_file_name)
+                )
+                job.status = EXPORT_JOB_DELETED_STATUS
+                job.exported_file_name = None
+                job.save()

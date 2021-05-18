@@ -240,6 +240,9 @@ if [ "$dont_attach" != true ] && [ "$up" = true ] ; then
   new_tab "Backend celery export worker" \
           "docker logs celery-export-worker && docker attach celery-export-worker"
 
+  new_tab "Backend celery beat worker" \
+          "docker logs celery-beat-worker && docker attach celery-beat-worker"
+
   new_tab "Web frontend" \
           "docker logs web-frontend && docker attach web-frontend"
 

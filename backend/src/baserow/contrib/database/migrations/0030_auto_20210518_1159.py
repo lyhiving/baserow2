@@ -35,6 +35,7 @@ class Migration(migrations.Migration):
                             ("cancelled", "cancelled"),
                             ("complete", "complete"),
                             ("failed", "failed"),
+                            ("deleted", "deleted"),
                         ]
                     ),
                 ),

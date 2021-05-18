@@ -21,3 +21,4 @@ django-celery-email==3.0.0
 advocate==1.0.0
 zipp==3.4.1
 unicodecsv==0.14.1
+django-celery-beat==2.2.0

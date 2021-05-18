@@ -11,13 +11,15 @@ EXPORT_JOB_EXPORTING_STATUS = "exporting"
 EXPORT_JOB_FAILED_STATUS = "failed"
 EXPORT_JOB_CANCELLED_STATUS = "cancelled"
 EXPORT_JOB_PENDING_STATUS = "pending"
-
+EXPORT_JOB_DELETED_STATUS = "deleted"
+EXPORT_JOB_COMPLETED_STATUS = "complete"
 EXPORT_JOB_STATUS_CHOICES = [
     (EXPORT_JOB_PENDING_STATUS, EXPORT_JOB_PENDING_STATUS),
     (EXPORT_JOB_EXPORTING_STATUS, EXPORT_JOB_EXPORTING_STATUS),
     (EXPORT_JOB_CANCELLED_STATUS, EXPORT_JOB_CANCELLED_STATUS),
-    ("complete", "complete"),
+    (EXPORT_JOB_COMPLETED_STATUS, EXPORT_JOB_COMPLETED_STATUS),
     (EXPORT_JOB_FAILED_STATUS, EXPORT_JOB_FAILED_STATUS),
+    (EXPORT_JOB_DELETED_STATUS, EXPORT_JOB_DELETED_STATUS),
 ]
 
 
@@ -56,4 +58,10 @@ class ExportJob(models.Model):
     def unfinished_jobs(user):
         return ExportJob.objects.filter(user=user).exclude(
             status=EXPORT_JOB_FAILED_STATUS
+        )
+
+    @staticmethod
+    def expired_jobs_with_files(current_time):
+        return ExportJob.objects.filter(expires_at__lte=current_time).exclude(
+            exported_file_name__isnull=True
         )

@@ -62,9 +62,9 @@ services:
       - db
       - redis
       - mjml
-      - media-volume-fixer
+      - volume-fixer
     volumes:
-      - media:/baserow/media
+      - media:/baserow/volumes/media
     networks:
       local:
 
@@ -74,11 +74,11 @@ services:
     build:
       dockerfile: ./backend/Dockerfile
       context: .
-    command: celery -Q celery
+    command: celery worker -l INFO -Q celery
     depends_on:
       - backend
     volumes:
-      - media:/baserow/media
+      - media:/baserow/volumes/media
     networks:
       local:
 
@@ -88,7 +88,7 @@ services:
     build:
       dockerfile: ./backend/Dockerfile
       context: .
-    command: celery -Q export
+    command: celery worker -l INFO -Q export
     depends_on:
       - backend
     environment:
@@ -101,7 +101,31 @@ services:
       - EMAIL_SMTP_PASSWORD
       - FROM_EMAIL
     volumes:
-      - media:/baserow/media
+      - media:/baserow/volumes/media
+    networks:
+      local:
+
+  celery-beat-worker:
+    container_name: celery-beat-worker
+    image: baserow_backend:latest
+    build:
+      dockerfile: ./backend/Dockerfile
+      context: .
+    command: celery beat -s /baserow/volumes/celery_beat/celerybeat-schedule
+    depends_on:
+      - backend
+    environment:
+      - ADDITIONAL_APPS
+      - EMAIL_SMTP
+      - EMAIL_SMTP_HOST
+      - EMAIL_SMTP_PORT
+      - EMAIL_SMPT_USE_TLS
+      - EMAIL_SMTP_USER
+      - EMAIL_SMTP_PASSWORD
+      - FROM_EMAIL
+    volumes:
+      - celery_beat:/baserow/volumes/celery_beat
+      - media:/baserow/volumes/media
     networks:
       local:
 
@@ -129,27 +153,29 @@ services:
     ports:
       - "${MEDIA_PORT:-4000}:80"
     depends_on:
-      - media-volume-fixer
+      - volume-fixer
     volumes:
-      - media:/baserow/media
+      - media:/baserow/volumes/media
     networks:
       local:
 
-  # When switching between dev and local the media files in the media volume will be
+  # When switching between dev and local the media files in the mounted volumes will be
   # owned by different users. Ensure that we chown them to the user appropriate for the
   # environment here.
-  media-volume-fixer:
-    container_name: media-volume-fixer
+  volume-fixer:
+    container_name: volume-fixer
     image: bash:4.4
-    command: chown 9999:9999 -R /baserow/media
+    command: chown 9999:9999 -R /baserow/volumes
     volumes:
-      - media:/baserow/media
+      - media:/baserow/volumes/media
+      - celery_beat:/baserow/volumes/celery_beat
     networks:
       local:
 
 volumes:
   pgdata:
   media:
+  celery_beat:
 
 networks:
   local:

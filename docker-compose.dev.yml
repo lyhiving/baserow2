@@ -30,7 +30,7 @@ services:
         # reducing the chance the containers screw up the bind mounted folders.
         UID: "${UID:-}"
         GID: "${GID:-}"
-    command: celery-dev -Q celery
+    command: celery-dev worker -l INFO -Q celery
     volumes:
       - ./backend:/baserow/backend
       - ./premium/backend/:/baserow/backend/plugins/premium
@@ -49,7 +49,26 @@ services:
         # reducing the chance the containers screw up the bind mounted folders.
         UID: "${UID:-}"
         GID: "${GID:-}"
-    command: celery-dev -Q export
+    command: celery-dev worker -l INFO -Q export
+    volumes:
+      - ./backend:/baserow/backend
+      - ./premium/backend/:/baserow/backend/plugins/premium
+      - backend-dev-plugins:/baserow/backend/plugins
+    # Open stdin and tty so when attaching key input works as expected.
+    stdin_open: true
+    tty: true
+
+  celery-beat-worker:
+    image: baserow_backend_dev:latest
+    build:
+      context: .
+      dockerfile: ./backend/docker/Dockerfile.dev
+      args:
+        # We allow configuring the UID/GID here so you can run as the dev's actual user
+        # reducing the chance the containers screw up the bind mounted folders.
+        UID: "${UID:-}"
+        GID: "${GID:-}"
+    command: celery-dev beat -s /baserow/volumes/celery_beat/celerybeat-schedule
     volumes:
       - ./backend:/baserow/backend
       - ./premium/backend/:/baserow/backend/plugins/premium
@@ -78,8 +97,8 @@ services:
     stdin_open: true
     tty: true
 
-  media-volume-fixer:
-    command: chown ${UID:-1000}:${GID:-1000} -R /baserow/media
+  volume-fixer:
+    command: chown ${UID:-1000}:${GID:-1000} -R /baserow/volumes
 
 # Give names to the volumes declared in the docker dev images so we dont end up with hundreds
 # of anonymous volumes.
