@@ -4,7 +4,6 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers, fields
 
-from baserow.api.utils import PolymorphicMappingSerializer
 from baserow.contrib.database.export.handler import ExportHandler
 from baserow.contrib.database.export.models import ExportJob
 
@@ -103,11 +102,13 @@ class DisplayChoiceField(serializers.ChoiceField):
         return self._choices[obj]
 
 
-class BaseExporterOptionSerializer(serializers.Serializer):
-    exporter_type = fields.CharField()
+class ExporterTypeSerializer(serializers.Serializer):
+    exporter_type = fields.ChoiceField(
+        choices=lazy(table_exporter_registry.get_types, list)()
+    )
 
 
-class RequestCsvOptionSerializer(BaseExporterOptionSerializer):
+class RequestCsvOptionSerializer(ExporterTypeSerializer):
     csv_charset = fields.ChoiceField(choices=SUPPORTED_CSV_CHARSETS)
     # For ease of use we expect the JSON to contain human typeable forms of each
     # different separator instead of the unicode character itself. By using the
@@ -115,10 +116,3 @@ class RequestCsvOptionSerializer(BaseExporterOptionSerializer):
     # having those be the second value of each choice tuple.
     csv_column_separator = DisplayChoiceField(choices=SUPPORTED_CSV_COLUMN_SEPARATORS)
     csv_include_header = fields.BooleanField()
-
-
-CreateExportJobSerializer = PolymorphicMappingSerializer(
-    "Export",
-    lazy(table_exporter_registry.get_option_serializer_map, dict)(),
-    type_field_name="exporter_type",
-)

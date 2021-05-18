@@ -69,8 +69,10 @@ def test_field_type_changed(data_fixture, api_client, tmpdir):
                 format="json",
                 HTTP_AUTHORIZATION=f"JWT {token}",
             )
-            job_id = response.json()["id"]
-            assert response.json() == {
+            response_json = response.json()
+            print(response_json)
+            job_id = response_json["id"]
+            assert response_json == {
                 "id": job_id,
                 "error": None,
                 "expires_at": "2020-01-02T13:00:00Z",

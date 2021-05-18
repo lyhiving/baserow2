@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.utils.functional import lazy
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.permissions import IsAuthenticated
@@ -11,24 +12,48 @@ from baserow.api.errors import (
     ERROR_USER_INVALID_GROUP_PERMISSIONS,
 )
 from baserow.api.schemas import get_error_schema
+from baserow.api.utils import validate_data, PolymorphicMappingSerializer
 from baserow.contrib.database.api.export.errors import (
     ExportJobDoesNotExistException,
     ERROR_EXPORT_JOB_DOES_NOT_EXIST,
 )
 from baserow.contrib.database.api.export.serializers import (
     GetExportJobSerializer,
-    CreateExportJobSerializer,
+    ExporterTypeSerializer,
 )
 from baserow.contrib.database.api.tables.errors import ERROR_TABLE_DOES_NOT_EXIST
 from baserow.contrib.database.api.views.errors import ERROR_VIEW_DOES_NOT_EXIST
 from baserow.contrib.database.export.handler import ExportHandler
 from baserow.contrib.database.export.models import ExportJob
+from baserow.contrib.database.export.registries import table_exporter_registry
 from baserow.contrib.database.export.tasks import run_export_job
 from baserow.contrib.database.table.exceptions import TableDoesNotExist
 from baserow.contrib.database.table.handler import TableHandler
 from baserow.contrib.database.views.exceptions import ViewDoesNotExist
 from baserow.contrib.database.views.handler import ViewHandler
 from baserow.core.exceptions import UserNotInGroup, UserInvalidGroupPermissionsError
+
+CreateExportJobSerializer = PolymorphicMappingSerializer(
+    "Export",
+    lazy(table_exporter_registry.get_option_serializer_map, dict)(),
+    type_field_name="exporter_type",
+)
+
+
+def _create_and_start_new_job(user, table, view, exporter_type, export_options):
+    job = ExportHandler().create_pending_export_job(
+        user, table, view, exporter_type, export_options
+    )
+    run_export_job.delay(job.id)
+    return Response(GetExportJobSerializer(job).data)
+
+
+def _validate_options(exporter_type, data):
+    option_serializers = table_exporter_registry.get_option_serializer_map()
+    serializer = option_serializers[exporter_type]
+    option_data = validate_data(serializer, data)
+    option_data.pop("exporter_type")
+    return option_data
 
 
 class ExportTableView(APIView):
@@ -63,7 +88,7 @@ class ExportTableView(APIView):
         },
     )
     @transaction.atomic
-    @validate_body(CreateExportJobSerializer)
+    @validate_body(ExporterTypeSerializer)
     @map_exceptions(
         {
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
@@ -71,24 +96,19 @@ class ExportTableView(APIView):
             UserInvalidGroupPermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
         }
     )
-    def post(self, request, table_id, data):
+    def post(self, request, data, table_id):
         """
         Starts a new export job for the provided table, export type and options.
         """
         table = TableHandler().get_table(table_id)
         table.database.group.has_user(request.user, raise_error=True)
 
-        exporter_type = data.pop("exporter_type")
+        exporter_type = data["exporter_type"]
+        option_data = _validate_options(exporter_type, request.data)
 
-        return _create_and_start_new_job(request.user, table, None, exporter_type, data)
-
-
-def _create_and_start_new_job(user, table, view, exporter_type, export_options):
-    job = ExportHandler().create_pending_export_job(
-        user, table, view, exporter_type, export_options
-    )
-    run_export_job.delay(job.id)
-    return Response(GetExportJobSerializer(job).data)
+        return _create_and_start_new_job(
+            request.user, table, None, exporter_type, option_data
+        )
 
 
 class ExportViewView(APIView):
@@ -123,7 +143,7 @@ class ExportViewView(APIView):
         },
     )
     @transaction.atomic
-    @validate_body(CreateExportJobSerializer)
+    @validate_body(ExporterTypeSerializer)
     @map_exceptions(
         {
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
@@ -138,14 +158,15 @@ class ExportViewView(APIView):
         view = ViewHandler().get_view(view_id)
         view.table.database.group.has_user(request.user, raise_error=True)
 
-        exporter_type = data.pop("exporter_type")
+        exporter_type = data["exporter_type"]
+        option_data = _validate_options(exporter_type, request.data)
 
         return _create_and_start_new_job(
             request.user,
             view.table,
             view,
             exporter_type,
-            data,
+            option_data,
         )
 
 
