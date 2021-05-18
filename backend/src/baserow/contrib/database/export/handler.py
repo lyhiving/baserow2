@@ -30,8 +30,8 @@ def _check_and_update_job(job, last_update_time, current_row, total_rows):
     has been cancelled, but will only check this if enough time has elapsed since the
     last check.
     :param job: The job to check and update progress for.
-    :param last_update_time: a time.perf_counter value of the last time this function was
-        called.
+    :param last_update_time: a time.perf_counter value of the last time this function
+        was called.
     :param current_row: An int indicating the current row this export job has
         exported upto
     :param total_rows: An int of the total number of rows this job is exporting.
@@ -69,6 +69,7 @@ def _export_all_rows(job, qs, export_row_func):
     :param qs:
     :param export_row_func:
     """
+
     last_check = time.perf_counter()
     # TODO: How do we pick a chunk size?
     # TODO: Are we ok with the export being inconstant when someone updates
@@ -91,6 +92,7 @@ def _create_storage_dir_if_missing_and_open(storage_location):
     :param storage_location: The storage location to open and ensure folders for.
     :return: The open file descriptor for the storage_location
     """
+
     try:
         return default_storage.open(storage_location, "wb+")
     except FileNotFoundError:
@@ -226,6 +228,7 @@ class ExportHandler:
         :param e: The exception causing the failure
         :return: The updated failed job.
         """
+
         job.status = EXPORT_JOB_FAILED_STATUS
         job.progress_percentage = 0.0
         job.exported_file_name = None
