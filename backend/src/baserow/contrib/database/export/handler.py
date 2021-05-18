@@ -10,7 +10,6 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.utils import timezone
 
-logger = logging.getLogger(__name__)
 
 from baserow.contrib.database.export.models import (
     ExportJob,
@@ -22,6 +21,8 @@ from baserow.contrib.database.export.models import (
 )
 from .exceptions import ExportJobCanceledException
 from .registries import table_exporter_registry
+
+logger = logging.getLogger(__name__)
 
 # Ensure this matches the clients export job long poll frequency
 EXPORT_JOB_UPDATE_FREQUENCY_SECONDS = 1
