@@ -53,8 +53,7 @@ def _validate_options(data):
     option_serializers = table_exporter_registry.get_option_serializer_map()
     validated_exporter_type = validate_data(ExporterTypeSerializer, data)
     serializer = option_serializers[validated_exporter_type["exporter_type"]]
-    option_data = validate_data(serializer, data)
-    return option_data
+    return validate_data(serializer, data)
 
 
 class ExportTableView(APIView):
@@ -194,7 +193,6 @@ class ExportJobView(APIView):
     @transaction.atomic
     @map_exceptions(
         {
-            UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             ExportJobDoesNotExistException: ERROR_EXPORT_JOB_DOES_NOT_EXIST,
         }
     )

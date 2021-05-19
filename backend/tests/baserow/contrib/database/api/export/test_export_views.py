@@ -4,6 +4,7 @@ import pytest
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.urls import reverse
+from django_capture_on_commit_callbacks import capture_on_commit_callbacks
 from freezegun import freeze_time
 
 from baserow.contrib.database.rows.handler import RowHandler
@@ -56,21 +57,22 @@ def test_field_type_changed(data_fixture, api_client, tmpdir):
 
     with patch("baserow.contrib.database.export.handler.default_storage", new=storage):
         with freeze_time("2020-01-02 12:00"):
-            response = api_client.post(
-                reverse(
-                    "api:database:export:export_view", kwargs={"view_id": grid_view.id}
-                ),
-                data={
-                    "exporter_type": "csv",
-                    "csv_charset": "utf-8",
-                    "csv_include_header": "True",
-                    "csv_column_separator": "comma",
-                },
-                format="json",
-                HTTP_AUTHORIZATION=f"JWT {token}",
-            )
+            with capture_on_commit_callbacks(execute=True):
+                response = api_client.post(
+                    reverse(
+                        "api:database:export:export_view",
+                        kwargs={"view_id": grid_view.id},
+                    ),
+                    data={
+                        "exporter_type": "csv",
+                        "csv_charset": "utf-8",
+                        "csv_include_header": "True",
+                        "csv_column_separator": "comma",
+                    },
+                    format="json",
+                    HTTP_AUTHORIZATION=f"JWT {token}",
+                )
             response_json = response.json()
-            print(response_json)
             job_id = response_json["id"]
             assert response_json == {
                 "id": job_id,
