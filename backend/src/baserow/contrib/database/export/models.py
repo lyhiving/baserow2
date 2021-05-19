@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import JSONField
 from django.db import models
+from django.db.models import Q
 
 from baserow.contrib.database.table.models import Table
 from baserow.contrib.database.views.models import View
@@ -11,7 +12,7 @@ EXPORT_JOB_EXPORTING_STATUS = "exporting"
 EXPORT_JOB_FAILED_STATUS = "failed"
 EXPORT_JOB_CANCELLED_STATUS = "cancelled"
 EXPORT_JOB_PENDING_STATUS = "pending"
-EXPORT_JOB_DELETED_STATUS = "deleted"
+EXPORT_JOB_EXPIRED_STATUS = "expired"
 EXPORT_JOB_COMPLETED_STATUS = "complete"
 EXPORT_JOB_STATUS_CHOICES = [
     (EXPORT_JOB_PENDING_STATUS, EXPORT_JOB_PENDING_STATUS),
@@ -19,7 +20,7 @@ EXPORT_JOB_STATUS_CHOICES = [
     (EXPORT_JOB_CANCELLED_STATUS, EXPORT_JOB_CANCELLED_STATUS),
     (EXPORT_JOB_COMPLETED_STATUS, EXPORT_JOB_COMPLETED_STATUS),
     (EXPORT_JOB_FAILED_STATUS, EXPORT_JOB_FAILED_STATUS),
-    (EXPORT_JOB_DELETED_STATUS, EXPORT_JOB_DELETED_STATUS),
+    (EXPORT_JOB_EXPIRED_STATUS, EXPORT_JOB_EXPIRED_STATUS),
 ]
 
 
@@ -43,25 +44,23 @@ class ExportJob(models.Model):
     progress_percentage = models.FloatField(default=0.0)
     export_options = JSONField()
 
-    def is_exporting(self):
-        return self.status == EXPORT_JOB_EXPORTING_STATUS
-
-    def is_cancelled(self):
-        return self.status == EXPORT_JOB_CANCELLED_STATUS
-
-    class Meta:
-        indexes = [
-            models.Index(fields=["user"]),
-        ]
+    def is_cancelled_or_expired(self):
+        return self.status in [EXPORT_JOB_CANCELLED_STATUS, EXPORT_JOB_EXPIRED_STATUS]
 
     @staticmethod
     def unfinished_jobs(user):
-        return ExportJob.objects.filter(user=user).exclude(
-            status=EXPORT_JOB_FAILED_STATUS
+        return ExportJob.objects.filter(user=user).filter(
+            status__in=[EXPORT_JOB_PENDING_STATUS, EXPORT_JOB_EXPORTING_STATUS]
         )
 
     @staticmethod
-    def expired_jobs_with_files(current_time):
-        return ExportJob.objects.filter(expires_at__lte=current_time).exclude(
-            exported_file_name__isnull=True
+    def jobs_requiring_cleanup(current_time):
+        return ExportJob.objects.filter(expires_at__lte=current_time).filter(
+            Q(exported_file_name__isnull=False)
+            | Q(status__in=[EXPORT_JOB_PENDING_STATUS, EXPORT_JOB_EXPORTING_STATUS])
         )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["expires_at", "user", "status"]),
+        ]

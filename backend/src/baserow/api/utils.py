@@ -245,126 +245,14 @@ class PolymorphicCustomFieldRegistrySerializer:
         self.many = many
 
 
-class PolymorphicMappingSerializer(Serializer):
+class PolymorphicMappingSerializer:
     """
-    API docs for this serializer are extended by the
-    `PolymorphicMappingSerializerExtension` extension class.
-
-    Given a mapping class of type names to serializers this class will
-    serialize a given data dict by extracting a specific type name from
-    data[self.type_field_name] and looking up the correct serializer in the mapping.
-
-    The implementation is a modified version of
-    https://github.com/apirobot/django-rest-polymorphic's serializer
+    A placeholder class for the `PolymorphicMappingSerializerExtension` extension class.
     """
 
-    def __init__(
-        self,
-        component_name: str,
-        mapping: Dict[str, Serializer],
-        type_field_name="type",
-        many=False,
-        *args,
-        **kwargs,
-    ):
+    def __init__(self, component_name, mapping, type_field_name="type", many=False):
+        self.read_only = False
         self.component_name = component_name
         self.mapping = mapping
         self.type_field_name = type_field_name
-
-        # Set these so the api extension class can access them
         self.many = many
-        self.read_only = False
-
-        # Pass on the arguments actually used by the base class.
-        kwargs["read_only"] = self.read_only
-        kwargs["many"] = many
-
-        super().__init__(*args, **kwargs)
-
-        # Instantiate any serializers which were provided as classes.
-        for resource, serializer in self.mapping.items():
-            if callable(serializer):
-                serializer = serializer(*args, **kwargs)
-                serializer.parent = self
-
-            self.mapping[resource] = serializer
-
-    # ----------
-    # Public API
-
-    def to_resource_type(self, model_or_instance):
-        return getattr(model_or_instance, self.type_field_name)
-
-    def to_representation(self, instance):
-        if isinstance(instance, Mapping):
-            resource_type = self._get_resource_type_from_mapping(instance)
-            serializer = self._get_serializer_from_resource_type(resource_type)
-        else:
-            resource_type = self.to_resource_type(instance)
-            serializer = self._get_serializer_from_resource_type(instance)
-
-        ret = serializer.to_representation(instance)
-        ret[self.type_field_name] = resource_type
-        return ret
-
-    def to_internal_value(self, data):
-        resource_type = self._get_resource_type_from_mapping(data)
-        serializer = self._get_serializer_from_resource_type(resource_type)
-
-        ret = serializer.to_internal_value(data)
-        ret[self.type_field_name] = resource_type
-        return ret
-
-    def create(self, validated_data):
-        resource_type = validated_data.pop(self.type_field_name)
-        serializer = self._get_serializer_from_resource_type(resource_type)
-        return serializer.create(validated_data)
-
-    def update(self, instance, validated_data):
-        resource_type = validated_data.pop(self.type_field_name)
-        serializer = self._get_serializer_from_resource_type(resource_type)
-        return serializer.update(instance, validated_data)
-
-    def is_valid(self, *args, **kwargs):
-        valid = super().is_valid(*args, **kwargs)
-        try:
-            resource_type = self._get_resource_type_from_mapping(self.validated_data)
-            serializer = self._get_serializer_from_resource_type(resource_type)
-        except ValidationError:
-            child_valid = False
-        else:
-            child_valid = serializer.is_valid(*args, **kwargs)
-            self._errors.update(serializer.errors)
-        return valid and child_valid
-
-    def run_validation(self, data=empty):
-        resource_type = self._get_resource_type_from_mapping(data)
-        serializer = self._get_serializer_from_resource_type(resource_type)
-        validated_data = serializer.run_validation(data)
-        validated_data[self.type_field_name] = resource_type
-        return validated_data
-
-    # --------------
-    # Implementation
-
-    def _get_resource_type_from_mapping(self, mapping):
-        try:
-            return mapping[self.type_field_name]
-        except KeyError:
-            raise ValidationError(
-                {
-                    self.type_field_name: "This field is required",
-                }
-            )
-
-    def _get_serializer_from_resource_type(self, resource_type):
-
-        if resource_type in self.mapping:
-            return self.mapping[resource_type]
-
-        raise ValidationError(
-            {
-                self.type_field_name: "This field must be one of the "
-                "supported resources",
-            }
-        )

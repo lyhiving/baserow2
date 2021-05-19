@@ -17,7 +17,7 @@ from baserow.contrib.database.export.models import (
     EXPORT_JOB_CANCELLED_STATUS,
     EXPORT_JOB_PENDING_STATUS,
     EXPORT_JOB_FAILED_STATUS,
-    EXPORT_JOB_DELETED_STATUS,
+    EXPORT_JOB_EXPIRED_STATUS,
 )
 from .exceptions import ExportJobCanceledException
 from .registries import table_exporter_registry
@@ -54,7 +54,7 @@ def _check_and_update_job(job, last_update_time, current_row, total_rows):
     if enough_time_has_passed or is_last_row:
         last_update_time = time.perf_counter()
         job.refresh_from_db()
-        if job.is_cancelled():
+        if job.is_cancelled_or_expired():
             raise ExportJobCanceledException()
         else:
             job.progress_percentage = current_row / total_rows
@@ -236,21 +236,22 @@ class ExportHandler:
 
         job.status = EXPORT_JOB_FAILED_STATUS
         job.progress_percentage = 0.0
-        job.exported_file_name = None
         job.error = str(e)
-        job.expires_at = timezone.now() + timezone.timedelta(minutes=10)
+        job.expires_at = timezone.now()
         job.save()
         return job
 
     @staticmethod
     def clean_up_old_jobs():
-        jobs = ExportJob.expired_jobs_with_files(timezone.now())
+        jobs = ExportJob.jobs_requiring_cleanup(timezone.now())
         logger.info(f"Cleaning up {jobs.count()} old jobs")
         for job in jobs:
             with transaction.atomic():
-                default_storage.delete(
-                    ExportHandler.export_file_path(job.exported_file_name)
-                )
-                job.status = EXPORT_JOB_DELETED_STATUS
-                job.exported_file_name = None
+                if job.exported_file_name:
+                    default_storage.delete(
+                        ExportHandler.export_file_path(job.exported_file_name)
+                    )
+                    job.exported_file_name = None
+
+                job.status = EXPORT_JOB_EXPIRED_STATUS
                 job.save()

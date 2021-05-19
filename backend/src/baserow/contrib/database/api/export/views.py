@@ -42,7 +42,10 @@ CreateExportJobSerializer = PolymorphicMappingSerializer(
 
 def _create_and_start_new_job(user, table, view, export_options):
     job = ExportHandler().create_pending_export_job(user, table, view, export_options)
-    run_export_job.delay(job.id)
+    # Ensure we only trigger the job after the transaction we are in has committed
+    # and created the export job in the database. Otherwise the job might run before
+    # we commit and crash as there is no job yet.
+    transaction.on_commit(lambda: run_export_job.delay(job.id))
     return Response(GetExportJobSerializer(job).data)
 
 
@@ -50,6 +53,7 @@ def _validate_options(data):
     option_serializers = table_exporter_registry.get_option_serializer_map()
     validated_exporter_type = validate_data(ExporterTypeSerializer, data)
     serializer = option_serializers[validated_exporter_type["exporter_type"]]
+    option_data = validate_data(serializer, data)
     option_data = validate_data(serializer, data)
     return option_data
 

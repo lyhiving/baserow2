@@ -82,6 +82,8 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_TASK_ROUTES = {
     "baserow.contrib.database.export.tasks.run_export_job": {"queue": "export"}
 }
+CELERY_SOFT_TIME_LIMIT = 60 * 5
+CELERY_TIME_LIMIT = CELERY_SOFT_TIME_LIMIT + 60
 
 CHANNEL_LAYERS = {
     "default": {
@@ -245,6 +247,7 @@ USER_THUMBNAILS_DIRECTORY = "thumbnails"
 USER_FILE_SIZE_LIMIT = 1024 * 1024 * 20  # 20MB
 
 EXPORT_FILES_DIRECTORY = "export_files"
+EXPORT_CLEANUP_INTERVAL_MINUTES = 60
 
 EMAIL_BACKEND = "djcelery_email.backends.CeleryEmailBackend"
 
