@@ -54,7 +54,6 @@ def _validate_options(data):
     validated_exporter_type = validate_data(ExporterTypeSerializer, data)
     serializer = option_serializers[validated_exporter_type["exporter_type"]]
     option_data = validate_data(serializer, data)
-    option_data = validate_data(serializer, data)
     return option_data
 
 
