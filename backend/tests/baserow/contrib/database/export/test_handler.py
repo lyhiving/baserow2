@@ -1,24 +1,678 @@
 from decimal import Decimal
 from io import BytesIO
+from typing import Iterable, Dict, Any, BinaryIO, Type, List
 from unittest.mock import patch
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
+from django.utils.dateparse import parse_datetime, parse_date
+from django.utils.timezone import make_aware, utc
+from freezegun import freeze_time
 
+from baserow.contrib.database.api.export.serializers import (
+    SUPPORTED_CSV_CHARSETS,
+    SUPPORTED_CSV_COLUMN_SEPARATORS,
+    BaseExporterOptionSerializer,
+)
+from baserow.contrib.database.export.exceptions import (
+    TableOnlyExportUnsupported,
+    ViewUnsupportedForExporterType,
+)
 from baserow.contrib.database.export.handler import ExportHandler
+from baserow.contrib.database.export.models import (
+    EXPORT_JOB_CANCELLED_STATUS,
+    EXPORT_JOB_PENDING_STATUS,
+    EXPORT_JOB_COMPLETED_STATUS,
+    EXPORT_JOB_EXPIRED_STATUS,
+    EXPORT_JOB_EXPORTING_STATUS,
+    EXPORT_JOB_FAILED_STATUS,
+    ExportJob,
+)
+from baserow.contrib.database.export.registries import (
+    table_exporter_registry,
+    TableExporter,
+    ExporterFunc,
+)
+from baserow.contrib.database.fields.field_helpers import (
+    construct_all_possible_field_kwargs,
+)
 from baserow.contrib.database.fields.handler import FieldHandler
+from baserow.contrib.database.fields.models import SelectOption
 from baserow.contrib.database.rows.handler import RowHandler
+from baserow.contrib.database.table.models import FieldObject
+
+
+def _parse_datetime(datetime):
+    return make_aware(parse_datetime(datetime), timezone=utc)
+
+
+def _parse_date(date):
+    return parse_date(date)
 
 
 @pytest.mark.django_db
 @patch("baserow.contrib.database.export.handler.default_storage")
-def test_can_export_simple_view_to_simple_csv(
-    storage_mock, data_fixture, django_assert_num_queries
-):
+def test_hidden_fields_are_excluded(storage_mock, data_fixture):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    text_field = data_fixture.create_text_field(table=table, name="text_field", order=1)
+    grid_view = data_fixture.create_grid_view(table=table)
+    hidden_text_field = data_fixture.create_text_field(
+        table=table, name="text_field", order=2
+    )
+    model = table.get_model()
+    model.objects.create(
+        **{
+            f"field_{text_field.id}": "Something",
+            f"field_{hidden_text_field.id}": "Should be hidden",
+        },
+    )
+    data_fixture.create_grid_view_field_option(
+        grid_view=grid_view, field=hidden_text_field, hidden=True
+    )
+    _, contents = run_export_job_with_mock_storage(table, grid_view, storage_mock, user)
+    bom = "\ufeff"
+    expected = bom + "ID,text_field\r\n" f"1,Something\r\n"
+    assert contents == expected
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_csv_is_sorted_by_sorts(storage_mock, data_fixture):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
     text_field = data_fixture.create_text_field(table=table, name="text_field")
+    grid_view = data_fixture.create_grid_view(table=table)
+    model = table.get_model()
+    model.objects.create(
+        **{
+            f"field_{text_field.id}": "A",
+        },
+    )
+    model.objects.create(
+        **{
+            f"field_{text_field.id}": "Z",
+        },
+    )
+    data_fixture.create_view_sort(view=grid_view, field=text_field, order="DESC")
+    _, contents = run_export_job_with_mock_storage(table, grid_view, storage_mock, user)
+    bom = "\ufeff"
+    expected = bom + "ID,text_field\r\n2,Z\r\n1,A\r\n"
+    assert contents == expected
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_csv_is_filtered_by_filters(storage_mock, data_fixture):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    text_field = data_fixture.create_text_field(table=table, name="text_field")
+    grid_view = data_fixture.create_grid_view(table=table)
+    model = table.get_model()
+    model.objects.create(
+        **{
+            f"field_{text_field.id}": "hello",
+        },
+    )
+    model.objects.create(
+        **{
+            f"field_{text_field.id}": "hello world",
+        },
+    )
+    data_fixture.create_view_filter(
+        view=grid_view, field=text_field, type="contains", value="world"
+    )
+    _, contents = run_export_job_with_mock_storage(table, grid_view, storage_mock, user)
+    bom = "\ufeff"
+    expected = bom + "ID,text_field\r\n2,hello world\r\n"
+    assert contents == expected
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_exporting_table_ignores_view_filters_sorts_hides(storage_mock, data_fixture):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    text_field = data_fixture.create_text_field(table=table, name="text_field", order=1)
+    hidden_text_field = data_fixture.create_text_field(
+        table=table, name="text_field", order=2
+    )
+    grid_view = data_fixture.create_grid_view(table=table)
+    model = table.get_model()
+    model.objects.create(
+        **{
+            f"field_{text_field.id}": "hello",
+            f"field_{hidden_text_field.id}": "hidden in view",
+        },
+    )
+    model.objects.create(
+        **{
+            f"field_{text_field.id}": "hello world",
+            f"field_{hidden_text_field.id}": "hidden in view",
+        },
+    )
+    data_fixture.create_view_sort(view=grid_view, field=text_field, order="DESC")
+    data_fixture.create_view_filter(
+        view=grid_view, field=text_field, type="contains", value="world"
+    )
+    data_fixture.create_grid_view_field_option(
+        grid_view=grid_view, field=hidden_text_field, hidden=True
+    )
+    _, contents = run_export_job_with_mock_storage(table, None, storage_mock, user)
+    bom = "\ufeff"
+    expected = (
+        bom + "ID,text_field,text_field\r\n"
+        "1,hello,hidden in view\r\n"
+        "2,hello world,hidden in view\r\n"
+    )
+    assert contents == expected
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_can_export_every_interesting_different_field_to_csv(
+    storage_mock, data_fixture
+):
+    user = data_fixture.create_user()
+    database = data_fixture.create_database_application(user=user)
+    table = data_fixture.create_database_table(database=database, user=user)
+    link_table = data_fixture.create_database_table(database=database, user=user)
+    handler = FieldHandler()
+    row_handler = RowHandler()
+
+    all_possible_kwargs_per_type = construct_all_possible_field_kwargs(link_table)
+
+    name_to_field_id = {}
+    i = 0
+    for field_type_name, all_possible_kwargs in all_possible_kwargs_per_type.items():
+        for kwargs in all_possible_kwargs:
+            field = handler.create_field(
+                user=user,
+                table=table,
+                type_name=field_type_name,
+                order=i,
+                **kwargs,
+            )
+            i += 1
+            name_to_field_id[kwargs["name"]] = field.id
+    grid_view = data_fixture.create_grid_view(table=table)
+    row_handler = RowHandler()
+
+    other_table_primary_text_field = data_fixture.create_text_field(
+        table=link_table, name="text_field", primary=True
+    )
+
+    def add_linked_row(text):
+        return row_handler.create_row(
+            user=user,
+            table=link_table,
+            values={
+                other_table_primary_text_field.id: text,
+            },
+        )
+
+    model = table.get_model()
+
+    def id_tuple(x):
+        return x, x
+
+    upload_url_prefix = "http://localhost:8000/media/user_files/"
+
+    # A dictionary of field names to a tuple of (value to create the row model with,
+    # the expected value of this value after being exported to csv)
+    datetime = _parse_datetime("2020-02-01 01:23")
+    date = _parse_date("2020-02-01")
+    field_values_to_expected = {
+        "text": id_tuple("text"),
+        "long_text": id_tuple("long_text"),
+        "url": id_tuple("http://www.google.com"),
+        "email": id_tuple("test@example.com"),
+        "negative_int": (-1, "-1"),
+        "positive_int": (1, "1"),
+        "negative_decimal": (Decimal("-1.2"), "-1.2"),
+        "positive_decimal": (Decimal("1.2"), "1.2"),
+        "boolean": (True, "True"),
+        "datetime_us": (datetime, "02/01/2020 01:23"),
+        "date_us": (date, "02/01/2020"),
+        "datetime_eu": (datetime, "01/02/2020 01:23"),
+        "date_eu": (date, "01/02/2020"),
+        "link_row": (None, '"linked_row_1,linked_row_2"'),
+        "file": (
+            [{"name": "hashed_name.txt", "visible_name": "a.txt"}],
+            f"a.txt ({upload_url_prefix}hashed_name.txt)",
+        ),
+        "single_select": (SelectOption.objects.get(value="A"), "A"),
+        "phone_number": id_tuple("+4412345678"),
+    }
+    assert field_values_to_expected.keys() == name_to_field_id.keys(), (
+        "Please update the dictionary above with what your new field type should look "
+        "like when serialized to csv. "
+    )
+
+    row_values = {}
+    for field_type, (val, _) in field_values_to_expected.items():
+        if val is not None:
+            row_values[f"field_{name_to_field_id[field_type]}"] = val
+
+    # Make a blank row to test empty field conversion also.
+    model.objects.create(**{})
+    row = model.objects.create(**row_values)
+
+    linked_row_1 = add_linked_row("linked_row_1")
+    linked_row_2 = add_linked_row("linked_row_2")
+    getattr(row, f"field_{name_to_field_id['link_row']}").add(
+        linked_row_1.id, linked_row_2.id
+    )
+
+    job, contents = run_export_job_with_mock_storage(
+        table, grid_view, storage_mock, user
+    )
+
+    expected_header = ",".join(field_values_to_expected.keys())
+    expected_values = ",".join([v for _, v in field_values_to_expected.values()])
+    expected = (
+        "\ufeff"
+        f"ID,{expected_header}\r\n"
+        f"1,,,,,,,,,False,,,,,,,,\r\n"
+        f"2,{expected_values}\r\n"
+    )
+    assert expected == contents
+
+    job.refresh_from_db()
+    assert job.status == EXPORT_JOB_COMPLETED_STATUS
+
+
+@pytest.mark.django_db
+def test_creating_a_new_export_job_will_cancel_any_already_running_jobs_for_that_user(
+    data_fixture,
+):
+    user = data_fixture.create_user()
+    other_user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    handler = ExportHandler()
+    first_job = handler.create_pending_export_job(
+        user, table, None, {"exporter_type": "csv"}
+    )
+    other_users_job = handler.create_pending_export_job(
+        other_user, table, None, {"exporter_type": "csv"}
+    )
+    second_job = handler.create_pending_export_job(
+        user, table, None, {"exporter_type": "csv"}
+    )
+    first_job.refresh_from_db()
+    other_users_job.refresh_from_db()
+    assert first_job.status == EXPORT_JOB_CANCELLED_STATUS
+    assert second_job.status == EXPORT_JOB_PENDING_STATUS
+    assert other_users_job.status == EXPORT_JOB_PENDING_STATUS
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_a_complete_export_job_which_has_expired_will_have_its_file_deleted(
+    storage_mock,
+    data_fixture,
+):
+    handler = ExportHandler()
+    with freeze_time("2020-01-01 12:00"):
+        first_job, _ = setup_table_and_run_export_decoding_result(
+            data_fixture, storage_mock
+        )
+    with freeze_time("2020-01-01 12:30"):
+        second_job, _ = setup_table_and_run_export_decoding_result(
+            data_fixture, storage_mock
+        )
+    with freeze_time("2020-01-01 13:01"):
+        handler.clean_up_old_jobs()
+
+    storage_mock.delete.assert_called_once_with(
+        "export_files/" + first_job.exported_file_name
+    )
+    first_job.refresh_from_db()
+    assert first_job.status == EXPORT_JOB_EXPIRED_STATUS
+    assert first_job.exported_file_name is None
+    second_job.refresh_from_db()
+    assert second_job.status == EXPORT_JOB_COMPLETED_STATUS
+    assert second_job.exported_file_name is not None
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_a_pending_job_which_has_expired_will_be_cleaned_up(
+    storage_mock,
+    data_fixture,
+):
+    user = data_fixture.create_user()
+    other_user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    handler = ExportHandler()
+    with freeze_time("2020-01-01 12:00"):
+        old_pending_job = handler.create_pending_export_job(
+            user, table, None, {"exporter_type": "csv"}
+        )
+    with freeze_time("2020-01-01 12:30"):
+        unexpired_other_user_job = handler.create_pending_export_job(
+            other_user, table, None, {"exporter_type": "csv"}
+        )
+    with freeze_time("2020-01-01 13:01"):
+        handler.clean_up_old_jobs()
+
+    storage_mock.delete.assert_not_called()
+
+    old_pending_job.refresh_from_db()
+    assert old_pending_job.status == EXPORT_JOB_EXPIRED_STATUS
+    unexpired_other_user_job.refresh_from_db()
+    assert unexpired_other_user_job.status == EXPORT_JOB_PENDING_STATUS
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_a_running_export_job_which_has_expired_will_be_stopped(
+    storage_mock,
+    data_fixture,
+):
+    user = data_fixture.create_user()
+    other_user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    handler = ExportHandler()
+    with freeze_time("2020-01-01 12:00"):
+        long_running_job = handler.create_pending_export_job(
+            user, table, None, {"exporter_type": "csv"}
+        )
+        long_running_job.status = EXPORT_JOB_EXPORTING_STATUS
+        long_running_job.save()
+    with freeze_time("2020-01-01 12:30"):
+        unexpired_other_user_job = handler.create_pending_export_job(
+            other_user, table, None, {"exporter_type": "csv"}
+        )
+    with freeze_time("2020-01-01 13:01"):
+        handler.clean_up_old_jobs()
+
+    storage_mock.delete.assert_not_called()
+
+    long_running_job.refresh_from_db()
+    assert long_running_job.status == EXPORT_JOB_EXPIRED_STATUS
+    unexpired_other_user_job.refresh_from_db()
+    assert unexpired_other_user_job.status == EXPORT_JOB_PENDING_STATUS
+
+
+@pytest.mark.django_db
+def test_attempting_to_export_a_table_for_a_type_which_doesnt_support_it_fails(
+    data_fixture,
+):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    handler = ExportHandler()
+
+    class CantExportTableExporter(TableExporter):
+        type = "no_tables"
+
+        @property
+        def file_extension(self) -> str:
+            return ".no_tables"
+
+        @property
+        def can_export_table(self) -> bool:
+            return False
+
+        @property
+        def supported_views(self) -> List[str]:
+            return []
+
+        @property
+        def option_serializer_class(self) -> Type["BaseExporterOptionSerializer"]:
+            return BaseExporterOptionSerializer
+
+        def make_file_output_generator(
+            self,
+            ordered_field_objects: Iterable[FieldObject],
+            export_options: Dict[str, Any],
+            export_file: BinaryIO,
+        ) -> ExporterFunc:
+            raise Exception("This should not even be run")
+
+    table_exporter_registry.register(CantExportTableExporter())
+    with pytest.raises(TableOnlyExportUnsupported):
+        handler.create_pending_export_job(
+            user, table, None, {"exporter_type": "no_tables"}
+        )
+
+    assert not ExportJob.objects.exists()
+
+
+@pytest.mark.django_db
+def test_attempting_to_export_a_view_for_a_type_which_doesnt_support_it_fails(
+    data_fixture,
+):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    grid_view = data_fixture.create_grid_view(table=table)
+    handler = ExportHandler()
+
+    class CantExportViewExporter(TableExporter):
+        type = "not_grid_view"
+
+        @property
+        def file_extension(self) -> str:
+            return ".not_grid_view"
+
+        @property
+        def can_export_table(self) -> bool:
+            return False
+
+        @property
+        def supported_views(self) -> List[str]:
+            return ["not_grid_view"]
+
+        @property
+        def option_serializer_class(self) -> Type["BaseExporterOptionSerializer"]:
+            return BaseExporterOptionSerializer
+
+        def make_file_output_generator(
+            self,
+            ordered_field_objects: Iterable[FieldObject],
+            export_options: Dict[str, Any],
+            export_file: BinaryIO,
+        ) -> ExporterFunc:
+            raise Exception("This should not even be run")
+
+    table_exporter_registry.register(CantExportViewExporter())
+    with pytest.raises(ViewUnsupportedForExporterType):
+        handler.create_pending_export_job(
+            user, table, grid_view, {"exporter_type": "not_grid_view"}
+        )
+
+    assert not ExportJob.objects.exists()
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_an_export_job_which_fails_will_be_marked_as_a_failed_job(
+    storage_mock,
+    data_fixture,
+):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    handler = ExportHandler()
+
+    class BrokenTestFileExporter(TableExporter):
+        type = "broken"
+
+        @property
+        def file_extension(self) -> str:
+            return ".broken"
+
+        @property
+        def can_export_table(self) -> bool:
+            return True
+
+        @property
+        def supported_views(self) -> List[str]:
+            return []
+
+        @property
+        def option_serializer_class(self) -> Type["BaseExporterOptionSerializer"]:
+            return BaseExporterOptionSerializer
+
+        def make_file_output_generator(
+            self,
+            ordered_field_objects: Iterable[FieldObject],
+            export_options: Dict[str, Any],
+            export_file: BinaryIO,
+        ) -> ExporterFunc:
+            raise Exception("Failed")
+
+    table_exporter_registry.register(BrokenTestFileExporter())
+    job_which_fails = handler.create_pending_export_job(
+        user, table, None, {"exporter_type": "broken"}
+    )
+    with pytest.raises(Exception, match="Failed"):
+        handler.run_export_job(job_which_fails)
+
+    job_which_fails.refresh_from_db()
+    assert job_which_fails.status == EXPORT_JOB_FAILED_STATUS
+    assert job_which_fails.error == "Failed"
+    table_exporter_registry.unregister("broken")
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_can_export_csv_without_header(storage_mock, data_fixture):
+    _, contents = setup_table_and_run_export_decoding_result(
+        data_fixture,
+        storage_mock,
+        options={"exporter_type": "csv", "csv_include_header": False},
+    )
+    expected = (
+        "\ufeff"
+        f"2,atest,A,02/01/2020 01:23,,-10.20,linked_row_1\r\n"
+        f'1,test,B,02/01/2020 01:23,,10.20,"linked_row_1,linked_row_2"\r\n'
+    )
+    assert expected == contents
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_can_export_csv_with_different_charsets(storage_mock, data_fixture):
+    for _, charset in SUPPORTED_CSV_CHARSETS:
+        _, contents = setup_table_and_run_export_decoding_result(
+            data_fixture,
+            storage_mock,
+            options={"exporter_type": "csv", "csv_charset": charset},
+        )
+        if charset == "utf-8":
+            bom = "\ufeff"
+        else:
+            bom = ""
+        expected = (
+            bom + "ID,text_field,option_field,date_field,File,Price,Customer\r\n"
+            f"2,atest,A,02/01/2020 01:23,,-10.20,linked_row_1\r\n"
+            f'1,test,B,02/01/2020 01:23,,10.20,"linked_row_1,linked_row_2"\r\n'
+        )
+        assert expected == contents
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_can_export_csv_with_different_column_separators(storage_mock, data_fixture):
+    for _, col_sep in SUPPORTED_CSV_COLUMN_SEPARATORS:
+        _, contents = setup_table_and_run_export_decoding_result(
+            data_fixture,
+            storage_mock,
+            options={"exporter_type": "csv", "csv_column_separator": col_sep},
+        )
+        bom = "\ufeff"
+        expected = (
+            bom + "ID,text_field,option_field,date_field,File,Price,Customer\r\n"
+            f"2,atest,A,02/01/2020 01:23,,-10.20,linked_row_1\r\n"
+            f"1,test,B,02/01/2020 01:23,,10.20,quote_replace\r\n"
+        )
+        expected = expected.replace(",", col_sep)
+        if col_sep == ",":
+            expected = expected.replace("quote_replace", '"linked_row_1,linked_row_2"')
+        else:
+            expected = expected.replace("quote_replace", "linked_row_1,linked_row_2")
+        assert expected == contents
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_adding_more_rows_doesnt_increase_number_of_queries_run(
+    storage_mock, data_fixture, django_assert_num_queries
+):
+    add_row, add_linked_row, user, table, grid_view = setup_testing_table(data_fixture)
+
+    # Ensure we test with linked rows and select options as they are the fields which
+    # might potentially cause django's orm to do extra lookup queries.
+    linked_row_1 = add_linked_row("linked_row_1")
+    linked_row_2 = add_linked_row("linked_row_2")
+    add_row(
+        "test",
+        "2020-02-01 01:23",
+        "B",
+        10.2,
+        [{"name": "hashed_name.txt", "visible_name": "a.txt"}],
+        [linked_row_1.id, linked_row_2.id],
+    )
+    add_row(
+        "atest",
+        "2020-02-01 01:23",
+        "A",
+        -10.2,
+        [
+            {"name": "hashed_name.txt", "visible_name": "a.txt"},
+            {"name": "hashed_name2.txt", "visible_name": "b.txt"},
+        ],
+        [linked_row_1.id],
+    )
+
+    with CaptureQueriesContext(connection) as captured:
+        run_export_job_with_mock_storage(table, grid_view, storage_mock, user)
+
+    add_row(
+        "atest",
+        "2020-02-01 01:23",
+        "A",
+        -10.2,
+        [
+            {"name": "hashed_name.txt", "visible_name": "a.txt"},
+            {"name": "hashed_name2.txt", "visible_name": "b.txt"},
+        ],
+        [linked_row_1.id],
+    )
+    with django_assert_num_queries(len(captured.captured_queries)):
+        run_export_job_with_mock_storage(table, grid_view, storage_mock, user)
+
+
+def run_export_job_with_mock_storage(
+    table, grid_view, storage_mock, user, options=None
+):
+    if options is None:
+        options = {"exporter_type": "csv"}
+
+    if "csv_charset" not in options:
+        options["csv_charset"] = "utf-8"
+
+    stub_file = BytesIO()
+    storage_mock.open.return_value = stub_file
+    close = stub_file.close
+    stub_file.close = lambda: None
+    handler = ExportHandler()
+    job = handler.create_pending_export_job(user, table, grid_view, options)
+    handler.run_export_job(job)
+    actual = stub_file.getvalue().decode(options["csv_charset"])
+    close()
+    return job, actual
+
+
+def setup_testing_table(data_fixture):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    text_field = data_fixture.create_text_field(table=table, name="text_field", order=0)
     option_field = data_fixture.create_single_select_field(
-        table=table, name="option_field"
+        table=table,
+        name="option_field",
+        order=1,
     )
     option_a = data_fixture.create_select_option(
         field=option_field, value="A", color="blue"
@@ -26,16 +680,25 @@ def test_can_export_simple_view_to_simple_csv(
     option_b = data_fixture.create_select_option(
         field=option_field, value="B", color="red"
     )
+    option_map = {
+        "A": option_a,
+        "B": option_b,
+    }
     date_field = data_fixture.create_date_field(
-        table=table, date_include_time=True, date_format="US", name="date_field"
+        table=table,
+        date_include_time=True,
+        date_format="US",
+        name="date_field",
+        order=2,
     )
-    file_field = data_fixture.create_file_field(table=table, name="File")
+    file_field = data_fixture.create_file_field(table=table, name="File", order=3)
     price_field = data_fixture.create_number_field(
         table=table,
         name="Price",
         number_type="DECIMAL",
         number_decimal_places=2,
         number_negative=True,
+        order=4,
     )
     table_2 = data_fixture.create_database_table(database=table.database)
     other_table_primary_text_field = data_fixture.create_text_field(
@@ -47,201 +710,62 @@ def test_can_export_simple_view_to_simple_csv(
         type_name="link_row",
         name="Customer",
         link_row_table=table_2,
+        order=5,
     )
-
     grid_view = data_fixture.create_grid_view(table=table)
-    data_fixture.create_view_filter(
-        view=grid_view, field=text_field, type="contains", value="test"
-    )
     data_fixture.create_view_sort(view=grid_view, field=text_field, order="ASC")
-
     row_handler = RowHandler()
-    first_linked_row = row_handler.create_row(
-        user=user,
-        table=table_2,
-        values={
-            other_table_primary_text_field.id: "link-test",
-        },
-    )
-    second_linked_row = row_handler.create_row(
-        user=user,
-        table=table_2,
-        values={
-            other_table_primary_text_field.id: "link-other-test",
-        },
-    )
+
+    def add_linked_row(text):
+        return row_handler.create_row(
+            user=user,
+            table=table_2,
+            values={
+                other_table_primary_text_field.id: text,
+            },
+        )
+
     model = table.get_model()
-    row = model.objects.create(
-        **{
-            f"field_{text_field.id}": "test",
-            f"field_{date_field.id}": "2020-02-01 01:23",
-            f"field_{option_field.id}": option_b,
-            f"field_{price_field.id}": Decimal(10.2),
-            f"field_{file_field.id}": [
-                {
-                    "name": "hashed_name.txt",
-                    "visible_name": "a.txt",
-                }
-            ],
-        },
-    )
-    getattr(row, f"field_{link_field.id}").add(
-        first_linked_row.id, second_linked_row.id
-    )
-    row2 = model.objects.create(
-        **{
-            f"field_{text_field.id}": "atest",
-            f"field_{date_field.id}": "2020-02-01 01:23",
-            f"field_{option_field.id}": option_a,
-            f"field_{price_field.id}": Decimal(-10.2),
-            f"field_{file_field.id}": [
-                {"name": "hashed_name.txt", "visible_name": "a.txt"},
-                {"name": "hashed_name2.txt", "visible_name": "b.txt"},
-            ],
-        },
-    )
-    getattr(row2, f"field_{link_field.id}").add(second_linked_row.id)
 
-    stub_file = BytesIO()
-    storage_mock.open.return_value = stub_file
-    close = stub_file.close
-    stub_file.close = lambda: None
+    def add_row(text, date, option, price, files, linked_row_ids):
+        row = model.objects.create(
+            **{
+                f"field_{text_field.id}": text,
+                f"field_{date_field.id}": _parse_datetime(date),
+                f"field_{option_field.id}": option_map[option],
+                f"field_{price_field.id}": price,
+                f"field_{file_field.id}": files,
+            },
+        )
+        getattr(row, f"field_{link_field.id}").add(*linked_row_ids)
 
-    handler = ExportHandler()
-
-    job = handler.create_pending_export_job(
-        user, table, grid_view, {"exporter_type": "csv"}
-    )
-    upload_url_prefix = "http://localhost:8000/media/user_files/"
-    f2 = (
-        f'"a.txt ({upload_url_prefix}hashed_name.txt),'
-        f'b.txt ({upload_url_prefix}hashed_name2.txt)"'
-    )
-    f1 = f"a.txt ({upload_url_prefix}hashed_name.txt)"
-    with django_assert_num_queries(46):
-        handler.run_export_job(job)
-    expected = (
-        "\ufeff"
-        "ID,text_field,option_field,date_field,File,Price,Customer\r\n"
-        f"2,atest,A,02/01/2020 01:23,{f2},-10.20,link-other-test\r\n"
-        f'1,test,B,02/01/2020 01:23,{f1},10.20,"link-test,link-other-test"\r\n'
-    )
-    actual = stub_file.getvalue().decode("utf-8")
-    print(actual)
-    print(expected)
-    assert actual == expected
-    close()
-
-    job.refresh_from_db()
-    assert job.status == "completed"
-
-    row3 = model.objects.create(
-        **{
-            f"field_{text_field.id}": "atest3",
-            f"field_{date_field.id}": "2020-02-01 01:23",
-            f"field_{option_field.id}": option_a,
-            f"field_{price_field.id}": Decimal(-100.2),
-            f"field_{file_field.id}": [],
-        },
-    )
-    getattr(row3, f"field_{link_field.id}").add(second_linked_row.id)
-    stub_file = BytesIO()
-    storage_mock.open.return_value = stub_file
-    close = stub_file.close
-    stub_file.close = lambda: None
-
-    handler = ExportHandler()
-
-    job = handler.create_pending_export_job(
-        user, table, grid_view, {"exporter_type": "csv"}
-    )
-    with django_assert_num_queries(46):
-        handler.run_export_job(job)
-    expected = (
-        "\ufeff"
-        "ID,text_field,option_field,date_field,File,Price,Customer\r\n"
-        f"2,atest,A,02/01/2020 01:23,{f2},-10.20,link-other-test\r\n"
-        "3,atest3,A,02/01/2020 01:23,,-100.20,link-other-test\r\n"
-        f'1,test,B,02/01/2020 01:23,{f1},10.20,"link-test,link-other-test"\r\n'
-    )
-    actual = stub_file.getvalue().decode("utf-8")
-    assert actual == expected
-    close()
-
-    job.refresh_from_db()
-    assert job.status == "completed"
+    return add_row, add_linked_row, user, table, grid_view
 
 
-@pytest.mark.django_db
-@patch("baserow.contrib.database.export.handler.default_storage")
-def test_field_type_changed(storage_mock, data_fixture):
-    user = data_fixture.create_user()
-    table = data_fixture.create_database_table(user=user)
-    text_field = data_fixture.create_text_field(table=table, name="text_field")
-    option_field = data_fixture.create_single_select_field(
-        table=table, name="option_field"
+def setup_table_and_run_export_decoding_result(
+    data_fixture, storage_mock, options=None
+):
+    add_row, add_linked_row, user, table, grid_view = setup_testing_table(data_fixture)
+
+    linked_row_1 = add_linked_row("linked_row_1")
+    linked_row_2 = add_linked_row("linked_row_2")
+    add_row(
+        "test",
+        "2020-02-01 01:23",
+        "B",
+        10.2,
+        [],
+        [linked_row_1.id, linked_row_2.id],
     )
-    option_a = data_fixture.create_select_option(
-        field=option_field, value="A", color="blue"
-    )
-    option_b = data_fixture.create_select_option(
-        field=option_field, value="B", color="red"
-    )
-    date_field = data_fixture.create_date_field(
-        table=table, date_include_time=True, date_format="US", name="date_field"
+    add_row(
+        "atest",
+        "2020-02-01 01:23",
+        "A",
+        -10.2,
+        [],
+        [linked_row_1.id],
     )
 
-    grid_view = data_fixture.create_grid_view(table=table)
-    data_fixture.create_view_filter(
-        view=grid_view, field=text_field, type="contains", value="test"
+    return run_export_job_with_mock_storage(
+        table, grid_view, storage_mock, user, options=options
     )
-    data_fixture.create_view_sort(view=grid_view, field=text_field, order="ASC")
-
-    row_handler = RowHandler()
-    row_handler.create_row(
-        user=user,
-        table=table,
-        values={
-            text_field.id: "test",
-            date_field.id: "2020-02-01 01:23",
-            option_field.id: option_b.id,
-        },
-    )
-    row_handler.create_row(
-        user=user,
-        table=table,
-        values={
-            text_field.id: "atest",
-            date_field.id: "2020-02-01 01:23",
-            option_field.id: option_a.id,
-        },
-    )
-
-    stub_file = BytesIO()
-    storage_mock.open.return_value = stub_file
-    close = stub_file.close
-    stub_file.close = lambda: None
-
-    handler = ExportHandler()
-    job = handler.create_pending_export_job(
-        user,
-        table,
-        grid_view,
-        {
-            "exporter_type": "csv",
-            "csv_charset": "iso-2022-jp",
-            "csv_column_separator": "\t",
-        },
-    )
-    handler.run_export_job(job)
-    expected = (
-        "ID\ttext_field\toption_field\tdate_field\r\n"
-        "2\tatest\tA\t02/01/2020 01:23\r\n"
-        "1\ttest\tB\t02/01/2020 01:23\r\n"
-    )
-    actual = stub_file.getvalue().decode("iso-2022-jp")
-    assert actual == expected
-    close()
-
-    job.refresh_from_db()
-    assert job.status == "completed"

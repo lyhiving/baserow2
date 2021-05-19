@@ -1,9 +1,10 @@
-EXPORT_JOB_ERRORS = [("EXAMPLE_ERROR", "EXAMPLE_ERROR")]
-
-
-class ExportAlreadyRunningException(Exception):
+class ExportJobCanceledException(Exception):
     pass
 
 
-class ExportJobCanceledException(Exception):
+class TableOnlyExportUnsupported(Exception):
+    pass
+
+
+class ViewUnsupportedForExporterType(Exception):
     pass

@@ -77,7 +77,7 @@
             :disabled="loading"
           ></button>
           <a
-            v-else-if="job.status === 'completed'"
+            v-else-if="job.status === 'complete'"
             class="button button--large button--success export-table-modal__export-button"
             :href="job.url"
             @click="$emit('downloaded')"
@@ -233,7 +233,7 @@ export default {
         }
         if (this.jobIsRunning) {
           this.pollInterval = setInterval(this.getLatestJobInfo, 1000)
-        } else if (this.job.status !== 'completed') {
+        } else if (this.job.status !== 'complete') {
           this.loading = false
         }
       } catch (error) {

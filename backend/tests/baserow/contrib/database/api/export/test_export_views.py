@@ -6,12 +6,226 @@ from django.core.files.storage import FileSystemStorage
 from django.urls import reverse
 from django_capture_on_commit_callbacks import capture_on_commit_callbacks
 from freezegun import freeze_time
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_200_OK
 
 from baserow.contrib.database.rows.handler import RowHandler
 
 
 @pytest.mark.django_db
-def test_field_type_changed(data_fixture, api_client, tmpdir):
+def test_unknown_export_type_for_view_returns_error(data_fixture, api_client, tmpdir):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    data_fixture.create_text_field(table=table, name="text_field")
+    grid_view = data_fixture.create_grid_view(table=table)
+
+    response = api_client.post(
+        reverse(
+            "api:database:export:export_view",
+            kwargs={"view_id": grid_view.id},
+        ),
+        data={
+            "exporter_type": "unknown",
+            "csv_charset": "utf-8",
+            "csv_include_header": "True",
+            "csv_column_separator": "comma",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json()["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+
+
+@pytest.mark.django_db
+def test_unknown_export_type_for_table_returns_error(data_fixture, api_client, tmpdir):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    data_fixture.create_text_field(table=table, name="text_field")
+
+    response = api_client.post(
+        reverse(
+            "api:database:export:export_table",
+            kwargs={"table_id": table.id},
+        ),
+        data={
+            "exporter_type": "unknown",
+            "csv_charset": "utf-8",
+            "csv_include_header": "True",
+            "csv_column_separator": "comma",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json()["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+
+
+@pytest.mark.django_db
+def test_exporting_table_without_permissions_returns_error(
+    data_fixture, api_client, tmpdir
+):
+    user = data_fixture.create_user()
+    unpermissioned_user, unpermissioned_token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    data_fixture.create_text_field(table=table, name="text_field")
+
+    response = api_client.post(
+        reverse(
+            "api:database:export:export_table",
+            kwargs={"table_id": table.id},
+        ),
+        data={
+            "exporter_type": "csv",
+            "csv_charset": "utf-8",
+            "csv_include_header": "True",
+            "csv_column_separator": "comma",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {unpermissioned_token}",
+    )
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json()["error"] == "ERROR_USER_NOT_IN_GROUP"
+
+
+@pytest.mark.django_db
+def test_exporting_view_without_permissions_returns_error(
+    data_fixture, api_client, tmpdir
+):
+    user = data_fixture.create_user()
+    unpermissioned_user, unpermissioned_token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    data_fixture.create_text_field(table=table, name="text_field")
+    grid_view = data_fixture.create_grid_view(table=table)
+
+    response = api_client.post(
+        reverse(
+            "api:database:export:export_view",
+            kwargs={"view_id": grid_view.id},
+        ),
+        data={
+            "exporter_type": "csv",
+            "csv_charset": "utf-8",
+            "csv_include_header": "True",
+            "csv_column_separator": "comma",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {unpermissioned_token}",
+    )
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json()["error"] == "ERROR_USER_NOT_IN_GROUP"
+
+
+@pytest.mark.django_db
+def test_exporting_missing_view_returns_error(data_fixture, api_client, tmpdir):
+    user, token = data_fixture.create_user_and_token()
+    response = api_client.post(
+        reverse(
+            "api:database:export:export_view",
+            kwargs={"view_id": 9999},
+        ),
+        data={
+            "exporter_type": "csv",
+            "csv_charset": "utf-8",
+            "csv_include_header": "True",
+            "csv_column_separator": "comma",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_404_NOT_FOUND
+    assert response.json()["error"] == "ERROR_VIEW_DOES_NOT_EXIST"
+
+
+@pytest.mark.django_db
+def test_exporting_missing_table_returns_error(data_fixture, api_client, tmpdir):
+    user, token = data_fixture.create_user_and_token()
+    response = api_client.post(
+        reverse(
+            "api:database:export:export_table",
+            kwargs={"table_id": 9999},
+        ),
+        data={
+            "exporter_type": "csv",
+            "csv_charset": "utf-8",
+            "csv_include_header": "True",
+            "csv_column_separator": "comma",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_404_NOT_FOUND
+    assert response.json()["error"] == "ERROR_TABLE_DOES_NOT_EXIST"
+
+
+@pytest.mark.django_db
+def test_getting_missing_export_job_returns_error(data_fixture, api_client, tmpdir):
+    user, token = data_fixture.create_user_and_token()
+    response = api_client.get(
+        reverse("api:database:export:get", kwargs={"job_id": 9999}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_404_NOT_FOUND
+    assert response.json()["error"] == "ERROR_EXPORT_JOB_DOES_NOT_EXIST"
+
+
+@pytest.mark.django_db
+def test_getting_other_users_export_job_returns_error(data_fixture, api_client, tmpdir):
+    user, token = data_fixture.create_user_and_token()
+    unpermissioned_user, unpermissioned_token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    data_fixture.create_text_field(table=table, name="text_field")
+    response = api_client.post(
+        reverse(
+            "api:database:export:export_table",
+            kwargs={"table_id": table.id},
+        ),
+        data={
+            "exporter_type": "csv",
+            "csv_charset": "utf-8",
+            "csv_include_header": "True",
+            "csv_column_separator": "comma",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+
+    response = api_client.get(
+        reverse("api:database:export:get", kwargs={"job_id": 9999}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {unpermissioned_token}",
+    )
+    assert response.status_code == HTTP_404_NOT_FOUND
+    assert response.json()["error"] == "ERROR_EXPORT_JOB_DOES_NOT_EXIST"
+
+
+@pytest.mark.django_db
+def test_missing_export_options_returns_error(data_fixture, api_client, tmpdir):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    data_fixture.create_text_field(table=table, name="text_field")
+    grid_view = data_fixture.create_grid_view(table=table)
+
+    response = api_client.post(
+        reverse(
+            "api:database:export:export_view",
+            kwargs={"view_id": grid_view.id},
+        ),
+        data={
+            "exporter_type": "csv",
+            "csv_include_header": "True",
+            "csv_column_separator": "comma",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json()["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+
+
+@pytest.mark.django_db
+def test_exporting_csv_writes_file_to_storage(data_fixture, api_client, tmpdir):
     user, token = data_fixture.create_user_and_token()
     table = data_fixture.create_database_table(user=user)
     text_field = data_fixture.create_text_field(table=table, name="text_field")
@@ -76,7 +290,6 @@ def test_field_type_changed(data_fixture, api_client, tmpdir):
             job_id = response_json["id"]
             assert response_json == {
                 "id": job_id,
-                "error": None,
                 "expires_at": "2020-01-02T13:00:00Z",
                 "exported_file_name": None,
                 "exporter_type": "csv",
@@ -95,12 +308,11 @@ def test_field_type_changed(data_fixture, api_client, tmpdir):
             filename = json["exported_file_name"]
             assert json == {
                 "id": job_id,
-                "error": None,
                 "expires_at": "2020-01-02T13:00:00Z",
                 "exported_file_name": filename,
                 "exporter_type": "csv",
                 "progress_percentage": 1.0,
-                "status": "completed",
+                "status": "complete",
                 "table": table.id,
                 "view": grid_view.id,
                 "url": f"http://localhost:8000/media/export_files/{filename}",

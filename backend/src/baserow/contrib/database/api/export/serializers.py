@@ -11,40 +11,42 @@ from baserow.contrib.database.export.models import ExportJob
 # web-frontend/modules/core/components/helpers/CharsetDropdown.vue:
 from baserow.contrib.database.export.registries import table_exporter_registry
 
+# This is a map from the front end supported charsets to the internal python supported
+# charset value as they do not always match up.
 SUPPORTED_CSV_CHARSETS = [
-    ("utf-8", "Unicode (UTF-8)"),
-    ("iso-8859-6", "Arabic (ISO-8859-6)"),
-    ("windows-1256", "Arabic (Windows-1256)"),
-    ("iso-8859-4", "Baltic (ISO-8859-4)"),
-    ("windows-1257", "Baltic (windows-1257)"),
-    ("iso-8859-14", "Celtic (ISO-8859-14)"),
-    ("iso-8859-2", "Central European (ISO-8859-2)"),
-    ("windows-1250", "Central European (Windows-1250)"),
-    ("gbk", "Chinese, Simplified (GBK)"),
-    ("gb18030", "Chinese (GB18030)"),
-    ("big5", "Chinese Traditional (Big5)"),
-    ("koi8-r", "Cyrillic (KOI8-R)"),
-    ("koi8-u", "Cyrillic (KOI8-U)"),
-    ("iso-8859-5", "Cyrillic (ISO-8859-5)"),
-    ("windows-1251", "Cyrillic (Windows-1251)"),
-    ("x-mac-cyrillic", "Cyrillic Mac OS (x-mac-cyrillic)"),
-    ("iso-8859-7", "Greek (ISO-8859-7)"),
-    ("windows-1253", "Greek (Windows-1253)"),
-    ("iso-8859-8", "Hebrew (ISO-8859-8)"),
-    ("windows-1255", "Hebrew (Windows-1255)"),
-    ("euc-jp", "Japanese (EUC-JP)"),
-    ("iso-2022-jp", "Japanese (ISO-2022-JP)"),
-    ("shift-jis", "Japanese (Shift-JIS)"),
-    ("euc-kr", "Korean (EUC-KR)"),
-    ("macintosh", "Macintosh"),
-    ("iso-8859-10", "Nordic (ISO-8859-10)"),
-    ("iso-8859-16", "South-Eastern European (ISO-8859-16)"),
-    ("windows-874", "Thai (Windows-874)"),
-    ("windows-1254", "Turkish (Windows-1254)"),
-    ("windows-1258", "Vietnamese (Windows-1258)"),
-    ("iso-8859-1", "Western European (ISO-8859-1)"),
-    ("windows-1252", "Western European (Windows-1252)"),
-    ("iso-8859-3", "Latin 3 (ISO-8859-3)"),
+    ("utf-8", "utf-8"),
+    ("iso-8859-6", "iso-8859-6"),
+    ("windows-1256", "windows-1256"),
+    ("iso-8859-4", "iso-8859-4"),
+    ("windows-1257", "windows-1257"),
+    ("iso-8859-14", "iso-8859-14"),
+    ("iso-8859-2", "iso-8859-2"),
+    ("windows-1250", "windows-1250"),
+    ("gbk", "gbk"),
+    ("gb18030", "gb18030"),
+    ("big5", "big5"),
+    ("koi8-r", "koi8-r"),
+    ("koi8-u", "koi8-u"),
+    ("iso-8859-5", "iso-8859-5"),
+    ("windows-1251", "windows-1251"),
+    ("x-mac-cyrillic", "mac-cyrillic"),
+    ("iso-8859-7", "iso-8859-7"),
+    ("windows-1253", "windows-1253"),
+    ("iso-8859-8", "iso-8859-8"),
+    ("windows-1255", "windows-1255"),
+    ("euc-jp", "euc-jp"),
+    ("iso-2022-jp", "iso-2022-jp"),
+    ("shift-jis", "shift-jis"),
+    ("euc-kr", "euc-kr"),
+    ("macintosh", "macintosh"),
+    ("iso-8859-10", "iso-8859-10"),
+    ("iso-8859-16", "iso-8859-16"),
+    ("windows-874", "cp874"),
+    ("windows-1254", "windows-1254"),
+    ("windows-1258", "windows-1258"),
+    ("iso-8859-1", "iso-8859-1"),
+    ("windows-1252", "windows-1252"),
+    ("iso-8859-3", "iso-8859-3"),
 ]
 SUPPORTED_CSV_COLUMN_SEPARATORS = [
     ("comma", ","),
@@ -85,7 +87,6 @@ class GetExportJobSerializer(
             "exporter_type",
             "status",
             "exported_file_name",
-            "error",
             "expires_at",
             "progress_percentage",
             "url",
@@ -102,14 +103,15 @@ class DisplayChoiceField(serializers.ChoiceField):
         return self._choices[obj]
 
 
-class ExporterTypeSerializer(serializers.Serializer):
+class BaseExporterOptionSerializer(serializers.Serializer):
     exporter_type = fields.ChoiceField(
         choices=lazy(table_exporter_registry.get_types, list)()
     )
 
 
-class RequestCsvOptionSerializer(ExporterTypeSerializer):
-    csv_charset = fields.ChoiceField(choices=SUPPORTED_CSV_CHARSETS)
+class RequestCsvOptionSerializer(BaseExporterOptionSerializer):
+    # Map to the python encoding aliases at the same time by using a DisplayChoiceField
+    csv_charset = DisplayChoiceField(choices=SUPPORTED_CSV_CHARSETS)
     # For ease of use we expect the JSON to contain human typeable forms of each
     # different separator instead of the unicode character itself. By using the
     # DisplayChoiceField we can then map this to the actual separator character by

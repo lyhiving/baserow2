@@ -16,13 +16,19 @@ from baserow.api.utils import validate_data, PolymorphicMappingSerializer
 from baserow.contrib.database.api.export.errors import (
     ExportJobDoesNotExistException,
     ERROR_EXPORT_JOB_DOES_NOT_EXIST,
+    ERROR_VIEW_UNSUPPORTED_FOR_EXPORT_TYPE,
+    TABLE_ONLY_EXPORT_UNSUPPORTED,
 )
 from baserow.contrib.database.api.export.serializers import (
     GetExportJobSerializer,
-    ExporterTypeSerializer,
+    BaseExporterOptionSerializer,
 )
 from baserow.contrib.database.api.tables.errors import ERROR_TABLE_DOES_NOT_EXIST
 from baserow.contrib.database.api.views.errors import ERROR_VIEW_DOES_NOT_EXIST
+from baserow.contrib.database.export.exceptions import (
+    ViewUnsupportedForExporterType,
+    TableOnlyExportUnsupported,
+)
 from baserow.contrib.database.export.handler import ExportHandler
 from baserow.contrib.database.export.models import ExportJob
 from baserow.contrib.database.export.registries import table_exporter_registry
@@ -51,7 +57,7 @@ def _create_and_start_new_job(user, table, view, export_options):
 
 def _validate_options(data):
     option_serializers = table_exporter_registry.get_option_serializer_map()
-    validated_exporter_type = validate_data(ExporterTypeSerializer, data)
+    validated_exporter_type = validate_data(BaseExporterOptionSerializer, data)
     serializer = option_serializers[validated_exporter_type["exporter_type"]]
     return validate_data(serializer, data)
 
@@ -82,6 +88,7 @@ class ExportTableView(APIView):
                     "ERROR_USER_NOT_IN_GROUP",
                     "ERROR_REQUEST_BODY_VALIDATION",
                     "ERROR_USER_INVALID_GROUP_PERMISSIONS",
+                    "TABLE_ONLY_EXPORT_UNSUPPORTED",
                 ]
             ),
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
@@ -93,6 +100,7 @@ class ExportTableView(APIView):
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
             UserInvalidGroupPermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
+            TableOnlyExportUnsupported: TABLE_ONLY_EXPORT_UNSUPPORTED,
         }
     )
     def post(self, request, table_id):
@@ -133,6 +141,7 @@ class ExportViewView(APIView):
                     "ERROR_USER_NOT_IN_GROUP",
                     "ERROR_REQUEST_BODY_VALIDATION",
                     "ERROR_USER_INVALID_GROUP_PERMISSIONS",
+                    "ERROR_VIEW_UNSUPPORTED_FOR_EXPORT_TYPE",
                 ]
             ),
             404: get_error_schema(["ERROR_VIEW_DOES_NOT_EXIST"]),
@@ -144,6 +153,7 @@ class ExportViewView(APIView):
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             ViewDoesNotExist: ERROR_VIEW_DOES_NOT_EXIST,
             UserInvalidGroupPermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
+            ViewUnsupportedForExporterType: ERROR_VIEW_UNSUPPORTED_FOR_EXPORT_TYPE,
         }
     )
     def post(self, request, view_id):

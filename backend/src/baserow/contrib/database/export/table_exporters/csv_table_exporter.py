@@ -4,7 +4,7 @@ import unicodecsv as csv
 
 from baserow.contrib.database.api.export.serializers import (
     RequestCsvOptionSerializer,
-    ExporterTypeSerializer,
+    BaseExporterOptionSerializer,
 )
 from baserow.contrib.database.export.registries import (
     TableExporter,
@@ -16,7 +16,7 @@ from baserow.contrib.database.views.view_types import GridViewType
 
 class CsvTableExporter(TableExporter):
     @property
-    def option_serializer_class(self) -> Type[ExporterTypeSerializer]:
+    def option_serializer_class(self) -> Type[BaseExporterOptionSerializer]:
         return RequestCsvOptionSerializer
 
     type = "csv"
