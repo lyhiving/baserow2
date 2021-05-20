@@ -1,11 +1,14 @@
 from unittest.mock import patch
 
 import pytest
-from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.urls import reverse
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import utc, make_aware
 from django_capture_on_commit_callbacks import capture_on_commit_callbacks
 from freezegun import freeze_time
+from rest_framework.fields import DateTimeField
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_200_OK
 
 from baserow.contrib.database.rows.handler import RowHandler
@@ -225,7 +228,9 @@ def test_missing_export_options_returns_error(data_fixture, api_client, tmpdir):
 
 
 @pytest.mark.django_db
-def test_exporting_csv_writes_file_to_storage(data_fixture, api_client, tmpdir):
+def test_exporting_csv_writes_file_to_storage(
+    data_fixture, api_client, tmpdir, settings
+):
     user, token = data_fixture.create_user_and_token()
     table = data_fixture.create_database_table(user=user)
     text_field = data_fixture.create_text_field(table=table, name="text_field")
@@ -270,7 +275,13 @@ def test_exporting_csv_writes_file_to_storage(data_fixture, api_client, tmpdir):
     storage = FileSystemStorage(location=(str(tmpdir)), base_url="http://localhost")
 
     with patch("baserow.contrib.database.export.handler.default_storage", new=storage):
-        with freeze_time("2020-01-02 12:00"):
+        run_time = make_aware(parse_datetime("2020-02-01 01:00"), timezone=utc)
+        # DRF uses some custom internal date time formatting, use the field itself
+        # so the test doesn't break if we set a different default timezone format etc
+        expected_expiry_time = DateTimeField().to_representation(
+            run_time + timezone.timedelta(minutes=settings.EXPORT_FILE_DURATION_MINUTES)
+        )
+        with freeze_time(run_time):
             with capture_on_commit_callbacks(execute=True):
                 response = api_client.post(
                     reverse(
@@ -290,7 +301,7 @@ def test_exporting_csv_writes_file_to_storage(data_fixture, api_client, tmpdir):
             job_id = response_json["id"]
             assert response_json == {
                 "id": job_id,
-                "expires_at": "2020-01-02T13:00:00Z",
+                "expires_at": expected_expiry_time,
                 "exported_file_name": None,
                 "exporter_type": "csv",
                 "progress_percentage": 0.0,
@@ -308,7 +319,7 @@ def test_exporting_csv_writes_file_to_storage(data_fixture, api_client, tmpdir):
             filename = json["exported_file_name"]
             assert json == {
                 "id": job_id,
-                "expires_at": "2020-01-02T13:00:00Z",
+                "expires_at": expected_expiry_time,
                 "exported_file_name": filename,
                 "exporter_type": "csv",
                 "progress_percentage": 1.0,
