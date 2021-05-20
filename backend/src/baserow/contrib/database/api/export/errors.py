@@ -12,8 +12,8 @@ ERROR_VIEW_UNSUPPORTED_FOR_EXPORT_TYPE = (
     "You cannot export this view using that exporter type.",
 )
 
-TABLE_ONLY_EXPORT_UNSUPPORTED = (
-    "TABLE_ONLY_EXPORT_UNSUPPORTED",
+ERROR_TABLE_ONLY_EXPORT_UNSUPPORTED = (
+    "ERROR_TABLE_ONLY_EXPORT_UNSUPPORTED",
     HTTP_400_BAD_REQUEST,
     "This exporter type does not support exporting just the table.",
 )

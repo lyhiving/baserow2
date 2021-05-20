@@ -17,7 +17,7 @@ from baserow.contrib.database.api.export.errors import (
     ExportJobDoesNotExistException,
     ERROR_EXPORT_JOB_DOES_NOT_EXIST,
     ERROR_VIEW_UNSUPPORTED_FOR_EXPORT_TYPE,
-    TABLE_ONLY_EXPORT_UNSUPPORTED,
+    ERROR_TABLE_ONLY_EXPORT_UNSUPPORTED,
 )
 from baserow.contrib.database.api.export.serializers import (
     GetExportJobSerializer,
@@ -88,7 +88,7 @@ class ExportTableView(APIView):
                     "ERROR_USER_NOT_IN_GROUP",
                     "ERROR_REQUEST_BODY_VALIDATION",
                     "ERROR_USER_INVALID_GROUP_PERMISSIONS",
-                    "TABLE_ONLY_EXPORT_UNSUPPORTED",
+                    "ERROR_TABLE_ONLY_EXPORT_UNSUPPORTED",
                 ]
             ),
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
@@ -100,7 +100,7 @@ class ExportTableView(APIView):
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
             UserInvalidGroupPermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
-            TableOnlyExportUnsupported: TABLE_ONLY_EXPORT_UNSUPPORTED,
+            TableOnlyExportUnsupported: ERROR_TABLE_ONLY_EXPORT_UNSUPPORTED,
         }
     )
     def post(self, request, table_id):
