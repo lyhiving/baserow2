@@ -9,7 +9,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
-from django.db import transaction
 from django.utils import timezone
 
 from baserow.contrib.database.export.models import (
@@ -121,15 +120,14 @@ class ExportHandler:
         jobs = ExportJob.jobs_requiring_cleanup(timezone.now())
         logger.info(f"Cleaning up {jobs.count()} old jobs")
         for job in jobs:
-            with transaction.atomic():
-                if job.exported_file_name:
-                    default_storage.delete(
-                        ExportHandler.export_file_path(job.exported_file_name)
-                    )
-                    job.exported_file_name = None
+            if job.exported_file_name:
+                default_storage.delete(
+                    ExportHandler.export_file_path(job.exported_file_name)
+                )
+                job.exported_file_name = None
 
-                job.status = EXPORT_JOB_EXPIRED_STATUS
-                job.save()
+            job.status = EXPORT_JOB_EXPIRED_STATUS
+            job.save()
 
 
 def _cancel_unfinished_jobs(user):

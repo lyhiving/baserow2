@@ -57,14 +57,14 @@ class TableExporter(Instance, ABC):
         ordered_field_objects = []
 
         model = grid_view.table.get_model()
-        for field_id in list(
+        ordered_visible_fields = (
             grid_view.get_field_options()
             .filter(hidden=False)
-            .order_by("field__order")
+            .order_by("order", "id")
             .values_list("field__id", flat=True)
-        ):
-            id_ = model._field_objects[field_id]
-            ordered_field_objects.append(id_)
+        )
+        for field_id in ordered_visible_fields:
+            ordered_field_objects.append(model._field_objects[field_id])
 
         return rows, self.make_file_output_generator(
             ordered_field_objects,

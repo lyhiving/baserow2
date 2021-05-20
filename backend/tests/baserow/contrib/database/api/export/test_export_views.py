@@ -233,9 +233,9 @@ def test_exporting_csv_writes_file_to_storage(
 ):
     user, token = data_fixture.create_user_and_token()
     table = data_fixture.create_database_table(user=user)
-    text_field = data_fixture.create_text_field(table=table, name="text_field")
+    text_field = data_fixture.create_text_field(table=table, name="text_field", order=0)
     option_field = data_fixture.create_single_select_field(
-        table=table, name="option_field"
+        table=table, name="option_field", order=1
     )
     option_a = data_fixture.create_select_option(
         field=option_field, value="A", color="blue"
@@ -244,7 +244,11 @@ def test_exporting_csv_writes_file_to_storage(
         field=option_field, value="B", color="red"
     )
     date_field = data_fixture.create_date_field(
-        table=table, date_include_time=True, date_format="US", name="date_field"
+        table=table,
+        date_include_time=True,
+        date_format="US",
+        name="date_field",
+        order=2,
     )
 
     grid_view = data_fixture.create_grid_view(table=table)

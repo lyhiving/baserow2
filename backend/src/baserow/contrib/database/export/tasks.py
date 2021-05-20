@@ -3,10 +3,8 @@ from datetime import timedelta
 from django.conf import settings
 
 from baserow.config.celery import app
-
 from baserow.contrib.database.export.handler import ExportHandler
 from baserow.contrib.database.export.models import ExportJob
-
 
 EXPORT_SOFT_TIME_LIMIT = 60 * 60
 EXPORT_TIME_LIMIT = EXPORT_SOFT_TIME_LIMIT + 60
@@ -34,8 +32,7 @@ def run_export_job(self, job_id):
 def clean_up_old_jobs(self):
     """
     Looks for any old jobs and cleans them up at the configured interval set below.
-    Runs on the normal celery queue and not the export one to ensure lots of export
-    jobs can't prevent the cleanup from running.
+    Runs on the export celery queue.
     """
     ExportHandler().clean_up_old_jobs()
 

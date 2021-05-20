@@ -42,6 +42,7 @@ from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import SelectOption
 from baserow.contrib.database.rows.handler import RowHandler
 from baserow.contrib.database.table.models import FieldObject
+from baserow.contrib.database.views.models import GridView
 
 
 def _parse_datetime(datetime):
@@ -167,6 +168,44 @@ def test_exporting_table_ignores_view_filters_sorts_hides(storage_mock, data_fix
         "1,hello,hidden in view\r\n"
         "2,hello world,hidden in view\r\n"
     )
+    assert contents == expected
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_columns_are_exported_by_order_then_id(storage_mock, data_fixture):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    field_a = data_fixture.create_text_field(table=table, name="field_a")
+    field_b = data_fixture.create_text_field(
+        table=table,
+        name="field_b",
+    )
+    field_c = data_fixture.create_text_field(
+        table=table,
+        name="field_c",
+    )
+    grid_view = GridView.objects.create(table=table, order=0, name="grid_view")
+    model = table.get_model()
+    model.objects.create(
+        **{
+            f"field_{field_a.id}": "a",
+            f"field_{field_b.id}": "b",
+            f"field_{field_c.id}": "c",
+        },
+    )
+    data_fixture.create_grid_view_field_option(
+        grid_view=grid_view, field=field_a, order=1
+    )
+    data_fixture.create_grid_view_field_option(
+        grid_view=grid_view, field=field_b, order=1
+    )
+    data_fixture.create_grid_view_field_option(
+        grid_view=grid_view, field=field_c, order=0
+    )
+    _, contents = run_export_job_with_mock_storage(table, grid_view, storage_mock, user)
+    bom = "\ufeff"
+    expected = bom + "ID,field_c,field_a,field_b\r\n" "1,c,a,b\r\n"
     assert contents == expected
 
 

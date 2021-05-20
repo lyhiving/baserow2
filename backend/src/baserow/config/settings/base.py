@@ -85,7 +85,8 @@ CELERY_REDBEAT_REDIS_URL = REDIS_URL
 # will wait 25 minutes until they do so without lowering this value to 5 minutes.
 CELERY_REDBEAT_LOCK_TIMEOUT = 300
 CELERY_TASK_ROUTES = {
-    "baserow.contrib.database.export.tasks.run_export_job": {"queue": "export"}
+    "baserow.contrib.database.export.tasks.run_export_job": {"queue": "export"},
+    "baserow.contrib.database.export.tasks.clean_up_old_jobs": {"queue": "export"},
 }
 CELERY_SOFT_TIME_LIMIT = 60 * 5
 CELERY_TIME_LIMIT = CELERY_SOFT_TIME_LIMIT + 60
