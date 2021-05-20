@@ -80,6 +80,10 @@ REDIS_URL = (
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_REDBEAT_REDIS_URL = REDIS_URL
+# By default REDBEAT waits 25 minutes before a new instance can acquire the lock,
+# meaning if one celery-beat instance crashes any other replicas waiting to take over
+# will wait 25 minutes until they do so without lowering this value to 5 minutes.
+CELERY_REDBEAT_LOCK_TIMEOUT = 300
 CELERY_TASK_ROUTES = {
     "baserow.contrib.database.export.tasks.run_export_job": {"queue": "export"}
 }

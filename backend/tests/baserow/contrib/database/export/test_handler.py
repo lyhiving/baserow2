@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime, parse_date
 from django.utils.timezone import make_aware, utc
 from freezegun import freeze_time
@@ -310,19 +311,26 @@ def test_creating_a_new_export_job_will_cancel_any_already_running_jobs_for_that
 @pytest.mark.django_db
 @patch("baserow.contrib.database.export.handler.default_storage")
 def test_a_complete_export_job_which_has_expired_will_have_its_file_deleted(
-    storage_mock,
-    data_fixture,
+    storage_mock, data_fixture, settings
 ):
     handler = ExportHandler()
-    with freeze_time("2020-01-01 12:00"):
+    job_start = timezone.now()
+    half_file_duration = timezone.timedelta(
+        minutes=int(settings.EXPORT_FILE_DURATION_MINUTES / 2)
+    )
+    second_job_start = job_start + half_file_duration
+    time_when_first_job_will_have_expired = job_start + timezone.timedelta(
+        minutes=settings.EXPORT_FILE_DURATION_MINUTES * 1.1
+    )
+    with freeze_time(job_start):
         first_job, _ = setup_table_and_run_export_decoding_result(
             data_fixture, storage_mock
         )
-    with freeze_time("2020-01-01 12:30"):
+    with freeze_time(second_job_start):
         second_job, _ = setup_table_and_run_export_decoding_result(
             data_fixture, storage_mock
         )
-    with freeze_time("2020-01-01 13:01"):
+    with freeze_time(time_when_first_job_will_have_expired):
         handler.clean_up_old_jobs()
 
     storage_mock.delete.assert_called_once_with(
@@ -341,20 +349,29 @@ def test_a_complete_export_job_which_has_expired_will_have_its_file_deleted(
 def test_a_pending_job_which_has_expired_will_be_cleaned_up(
     storage_mock,
     data_fixture,
+    settings,
 ):
     user = data_fixture.create_user()
     other_user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
     handler = ExportHandler()
-    with freeze_time("2020-01-01 12:00"):
+    job_start = timezone.now()
+    half_file_duration = timezone.timedelta(
+        minutes=int(settings.EXPORT_FILE_DURATION_MINUTES / 2)
+    )
+    second_job_start = job_start + half_file_duration
+    time_when_first_job_will_have_expired = job_start + timezone.timedelta(
+        minutes=settings.EXPORT_FILE_DURATION_MINUTES * 1.1
+    )
+    with freeze_time(job_start):
         old_pending_job = handler.create_pending_export_job(
             user, table, None, {"exporter_type": "csv"}
         )
-    with freeze_time("2020-01-01 12:30"):
+    with freeze_time(second_job_start):
         unexpired_other_user_job = handler.create_pending_export_job(
             other_user, table, None, {"exporter_type": "csv"}
         )
-    with freeze_time("2020-01-01 13:01"):
+    with freeze_time(time_when_first_job_will_have_expired):
         handler.clean_up_old_jobs()
 
     storage_mock.delete.assert_not_called()
@@ -368,24 +385,31 @@ def test_a_pending_job_which_has_expired_will_be_cleaned_up(
 @pytest.mark.django_db
 @patch("baserow.contrib.database.export.handler.default_storage")
 def test_a_running_export_job_which_has_expired_will_be_stopped(
-    storage_mock,
-    data_fixture,
+    storage_mock, data_fixture, settings
 ):
     user = data_fixture.create_user()
     other_user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
     handler = ExportHandler()
-    with freeze_time("2020-01-01 12:00"):
+    job_start = timezone.now()
+    half_file_duration = timezone.timedelta(
+        minutes=int(settings.EXPORT_FILE_DURATION_MINUTES / 2)
+    )
+    second_job_start = job_start + half_file_duration
+    time_when_first_job_will_have_expired = job_start + timezone.timedelta(
+        minutes=settings.EXPORT_FILE_DURATION_MINUTES * 1.1
+    )
+    with freeze_time(job_start):
         long_running_job = handler.create_pending_export_job(
             user, table, None, {"exporter_type": "csv"}
         )
         long_running_job.status = EXPORT_JOB_EXPORTING_STATUS
         long_running_job.save()
-    with freeze_time("2020-01-01 12:30"):
+    with freeze_time(second_job_start):
         unexpired_other_user_job = handler.create_pending_export_job(
             other_user, table, None, {"exporter_type": "csv"}
         )
-    with freeze_time("2020-01-01 13:01"):
+    with freeze_time(time_when_first_job_will_have_expired):
         handler.clean_up_old_jobs()
 
     storage_mock.delete.assert_not_called()

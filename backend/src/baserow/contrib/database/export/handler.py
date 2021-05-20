@@ -156,7 +156,9 @@ def _finished_export_job(export_job, exported_file_name):
 
     export_job.status = EXPORT_JOB_COMPLETED_STATUS
     export_job.exported_file_name = exported_file_name
-    export_job.expires_at = timezone.now() + timezone.timedelta(hours=1)
+    export_job.expires_at = timezone.now() + timezone.timedelta(
+        minutes=settings.EXPORT_FILE_DURATION_MINUTES
+    )
     export_job.save()
     return export_job
 
