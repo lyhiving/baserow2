@@ -62,9 +62,9 @@ services:
       - db
       - redis
       - mjml
-      - volume-fixer
+      - media-volume-fixer
     volumes:
-      - media:/baserow/volumes/media
+      - media:/baserow/media
     networks:
       local:
 
@@ -78,7 +78,7 @@ services:
     depends_on:
       - backend
     volumes:
-      - media:/baserow/volumes/media
+      - media:/baserow/media
     networks:
       local:
 
@@ -101,7 +101,7 @@ services:
       - EMAIL_SMTP_PASSWORD
       - FROM_EMAIL
     volumes:
-      - media:/baserow/volumes/media
+      - media:/baserow/media
     networks:
       local:
 
@@ -111,7 +111,7 @@ services:
     build:
       dockerfile: ./backend/Dockerfile
       context: .
-    command: celery beat -s /baserow/volumes/celery_beat/celerybeat-schedule
+    command: celery beat -l INFO -S redbeat.RedBeatScheduler
     depends_on:
       - backend
     environment:
@@ -124,8 +124,7 @@ services:
       - EMAIL_SMTP_PASSWORD
       - FROM_EMAIL
     volumes:
-      - celery_beat:/baserow/volumes/celery_beat
-      - media:/baserow/volumes/media
+      - media:/baserow/media
     networks:
       local:
 
@@ -153,29 +152,27 @@ services:
     ports:
       - "${MEDIA_PORT:-4000}:80"
     depends_on:
-      - volume-fixer
+      - media-volume-fixer
     volumes:
-      - media:/baserow/volumes/media
+      - media:/baserow/media
     networks:
       local:
 
-  # When switching between dev and local the media files in the mounted volumes will be
+  # When switching between dev and local the media files in the media volume will be
   # owned by different users. Ensure that we chown them to the user appropriate for the
   # environment here.
-  volume-fixer:
-    container_name: volume-fixer
+  media-volume-fixer:
+    container_name: media-volume-fixer
     image: bash:4.4
-    command: chown 9999:9999 -R /baserow/volumes
+    command: chown 9999:9999 -R /baserow/media
     volumes:
-      - media:/baserow/volumes/media
-      - celery_beat:/baserow/volumes/celery_beat
+      - media:/baserow/media
     networks:
       local:
 
 volumes:
   pgdata:
   media:
-  celery_beat:
 
 networks:
   local:

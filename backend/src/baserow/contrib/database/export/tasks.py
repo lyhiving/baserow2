@@ -19,6 +19,10 @@ EXPORT_TIME_LIMIT = EXPORT_SOFT_TIME_LIMIT + 60
     time_limit=EXPORT_TIME_LIMIT,
 )
 def run_export_job(self, job_id):
+    """
+    Runs the export for a given job. Configured in base.py to run on a separate queue
+    to prevent starving regular websocket jobs.
+    """
     job = ExportJob.objects.get(id=job_id)
     ExportHandler().run_export_job(job)
 
@@ -26,10 +30,13 @@ def run_export_job(self, job_id):
 # noinspection PyUnusedLocal
 @app.task(
     bind=True,
-    soft_time_limit=EXPORT_SOFT_TIME_LIMIT,
-    time_limit=EXPORT_TIME_LIMIT,
 )
 def clean_up_old_jobs(self):
+    """
+    Looks for any old jobs and cleans them up at the configured interval set below.
+    Runs on the normal celery queue and not the export one to ensure lots of export
+    jobs can't prevent the cleanup from running.
+    """
     ExportHandler().clean_up_old_jobs()
 
 

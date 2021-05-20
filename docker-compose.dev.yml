@@ -68,7 +68,7 @@ services:
         # reducing the chance the containers screw up the bind mounted folders.
         UID: "${UID:-}"
         GID: "${GID:-}"
-    command: celery-dev beat -s /baserow/volumes/celery_beat/celerybeat-schedule
+    command: celery-dev beat -l INFO -S redbeat.RedBeatScheduler
     volumes:
       - ./backend:/baserow/backend
       - ./premium/backend/:/baserow/backend/plugins/premium
@@ -97,8 +97,8 @@ services:
     stdin_open: true
     tty: true
 
-  volume-fixer:
-    command: chown ${UID:-1000}:${GID:-1000} -R /baserow/volumes
+  media-volume-fixer:
+    command: chown ${UID:-1000}:${GID:-1000} -R /baserow/media
 
 # Give names to the volumes declared in the docker dev images so we dont end up with hundreds
 # of anonymous volumes.

@@ -79,6 +79,7 @@ REDIS_URL = (
 )
 
 CELERY_BROKER_URL = REDIS_URL
+CELERY_REDBEAT_REDIS_URL = REDIS_URL
 CELERY_TASK_ROUTES = {
     "baserow.contrib.database.export.tasks.run_export_job": {"queue": "export"}
 }
@@ -239,7 +240,7 @@ if "INITIAL_TABLE_DATA_LIMIT" in os.environ:
 
 MEDIA_URL_PATH = "/media/"
 MEDIA_URL = os.getenv("MEDIA_URL", urljoin(PUBLIC_BACKEND_URL, MEDIA_URL_PATH))
-MEDIA_ROOT = os.getenv("MEDIA_ROOT", "/baserow/volumes/media")
+MEDIA_ROOT = os.getenv("MEDIA_ROOT", "/baserow/media")
 
 # Indicates the directory where the user files and user thumbnails are stored.
 USER_FILES_DIRECTORY = "user_files"
@@ -248,7 +249,7 @@ USER_FILE_SIZE_LIMIT = 1024 * 1024 * 20  # 20MB
 
 EXPORT_FILES_DIRECTORY = "export_files"
 EXPORT_CLEANUP_INTERVAL_MINUTES = 5
-EXPORT_FILE_DURATION_MINUTES = 60
+EXPORT_FILE_DURATION_MINUTES = 5
 
 EMAIL_BACKEND = "djcelery_email.backends.CeleryEmailBackend"
 
