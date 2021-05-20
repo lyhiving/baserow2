@@ -79,11 +79,18 @@ REDIS_URL = (
 )
 
 CELERY_BROKER_URL = REDIS_URL
+# Explicitly set the same default loop interval here so we can use it later.
+CELERY_BEAT_MAX_LOOP_INTERVAL = 300
 CELERY_REDBEAT_REDIS_URL = REDIS_URL
-# By default REDBEAT waits 25 minutes before a new instance can acquire the lock,
-# meaning if one celery-beat instance crashes any other replicas waiting to take over
-# will wait 25 minutes until they do so without lowering this value to 5 minutes.
-CELERY_REDBEAT_LOCK_TIMEOUT = 300
+# By default REDBEAT waits 5 * CELERY_BEAT_MAX_LOOP_INTERVAL minutes before a new
+# beat instance can acquire the lock and start scheduling.
+# This means if one celery-beat instance crashes any other replicas waiting to take over
+# will by default wait 25 minutes until things start getting scheduled again.
+# Instead we just set it to be slightly longer than the loop interval that beat uses.
+# This means beat wakes up, checks the schedule and extends the lock every
+# CELERY_BEAT_MAX_LOOP_INTERVAL seconds. If it crashes or fails to wake up with the
+# extra 60 second margin then now another replica will taken over.
+CELERY_REDBEAT_LOCK_TIMEOUT = CELERY_BEAT_MAX_LOOP_INTERVAL + 60
 CELERY_TASK_ROUTES = {
     "baserow.contrib.database.export.tasks.run_export_job": {"queue": "export"},
     "baserow.contrib.database.export.tasks.clean_up_old_jobs": {"queue": "export"},
