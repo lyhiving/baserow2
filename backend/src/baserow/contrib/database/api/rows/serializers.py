@@ -2,10 +2,10 @@ import logging
 
 from rest_framework import serializers
 
-from baserow.api.utils import get_serializer_class
 from baserow.api.serializers import get_example_pagination_serializer_class
-from baserow.core.utils import model_default_values, dict_to_object
+from baserow.api.utils import get_serializer_class
 from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.core.utils import model_default_values, dict_to_object
 
 logger = logging.getLogger(__name__)
 
@@ -19,14 +19,7 @@ class RowSerializer(serializers.ModelSerializer):
         extra_kwargs = {"id": {"read_only": True}, "order": {"read_only": True}}
 
 
-def get_row_serializer_class(
-    model,
-    base_class=None,
-    is_response=False,
-    field_ids=None,
-    field_names=None,
-    serializer_type="json",
-):
+def get_row_serializer_class(model, base_class=None, is_response=False, field_ids=None):
     """
     Generates a Django rest framework model serializer based on the available fields
     that belong to this model. For each table field, used to generate this serializer,
@@ -51,30 +44,18 @@ def get_row_serializer_class(
     """
 
     field_objects = model._field_objects
-    if field_names is None:
-        field_names = [
-            field["name"]
-            for field in field_objects.values()
-            if field_ids is None or field["field"].id in field_ids
-        ]
-    if serializer_type == "json":
-        field_overrides = {
-            field["name"]: field["type"].get_response_serializer_field(field["field"])
-            if is_response
-            else field["type"].get_serializer_field(field["field"])
-            for field in field_objects.values()
-            if field_ids is None or field["field"].id in field_ids
-        }
-    else:
-        field_overrides = {}
-        for field in field_objects.values():
-            if field_names is None or field["name"] in field_names:
-                if serializer_type == "csv":
-                    field_overrides[field["name"]] = field[
-                        "type"
-                    ].get_csv_serializer_field(field["field"])
-                else:
-                    raise Exception(f"Unsupported serializer type {serializer_type}")
+    field_names = [
+        field["name"]
+        for field in field_objects.values()
+        if field_ids is None or field["field"].id in field_ids
+    ]
+    field_overrides = {
+        field["name"]: field["type"].get_response_serializer_field(field["field"])
+        if is_response
+        else field["type"].get_serializer_field(field["field"])
+        for field in field_objects.values()
+        if field_ids is None or field["field"].id in field_ids
+    }
     return get_serializer_class(model, field_names, field_overrides, base_class)
 
 

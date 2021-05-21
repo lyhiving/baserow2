@@ -79,18 +79,6 @@ class StringRelatedSubField(RelatedField):
         return str(getattr(value, self.sub_field_name))
 
 
-class LinkRowValueOnlySerializer(serializers.Serializer):
-    def __init__(self, *args, **kwargs):
-        value_field_name = kwargs.pop("value_field_name", "value")
-        super().__init__(*args, **kwargs)
-        self.fields["value"] = serializers.CharField(
-            help_text="The primary field's value as a string of the row in the "
-            "related table.",
-            source=value_field_name,
-            required=False,
-        )
-
-
 class LinkRowValueSerializer(serializers.Serializer):
     id = serializers.IntegerField(
         help_text="The unique identifier of the row in the " "related table."
@@ -105,6 +93,17 @@ class LinkRowValueSerializer(serializers.Serializer):
             source=value_field_name,
             required=False,
         )
+
+
+class LinkRowValueOnlySerializer(serializers.Serializer):
+    """
+    Same as the LinkRowValueSerializer however only returns the value of the primary
+    field in the link table instead of both the value and the id.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields.pop("id")
 
 
 class FileFieldRequestSerializer(serializers.Serializer):
@@ -134,7 +133,7 @@ class FileFieldResponseSerializer(
         return instance[name]
 
 
-class FileNameAndURLSerializer(RelatedField):
+class FileNameAndURLResponseSerializer(RelatedField):
     """
     Serializes to the following format for a given file: f"{file.visible_name} ({the
     files storage location url}"
@@ -145,14 +144,15 @@ class FileNameAndURLSerializer(RelatedField):
         super().__init__(**kwargs)
 
     def to_representation(self, value):
-        url = self.get_url(value)
+        url = self._get_url(value)
         visible_name = value["visible_name"]
         if url is None:
             return visible_name
         else:
             return visible_name + f" ({url})"
 
-    def get_url(self, instance):
+    @staticmethod
+    def _get_url(instance):
         if "name" in instance:
             path = UserFileHandler().user_file_path(instance["name"])
             url = default_storage.url(path)

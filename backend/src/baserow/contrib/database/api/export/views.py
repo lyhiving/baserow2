@@ -1,3 +1,6 @@
+from typing import Dict, Any, Optional
+
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils.functional import lazy
 from drf_spectacular.types import OpenApiTypes
@@ -20,8 +23,8 @@ from baserow.contrib.database.api.export.errors import (
     ERROR_TABLE_ONLY_EXPORT_UNSUPPORTED,
 )
 from baserow.contrib.database.api.export.serializers import (
-    GetExportJobSerializer,
-    BaseExporterOptionSerializer,
+    ExportJobSerializer,
+    BaseExporterOptionsSerializer,
 )
 from baserow.contrib.database.api.tables.errors import ERROR_TABLE_DOES_NOT_EXIST
 from baserow.contrib.database.api.views.errors import ERROR_VIEW_DOES_NOT_EXIST
@@ -35,10 +38,15 @@ from baserow.contrib.database.export.registries import table_exporter_registry
 from baserow.contrib.database.export.tasks import run_export_job
 from baserow.contrib.database.table.exceptions import TableDoesNotExist
 from baserow.contrib.database.table.handler import TableHandler
+from baserow.contrib.database.table.models import Table
 from baserow.contrib.database.views.exceptions import ViewDoesNotExist
 from baserow.contrib.database.views.handler import ViewHandler
+from baserow.contrib.database.views.models import View
 from baserow.core.exceptions import UserNotInGroup, UserInvalidGroupPermissionsError
 
+User = get_user_model()
+
+# A placeholder serializer only used to generate correct api documentation.
 CreateExportJobSerializer = PolymorphicMappingSerializer(
     "Export",
     lazy(table_exporter_registry.get_option_serializer_map, dict)(),
@@ -46,20 +54,30 @@ CreateExportJobSerializer = PolymorphicMappingSerializer(
 )
 
 
-def _create_and_start_new_job(user, table, view, export_options):
-    job = ExportHandler().create_pending_export_job(user, table, view, export_options)
+def _validate_options(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Looks up the exporter_type from the data, selects the correct export
+    options serializer based on the exporter_type and finally validates the data using
+    that serializer.
+
+    :param data: A dict of data to serialize using an exporter options serializer.
+    :return: validated export options data
+    """
+    option_serializers = table_exporter_registry.get_option_serializer_map()
+    validated_exporter_type = validate_data(BaseExporterOptionsSerializer, data)
+    serializer = option_serializers[validated_exporter_type["exporter_type"]]
+    return validate_data(serializer, data)
+
+
+def _create_and_start_new_job(
+    user: User, table: Table, view: Optional[View], export_options: Dict[str, Any]
+) -> Response:
+    job = ExportHandler.create_pending_export_job(user, table, view, export_options)
     # Ensure we only trigger the job after the transaction we are in has committed
     # and created the export job in the database. Otherwise the job might run before
     # we commit and crash as there is no job yet.
     transaction.on_commit(lambda: run_export_job.delay(job.id))
-    return Response(GetExportJobSerializer(job).data)
-
-
-def _validate_options(data):
-    option_serializers = table_exporter_registry.get_option_serializer_map()
-    validated_exporter_type = validate_data(BaseExporterOptionSerializer, data)
-    serializer = option_serializers[validated_exporter_type["exporter_type"]]
-    return validate_data(serializer, data)
+    return Response(ExportJobSerializer(job).data)
 
 
 class ExportTableView(APIView):
@@ -71,18 +89,19 @@ class ExportTableView(APIView):
                 name="table_id",
                 location=OpenApiParameter.PATH,
                 type=OpenApiTypes.INT,
-                description="Exports the table with this id if you have permissions "
-                "to access it.",
+                description="The table id to create and start an export job for",
             )
         ],
         tags=["Export"],
         operation_id="export_table",
         description=(
-            "Exports the specified table to any of the supported exported file formats"
+            "Creates and starts a new export job for a table given some exporter "
+            "options. Returns an error if the requesting user does not have permissions"
+            "to view the table."
         ),
         request=CreateExportJobSerializer,
         responses={
-            200: GetExportJobSerializer,
+            200: ExportJobSerializer,
             400: get_error_schema(
                 [
                     "ERROR_USER_NOT_IN_GROUP",
@@ -124,18 +143,19 @@ class ExportViewView(APIView):
                 name="view_id",
                 location=OpenApiParameter.PATH,
                 type=OpenApiTypes.INT,
-                description="Exports the view with this id if you have permissions "
-                "to access it.",
+                description="The view id to create and start an export job for.",
             )
         ],
         tags=["Export"],
         operation_id="export_view",
         description=(
-            "Exports the specified view to any of the supported exported file formats"
+            "Creates and starts a new export job for a view given some exporter "
+            "options. Returns an error if the requesting user does not have permissions"
+            "to view the view."
         ),
         request=CreateExportJobSerializer,
         responses={
-            200: GetExportJobSerializer,
+            200: ExportJobSerializer,
             400: get_error_schema(
                 [
                     "ERROR_USER_NOT_IN_GROUP",
@@ -161,7 +181,6 @@ class ExportViewView(APIView):
         Starts a new export job for the provided view, export type and options.
         """
         view = ViewHandler().get_view(view_id)
-        view.table.database.group.has_user(request.user, raise_error=True)
 
         option_data = _validate_options(request.data)
 
@@ -182,16 +201,18 @@ class ExportJobView(APIView):
                 name="job_id",
                 location=OpenApiParameter.PATH,
                 type=OpenApiTypes.INT,
-                description="The job id to get.",
+                description="The job id to lookup information about.",
             )
         ],
         tags=["Export"],
         operation_id="get_export_job",
         description=(
-            "Returns information on the specified export job if the user has access."
+            "Returns information such as export progress and status or the url of the "
+            "exported file for the specified export job, only if the requesting user "
+            "has access."
         ),
         responses={
-            200: GetExportJobSerializer,
+            200: ExportJobSerializer,
             400: get_error_schema(
                 [
                     "ERROR_REQUEST_BODY_VALIDATION",
@@ -218,4 +239,4 @@ class ExportJobView(APIView):
         if job.user != request.user:
             raise ExportJobDoesNotExistException()
 
-        return Response(GetExportJobSerializer(job).data)
+        return Response(ExportJobSerializer(job).data)

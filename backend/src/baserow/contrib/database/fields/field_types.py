@@ -27,7 +27,7 @@ from baserow.contrib.database.api.fields.serializers import (
     FileFieldResponseSerializer,
     SelectOptionSerializer,
     StringRelatedSubField,
-    FileNameAndURLSerializer,
+    FileNameAndURLResponseSerializer,
 )
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
@@ -954,7 +954,7 @@ class FileFieldType(FieldType):
         )
 
     def get_csv_serializer_field(self, instance, **kwargs):
-        return FileNameAndURLSerializer(many=True)
+        return FileNameAndURLResponseSerializer(many=True)
 
     def get_response_serializer_field(self, instance, **kwargs):
         return FileFieldResponseSerializer(many=True, required=False, **kwargs)

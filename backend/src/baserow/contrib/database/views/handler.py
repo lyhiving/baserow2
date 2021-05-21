@@ -1,6 +1,7 @@
 from django.db.models import F
 
 from baserow.contrib.database.fields.exceptions import FieldNotInTable
+from baserow.contrib.database.fields.field_filters import FilterBuilder
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.core.utils import extract_allowed, set_allowed_attrs
@@ -31,7 +32,6 @@ from .signals import (
     view_sort_deleted,
     grid_view_field_options_updated,
 )
-from baserow.contrib.database.fields.field_filters import FilterBuilder
 
 
 class ViewHandler:
@@ -45,7 +45,7 @@ class ViewHandler:
         :param view_model: If provided that models objects are used to select the
             view. This can for example be useful when you want to select a GridView or
             other child of the View model.
-        :type view_model: View
+        :type view_model: Type[View]
         :param base_queryset: The base queryset from where to select the view
             object. This can for example be used to do a `select_related`. Note that
             if this is used the `view_model` parameter doesn't work anymore.

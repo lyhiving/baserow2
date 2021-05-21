@@ -22,7 +22,7 @@ def run_export_job(self, job_id):
     to prevent starving regular websocket jobs.
     """
     job = ExportJob.objects.get(id=job_id)
-    ExportHandler().run_export_job(job)
+    ExportHandler.run_export_job(job)
 
 
 # noinspection PyUnusedLocal
@@ -34,7 +34,7 @@ def clean_up_old_jobs(self):
     Looks for any old jobs and cleans them up at the configured interval set below.
     Runs on the export celery queue.
     """
-    ExportHandler().clean_up_old_jobs()
+    ExportHandler.clean_up_old_jobs()
 
 
 # noinspection PyUnusedLocal

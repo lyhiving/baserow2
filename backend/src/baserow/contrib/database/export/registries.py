@@ -1,18 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, BinaryIO, Iterable, Tuple, Callable, Type
+from typing import List, Dict, Any, BinaryIO, Iterable, Callable, Type
 
 from django.contrib.auth import get_user_model
 
-from baserow.contrib.database.api.views.grid.grid_view_handler import GridViewHandler
-from baserow.contrib.database.table.models import Table, FieldObject
-from baserow.contrib.database.views.handler import ViewHandler
-from baserow.contrib.database.views.models import GridView, View
+from baserow.contrib.database.table.models import FieldObject
 from baserow.core.registry import Instance, Registry
 
 User = get_user_model()
 
 ExporterFunc = Callable[[Any], None]
-ExportHandlerResult = Tuple[Any, ExporterFunc]
 
 
 class TableExporter(Instance, ABC):
@@ -41,62 +37,27 @@ class TableExporter(Instance, ABC):
 
     @property
     @abstractmethod
-    def option_serializer_class(self) -> Type["BaseExporterOptionSerializer"]:
+    def option_serializer_class(self) -> Type["BaseExporterOptionsSerializer"]:
         pass
 
-    def export_view(
-        self,
-        requesting_user: User,
-        view: View,
-        export_options: Dict[any, str],
-        export_file: BinaryIO,
-    ) -> ExportHandlerResult:
-        grid_view = ViewHandler().get_view(view.id, GridView)
-        # Export to some sort of default queryset function
-        rows = GridViewHandler().get_rows(requesting_user, grid_view, search=None)
-        ordered_field_objects = []
-
-        model = grid_view.table.get_model()
-        ordered_visible_fields = (
-            grid_view.get_field_options()
-            .filter(hidden=False)
-            .order_by("order", "id")
-            .values_list("field__id", flat=True)
-        )
-        for field_id in ordered_visible_fields:
-            ordered_field_objects.append(model._field_objects[field_id])
-
-        return rows, self.make_file_output_generator(
-            ordered_field_objects,
-            export_options,
-            export_file,
-        )
-
-    def export_table(
-        self,
-        requesting_user: User,
-        table: Table,
-        export_options: Dict[str, Any],
-        export_file: BinaryIO,
-    ) -> ExportHandlerResult:
-        table.database.group.has_user(
-            requesting_user, raise_error=True, allow_if_template=True
-        )
-        model = table.get_model()
-        queryset = model.objects.all().enhance_by_fields()
-        return queryset, self.make_file_output_generator(
-            model._field_objects.values(),
-            export_options,
-            export_file,
-        )
-
     @abstractmethod
-    def make_file_output_generator(
+    def get_row_export_function(
         self,
         ordered_field_objects: Iterable[FieldObject],
         export_options: Dict[str, Any],
         export_file: BinaryIO,
     ) -> ExporterFunc:
+        """
+        Implement this function in your exporter to control how exactly the export_file
+        is generated. It should return a function which when called with a row to export
+        writes the row in the correct format to the provided export_file.
+        :param ordered_field_objects: An ordered list of fields to export.
+        :param export_options: The validated export options returned from
+            the option_serializer_class property above.
+        :param export_file: A file object to write each row to.
+        :return: A function taking one argument, a row to export to the file. Each call
+            of the function should output the provided row to the file.
+        """
         pass
 
 

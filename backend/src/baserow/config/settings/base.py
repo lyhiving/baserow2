@@ -102,7 +102,7 @@ CELERY_BEAT_MAX_LOOP_INTERVAL = 300
 # the lock to start scheduling tasks again.
 # Instead we just set it to be slightly longer than the loop interval that beat uses.
 # This means beat wakes up, checks the schedule and extends the lock every
-# CELERY_BEAT_MAX_LOOP_INTERVAL seconds. If it crashes or fails to wake up with
+# CELERY_BEAT_MAX_LOOP_INTERVAL seconds. If it crashes or fails to wake up
 # then 6 minutes after the lock was last extended it will be released and a new
 # scheduler will acquire the lock and take over.
 CELERY_REDBEAT_LOCK_TIMEOUT = CELERY_BEAT_MAX_LOOP_INTERVAL + 60

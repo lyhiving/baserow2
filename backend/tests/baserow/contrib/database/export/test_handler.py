@@ -14,7 +14,7 @@ from freezegun import freeze_time
 from baserow.contrib.database.api.export.serializers import (
     SUPPORTED_CSV_CHARSETS,
     SUPPORTED_CSV_COLUMN_SEPARATORS,
-    BaseExporterOptionSerializer,
+    BaseExporterOptionsSerializer,
 )
 from baserow.contrib.database.export.exceptions import (
     TableOnlyExportUnsupported,
@@ -330,6 +330,7 @@ def test_creating_a_new_export_job_will_cancel_any_already_running_jobs_for_that
     user = data_fixture.create_user()
     other_user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
+    data_fixture.create_user_group(group=table.database.group, user=other_user)
     handler = ExportHandler()
     first_job = handler.create_pending_export_job(
         user, table, None, {"exporter_type": "csv"}
@@ -393,6 +394,7 @@ def test_a_pending_job_which_has_expired_will_be_cleaned_up(
     user = data_fixture.create_user()
     other_user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
+    data_fixture.create_user_group(group=table.database.group, user=other_user)
     handler = ExportHandler()
     job_start = timezone.now()
     half_file_duration = timezone.timedelta(
@@ -429,6 +431,7 @@ def test_a_running_export_job_which_has_expired_will_be_stopped(
     user = data_fixture.create_user()
     other_user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
+    data_fixture.create_user_group(group=table.database.group, user=other_user)
     handler = ExportHandler()
     job_start = timezone.now()
     half_file_duration = timezone.timedelta(
@@ -483,10 +486,10 @@ def test_attempting_to_export_a_table_for_a_type_which_doesnt_support_it_fails(
             return []
 
         @property
-        def option_serializer_class(self) -> Type["BaseExporterOptionSerializer"]:
-            return BaseExporterOptionSerializer
+        def option_serializer_class(self) -> Type["BaseExporterOptionsSerializer"]:
+            return BaseExporterOptionsSerializer
 
-        def make_file_output_generator(
+        def get_row_export_function(
             self,
             ordered_field_objects: Iterable[FieldObject],
             export_options: Dict[str, Any],
@@ -528,10 +531,10 @@ def test_attempting_to_export_a_view_for_a_type_which_doesnt_support_it_fails(
             return ["not_grid_view"]
 
         @property
-        def option_serializer_class(self) -> Type["BaseExporterOptionSerializer"]:
-            return BaseExporterOptionSerializer
+        def option_serializer_class(self) -> Type["BaseExporterOptionsSerializer"]:
+            return BaseExporterOptionsSerializer
 
-        def make_file_output_generator(
+        def get_row_export_function(
             self,
             ordered_field_objects: Iterable[FieldObject],
             export_options: Dict[str, Any],
@@ -574,10 +577,10 @@ def test_an_export_job_which_fails_will_be_marked_as_a_failed_job(
             return []
 
         @property
-        def option_serializer_class(self) -> Type["BaseExporterOptionSerializer"]:
-            return BaseExporterOptionSerializer
+        def option_serializer_class(self) -> Type["BaseExporterOptionsSerializer"]:
+            return BaseExporterOptionsSerializer
 
-        def make_file_output_generator(
+        def get_row_export_function(
             self,
             ordered_field_objects: Iterable[FieldObject],
             export_options: Dict[str, Any],

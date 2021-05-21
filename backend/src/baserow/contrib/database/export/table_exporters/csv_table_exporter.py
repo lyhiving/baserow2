@@ -1,10 +1,12 @@
+import typing
+from collections import OrderedDict
 from typing import List, Dict, BinaryIO, Callable, Any, Iterable, Type
 
 import unicodecsv as csv
 
 from baserow.contrib.database.api.export.serializers import (
-    RequestCsvOptionSerializer,
-    BaseExporterOptionSerializer,
+    CsvExporterOptionsSerializer,
+    BaseExporterOptionsSerializer,
 )
 from baserow.contrib.database.export.registries import (
     TableExporter,
@@ -16,8 +18,8 @@ from baserow.contrib.database.views.view_types import GridViewType
 
 class CsvTableExporter(TableExporter):
     @property
-    def option_serializer_class(self) -> Type[BaseExporterOptionSerializer]:
-        return RequestCsvOptionSerializer
+    def option_serializer_class(self) -> Type[BaseExporterOptionsSerializer]:
+        return CsvExporterOptionsSerializer
 
     type = "csv"
 
@@ -33,78 +35,92 @@ class CsvTableExporter(TableExporter):
     def file_extension(self) -> str:
         return ".csv"
 
-    def make_file_output_generator(
+    def get_row_export_function(
         self,
         ordered_field_objects: Iterable[FieldObject],
         export_options: Dict[any, str],
         export_file: BinaryIO,
     ) -> ExporterFunc:
-        ordered_field_database_names = ["id"]
-        field_database_name_to_header_value_map = {"id": "ID"}
+        headers = OrderedDict({"id": "ID"})
         ordered_database_field_serializers = [lambda row: ("id", str(row.id))]
+
         for field_object in ordered_field_objects:
             ordered_database_field_serializers.append(
-                _generate_field_serializer(field_object)
+                _get_field_serializer(field_object)
             )
             field_database_name = field_object["name"]
-            ordered_field_database_names.append(field_database_name)
             field_display_name = field_object["field"].name
-            field_database_name_to_header_value_map[
-                field_database_name
-            ] = field_display_name
+            headers[field_database_name] = field_display_name
 
-        return csv_file_generator(
-            ordered_field_database_names,
-            field_database_name_to_header_value_map,
+        return _get_csv_file_row_export_function(
+            headers,
             export_file,
             ordered_database_field_serializers,
             **export_options,
         )
 
 
-def csv_file_generator(
-    ordered_field_database_names: List[str],
-    field_database_name_to_header_value_map: Dict[str, str],
+def _get_csv_file_row_export_function(
+    headers: typing.OrderedDict[str, str],
     file_obj: BinaryIO,
-    field_serializers: List[Callable[[Any], Any]],
+    csv_field_serializers: List[Callable[[Any], Any]],
     csv_charset="utf-8",
     csv_column_separator=",",
     csv_include_header=True,
 ) -> ExporterFunc:
+    """
+    Writes out the initial header row if configured to do so and then returns a function
+    to write out each actual row in turn.
 
-    # add BOM to support CSVs in MS Excel (for Windows only)
-    # TODO is this right??
+    :param headers: An ordered dictionary of the database field column name to the
+        header that should be written for that column in the csv file.
+    :param file_obj: The file to write to.
+    :param csv_field_serializers: A list of functions which take the row, serialize one
+        of the columns and return the name of the column and its serialized value.
+    :param csv_charset:
+        The charset to write to the csv file with.
+    :param csv_column_separator:
+        The column separator to generate the csv file with.
+    :param csv_include_header:
+        True if a header row should be written, False if not.
+    :return: A function which when called with a row will write that row as a csv line
+        to the file.
+    """
+
+    # add BOM to support utf-8 CSVs in MS Excel (for Windows only)
     if csv_charset == "utf-8":
         file_obj.write(b"\xef\xbb\xbf")
 
     writer = csv.DictWriter(
         file_obj,
-        ordered_field_database_names,
+        headers.keys(),
         encoding=csv_charset,
         delimiter=csv_column_separator,
     )
 
     if csv_include_header:
-        writer.writerow(field_database_name_to_header_value_map)
+        writer.writerow(headers)
 
     def write_row(row):
         data = {}
-        for f in field_serializers:
-            key, value = f(row)
-            data[key] = value
+        for csv_serializer in csv_field_serializers:
+            field_database_name, field_csv_value = csv_serializer(row)
+            data[field_database_name] = field_csv_value
 
         writer.writerow(data)
 
     return write_row
 
 
-def _generate_field_serializer(field_object: FieldObject) -> Callable[[Any], Any]:
+def _get_field_serializer(field_object: FieldObject) -> Callable[[Any], Any]:
     csv_serializer = field_object["type"].get_csv_serializer_field(
         field_object["field"]
     )
 
     def csv_serializer_func(row):
         attr = getattr(row, field_object["name"])
+        # Because we are using to_representation directly we need to all any querysets
+        # ourselves.
         if hasattr(attr, "all"):
             attr = attr.all()
 
@@ -112,11 +128,14 @@ def _generate_field_serializer(field_object: FieldObject) -> Callable[[Any], Any
             result = ""
         else:
             # We use the to_representation method directly instead of constructing a
-            # whole serializer class for performance reasons.
+            # whole serializer class as this gives us a large (30%+) performance boost
+            # compared to generating an entire row serializer and using that on every
+            # row.
             result = csv_serializer.to_representation(attr)
 
         if isinstance(result, list):
             result = ",".join(result)
+
         return (
             field_object["name"],
             result,

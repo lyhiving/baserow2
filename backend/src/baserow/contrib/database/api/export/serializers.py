@@ -59,6 +59,11 @@ SUPPORTED_CSV_COLUMN_SEPARATORS = [
 
 
 class ExportedFileURLSerializerMixin(serializers.Serializer):
+    """
+    When mixed in to a model serializer for an ExportJob this will add an url field
+    with the actual usable url of the export job's file (if it has one).
+    """
+
     url = serializers.SerializerMethodField()
 
     def get_instance_attr(self, instance, name):
@@ -69,15 +74,12 @@ class ExportedFileURLSerializerMixin(serializers.Serializer):
         name = self.get_instance_attr(instance, "exported_file_name")
         if name:
             path = ExportHandler().export_file_path(name)
-            url = default_storage.url(path)
-            return url
+            return default_storage.url(path)
         else:
             return None
 
 
-class GetExportJobSerializer(
-    ExportedFileURLSerializerMixin, serializers.ModelSerializer
-):
+class ExportJobSerializer(ExportedFileURLSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = ExportJob
         fields = [
@@ -103,13 +105,13 @@ class DisplayChoiceField(serializers.ChoiceField):
         return self._choices[obj]
 
 
-class BaseExporterOptionSerializer(serializers.Serializer):
+class BaseExporterOptionsSerializer(serializers.Serializer):
     exporter_type = fields.ChoiceField(
         choices=lazy(table_exporter_registry.get_types, list)()
     )
 
 
-class RequestCsvOptionSerializer(BaseExporterOptionSerializer):
+class CsvExporterOptionsSerializer(BaseExporterOptionsSerializer):
     # Map to the python encoding aliases at the same time by using a DisplayChoiceField
     csv_charset = DisplayChoiceField(choices=SUPPORTED_CSV_CHARSETS)
     # For ease of use we expect the JSON to contain human typeable forms of each
