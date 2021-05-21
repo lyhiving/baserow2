@@ -6,13 +6,12 @@ from rest_framework import serializers, fields
 
 from baserow.contrib.database.export.handler import ExportHandler
 from baserow.contrib.database.export.models import ExportJob
-
-# Please keep in sync with
-# web-frontend/modules/core/components/helpers/CharsetDropdown.vue:
 from baserow.contrib.database.export.registries import table_exporter_registry
 
 # This is a map from the front end supported charsets to the internal python supported
 # charset value as they do not always match up.
+# Please keep in sync with
+# web-frontend/modules/core/components/helpers/CharsetDropdown.vue:
 SUPPORTED_CSV_CHARSETS = [
     ("utf-8", "utf-8"),
     ("iso-8859-6", "iso-8859-6"),
@@ -48,6 +47,7 @@ SUPPORTED_CSV_CHARSETS = [
     ("windows-1252", "windows-1252"),
     ("iso-8859-3", "iso-8859-3"),
 ]
+# Please keep in sync with modules/database/components/export/TableCSVExporter.vue
 SUPPORTED_CSV_COLUMN_SEPARATORS = [
     ("comma", ","),
     ("semi", ";"),

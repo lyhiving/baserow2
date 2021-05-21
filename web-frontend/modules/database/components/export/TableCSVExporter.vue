@@ -54,7 +54,10 @@
 </template>
 
 <script>
+// Please keep csvColumnSeparator values in sync with
+// src/baserow/contrib/database/api/export/serializers.py:SUPPORTED_CSV_COLUMN_SEPARATORS
 import CharsetDropdown from '@baserow/modules/core/components/helpers/CharsetDropdown'
+
 export default {
   name: 'TableCSVExporter',
   components: { CharsetDropdown },

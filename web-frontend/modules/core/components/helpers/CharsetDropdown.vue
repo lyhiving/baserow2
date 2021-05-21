@@ -90,11 +90,13 @@
 <script>
 export default {
   // Please keep in sync with
-  // src/baserow/contrib/database/api/export/serializers.py:SUPPORTED_csv_charsetS
+  // src/baserow/contrib/database/api/export/serializers.py:SUPPORTED_CSV_CHARSETS
   name: 'CharsetDropdown',
   props: {
     value: {
       type: String,
+      required: false,
+      default: null,
     },
     disabled: {
       type: Boolean,
