@@ -49,9 +49,9 @@ SUPPORTED_CSV_CHARSETS = [
 ]
 # Please keep in sync with modules/database/components/export/TableCSVExporter.vue
 SUPPORTED_CSV_COLUMN_SEPARATORS = [
-    ("comma", ","),
-    ("semi", ";"),
-    ("pipe", "|"),
+    (",", ","),
+    (";", ";"),
+    ("|", "|"),
     ("tab", "\t"),
     ("record_separator", "\x1e"),
     ("unit_separator", "\x1f"),
@@ -113,10 +113,12 @@ class BaseExporterOptionsSerializer(serializers.Serializer):
 
 class CsvExporterOptionsSerializer(BaseExporterOptionsSerializer):
     # Map to the python encoding aliases at the same time by using a DisplayChoiceField
-    csv_charset = DisplayChoiceField(choices=SUPPORTED_CSV_CHARSETS)
+    csv_charset = DisplayChoiceField(choices=SUPPORTED_CSV_CHARSETS, default="utf-8")
     # For ease of use we expect the JSON to contain human typeable forms of each
     # different separator instead of the unicode character itself. By using the
     # DisplayChoiceField we can then map this to the actual separator character by
     # having those be the second value of each choice tuple.
-    csv_column_separator = DisplayChoiceField(choices=SUPPORTED_CSV_COLUMN_SEPARATORS)
-    csv_include_header = fields.BooleanField()
+    csv_column_separator = DisplayChoiceField(
+        choices=SUPPORTED_CSV_COLUMN_SEPARATORS, default=","
+    )
+    csv_include_header = fields.BooleanField(default=True)

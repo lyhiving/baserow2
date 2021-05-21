@@ -9,9 +9,9 @@
               v-model="localValue.csvColumnSeparator"
               :disabled="loading"
             >
-              <DropdownItem name="," value="comma"></DropdownItem>
-              <DropdownItem name=";" value="semi"></DropdownItem>
-              <DropdownItem name="|" value="pipe"></DropdownItem>
+              <DropdownItem name="," value=","></DropdownItem>
+              <DropdownItem name=";" value=";"></DropdownItem>
+              <DropdownItem name="|" value="|"></DropdownItem>
               <DropdownItem name="<tab>" value="tab"></DropdownItem>
               <DropdownItem
                 name="record separator (30)"
@@ -76,7 +76,7 @@ export default {
       localValue: {
         csvFirstRowHeader: true,
         csvEncoding: 'utf-8',
-        csvColumnSeparator: 'comma',
+        csvColumnSeparator: ',',
       },
     }
   },

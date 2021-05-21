@@ -30,7 +30,7 @@ def test_unknown_export_type_for_view_returns_error(data_fixture, api_client, tm
             "exporter_type": "unknown",
             "csv_charset": "utf-8",
             "csv_include_header": "True",
-            "csv_column_separator": "comma",
+            "csv_column_separator": ",",
         },
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
@@ -54,7 +54,7 @@ def test_unknown_export_type_for_table_returns_error(data_fixture, api_client, t
             "exporter_type": "unknown",
             "csv_charset": "utf-8",
             "csv_include_header": "True",
-            "csv_column_separator": "comma",
+            "csv_column_separator": ",",
         },
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
@@ -81,7 +81,7 @@ def test_exporting_table_without_permissions_returns_error(
             "exporter_type": "csv",
             "csv_charset": "utf-8",
             "csv_include_header": "True",
-            "csv_column_separator": "comma",
+            "csv_column_separator": ",",
         },
         format="json",
         HTTP_AUTHORIZATION=f"JWT {unpermissioned_token}",
@@ -109,7 +109,7 @@ def test_exporting_view_without_permissions_returns_error(
             "exporter_type": "csv",
             "csv_charset": "utf-8",
             "csv_include_header": "True",
-            "csv_column_separator": "comma",
+            "csv_column_separator": ",",
         },
         format="json",
         HTTP_AUTHORIZATION=f"JWT {unpermissioned_token}",
@@ -130,7 +130,7 @@ def test_exporting_missing_view_returns_error(data_fixture, api_client, tmpdir):
             "exporter_type": "csv",
             "csv_charset": "utf-8",
             "csv_include_header": "True",
-            "csv_column_separator": "comma",
+            "csv_column_separator": ",",
         },
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
@@ -151,7 +151,7 @@ def test_exporting_missing_table_returns_error(data_fixture, api_client, tmpdir)
             "exporter_type": "csv",
             "csv_charset": "utf-8",
             "csv_include_header": "True",
-            "csv_column_separator": "comma",
+            "csv_column_separator": ",",
         },
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
@@ -187,7 +187,7 @@ def test_getting_other_users_export_job_returns_error(data_fixture, api_client, 
             "exporter_type": "csv",
             "csv_charset": "utf-8",
             "csv_include_header": "True",
-            "csv_column_separator": "comma",
+            "csv_column_separator": ",",
         },
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
@@ -201,30 +201,6 @@ def test_getting_other_users_export_job_returns_error(data_fixture, api_client, 
     )
     assert response.status_code == HTTP_404_NOT_FOUND
     assert response.json()["error"] == "ERROR_EXPORT_JOB_DOES_NOT_EXIST"
-
-
-@pytest.mark.django_db
-def test_missing_export_options_returns_error(data_fixture, api_client, tmpdir):
-    user, token = data_fixture.create_user_and_token()
-    table = data_fixture.create_database_table(user=user)
-    data_fixture.create_text_field(table=table, name="text_field")
-    grid_view = data_fixture.create_grid_view(table=table)
-
-    response = api_client.post(
-        reverse(
-            "api:database:export:export_view",
-            kwargs={"view_id": grid_view.id},
-        ),
-        data={
-            "exporter_type": "csv",
-            "csv_include_header": "True",
-            "csv_column_separator": "comma",
-        },
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {token}",
-    )
-    assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response.json()["error"] == "ERROR_REQUEST_BODY_VALIDATION"
 
 
 @pytest.mark.django_db
@@ -296,7 +272,7 @@ def test_exporting_csv_writes_file_to_storage(
                         "exporter_type": "csv",
                         "csv_charset": "utf-8",
                         "csv_include_header": "True",
-                        "csv_column_separator": "comma",
+                        "csv_column_separator": ",",
                     },
                     format="json",
                     HTTP_AUTHORIZATION=f"JWT {token}",

@@ -2,7 +2,7 @@ import { Registerable } from '@baserow/modules/core/registry'
 import { GridViewType } from '@baserow/modules/database/viewTypes'
 import TableCSVExporter from '@baserow/modules/database/components/export/TableCSVExporter'
 
-export class ExporterType extends Registerable {
+export class TableExporterType extends Registerable {
   /**
    * Should return a font awesome class name related to the icon that must be displayed
    * to the user.
@@ -20,7 +20,7 @@ export class ExporterType extends Registerable {
 
   /**
    * Should return the component that is added to the ExportTableModal when the
-   * importer is chosen. It should handle all the user input and additional form
+   * exporter is chosen. It should handle all the user input and additional form
    * fields and it should generate a compatible data object that must be added to
    * the form values.
    */
@@ -28,12 +28,18 @@ export class ExporterType extends Registerable {
     return null
   }
 
+  /**
+   * Whether this exporter type supports exporting just the table without a view.
+   */
   getCanExportTable() {
     throw new Error(
       'Whether an exporter type can export just tables must be set.'
     )
   }
 
+  /**
+   * The supported view types for this exporter.
+   */
   getSupportedViews() {
     throw new Error(
       'The supported view types for an exporter type must be set.'
@@ -49,7 +55,7 @@ export class ExporterType extends Registerable {
     this.supportedViews = this.getSupportedViews()
 
     if (this.type === null) {
-      throw new Error('The type name of an importer type must be set.')
+      throw new Error('The type name of an exporter type must be set.')
     }
   }
 
@@ -64,7 +70,7 @@ export class ExporterType extends Registerable {
   }
 }
 
-export class CSVExporterType extends ExporterType {
+export class CSVTableExporterType extends TableExporterType {
   getType() {
     return 'csv'
   }
