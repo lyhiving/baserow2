@@ -182,11 +182,16 @@ class NumberFieldType(FieldType):
         )
 
     def get_json_serializer_field(self, instance, **kwargs):
-        kwargs["coerce_to_string"] = False
+        # If the number is an integer we want it to be a literal json number and so
+        # don't convert it to a string. However if a decimal to preserve any precision
+        # we keep it as a string.
+        if instance.number_type == NUMBER_TYPE_INTEGER:
+            if not instance.number_negative:
+                kwargs["min_value"] = 0
+            return serializers.IntegerField(required=False, allow_null=True, **kwargs)
         return self.get_serializer_field(instance, **kwargs)
 
     def get_xml_serializer_field(self, instance, **kwargs):
-        kwargs["coerce_to_string"] = False
         return self.get_serializer_field(instance, **kwargs)
 
     def get_model_field(self, instance, **kwargs):

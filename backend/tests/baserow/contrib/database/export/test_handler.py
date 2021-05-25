@@ -214,15 +214,53 @@ def test_columns_are_exported_by_order_then_id(storage_mock, data_fixture):
 def test_can_export_every_interesting_different_field_to_csv(
     storage_mock, data_fixture
 ):
+    datetime = _parse_datetime("2020-02-01 01:23")
+    date = _parse_date("2020-02-01")
+    upload_url_prefix = "http://localhost:8000/media/user_files/"
+    expected = {
+        "text": "text",
+        "long_text": "long_text",
+        "url": "http://www.google.com",
+        "email": "test@example.com",
+        "negative_int": (-1, "-1"),
+        "positive_int": (1, "1"),
+        "negative_decimal": (Decimal("-1.2"), "-1.2"),
+        "positive_decimal": (Decimal("1.2"), "1.2"),
+        "boolean": (True, "True"),
+        "datetime_us": (datetime, "02/01/2020 01:23"),
+        "date_us": (date, "02/01/2020"),
+        "datetime_eu": (datetime, "01/02/2020 01:23"),
+        "date_eu": (date, "01/02/2020"),
+        "link_row": (None, '"linked_row_1,linked_row_2"'),
+        "file": (
+            [{"name": "hashed_name.txt", "visible_name": "a.txt"}],
+            f"a.txt ({upload_url_prefix}hashed_name.txt)",
+        ),
+        "single_select": (lambda: SelectOption.objects.get(value="A"), "A"),
+        "phone_number": "+4412345678",
+    }
+    contents = wide_test(data_fixture, storage_mock, expected, {"exporter_type": "csv"})
+    expected_header = ",".join(expected.keys())
+    expected_values = ",".join(
+        [v[1] if isinstance(v, tuple) else v for v in expected.values()]
+    )
+    expected = (
+        "\ufeff"
+        f"ID,{expected_header}\r\n"
+        f"1,,,,,,,,,False,,,,,,,,\r\n"
+        f"2,{expected_values}\r\n"
+    )
+    assert expected == contents
+
+
+def wide_test(data_fixture, storage_mock, expected, options):
     user = data_fixture.create_user()
     database = data_fixture.create_database_application(user=user)
     table = data_fixture.create_database_table(database=database, user=user)
     link_table = data_fixture.create_database_table(database=database, user=user)
     handler = FieldHandler()
     row_handler = RowHandler()
-
     all_possible_kwargs_per_type = construct_all_possible_field_kwargs(link_table)
-
     name_to_field_id = {}
     i = 0
     for field_type_name, all_possible_kwargs in all_possible_kwargs_per_type.items():
@@ -238,7 +276,6 @@ def test_can_export_every_interesting_different_field_to_csv(
             name_to_field_id[kwargs["name"]] = field.id
     grid_view = data_fixture.create_grid_view(table=table)
     row_handler = RowHandler()
-
     other_table_primary_text_field = data_fixture.create_text_field(
         table=link_table, name="text_field", primary=True
     )
@@ -254,73 +291,32 @@ def test_can_export_every_interesting_different_field_to_csv(
 
     model = table.get_model()
 
-    def id_tuple(x):
-        return x, x
-
-    upload_url_prefix = "http://localhost:8000/media/user_files/"
-
     # A dictionary of field names to a tuple of (value to create the row model with,
     # the expected value of this value after being exported to csv)
-    datetime = _parse_datetime("2020-02-01 01:23")
-    date = _parse_date("2020-02-01")
-    field_values_to_expected = {
-        "text": id_tuple("text"),
-        "long_text": id_tuple("long_text"),
-        "url": id_tuple("http://www.google.com"),
-        "email": id_tuple("test@example.com"),
-        "negative_int": (-1, "-1"),
-        "positive_int": (1, "1"),
-        "negative_decimal": (Decimal("-1.2"), "-1.2"),
-        "positive_decimal": (Decimal("1.2"), "1.2"),
-        "boolean": (True, "True"),
-        "datetime_us": (datetime, "02/01/2020 01:23"),
-        "date_us": (date, "02/01/2020"),
-        "datetime_eu": (datetime, "01/02/2020 01:23"),
-        "date_eu": (date, "01/02/2020"),
-        "link_row": (None, '"linked_row_1,linked_row_2"'),
-        "file": (
-            [{"name": "hashed_name.txt", "visible_name": "a.txt"}],
-            f"a.txt ({upload_url_prefix}hashed_name.txt)",
-        ),
-        "single_select": (SelectOption.objects.get(value="A"), "A"),
-        "phone_number": id_tuple("+4412345678"),
-    }
-    assert field_values_to_expected.keys() == name_to_field_id.keys(), (
+    assert expected.keys() == name_to_field_id.keys(), (
         "Please update the dictionary above with what your new field type should look "
         "like when serialized to csv. "
     )
-
     row_values = {}
-    for field_type, (val, _) in field_values_to_expected.items():
+    for field_type, val in expected.items():
+        if isinstance(val, tuple):
+            val = val[0]
+        if callable(val):
+            val = val()
         if val is not None:
             row_values[f"field_{name_to_field_id[field_type]}"] = val
-
     # Make a blank row to test empty field conversion also.
     model.objects.create(**{})
     row = model.objects.create(**row_values)
-
     linked_row_1 = add_linked_row("linked_row_1")
     linked_row_2 = add_linked_row("linked_row_2")
     getattr(row, f"field_{name_to_field_id['link_row']}").add(
         linked_row_1.id, linked_row_2.id
     )
-
     job, contents = run_export_job_with_mock_storage(
-        table, grid_view, storage_mock, user
+        table, grid_view, storage_mock, user, options
     )
-
-    expected_header = ",".join(field_values_to_expected.keys())
-    expected_values = ",".join([v for _, v in field_values_to_expected.values()])
-    expected = (
-        "\ufeff"
-        f"ID,{expected_header}\r\n"
-        f"1,,,,,,,,,False,,,,,,,,\r\n"
-        f"2,{expected_values}\r\n"
-    )
-    assert expected == contents
-
-    job.refresh_from_db()
-    assert job.status == EXPORT_JOB_COMPLETED_STATUS
+    return contents
 
 
 @pytest.mark.django_db

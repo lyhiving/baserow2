@@ -103,7 +103,7 @@ def _get_json_file_row_export_function(
             field_database_name, field_csv_value = json_serializer(row)
             data[field_database_name] = field_csv_value
 
-        file_obj.write(json.dumps(data).encode(export_charset))
+        file_obj.write(json.dumps(data, indent=4).encode(export_charset))
         if not last_row:
             file_obj.write(",\n".encode(export_charset))
         else:
