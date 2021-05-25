@@ -28,7 +28,7 @@ def test_unknown_export_type_for_view_returns_error(data_fixture, api_client, tm
         ),
         data={
             "exporter_type": "unknown",
-            "csv_charset": "utf-8",
+            "export_charset": "utf-8",
             "csv_include_header": "True",
             "csv_column_separator": ",",
         },
@@ -52,7 +52,7 @@ def test_unknown_export_type_for_table_returns_error(data_fixture, api_client, t
         ),
         data={
             "exporter_type": "unknown",
-            "csv_charset": "utf-8",
+            "export_charset": "utf-8",
             "csv_include_header": "True",
             "csv_column_separator": ",",
         },
@@ -79,7 +79,7 @@ def test_exporting_table_without_permissions_returns_error(
         ),
         data={
             "exporter_type": "csv",
-            "csv_charset": "utf-8",
+            "export_charset": "utf-8",
             "csv_include_header": "True",
             "csv_column_separator": ",",
         },
@@ -107,7 +107,7 @@ def test_exporting_view_without_permissions_returns_error(
         ),
         data={
             "exporter_type": "csv",
-            "csv_charset": "utf-8",
+            "export_charset": "utf-8",
             "csv_include_header": "True",
             "csv_column_separator": ",",
         },
@@ -128,7 +128,7 @@ def test_exporting_missing_view_returns_error(data_fixture, api_client, tmpdir):
         ),
         data={
             "exporter_type": "csv",
-            "csv_charset": "utf-8",
+            "export_charset": "utf-8",
             "csv_include_header": "True",
             "csv_column_separator": ",",
         },
@@ -149,7 +149,7 @@ def test_exporting_missing_table_returns_error(data_fixture, api_client, tmpdir)
         ),
         data={
             "exporter_type": "csv",
-            "csv_charset": "utf-8",
+            "export_charset": "utf-8",
             "csv_include_header": "True",
             "csv_column_separator": ",",
         },
@@ -185,7 +185,7 @@ def test_getting_other_users_export_job_returns_error(data_fixture, api_client, 
         ),
         data={
             "exporter_type": "csv",
-            "csv_charset": "utf-8",
+            "export_charset": "utf-8",
             "csv_include_header": "True",
             "csv_column_separator": ",",
         },
@@ -270,7 +270,7 @@ def test_exporting_csv_writes_file_to_storage(
                     ),
                     data={
                         "exporter_type": "csv",
-                        "csv_charset": "utf-8",
+                        "export_charset": "utf-8",
                         "csv_include_header": "True",
                         "csv_column_separator": ",",
                     },

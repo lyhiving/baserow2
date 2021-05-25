@@ -29,6 +29,14 @@ export class TableExporterType extends Registerable {
   }
 
   /**
+   * Converts the data object from the getFormComponent to a json serializable object
+   * which the server expects.
+   */
+  convertOptionsToJson(formComponentDataOptions) {
+    throw new Error('convertOptionsToJson for an exporter type must be set.')
+  }
+
+  /**
    * Whether this exporter type supports exporting just the table without a view.
    */
   getCanExportTable() {
@@ -93,5 +101,13 @@ export class CSVTableExporterType extends TableExporterType {
 
   getSupportedViews() {
     return [new GridViewType().getType()]
+  }
+
+  convertOptionsToJson(exporterOptions) {
+    return {
+      csv_include_header: exporterOptions.csvFirstRowHeader,
+      export_charset: exporterOptions.exportCharset,
+      csv_column_separator: exporterOptions.csvColumnSeparator,
+    }
   }
 }

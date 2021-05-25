@@ -90,7 +90,7 @@
 <script>
 export default {
   // Please keep in sync with
-  // src/baserow/contrib/database/api/export/serializers.py:SUPPORTED_CSV_CHARSETS
+  // src/baserow/contrib/database/api/export/serializers.py:SUPPORTED_EXPORT_CHARSETS
   name: 'CharsetDropdown',
   props: {
     value: {

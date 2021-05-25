@@ -181,6 +181,14 @@ class NumberFieldType(FieldType):
             **kwargs,
         )
 
+    def get_json_serializer_field(self, instance, **kwargs):
+        kwargs["coerce_to_string"] = False
+        return self.get_serializer_field(instance, **kwargs)
+
+    def get_xml_serializer_field(self, instance, **kwargs):
+        kwargs["coerce_to_string"] = False
+        return self.get_serializer_field(instance, **kwargs)
+
     def get_model_field(self, instance, **kwargs):
         kwargs["decimal_places"] = (
             0

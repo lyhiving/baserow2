@@ -30,7 +30,7 @@
           <label class="control__label">Encoding</label>
           <div class="control__elements">
             <CharsetDropdown
-              v-model="localValue.csvEncoding"
+              v-model="localValue.exportCharset"
               :disabled="loading"
             >
             </CharsetDropdown>
@@ -75,7 +75,7 @@ export default {
     return {
       localValue: {
         csvFirstRowHeader: true,
-        csvEncoding: 'utf-8',
+        exportCharset: 'utf-8',
         csvColumnSeparator: ',',
       },
     }

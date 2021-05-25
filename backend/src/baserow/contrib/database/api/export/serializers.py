@@ -12,7 +12,7 @@ from baserow.contrib.database.export.registries import table_exporter_registry
 # charset value as they do not always match up.
 # Please keep in sync with
 # web-frontend/modules/core/components/helpers/CharsetDropdown.vue:
-SUPPORTED_CSV_CHARSETS = [
+SUPPORTED_EXPORT_CHARSETS = [
     ("utf-8", "utf-8"),
     ("iso-8859-6", "iso-8859-6"),
     ("windows-1256", "windows-1256"),
@@ -109,11 +109,13 @@ class BaseExporterOptionsSerializer(serializers.Serializer):
     exporter_type = fields.ChoiceField(
         choices=lazy(table_exporter_registry.get_types, list)()
     )
+    # Map to the python encoding aliases at the same time by using a DisplayChoiceField
+    export_charset = DisplayChoiceField(
+        choices=SUPPORTED_EXPORT_CHARSETS, default="utf-8"
+    )
 
 
 class CsvExporterOptionsSerializer(BaseExporterOptionsSerializer):
-    # Map to the python encoding aliases at the same time by using a DisplayChoiceField
-    csv_charset = DisplayChoiceField(choices=SUPPORTED_CSV_CHARSETS, default="utf-8")
     # For ease of use we expect the JSON to contain human typeable forms of each
     # different separator instead of the unicode character itself. By using the
     # DisplayChoiceField we can then map this to the actual separator character by

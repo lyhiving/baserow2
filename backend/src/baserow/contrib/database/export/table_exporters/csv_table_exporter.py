@@ -64,7 +64,7 @@ def _get_csv_file_row_export_function(
     headers: typing.OrderedDict[str, str],
     file_obj: BinaryIO,
     csv_field_serializers: List[Callable[[Any], Any]],
-    csv_charset="utf-8",
+    export_charset="utf-8",
     csv_column_separator=",",
     csv_include_header=True,
 ) -> ExporterFunc:
@@ -77,7 +77,7 @@ def _get_csv_file_row_export_function(
     :param file_obj: The file to write to.
     :param csv_field_serializers: A list of functions which take the row, serialize one
         of the columns and return the name of the column and its serialized value.
-    :param csv_charset:
+    :param export_charset:
         The charset to write to the csv file with.
     :param csv_column_separator:
         The column separator to generate the csv file with.
@@ -88,20 +88,20 @@ def _get_csv_file_row_export_function(
     """
 
     # add BOM to support utf-8 CSVs in MS Excel (for Windows only)
-    if csv_charset == "utf-8":
+    if export_charset == "utf-8":
         file_obj.write(b"\xef\xbb\xbf")
 
     writer = csv.DictWriter(
         file_obj,
         headers.keys(),
-        encoding=csv_charset,
+        encoding=export_charset,
         delimiter=csv_column_separator,
     )
 
     if csv_include_header:
         writer.writerow(headers)
 
-    def write_row(row):
+    def write_row(row, _):
         data = {}
         for csv_serializer in csv_field_serializers:
             field_database_name, field_csv_value = csv_serializer(row)

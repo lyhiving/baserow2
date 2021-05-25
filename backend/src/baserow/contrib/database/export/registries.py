@@ -8,7 +8,7 @@ from baserow.core.registry import Instance, Registry
 
 User = get_user_model()
 
-ExporterFunc = Callable[[Any], None]
+ExporterFunc = Callable[[Any, bool], None]
 
 
 class TableExporter(Instance, ABC):

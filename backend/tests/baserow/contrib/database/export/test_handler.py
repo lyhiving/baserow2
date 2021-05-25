@@ -12,7 +12,7 @@ from django.utils.timezone import make_aware, utc
 from freezegun import freeze_time
 
 from baserow.contrib.database.api.export.serializers import (
-    SUPPORTED_CSV_CHARSETS,
+    SUPPORTED_EXPORT_CHARSETS,
     SUPPORTED_CSV_COLUMN_SEPARATORS,
     BaseExporterOptionsSerializer,
 )
@@ -620,11 +620,11 @@ def test_can_export_csv_without_header(storage_mock, data_fixture):
 @pytest.mark.django_db
 @patch("baserow.contrib.database.export.handler.default_storage")
 def test_can_export_csv_with_different_charsets(storage_mock, data_fixture):
-    for _, charset in SUPPORTED_CSV_CHARSETS:
+    for _, charset in SUPPORTED_EXPORT_CHARSETS:
         _, contents = setup_table_and_run_export_decoding_result(
             data_fixture,
             storage_mock,
-            options={"exporter_type": "csv", "csv_charset": charset},
+            options={"exporter_type": "csv", "export_charset": charset},
         )
         if charset == "utf-8":
             bom = "\ufeff"
@@ -716,8 +716,8 @@ def run_export_job_with_mock_storage(
     if options is None:
         options = {"exporter_type": "csv"}
 
-    if "csv_charset" not in options:
-        options["csv_charset"] = "utf-8"
+    if "export_charset" not in options:
+        options["export_charset"] = "utf-8"
 
     stub_file = BytesIO()
     storage_mock.open.return_value = stub_file
@@ -726,7 +726,7 @@ def run_export_job_with_mock_storage(
     handler = ExportHandler()
     job = handler.create_pending_export_job(user, table, grid_view, options)
     handler.run_export_job(job)
-    actual = stub_file.getvalue().decode(options["csv_charset"])
+    actual = stub_file.getvalue().decode(options["export_charset"])
     close()
     return job, actual
 

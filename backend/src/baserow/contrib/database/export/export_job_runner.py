@@ -109,7 +109,8 @@ def _run_export(job, qs, export_row_func):
     for page in paginator.page_range:
         for row in paginator.page(page).object_list:
             i = i + 1
-            export_row_func(row)
+            is_last_row = i == paginator.count
+            export_row_func(row, is_last_row)
             last_check = _check_and_update_job(job, last_check, i, paginator.count)
 
 

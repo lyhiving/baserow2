@@ -27,7 +27,7 @@
                   <a
                     class="choice-items__link"
                     :class="{
-                      active: exporter === exporterType.type,
+                      active: exporter.type === exporterType.type,
                       disabled: loading,
                     }"
                     @click="switchToExporterType(exporterType)"
@@ -67,7 +67,7 @@
             v-if="job === null"
             class="button button--large button--primary export-table-modal__export-button"
             :class="{ 'button--loading': loading }"
-            :disabled="loading || !exporter"
+            :disabled="loading || exporter === null"
           >
             Export
           </button>
@@ -80,6 +80,7 @@
             v-else-if="job.status === 'complete'"
             class="button button--large button--success export-table-modal__export-button"
             :href="job.url"
+            target="_blank"
             @click="$emit('downloaded')"
           >
             Download
@@ -113,7 +114,7 @@ export default {
   data() {
     return {
       loading: false,
-      exporter: '',
+      exporter: null,
       exporterOptions: {},
       job: null,
       pollInterval: null,
@@ -125,9 +126,7 @@ export default {
       return this.getExporterTypes(this.selectedView)
     },
     exporterComponent() {
-      return this.exporter === ''
-        ? null
-        : this.$registry.get('exporter', this.exporter).getFormComponent()
+      return this.exporter === null ? null : this.exporter.getFormComponent()
     },
     jobIsRunning() {
       return (
@@ -149,13 +148,14 @@ export default {
   methods: {
     switchToFirstAvailableExporterType() {
       const startingExporterType =
-        this.exporterTypes.length > 0 ? this.exporterTypes[0].type : ''
+        this.exporterTypes.length > 0 ? this.exporterTypes[0] : null
 
       // If there is a currently selected export type and the new view / table also
       // supports that type then keep it selected.
       if (
-        this.exporter !== '' &&
-        this.exporterTypes.find((t) => t.type === this.exporter) !== undefined
+        this.exporter !== null &&
+        this.exporterTypes.find((t) => t.type === this.exporter.type) !==
+          undefined
       ) {
         return
       }
