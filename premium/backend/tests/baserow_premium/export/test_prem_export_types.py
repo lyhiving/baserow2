@@ -95,12 +95,94 @@ def test_can_export_every_interesting_different_field_to_json(
         "linked_row_2"
     ],
     "file": [
-        "a.txt (http://localhost:8000/media/user_files/hashed_name.txt)"
+        {
+            "visible_name": "a.txt",
+            "url": "http://localhost:8000/media/user_files/hashed_name.txt"
+        }
     ],
     "single_select": "A",
     "phone_number": "+4412345678"
 }
 ]
+"""
+    )
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_can_export_every_interesting_different_field_to_xml(
+    storage_mock, data_fixture
+):
+    datetime = _parse_datetime("2020-02-01 01:23")
+    date = _parse_date("2020-02-01")
+    expected = {
+        "text": "text",
+        "long_text": "long_text",
+        "url": "http://www.google.com",
+        "email": "test@example.com",
+        "negative_int": -1,
+        "positive_int": 1,
+        "negative_decimal": Decimal("-1.2"),
+        "positive_decimal": Decimal("1.2"),
+        "boolean": True,
+        "datetime_us": datetime,
+        "date_us": date,
+        "datetime_eu": datetime,
+        "date_eu": date,
+        "link_row": None,
+        "file": ([{"name": "hashed_name.txt", "visible_name": "a.txt"}],),
+        "single_select": lambda: SelectOption.objects.get(value="A"),
+        "phone_number": "+4412345678",
+    }
+    contents = wide_test(data_fixture, storage_mock, expected, {"exporter_type": "xml"})
+    expected_url = "http://localhost:8000/media/user_files/hashed_name.txt"
+    expected_file_item = (
+        f"<item><visible_name>a.txt</visible_name><url>{expected_url}</url></item>"
+    )
+    assert (
+        contents
+        == f"""<?xml version="1.0" encoding="utf-8" ?><rows>
+    <row>
+        <id>1</id>
+        <text></text>
+        <long_text></long_text>
+        <url></url>
+        <email></email>
+        <negative_int></negative_int>
+        <positive_int></positive_int>
+        <negative_decimal></negative_decimal>
+        <positive_decimal></positive_decimal>
+        <boolean>False</boolean>
+        <datetime_us></datetime_us>
+        <date_us></date_us>
+        <datetime_eu></datetime_eu>
+        <date_eu></date_eu>
+        <link_row></link_row>
+        <file></file>
+        <single_select></single_select>
+        <phone_number></phone_number>
+    </row>
+    <row>
+        <id>2</id>
+        <text>text</text>
+        <long_text>long_text</long_text>
+        <url>http://www.google.com</url>
+        <email>test@example.com</email>
+        <negative_int>-1</negative_int>
+        <positive_int>1</positive_int>
+        <negative_decimal>-1.2</negative_decimal>
+        <positive_decimal>1.2</positive_decimal>
+        <boolean>True</boolean>
+        <datetime_us>02/01/2020 01:23</datetime_us>
+        <date_us>02/01/2020</date_us>
+        <datetime_eu>01/02/2020 01:23</datetime_eu>
+        <date_eu>01/02/2020</date_eu>
+        <link_row><item>linked_row_1</item><item>linked_row_2</item></link_row>
+        <file>{expected_file_item}</file>
+        <single_select>A</single_select>
+        <phone_number>+4412345678</phone_number>
+    </row>
+</rows>
 """
     )
 

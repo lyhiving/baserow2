@@ -121,12 +121,21 @@ def test_exporting_json_writes_file_to_storage(
 
             file_path = tmpdir.join(settings.EXPORT_FILES_DIRECTORY, filename)
             assert file_path.isfile()
-            expected = (
-                '[\n{"id": 2, "text_field": "atest", "option_field": "A", '
-                '"date_field": "02/01/2020 01:23"},\n'
-                '{"id": 1, "text_field": "test", "option_field": "B", '
-                '"date_field": "02/01/2020 01:23"}\n]\n'
-            )
+            expected = """[
+{
+    "id": 2,
+    "text_field": "atest",
+    "option_field": "A",
+    "date_field": "02/01/2020 01:23"
+},
+{
+    "id": 1,
+    "text_field": "test",
+    "option_field": "B",
+    "date_field": "02/01/2020 01:23"
+}
+]
+"""
             with open(file_path, "r", encoding="utf-8") as written_file:
                 real = written_file.read()
                 assert real == expected
@@ -240,7 +249,7 @@ def test_exporting_xml_writes_file_to_storage(
 
             file_path = tmpdir.join(settings.EXPORT_FILES_DIRECTORY, filename)
             assert file_path.isfile()
-            expected = """<rows>
+            expected = """<?xml version="1.0" encoding="utf-8" ?><rows>
     <row>
         <id>2</id>
         <text_field>atest</text_field>

@@ -5,7 +5,9 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.relations import RelatedField
 
-from baserow.api.user_files.serializers import UserFileURLAndThumbnailsSerializerMixin
+from baserow.api.user_files.serializers import (
+    UserFileURLAndThumbnailsSerializerMixin,
+)
 from baserow.api.user_files.validators import user_file_name_validator
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
@@ -133,7 +135,22 @@ class FileFieldResponseSerializer(
         return instance[name]
 
 
-class FileNameAndURLResponseSerializer(RelatedField):
+class FileFieldNameAndURLSerializer(serializers.Serializer):
+    visible_name = serializers.CharField()
+    url = serializers.SerializerMethodField()
+
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_url(self, instance):
+        name = self.get_instance_attr(instance, "name")
+        path = UserFileHandler().user_file_path(name)
+        url = default_storage.url(path)
+        return url
+
+    def get_instance_attr(self, instance, name):
+        return instance[name]
+
+
+class FileFieldNameUrlStringSerializer(RelatedField):
     """
     Serializes to the following format for a given file: f"{file.visible_name} ({the
     files storage location url}"

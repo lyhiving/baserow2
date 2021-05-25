@@ -198,14 +198,19 @@ def _get_xml_file_row_export_function(
         to the file.
     """
 
-    file_obj.write("<rows>\n".encode(export_charset))
+    file_obj.write(
+        f'<?xml version="1.0" encoding="{export_charset}" ?><rows>\n'.encode(
+            export_charset
+        )
+    )
 
     def write_row(row, last_row):
         file_obj.write("    <row>\n".encode(export_charset))
         for xml_serializer in xml_field_serializers:
-            field_database_name, field_csv_value = xml_serializer(row)
+            field_database_name, field_xml_value = xml_serializer(row)
+            field_xml_value = to_xml(field_xml_value)
             field = (
-                f"        <{field_database_name}>{field_csv_value}<"
+                f"        <{field_database_name}>{field_xml_value}<"
                 f"/{field_database_name}>\n"
             )
             file_obj.write(field.encode(export_charset))
@@ -213,5 +218,19 @@ def _get_xml_file_row_export_function(
 
         if last_row:
             file_obj.write("</rows>\n".encode(export_charset))
+
+    def to_xml(field_xml_value):
+        if isinstance(field_xml_value, list):
+            field_xml_value = "".join(
+                [f"<item>{to_xml(v)}</item>" for v in field_xml_value]
+            )
+        if isinstance(field_xml_value, dict):
+            field_xml_value = "".join(
+                [
+                    f"<{key}>{to_xml(val)}</{key}>"
+                    for key, val in field_xml_value.items()
+                ]
+            )
+        return field_xml_value
 
     return write_row

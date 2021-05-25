@@ -27,7 +27,8 @@ from baserow.contrib.database.api.fields.serializers import (
     FileFieldResponseSerializer,
     SelectOptionSerializer,
     StringRelatedSubField,
-    FileNameAndURLResponseSerializer,
+    FileFieldNameUrlStringSerializer,
+    FileFieldNameAndURLSerializer,
 )
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
@@ -270,6 +271,9 @@ class BooleanFieldType(FieldType):
         self, row, field_name, value, id_mapping, files_zip, storage
     ):
         setattr(row, field_name, value == "true")
+
+    def get_xml_serializer_field(self, instance, **kwargs):
+        return self.get_serializer_field(instance, **kwargs)
 
 
 class DateFieldType(FieldType):
@@ -967,7 +971,13 @@ class FileFieldType(FieldType):
         )
 
     def get_csv_serializer_field(self, instance, **kwargs):
-        return FileNameAndURLResponseSerializer(many=True)
+        return FileFieldNameUrlStringSerializer(many=True)
+
+    def get_json_serializer_field(self, instance, **kwargs):
+        return FileFieldNameAndURLSerializer(many=True)
+
+    def get_xml_serializer_field(self, instance, **kwargs):
+        return FileFieldNameAndURLSerializer(many=True)
 
     def get_response_serializer_field(self, instance, **kwargs):
         return FileFieldResponseSerializer(many=True, required=False, **kwargs)
