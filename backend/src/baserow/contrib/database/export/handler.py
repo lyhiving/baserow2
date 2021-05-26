@@ -28,6 +28,7 @@ from .exceptions import (
 )
 from .file_writer import PaginatedExportJobFileWriter
 from .registries import table_exporter_registry, TableExporter
+from baserow.contrib.database.export.tasks import run_export_job
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +40,6 @@ class ExportHandler:
     def create_and_start_new_job(
         user: User, table: Table, view: Optional[View], export_options: Dict[str, Any]
     ) -> ExportJob:
-        # Avoid the circular import
-        from baserow.contrib.database.export.tasks import run_export_job
-
         job = ExportHandler.create_pending_export_job(user, table, view, export_options)
         # Ensure we only trigger the job after the transaction we are in has committed
         # and created the export job in the database. Otherwise the job might run before

@@ -221,7 +221,7 @@ export default {
 
       try {
         const { data } = await ExporterService(this.$client).export(
-          this.selectedView === null ? this.table.id : null,
+          this.table.id,
           this.selectedView !== null ? this.selectedView.id : null,
           this.exporter,
           this.exporterOptions

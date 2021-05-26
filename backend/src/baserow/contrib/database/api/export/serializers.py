@@ -106,12 +106,21 @@ class DisplayChoiceField(serializers.ChoiceField):
 
 
 class BaseExporterOptionsSerializer(serializers.Serializer):
+    view_id = fields.IntegerField(
+        min_value=0,
+        required=False,
+        help_text="Optional: The view for this table to export using its filters, "
+        "sorts and other view specific settings.",
+    )
     exporter_type = fields.ChoiceField(
-        choices=lazy(table_exporter_registry.get_types, list)()
+        choices=lazy(table_exporter_registry.get_types, list)(),
+        help_text="The file type to export to.",
     )
     # Map to the python encoding aliases at the same time by using a DisplayChoiceField
     export_charset = DisplayChoiceField(
-        choices=SUPPORTED_EXPORT_CHARSETS, default="utf-8"
+        choices=SUPPORTED_EXPORT_CHARSETS,
+        default="utf-8",
+        help_text="The character set to use when creating the export file.",
     )
 
 
@@ -121,6 +130,11 @@ class CsvExporterOptionsSerializer(BaseExporterOptionsSerializer):
     # DisplayChoiceField we can then map this to the actual separator character by
     # having those be the second value of each choice tuple.
     csv_column_separator = DisplayChoiceField(
-        choices=SUPPORTED_CSV_COLUMN_SEPARATORS, default=","
+        choices=SUPPORTED_CSV_COLUMN_SEPARATORS,
+        default=",",
+        help_text="The value used to separate columns in the resulting csv file.",
     )
-    csv_include_header = fields.BooleanField(default=True)
+    csv_include_header = fields.BooleanField(
+        default=True,
+        help_text="Whether or not to generate a header row at the top of the csv file.",
+    )

@@ -1,10 +1,7 @@
 <template>
   <Modal>
     <h2 class="box__title">Export {{ table.name }}</h2>
-    <ExportTableForm
-      :table="table"
-      :view="view"
-    ></ExportTableForm>
+    <ExportTableForm :table="table" :view="view"></ExportTableForm>
   </Modal>
 </template>
 

@@ -75,10 +75,11 @@ def test_exporting_json_writes_file_to_storage(
             with capture_on_commit_callbacks(execute=True):
                 response = api_client.post(
                     reverse(
-                        "api:database:export:export_view",
-                        kwargs={"view_id": grid_view.id},
+                        "api:database:export:export_table",
+                        kwargs={"table_id": table.id},
                     ),
                     data={
+                        "view_id": grid_view.id,
                         "exporter_type": "json",
                         "json_charset": "utf-8",
                     },
@@ -203,10 +204,11 @@ def test_exporting_xml_writes_file_to_storage(
             with capture_on_commit_callbacks(execute=True):
                 response = api_client.post(
                     reverse(
-                        "api:database:export:export_view",
-                        kwargs={"view_id": grid_view.id},
+                        "api:database:export:export_table",
+                        kwargs={"table_id": table.id},
                     ),
                     data={
+                        "view_id": grid_view.id,
                         "exporter_type": "xml",
                         "xml_charset": "utf-8",
                     },

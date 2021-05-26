@@ -15,31 +15,6 @@ from baserow.contrib.database.rows.handler import RowHandler
 
 
 @pytest.mark.django_db
-def test_unknown_export_type_for_view_returns_error(data_fixture, api_client, tmpdir):
-    user, token = data_fixture.create_user_and_token()
-    table = data_fixture.create_database_table(user=user)
-    data_fixture.create_text_field(table=table, name="text_field")
-    grid_view = data_fixture.create_grid_view(table=table)
-
-    response = api_client.post(
-        reverse(
-            "api:database:export:export_view",
-            kwargs={"view_id": grid_view.id},
-        ),
-        data={
-            "exporter_type": "unknown",
-            "export_charset": "utf-8",
-            "csv_include_header": "True",
-            "csv_column_separator": ",",
-        },
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {token}",
-    )
-    assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response.json()["error"] == "ERROR_REQUEST_BODY_VALIDATION"
-
-
-@pytest.mark.django_db
 def test_unknown_export_type_for_table_returns_error(data_fixture, api_client, tmpdir):
     user, token = data_fixture.create_user_and_token()
     table = data_fixture.create_database_table(user=user)
@@ -91,42 +66,16 @@ def test_exporting_table_without_permissions_returns_error(
 
 
 @pytest.mark.django_db
-def test_exporting_view_without_permissions_returns_error(
-    data_fixture, api_client, tmpdir
-):
-    user = data_fixture.create_user()
-    unpermissioned_user, unpermissioned_token = data_fixture.create_user_and_token()
-    table = data_fixture.create_database_table(user=user)
-    data_fixture.create_text_field(table=table, name="text_field")
-    grid_view = data_fixture.create_grid_view(table=table)
-
-    response = api_client.post(
-        reverse(
-            "api:database:export:export_view",
-            kwargs={"view_id": grid_view.id},
-        ),
-        data={
-            "exporter_type": "csv",
-            "export_charset": "utf-8",
-            "csv_include_header": "True",
-            "csv_column_separator": ",",
-        },
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {unpermissioned_token}",
-    )
-    assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response.json()["error"] == "ERROR_USER_NOT_IN_GROUP"
-
-
-@pytest.mark.django_db
 def test_exporting_missing_view_returns_error(data_fixture, api_client, tmpdir):
     user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
     response = api_client.post(
         reverse(
-            "api:database:export:export_view",
-            kwargs={"view_id": 9999},
+            "api:database:export:export_table",
+            kwargs={"table_id": table.id},
         ),
         data={
+            "view_id": 9999,
             "exporter_type": "csv",
             "export_charset": "utf-8",
             "csv_include_header": "True",
@@ -137,6 +86,32 @@ def test_exporting_missing_view_returns_error(data_fixture, api_client, tmpdir):
     )
     assert response.status_code == HTTP_404_NOT_FOUND
     assert response.json()["error"] == "ERROR_VIEW_DOES_NOT_EXIST"
+
+
+@pytest.mark.django_db
+def test_exporting_view_which_isnt_for_table_returns_error(
+    data_fixture, api_client, tmpdir
+):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    grid_view_for_other_table = data_fixture.create_grid_view()
+    response = api_client.post(
+        reverse(
+            "api:database:export:export_table",
+            kwargs={"table_id": table.id},
+        ),
+        data={
+            "view_id": grid_view_for_other_table.id,
+            "exporter_type": "csv",
+            "export_charset": "utf-8",
+            "csv_include_header": "True",
+            "csv_column_separator": ",",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response.json()["error"] == "ERROR_VIEW_NOT_IN_TABLE"
 
 
 @pytest.mark.django_db
@@ -265,10 +240,11 @@ def test_exporting_csv_writes_file_to_storage(
             with capture_on_commit_callbacks(execute=True):
                 response = api_client.post(
                     reverse(
-                        "api:database:export:export_view",
-                        kwargs={"view_id": grid_view.id},
+                        "api:database:export:export_table",
+                        kwargs={"table_id": table.id},
                     ),
                     data={
+                        "view_id": grid_view.id,
                         "exporter_type": "csv",
                         "export_charset": "utf-8",
                         "csv_include_header": "True",

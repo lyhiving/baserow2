@@ -4,10 +4,9 @@ export default (client) => {
       const exporterOptionsJson = exporterType.convertOptionsToJson(
         exporterOptions
       )
-      const tableOrView = viewId !== null ? 'view' : 'table'
-      const id = viewId !== null ? viewId : tableId
-      return client.post(`/database/export/${tableOrView}/${id}/`, {
+      return client.post(`/database/export/table/${tableId}/`, {
         exporter_type: exporterType.type,
+        view_id: viewId,
         ...exporterOptionsJson,
       })
     },

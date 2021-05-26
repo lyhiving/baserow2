@@ -18,7 +18,6 @@ from baserow.api.utils import validate_data, PolymorphicMappingSerializer
 from baserow.contrib.database.api.export.errors import (
     ExportJobDoesNotExistException,
     ERROR_EXPORT_JOB_DOES_NOT_EXIST,
-    ERROR_VIEW_UNSUPPORTED_FOR_EXPORT_TYPE,
     ERROR_TABLE_ONLY_EXPORT_UNSUPPORTED,
 )
 from baserow.contrib.database.api.export.serializers import (
@@ -26,9 +25,11 @@ from baserow.contrib.database.api.export.serializers import (
     BaseExporterOptionsSerializer,
 )
 from baserow.contrib.database.api.tables.errors import ERROR_TABLE_DOES_NOT_EXIST
-from baserow.contrib.database.api.views.errors import ERROR_VIEW_DOES_NOT_EXIST
+from baserow.contrib.database.api.views.errors import (
+    ERROR_VIEW_NOT_IN_TABLE,
+    ERROR_VIEW_DOES_NOT_EXIST,
+)
 from baserow.contrib.database.export.exceptions import (
-    ViewUnsupportedForExporterType,
     TableOnlyExportUnsupported,
 )
 from baserow.contrib.database.export.handler import ExportHandler
@@ -36,7 +37,7 @@ from baserow.contrib.database.export.models import ExportJob
 from baserow.contrib.database.export.registries import table_exporter_registry
 from baserow.contrib.database.table.exceptions import TableDoesNotExist
 from baserow.contrib.database.table.handler import TableHandler
-from baserow.contrib.database.views.exceptions import ViewDoesNotExist
+from baserow.contrib.database.views.exceptions import ViewNotInTable, ViewDoesNotExist
 from baserow.contrib.database.views.handler import ViewHandler
 from baserow.core.exceptions import UserNotInGroup
 
@@ -91,11 +92,14 @@ class ExportTableView(APIView):
                 [
                     "ERROR_USER_NOT_IN_GROUP",
                     "ERROR_REQUEST_BODY_VALIDATION",
-                    "ERROR_USER_INVALID_GROUP_PERMISSIONS",
                     "ERROR_TABLE_ONLY_EXPORT_UNSUPPORTED",
+                    "ERROR_VIEW_UNSUPPORTED_FOR_EXPORT_TYPE",
+                    "ERROR_VIEW_NOT_IN_TABLE",
                 ]
             ),
-            404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
+            404: get_error_schema(
+                ["ERROR_TABLE_DOES_NOT_EXIST", "ERROR_VIEW_DOES_NOT_EXIST"]
+            ),
         },
     )
     @transaction.atomic
@@ -103,74 +107,31 @@ class ExportTableView(APIView):
         {
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
+            ViewDoesNotExist: ERROR_VIEW_DOES_NOT_EXIST,
             TableOnlyExportUnsupported: ERROR_TABLE_ONLY_EXPORT_UNSUPPORTED,
+            ViewNotInTable: ERROR_VIEW_NOT_IN_TABLE,
         }
     )
     def post(self, request, table_id):
         """
-        Starts a new export job for the provided table, export type and options.
+        Starts a new export job for the provided table, view, export type and options.
         """
         table = TableHandler().get_table(table_id)
         table.database.group.has_user(request.user, raise_error=True)
 
         option_data = _validate_options(request.data)
 
+        view_id = option_data.pop("view_id", None)
+        if view_id is None:
+            view = None
+        else:
+            view = ViewHandler().get_view(view_id)
+
+            if view.table != table:
+                raise ViewNotInTable()
+
         job = ExportHandler.create_and_start_new_job(
-            request.user, table, None, option_data
-        )
-        return Response(ExportJobSerializer(job).data)
-
-
-class ExportViewView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="view_id",
-                location=OpenApiParameter.PATH,
-                type=OpenApiTypes.INT,
-                description="The view id to create and start an export job for.",
-            )
-        ],
-        tags=["Database table export"],
-        operation_id="export_view",
-        description=(
-            "Creates and starts a new export job for a view given some exporter "
-            "options. Returns an error if the requesting user does not have permissions"
-            "to view the view."
-        ),
-        request=CreateExportJobSerializer,
-        responses={
-            200: ExportJobSerializer,
-            400: get_error_schema(
-                [
-                    "ERROR_USER_NOT_IN_GROUP",
-                    "ERROR_REQUEST_BODY_VALIDATION",
-                    "ERROR_USER_INVALID_GROUP_PERMISSIONS",
-                    "ERROR_VIEW_UNSUPPORTED_FOR_EXPORT_TYPE",
-                ]
-            ),
-            404: get_error_schema(["ERROR_VIEW_DOES_NOT_EXIST"]),
-        },
-    )
-    @transaction.atomic
-    @map_exceptions(
-        {
-            UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
-            ViewDoesNotExist: ERROR_VIEW_DOES_NOT_EXIST,
-            ViewUnsupportedForExporterType: ERROR_VIEW_UNSUPPORTED_FOR_EXPORT_TYPE,
-        }
-    )
-    def post(self, request, view_id):
-        """
-        Starts a new export job for the provided view, export type and options.
-        """
-        view = ViewHandler().get_view(view_id)
-
-        option_data = _validate_options(request.data)
-        job = ExportHandler.create_and_start_new_job(
-            request.user, view.table, view, option_data
+            request.user, table, view, option_data
         )
         return Response(ExportJobSerializer(job).data)
 
