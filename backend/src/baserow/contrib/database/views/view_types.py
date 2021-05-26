@@ -3,7 +3,6 @@ from django.urls import path, include
 from .handler import ViewHandler
 from .models import GridView, GridViewFieldOptions
 from .registries import ViewType
-from ..api.views.grid.handler import GridViewHandler
 
 
 class GridViewType(ViewType):

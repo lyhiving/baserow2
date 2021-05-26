@@ -711,16 +711,15 @@ class ViewHandler:
         :rtype: QuerySet
         """
 
-        view_handler = ViewHandler()
         if model is None:
             model = view.table.get_model()
         queryset = model.objects.all().enhance_by_fields()
 
         view_type = view_type_registry.get_by_model(view.specific_class)
         if view_type.can_filter:
-            queryset = view_handler.apply_filters(view, queryset)
+            queryset = self.apply_filters(view, queryset)
         if view_type.can_sort:
-            queryset = view_handler.apply_sorting(view, queryset)
-        if search:
+            queryset = self.apply_sorting(view, queryset)
+        if search is not None:
             queryset = queryset.search_all_fields(search)
         return queryset
