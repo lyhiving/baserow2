@@ -1,12 +1,16 @@
 import typing
 from collections import OrderedDict
-from typing import List, Dict, BinaryIO, Callable, Any, Iterable, Type
+from typing import List, BinaryIO, Callable, Any, Type
 
 import unicodecsv as csv
 
 from baserow.contrib.database.api.export.serializers import (
     CsvExporterOptionsSerializer,
     BaseExporterOptionsSerializer,
+)
+from baserow.contrib.database.export.file_writer import (
+    QuerysetSerializer,
+    FileWriter,
 )
 from baserow.contrib.database.export.registries import (
     TableExporter,
@@ -35,29 +39,53 @@ class CsvTableExporter(TableExporter):
     def file_extension(self) -> str:
         return ".csv"
 
-    def get_row_export_function(
-        self,
-        ordered_field_objects: Iterable[FieldObject],
-        export_options: Dict[any, str],
-        export_file: BinaryIO,
-    ) -> ExporterFunc:
-        headers = OrderedDict({"id": "ID"})
-        ordered_database_field_serializers = [lambda row: ("id", str(row.id))]
+    @property
+    def queryset_serializer_class(self):
+        return CsvQuerysetSerializer
 
-        for field_object in ordered_field_objects:
-            ordered_database_field_serializers.append(
+
+class CsvQuerysetSerializer(QuerysetSerializer):
+    def __init__(self, queryset, ordered_field_objects):
+        super().__init__(queryset, ordered_field_objects)
+
+        self.headers = OrderedDict({"id": "ID"})
+        self.ordered_database_field_serializers = [lambda row: ("id", str(row.id))]
+
+        for field_object in self.ordered_field_objects:
+            self.ordered_database_field_serializers.append(
                 _get_field_serializer(field_object)
             )
             field_database_name = field_object["name"]
             field_display_name = field_object["field"].name
-            headers[field_database_name] = field_display_name
+            self.headers[field_database_name] = field_display_name
 
-        return _get_csv_file_row_export_function(
-            headers,
-            export_file,
-            ordered_database_field_serializers,
-            **export_options,
+    def write_to_file(
+        self,
+        file_writer: FileWriter,
+        export_charset="utf-8",
+        csv_column_separator=",",
+        csv_include_header=True,
+    ):
+        # add BOM to support utf-8 CSVs in MS Excel (for Windows only)
+        if export_charset == "utf-8":
+            file_writer.write_bytes(b"\xef\xbb\xbf")
+
+        csv_dict_writer = file_writer.get_csv_dict_writer(
+            self.headers.keys(), encoding=export_charset, delimiter=csv_column_separator
         )
+
+        if csv_include_header:
+            csv_dict_writer.writerow(self.headers)
+
+        def write_row(row, _):
+            data = {}
+            for csv_serializer in self.ordered_database_field_serializers:
+                field_database_name, field_csv_value = csv_serializer(row)
+                data[field_database_name] = field_csv_value
+
+            csv_dict_writer.writerow(data)
+
+        file_writer.write_rows(self.queryset, write_row)
 
 
 def _get_csv_file_row_export_function(
@@ -86,10 +114,6 @@ def _get_csv_file_row_export_function(
     :return: A function which when called with a row will write that row as a csv line
         to the file.
     """
-
-    # add BOM to support utf-8 CSVs in MS Excel (for Windows only)
-    if export_charset == "utf-8":
-        file_obj.write(b"\xef\xbb\xbf")
 
     writer = csv.DictWriter(
         file_obj,

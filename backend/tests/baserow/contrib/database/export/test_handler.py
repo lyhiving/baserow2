@@ -1,6 +1,6 @@
 from decimal import Decimal
 from io import BytesIO
-from typing import Iterable, Dict, Any, BinaryIO, Type, List
+from typing import Type, List
 from unittest.mock import patch
 
 import pytest
@@ -33,7 +33,6 @@ from baserow.contrib.database.export.models import (
 from baserow.contrib.database.export.registries import (
     table_exporter_registry,
     TableExporter,
-    ExporterFunc,
 )
 from baserow.contrib.database.fields.field_helpers import (
     construct_all_possible_field_kwargs,
@@ -41,7 +40,6 @@ from baserow.contrib.database.fields.field_helpers import (
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import SelectOption
 from baserow.contrib.database.rows.handler import RowHandler
-from baserow.contrib.database.table.models import FieldObject
 from baserow.contrib.database.views.models import GridView
 
 
@@ -467,6 +465,7 @@ def test_attempting_to_export_a_table_for_a_type_which_doesnt_support_it_fails(
     handler = ExportHandler()
 
     class CantExportTableExporter(TableExporter):
+
         type = "no_tables"
 
         @property
@@ -485,12 +484,8 @@ def test_attempting_to_export_a_table_for_a_type_which_doesnt_support_it_fails(
         def option_serializer_class(self) -> Type["BaseExporterOptionsSerializer"]:
             return BaseExporterOptionsSerializer
 
-        def get_row_export_function(
-            self,
-            ordered_field_objects: Iterable[FieldObject],
-            export_options: Dict[str, Any],
-            export_file: BinaryIO,
-        ) -> ExporterFunc:
+        @property
+        def queryset_serializer_class(self) -> Type["QuerysetSerializer"]:
             raise Exception("This should not even be run")
 
     table_exporter_registry.register(CantExportTableExporter())
@@ -530,12 +525,8 @@ def test_attempting_to_export_a_view_for_a_type_which_doesnt_support_it_fails(
         def option_serializer_class(self) -> Type["BaseExporterOptionsSerializer"]:
             return BaseExporterOptionsSerializer
 
-        def get_row_export_function(
-            self,
-            ordered_field_objects: Iterable[FieldObject],
-            export_options: Dict[str, Any],
-            export_file: BinaryIO,
-        ) -> ExporterFunc:
+        @property
+        def queryset_serializer_class(self) -> Type["QuerysetSerializer"]:
             raise Exception("This should not even be run")
 
     table_exporter_registry.register(CantExportViewExporter())
@@ -576,12 +567,8 @@ def test_an_export_job_which_fails_will_be_marked_as_a_failed_job(
         def option_serializer_class(self) -> Type["BaseExporterOptionsSerializer"]:
             return BaseExporterOptionsSerializer
 
-        def get_row_export_function(
-            self,
-            ordered_field_objects: Iterable[FieldObject],
-            export_options: Dict[str, Any],
-            export_file: BinaryIO,
-        ) -> ExporterFunc:
+        @property
+        def queryset_serializer_class(self) -> Type["QuerysetSerializer"]:
             raise Exception("Failed")
 
     table_exporter_registry.register(BrokenTestFileExporter())

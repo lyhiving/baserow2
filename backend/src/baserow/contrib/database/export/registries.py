@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, BinaryIO, Iterable, Callable, Type
+from typing import List, Any, Callable, Type
 
 from django.contrib.auth import get_user_model
 
-from baserow.contrib.database.table.models import FieldObject
 from baserow.core.registry import Instance, Registry
 
 User = get_user_model()
@@ -40,24 +39,9 @@ class TableExporter(Instance, ABC):
     def option_serializer_class(self) -> Type["BaseExporterOptionsSerializer"]:
         pass
 
+    @property
     @abstractmethod
-    def get_row_export_function(
-        self,
-        ordered_field_objects: Iterable[FieldObject],
-        export_options: Dict[str, Any],
-        export_file: BinaryIO,
-    ) -> ExporterFunc:
-        """
-        Implement this function in your exporter to control how exactly the export_file
-        is generated. It should return a function which when called with a row to export
-        writes the row in the correct format to the provided export_file.
-        :param ordered_field_objects: An ordered list of fields to export.
-        :param export_options: The validated export options returned from
-            the option_serializer_class property above.
-        :param export_file: A file object to write each row to.
-        :return: A function taking one argument, a row to export to the file. Each call
-            of the function should output the provided row to the file.
-        """
+    def queryset_serializer_class(self) -> Type["QuerysetSerializer"]:
         pass
 
 

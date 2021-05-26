@@ -25,8 +25,8 @@ from .exceptions import (
     TableOnlyExportUnsupported,
     ViewUnsupportedForExporterType,
 )
-from .export_job_runner import run_export_job_to_file
-from .registries import table_exporter_registry
+from .file_writer import PaginatedExportJobFileWriter
+from .registries import table_exporter_registry, TableExporter
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +213,7 @@ def _open_file_and_run_export(job: ExportJob) -> ExportJob:
     :rtype: An updated ExportJob instance with the exported_file_name set.
     """
 
-    exporter = table_exporter_registry.get(job.exporter_type)
+    exporter: TableExporter = table_exporter_registry.get(job.exporter_type)
     exported_file_name = _generate_random_file_name_with_extension(
         exporter.file_extension
     )
@@ -225,7 +225,15 @@ def _open_file_and_run_export(job: ExportJob) -> ExportJob:
     job.save()
 
     with _create_storage_dir_if_missing_and_open(storage_location) as file:
-        run_export_job_to_file(job, exporter, file)
+        queryset_serializer_class = exporter.queryset_serializer_class
+        if job.view is not None:
+            serializer = queryset_serializer_class.for_view(job.view, job.user)
+        else:
+            serializer = queryset_serializer_class.for_table(job.table)
+
+        serializer.write_to_file(
+            PaginatedExportJobFileWriter(file, job), **job.export_options
+        )
 
     return job
 
