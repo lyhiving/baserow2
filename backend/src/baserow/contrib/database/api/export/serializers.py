@@ -89,7 +89,7 @@ class ExportJobSerializer(ExportedFileURLSerializerMixin, serializers.ModelSeria
             "exporter_type",
             "status",
             "exported_file_name",
-            "expires_at",
+            "created_at",
             "progress_percentage",
             "url",
         ]

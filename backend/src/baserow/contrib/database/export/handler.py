@@ -75,16 +75,12 @@ class ExportHandler:
 
         _raise_if_invalid_view_or_table_for_exporter(exporter_type, view)
 
-        expires_at = timezone.now() + timezone.timedelta(
-            minutes=settings.EXPORT_FILE_EXPIRE_MINUTES
-        )
         job = ExportJob.objects.create(
             user=user,
             table=table,
             view=view,
             exporter_type=exporter_type,
             status=EXPORT_JOB_PENDING_STATUS,
-            expires_at=expires_at,
             export_options=export_options,
         )
         return job
@@ -193,9 +189,6 @@ def _mark_job_as_finished(export_job: ExportJob) -> ExportJob:
 
     export_job.status = EXPORT_JOB_COMPLETED_STATUS
     export_job.progress_percentage = 1.0
-    export_job.expires_at = timezone.now() + timezone.timedelta(
-        minutes=settings.EXPORT_FILE_EXPIRE_MINUTES
-    )
     export_job.save()
     return export_job
 
@@ -211,9 +204,6 @@ def _mark_job_as_failed(job, e):
     job.status = EXPORT_JOB_FAILED_STATUS
     job.progress_percentage = 0.0
     job.error = str(e)
-    # Expire the job immediately so if it managed to store a file the cleanup job
-    # will delete the file asap.
-    job.expires_at = timezone.now()
     job.save()
     return job
 

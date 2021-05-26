@@ -66,11 +66,7 @@ def test_exporting_json_writes_file_to_storage(
 
     with patch("baserow.contrib.database.export.handler.default_storage", new=storage):
         run_time = make_aware(parse_datetime("2020-02-01 01:00"), timezone=utc)
-        # DRF uses some custom internal date time formatting, use the field itself
-        # so the test doesn't break if we set a different default timezone format etc
-        expected_expiry_time = DateTimeField().to_representation(
-            run_time + timezone.timedelta(minutes=settings.EXPORT_FILE_EXPIRE_MINUTES)
-        )
+        expected_created_at = DateTimeField().to_representation(run_time)
         with freeze_time(run_time):
             with capture_on_commit_callbacks(execute=True):
                 response = api_client.post(
@@ -91,7 +87,7 @@ def test_exporting_json_writes_file_to_storage(
             job_id = response_json["id"]
             assert response_json == {
                 "id": job_id,
-                "expires_at": expected_expiry_time,
+                "created_at": expected_created_at,
                 "exported_file_name": None,
                 "exporter_type": "json",
                 "progress_percentage": 0.0,
@@ -110,7 +106,7 @@ def test_exporting_json_writes_file_to_storage(
             filename = response_json["exported_file_name"]
             assert response_json == {
                 "id": job_id,
-                "expires_at": expected_expiry_time,
+                "created_at": expected_created_at,
                 "exported_file_name": filename,
                 "exporter_type": "json",
                 "progress_percentage": 1.0,
@@ -195,12 +191,8 @@ def test_exporting_xml_writes_file_to_storage(
 
     with patch("baserow.contrib.database.export.handler.default_storage", new=storage):
         run_time = make_aware(parse_datetime("2020-02-01 01:00"), timezone=utc)
-        # DRF uses some custom internal date time formatting, use the field itself
-        # so the test doesn't break if we set a different default timezone format etc
-        expected_expiry_time = DateTimeField().to_representation(
-            run_time + timezone.timedelta(minutes=settings.EXPORT_FILE_EXPIRE_MINUTES)
-        )
         with freeze_time(run_time):
+            expected_created_at = DateTimeField().to_representation(run_time)
             with capture_on_commit_callbacks(execute=True):
                 response = api_client.post(
                     reverse(
@@ -220,7 +212,7 @@ def test_exporting_xml_writes_file_to_storage(
             job_id = response_json["id"]
             assert response_json == {
                 "id": job_id,
-                "expires_at": expected_expiry_time,
+                "created_at": expected_created_at,
                 "exported_file_name": None,
                 "exporter_type": "xml",
                 "progress_percentage": 0.0,
@@ -239,7 +231,7 @@ def test_exporting_xml_writes_file_to_storage(
             filename = response_json["exported_file_name"]
             assert response_json == {
                 "id": job_id,
-                "expires_at": expected_expiry_time,
+                "created_at": expected_created_at,
                 "exported_file_name": filename,
                 "exporter_type": "xml",
                 "progress_percentage": 1.0,

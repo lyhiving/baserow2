@@ -1,7 +1,9 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
 from baserow.contrib.database.table.models import Table
 from baserow.contrib.database.views.models import View
@@ -40,9 +42,7 @@ class ExportJob(models.Model):
         blank=True,
     )
     error = models.TextField(null=True, blank=True)
-    # After this time the exported file is no longer guaranteed to exist and will be
-    # deleted by a clean up job.
-    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
     # A float going from 0.0 to 1.0 indicating how much progress has been made on the
     # export.
     progress_percentage = models.FloatField(default=0.0)
@@ -60,21 +60,23 @@ class ExportJob(models.Model):
     @staticmethod
     def jobs_requiring_cleanup(current_time):
         """
-        Returns jobs which have passed their expires_at time and require cleanup. A job
-        requires cleanup if it either has an exported_file_name and hence we want to
-        delete that file OR if the job is still has a running status.
+        Returns jobs which were created more than settings.EXPORT_FILE_EXPIRE_MINUTES
+        ago. A job requires cleanup if it either has an exported_file_name and hence
+        we want to delete that file OR if the job is still has a running status.
 
-        :param current_time: Any export job with an expires_at less than this time is
-            considered expired.
+        :param current_time: The current time used to check if a job has expired or
+            not.
         :return: A queryset of export jobs that require clean up.
         """
-
-        return ExportJob.objects.filter(expires_at__lte=current_time).filter(
+        expired_job_time = current_time - timezone.timedelta(
+            minutes=settings.EXPORT_FILE_EXPIRE_MINUTES
+        )
+        return ExportJob.objects.filter(created_at__lte=expired_job_time).filter(
             Q(exported_file_name__isnull=False)
             | Q(status__in=EXPORT_JOB_RUNNING_STATUSES)
         )
 
     class Meta:
         indexes = [
-            models.Index(fields=["expires_at", "user", "status"]),
+            models.Index(fields=["created_at", "user", "status"]),
         ]
