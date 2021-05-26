@@ -1,10 +1,9 @@
 <template>
   <Modal>
-    <h2 class="box__title">Export {{ table.name }} Table</h2>
+    <h2 class="box__title">Export {{ table.name }}</h2>
     <ExportTableForm
       :table="table"
       :view="view"
-      @downloaded="hide()"
     ></ExportTableForm>
   </Modal>
 </template>

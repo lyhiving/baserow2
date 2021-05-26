@@ -696,3 +696,31 @@ class ViewHandler:
         view_sort_deleted.send(
             self, view_sort_id=view_sort_id, view_sort=view_sort, user=user
         )
+
+    def get_queryset(self, view, search=None, model=None):
+        """
+        Returns a queryset for the provided view which is appropriately sorted,
+        filtered and searched according to the view type and its settings.
+
+        :param search: A search term to apply to the resulting queryset.
+        :param model: The model for this views table to generate the queryset from, if
+            not specified then the model will be generated automatically.
+        :param view: The view to get the export queryset and fields for.
+        :type view: View
+        :return: The export queryset.
+        :rtype: QuerySet
+        """
+
+        view_handler = ViewHandler()
+        if model is None:
+            model = view.table.get_model()
+        queryset = model.objects.all().enhance_by_fields()
+
+        view_type = view_type_registry.get_by_model(view.specific_class)
+        if view_type.can_filter:
+            queryset = view_handler.apply_filters(view, queryset)
+        if view_type.can_sort:
+            queryset = view_handler.apply_sorting(view, queryset)
+        if search:
+            queryset = queryset.search_all_fields(search)
+        return queryset

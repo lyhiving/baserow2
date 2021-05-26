@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -12,7 +12,6 @@ from rest_framework.views import APIView
 from baserow.api.decorators import map_exceptions
 from baserow.api.errors import (
     ERROR_USER_NOT_IN_GROUP,
-    ERROR_USER_INVALID_GROUP_PERMISSIONS,
 )
 from baserow.api.schemas import get_error_schema
 from baserow.api.utils import validate_data, PolymorphicMappingSerializer
@@ -35,14 +34,11 @@ from baserow.contrib.database.export.exceptions import (
 from baserow.contrib.database.export.handler import ExportHandler
 from baserow.contrib.database.export.models import ExportJob
 from baserow.contrib.database.export.registries import table_exporter_registry
-from baserow.contrib.database.export.tasks import run_export_job
 from baserow.contrib.database.table.exceptions import TableDoesNotExist
 from baserow.contrib.database.table.handler import TableHandler
-from baserow.contrib.database.table.models import Table
 from baserow.contrib.database.views.exceptions import ViewDoesNotExist
 from baserow.contrib.database.views.handler import ViewHandler
-from baserow.contrib.database.views.models import View
-from baserow.core.exceptions import UserNotInGroup, UserInvalidGroupPermissionsError
+from baserow.core.exceptions import UserNotInGroup
 
 User = get_user_model()
 
@@ -69,17 +65,6 @@ def _validate_options(data: Dict[str, Any]) -> Dict[str, Any]:
     return validate_data(serializer, data)
 
 
-def _create_and_start_new_job(
-    user: User, table: Table, view: Optional[View], export_options: Dict[str, Any]
-) -> Response:
-    job = ExportHandler.create_pending_export_job(user, table, view, export_options)
-    # Ensure we only trigger the job after the transaction we are in has committed
-    # and created the export job in the database. Otherwise the job might run before
-    # we commit and crash as there is no job yet.
-    transaction.on_commit(lambda: run_export_job.delay(job.id))
-    return Response(ExportJobSerializer(job).data)
-
-
 class ExportTableView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -92,7 +77,7 @@ class ExportTableView(APIView):
                 description="The table id to create and start an export job for",
             )
         ],
-        tags=["Export"],
+        tags=["Database table export"],
         operation_id="export_table",
         description=(
             "Creates and starts a new export job for a table given some exporter "
@@ -118,7 +103,6 @@ class ExportTableView(APIView):
         {
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
-            UserInvalidGroupPermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
             TableOnlyExportUnsupported: ERROR_TABLE_ONLY_EXPORT_UNSUPPORTED,
         }
     )
@@ -131,7 +115,10 @@ class ExportTableView(APIView):
 
         option_data = _validate_options(request.data)
 
-        return _create_and_start_new_job(request.user, table, None, option_data)
+        job = ExportHandler.create_and_start_new_job(
+            request.user, table, None, option_data
+        )
+        return Response(ExportJobSerializer(job).data)
 
 
 class ExportViewView(APIView):
@@ -146,7 +133,7 @@ class ExportViewView(APIView):
                 description="The view id to create and start an export job for.",
             )
         ],
-        tags=["Export"],
+        tags=["Database table export"],
         operation_id="export_view",
         description=(
             "Creates and starts a new export job for a view given some exporter "
@@ -172,7 +159,6 @@ class ExportViewView(APIView):
         {
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             ViewDoesNotExist: ERROR_VIEW_DOES_NOT_EXIST,
-            UserInvalidGroupPermissionsError: ERROR_USER_INVALID_GROUP_PERMISSIONS,
             ViewUnsupportedForExporterType: ERROR_VIEW_UNSUPPORTED_FOR_EXPORT_TYPE,
         }
     )
@@ -183,13 +169,10 @@ class ExportViewView(APIView):
         view = ViewHandler().get_view(view_id)
 
         option_data = _validate_options(request.data)
-
-        return _create_and_start_new_job(
-            request.user,
-            view.table,
-            view,
-            option_data,
+        job = ExportHandler.create_and_start_new_job(
+            request.user, view.table, view, option_data
         )
+        return Response(ExportJobSerializer(job).data)
 
 
 class ExportJobView(APIView):
@@ -204,7 +187,7 @@ class ExportJobView(APIView):
                 description="The job id to lookup information about.",
             )
         ],
-        tags=["Export"],
+        tags=["Database table export"],
         operation_id="get_export_job",
         description=(
             "Returns information such as export progress and status or the url of the "
@@ -232,11 +215,8 @@ class ExportJobView(APIView):
         Retrieves the specified export job.
         """
         try:
-            job = ExportJob.objects.get(id=job_id)
+            job = ExportJob.objects.get(id=job_id, user_id=request.user.id)
         except ExportJob.DoesNotExist:
-            raise ExportJobDoesNotExistException()
-
-        if job.user != request.user:
             raise ExportJobDoesNotExistException()
 
         return Response(ExportJobSerializer(job).data)

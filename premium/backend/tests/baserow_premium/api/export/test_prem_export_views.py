@@ -69,7 +69,7 @@ def test_exporting_json_writes_file_to_storage(
         # DRF uses some custom internal date time formatting, use the field itself
         # so the test doesn't break if we set a different default timezone format etc
         expected_expiry_time = DateTimeField().to_representation(
-            run_time + timezone.timedelta(minutes=settings.EXPORT_FILE_DURATION_MINUTES)
+            run_time + timezone.timedelta(minutes=settings.EXPORT_FILE_EXPIRE_MINUTES)
         )
         with freeze_time(run_time):
             with capture_on_commit_callbacks(execute=True):
@@ -197,7 +197,7 @@ def test_exporting_xml_writes_file_to_storage(
         # DRF uses some custom internal date time formatting, use the field itself
         # so the test doesn't break if we set a different default timezone format etc
         expected_expiry_time = DateTimeField().to_representation(
-            run_time + timezone.timedelta(minutes=settings.EXPORT_FILE_DURATION_MINUTES)
+            run_time + timezone.timedelta(minutes=settings.EXPORT_FILE_EXPIRE_MINUTES)
         )
         with freeze_time(run_time):
             with capture_on_commit_callbacks(execute=True):

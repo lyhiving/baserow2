@@ -28,7 +28,6 @@ from baserow.contrib.database.views.handler import ViewHandler
 from baserow.contrib.database.views.models import GridView
 from baserow.core.exceptions import UserNotInGroup
 from .errors import ERROR_GRID_DOES_NOT_EXIST, ERROR_UNRELATED_FIELD
-from .handler import GridViewHandler
 from .serializers import GridViewFilterSerializer
 
 
@@ -150,9 +149,11 @@ class GridViewView(APIView):
         view_handler = ViewHandler()
         view = view_handler.get_view(view_id, GridView)
 
-        handler = GridViewHandler()
         model = view.table.get_model()
-        queryset = handler.get_rows(request.user, view, model, search)
+        view.table.database.group.has_user(
+            request.user, raise_error=True, allow_if_template=True
+        )
+        queryset = view_handler.get_queryset(view, search, model)
 
         if "count" in request.GET:
             return Response({"count": queryset.count()})

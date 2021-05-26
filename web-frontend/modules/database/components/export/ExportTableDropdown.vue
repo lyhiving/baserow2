@@ -1,6 +1,6 @@
 <template>
   <Dropdown v-model="valueOrTable" :show-search="true" :disabled="loading">
-    <DropdownItem name="Export Table" value="TABLE"></DropdownItem>
+    <DropdownItem name="Export entire table" value="TABLE"></DropdownItem>
     <DropdownItem
       v-for="view in views"
       :key="view.id"

@@ -7,6 +7,7 @@ from typing import Optional, Dict, Any, BinaryIO
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.storage import default_storage
+from django.db import transaction
 from django.utils import timezone
 
 from baserow.contrib.database.export.models import (
@@ -34,6 +35,20 @@ User = get_user_model()
 
 
 class ExportHandler:
+    @staticmethod
+    def create_and_start_new_job(
+        user: User, table: Table, view: Optional[View], export_options: Dict[str, Any]
+    ) -> ExportJob:
+        # Avoid the circular import
+        from baserow.contrib.database.export.tasks import run_export_job
+
+        job = ExportHandler.create_pending_export_job(user, table, view, export_options)
+        # Ensure we only trigger the job after the transaction we are in has committed
+        # and created the export job in the database. Otherwise the job might run before
+        # we commit and crash as there is no job yet.
+        transaction.on_commit(lambda: run_export_job.delay(job.id))
+        return job
+
     @staticmethod
     def create_pending_export_job(
         user: User, table: Table, view: Optional[View], export_options: Dict[str, Any]
@@ -63,7 +78,7 @@ class ExportHandler:
         _raise_if_invalid_view_or_table_for_exporter(exporter_type, view)
 
         expires_at = timezone.now() + timezone.timedelta(
-            minutes=settings.EXPORT_FILE_DURATION_MINUTES
+            minutes=settings.EXPORT_FILE_EXPIRE_MINUTES
         )
         job = ExportJob.objects.create(
             user=user,
@@ -181,7 +196,7 @@ def _mark_job_as_finished(export_job: ExportJob) -> ExportJob:
     export_job.status = EXPORT_JOB_COMPLETED_STATUS
     export_job.progress_percentage = 1.0
     export_job.expires_at = timezone.now() + timezone.timedelta(
-        minutes=settings.EXPORT_FILE_DURATION_MINUTES
+        minutes=settings.EXPORT_FILE_EXPIRE_MINUTES
     )
     export_job.save()
     return export_job
@@ -226,10 +241,10 @@ def _open_file_and_run_export(job: ExportJob) -> ExportJob:
 
     with _create_storage_dir_if_missing_and_open(storage_location) as file:
         queryset_serializer_class = exporter.queryset_serializer_class
-        if job.view is not None:
-            serializer = queryset_serializer_class.for_view(job.view, job.user)
-        else:
+        if job.view is None:
             serializer = queryset_serializer_class.for_table(job.table)
+        else:
+            serializer = queryset_serializer_class.for_view(job.view)
 
         serializer.write_to_file(
             PaginatedExportJobFileWriter(file, job), **job.export_options

@@ -1,15 +1,14 @@
 import abc
-import unicodecsv as csv
 import time
 from typing import Any, Callable
 
+import unicodecsv as csv
 from django.core.paginator import Paginator
 from django.db.models import QuerySet
 
-from baserow.contrib.database.api.views.grid.handler import GridViewHandler
 from baserow.contrib.database.export.exceptions import ExportJobCanceledException
 from baserow.contrib.database.views.handler import ViewHandler
-from baserow.contrib.database.views.models import GridView
+from baserow.contrib.database.views.registries import view_type_registry
 
 
 class FileWriter(abc.ABC):
@@ -106,23 +105,8 @@ class QuerysetSerializer(abc.ABC):
         return cls(qs, ordered_field_objects)
 
     @classmethod
-    def for_view(cls, view, requesting_user) -> "QuerysetSerializer":
-        grid_view = ViewHandler().get_view(view.id, view_model=GridView)
-        model = view.table.get_model()
-        qs = GridViewHandler().get_rows(
-            requesting_user,
-            grid_view,
-            model,
-            search=None,
-        )
-
-        ordered_field_objects = []
-        ordered_visible_fields = (
-            grid_view.get_field_options()
-            .filter(hidden=False)
-            .order_by("order", "id")
-            .values_list("field__id", flat=True)
-        )
-        for field_id in ordered_visible_fields:
-            ordered_field_objects.append(model._field_objects[field_id])
-        return cls(qs, ordered_field_objects)
+    def for_view(cls, view) -> "QuerysetSerializer":
+        view_type = view_type_registry.get_by_model(view.specific_class)
+        fields, model = view_type.get_fields_and_model(view)
+        qs = ViewHandler().get_queryset(view, model=model)
+        return cls(qs, fields)

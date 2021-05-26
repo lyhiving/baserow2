@@ -81,7 +81,6 @@
             class="button button--large button--success export-table-modal__export-button"
             :href="job.url"
             target="_blank"
-            @click="$emit('downloaded')"
           >
             Download
           </a>

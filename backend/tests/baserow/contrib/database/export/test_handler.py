@@ -350,11 +350,11 @@ def test_a_complete_export_job_which_has_expired_will_have_its_file_deleted(
     handler = ExportHandler()
     job_start = timezone.now()
     half_file_duration = timezone.timedelta(
-        minutes=int(settings.EXPORT_FILE_DURATION_MINUTES / 2)
+        minutes=int(settings.EXPORT_FILE_EXPIRE_MINUTES / 2)
     )
     second_job_start = job_start + half_file_duration
     time_when_first_job_will_have_expired = job_start + timezone.timedelta(
-        minutes=settings.EXPORT_FILE_DURATION_MINUTES * 1.1
+        minutes=settings.EXPORT_FILE_EXPIRE_MINUTES * 1.1
     )
     with freeze_time(job_start):
         first_job, _ = setup_table_and_run_export_decoding_result(
@@ -392,11 +392,11 @@ def test_a_pending_job_which_has_expired_will_be_cleaned_up(
     handler = ExportHandler()
     job_start = timezone.now()
     half_file_duration = timezone.timedelta(
-        minutes=int(settings.EXPORT_FILE_DURATION_MINUTES / 2)
+        minutes=int(settings.EXPORT_FILE_EXPIRE_MINUTES / 2)
     )
     second_job_start = job_start + half_file_duration
     time_when_first_job_will_have_expired = job_start + timezone.timedelta(
-        minutes=settings.EXPORT_FILE_DURATION_MINUTES * 1.1
+        minutes=settings.EXPORT_FILE_EXPIRE_MINUTES * 1.1
     )
     with freeze_time(job_start):
         old_pending_job = handler.create_pending_export_job(
@@ -429,11 +429,11 @@ def test_a_running_export_job_which_has_expired_will_be_stopped(
     handler = ExportHandler()
     job_start = timezone.now()
     half_file_duration = timezone.timedelta(
-        minutes=int(settings.EXPORT_FILE_DURATION_MINUTES / 2)
+        minutes=int(settings.EXPORT_FILE_EXPIRE_MINUTES / 2)
     )
     second_job_start = job_start + half_file_duration
     time_when_first_job_will_have_expired = job_start + timezone.timedelta(
-        minutes=settings.EXPORT_FILE_DURATION_MINUTES * 1.1
+        minutes=settings.EXPORT_FILE_EXPIRE_MINUTES * 1.1
     )
     with freeze_time(job_start):
         long_running_job = handler.create_pending_export_job(
