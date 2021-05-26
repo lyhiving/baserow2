@@ -9,6 +9,7 @@
 * Made it possible to order the groups by drag and drop.
 * Made it possible to order the applications by drag and drop.
 * Made it possible to order the tables by drag and drop.
+* Tables and views can now be exported to CSV.
 
 ## Released (2021-05-11)
 
