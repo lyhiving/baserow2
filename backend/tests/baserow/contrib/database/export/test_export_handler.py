@@ -229,7 +229,7 @@ def test_can_export_every_interesting_different_field_to_csv(
         "date_us": (date, "02/01/2020"),
         "datetime_eu": (datetime, "01/02/2020 01:23"),
         "date_eu": (date, "01/02/2020"),
-        "link_row": (None, '"linked_row_1,linked_row_2"'),
+        "link_row": (None, '"linked_row_1,linked_row_2,unnamed row 3"'),
         "file": (
             [
                 {"name": "hashed_name.txt", "visible_name": "a.txt"},
@@ -312,8 +312,9 @@ def wide_test(data_fixture, storage_mock, expected, options):
     row = model.objects.create(**row_values)
     linked_row_1 = add_linked_row("linked_row_1")
     linked_row_2 = add_linked_row("linked_row_2")
+    linked_row_3 = add_linked_row(None)
     getattr(row, f"field_{name_to_field_id['link_row']}").add(
-        linked_row_1.id, linked_row_2.id
+        linked_row_1.id, linked_row_2.id, linked_row_3.id
     )
     job, contents = run_export_job_with_mock_storage(
         table, grid_view, storage_mock, user, options

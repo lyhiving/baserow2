@@ -92,7 +92,8 @@ def test_can_export_every_interesting_different_field_to_json(
     "date_eu": "01/02/2020",
     "link_row": [
         "linked_row_1",
-        "linked_row_2"
+        "linked_row_2",
+        "unnamed row 3",
     ],
     "file": [
         {
@@ -139,6 +140,9 @@ def test_can_export_every_interesting_different_field_to_xml(
     expected_file_item = (
         f"<item><visible_name>a.txt</visible_name><url>{expected_url}</url></item>"
     )
+    expected_link_row = (
+        "<item>linked_row_1</item><item>linked_row_2</item><item>unnamed row 3</item>"
+    )
     assert (
         contents
         == f"""<?xml version="1.0" encoding="utf-8" ?><rows>
@@ -177,7 +181,7 @@ def test_can_export_every_interesting_different_field_to_xml(
         <date_us>02/01/2020</date_us>
         <datetime_eu>01/02/2020 01:23</datetime_eu>
         <date_eu>01/02/2020</date_eu>
-        <link_row><item>linked_row_1</item><item>linked_row_2</item></link_row>
+        <link_row>{expected_link_row}</link_row>
         <file>{expected_file_item}</file>
         <single_select>A</single_select>
         <phone_number>+4412345678</phone_number>
@@ -244,8 +248,9 @@ def wide_test(data_fixture, storage_mock, expected, options):
     row = model.objects.create(**row_values)
     linked_row_1 = add_linked_row("linked_row_1")
     linked_row_2 = add_linked_row("linked_row_2")
+    linked_row_3 = add_linked_row(None)
     getattr(row, f"field_{name_to_field_id['link_row']}").add(
-        linked_row_1.id, linked_row_2.id
+        linked_row_1.id, linked_row_2.id, linked_row_3.id
     )
     job, contents = run_export_job_with_mock_storage(
         table, grid_view, storage_mock, user, options

@@ -513,7 +513,10 @@ class LinkRowFieldType(FieldType):
                 value = getattr(row, field_object["name"])
                 primary_field_values = []
                 for sub in value.all():
-                    primary_field_values.append(getattr(sub, primary_field_name))
+                    linked_row_primary_name = getattr(sub, primary_field_name)
+                    if linked_row_primary_name is None:
+                        linked_row_primary_name = f"unnamed row {sub.id}"
+                    primary_field_values.append(linked_row_primary_name)
                 return primary_field_values
         return []
 
