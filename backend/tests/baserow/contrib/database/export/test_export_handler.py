@@ -231,8 +231,12 @@ def test_can_export_every_interesting_different_field_to_csv(
         "date_eu": (date, "01/02/2020"),
         "link_row": (None, '"linked_row_1,linked_row_2"'),
         "file": (
-            [{"name": "hashed_name.txt", "visible_name": "a.txt"}],
-            f"a.txt ({upload_url_prefix}hashed_name.txt)",
+            [
+                {"name": "hashed_name.txt", "visible_name": "a.txt"},
+                {"name": "other_name.txt", "visible_name": "b.txt"},
+            ],
+            f'"visible_name=a.txt url={upload_url_prefix}hashed_name.txt,'
+            f'visible_name=b.txt url={upload_url_prefix}other_name.txt"',
         ),
         "single_select": (lambda: SelectOption.objects.get(value="A"), "A"),
         "phone_number": "+4412345678",

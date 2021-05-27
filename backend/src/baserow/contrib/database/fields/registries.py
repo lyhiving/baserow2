@@ -123,54 +123,6 @@ class FieldType(
 
         return Q()
 
-    def get_csv_serializer_field(self, instance, **kwargs):
-        """
-        Returns a serializer field which will return the value that should be written
-        out to a csv file.
-
-        :param instance: The field instance for which to get the model field for.
-        :type instance: Field
-        :param kwargs: The kwargs that will be passed to the field.
-        :type kwargs: dict
-        :return: The serializer field that represents the field instance attributes
-            for csv.
-        :rtype: serializer.Field
-        """
-
-        return self.get_serializer_field(instance, **kwargs)
-
-    def get_json_serializer_field(self, instance, **kwargs):
-        """
-        Returns a serializer field which will return the value that should be written
-        out to a csv file.
-
-        :param instance: The field instance for which to get the model field for.
-        :type instance: Field
-        :param kwargs: The kwargs that will be passed to the field.
-        :type kwargs: dict
-        :return: The serializer field that represents the field instance attributes
-            for csv.
-        :rtype: serializer.Field
-        """
-
-        return self.get_csv_serializer_field(instance, **kwargs)
-
-    def get_xml_serializer_field(self, instance, **kwargs):
-        """
-        Returns a serializer field which will return the value that should be written
-        out to a csv file.
-
-        :param instance: The field instance for which to get the model field for.
-        :type instance: Field
-        :param kwargs: The kwargs that will be passed to the field.
-        :type kwargs: dict
-        :return: The serializer field that represents the field instance attributes
-            for csv.
-        :rtype: serializer.Field
-        """
-
-        return self.get_csv_serializer_field(instance, **kwargs)
-
     def get_serializer_field(self, instance, **kwargs):
         """
         Should return the serializer field based on the custom model instance
@@ -651,6 +603,19 @@ class FieldType(
         """
 
         setattr(row, field_name, value)
+
+    def get_human_export_value(self, row, field_object):
+        """
+        Gets this fields value from the provided row in a form suitable for exporting
+        to a file format fit for humans.
+
+        :param row: The row instance where the value be set on.
+        :type row: Object
+        :param field_object: The field object for the field to extract
+        :type field: FieldObject
+        """
+
+        return getattr(row, field_object["name"])
 
 
 class FieldTypeRegistry(

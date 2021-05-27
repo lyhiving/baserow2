@@ -137,16 +137,8 @@ def _get_csv_file_row_export_function(
 
 
 def _get_field_serializer(field_object: FieldObject) -> Callable[[Any], Any]:
-    csv_serializer = field_object["type"].get_csv_serializer_field(
-        field_object["field"]
-    )
-
     def csv_serializer_func(row):
         attr = getattr(row, field_object["name"])
-        # Because we are using to_representation directly we need to all any querysets
-        # ourselves.
-        if hasattr(attr, "all"):
-            attr = attr.all()
 
         if attr is None:
             result = ""
@@ -155,14 +147,20 @@ def _get_field_serializer(field_object: FieldObject) -> Callable[[Any], Any]:
             # whole serializer class as this gives us a large (30%+) performance boost
             # compared to generating an entire row serializer and using that on every
             # row.
-            result = csv_serializer.to_representation(attr)
+            result = field_object["type"].get_human_export_value(row, field_object)
 
-        if isinstance(result, list):
-            result = ",".join(result)
+        def to_csv(val):
+            if isinstance(val, list):
+                return ",".join([to_csv(inner_val) for inner_val in val])
+            if isinstance(val, dict):
+                return " ".join(
+                    [f"{key}={to_csv(inner_val)}" for key, inner_val in val.items()]
+                )
+            return val
 
         return (
             field_object["name"],
-            result,
+            to_csv(result),
         )
 
     return csv_serializer_func

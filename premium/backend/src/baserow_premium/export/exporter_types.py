@@ -25,25 +25,13 @@ class JSONQuerysetSerializer(QuerysetSerializer):
 
     @staticmethod
     def _get_json_field_serializer(field_object: FieldObject) -> Callable[[Any], Any]:
-        json_serializer = field_object["type"].get_json_serializer_field(
-            field_object["field"]
-        )
-
         def json_serializer_func(row):
             attr = getattr(row, field_object["name"])
-            # Because we are using to_representation directly we need to all any
-            # querysets ourselves.
-            if hasattr(attr, "all"):
-                attr = attr.all()
 
             if attr is None:
                 result = ""
             else:
-                # We use the to_representation method directly instead of
-                # constructing a whole serializer class as this gives us a large (
-                # 30%+) performance boost compared to generating an entire row
-                # serializer and using that on every row.
-                result = json_serializer.to_representation(attr)
+                result = field_object["type"].get_human_export_value(row, field_object)
 
             return (
                 field_object["field"].name,
@@ -140,25 +128,13 @@ class XMLQuerysetSerializer(QuerysetSerializer):
 
     @staticmethod
     def _get_xml_field_serializer(field_object: FieldObject) -> Callable[[Any], Any]:
-        xml_serializer = field_object["type"].get_xml_serializer_field(
-            field_object["field"]
-        )
-
         def xml_serializer_func(row):
             attr = getattr(row, field_object["name"])
-            # Because we are using to_representation directly we need to all any
-            # querysets ourselves.
-            if hasattr(attr, "all"):
-                attr = attr.all()
 
             if attr is None:
                 result = ""
             else:
-                # We use the to_representation method directly instead of
-                # constructing a whole serializer class as this gives us a large (
-                # 30%+) performance boost compared to generating an entire row
-                # serializer and using that on every row.
-                result = xml_serializer.to_representation(attr)
+                result = field_object["type"].get_human_export_value(row, field_object)
 
             return (
                 field_object["field"].name,

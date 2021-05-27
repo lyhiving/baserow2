@@ -3,7 +3,6 @@ from unittest.mock import patch
 import pytest
 from django.core.files.storage import FileSystemStorage
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import utc, make_aware
 from django_capture_on_commit_callbacks import capture_on_commit_callbacks

@@ -7,6 +7,7 @@ from dateutil import parser
 from dateutil.parser import ParserError
 from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ValidationError
+from django.core.files.storage import default_storage
 from django.core.validators import URLValidator, EmailValidator, RegexValidator
 from django.db import models
 from django.db.models import Case, When, Q, F, Func, Value, CharField
@@ -24,11 +25,8 @@ from baserow.contrib.database.api.fields.errors import (
 from baserow.contrib.database.api.fields.serializers import (
     LinkRowValueSerializer,
     FileFieldRequestSerializer,
-    FileFieldResponseSerializer,
     SelectOptionSerializer,
-    StringRelatedSubField,
-    FileFieldNameUrlStringSerializer,
-    FileFieldNameAndURLSerializer,
+    FileFieldResponseSerializer,
 )
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
@@ -182,18 +180,18 @@ class NumberFieldType(FieldType):
             **kwargs,
         )
 
-    def get_json_serializer_field(self, instance, **kwargs):
+    def get_human_export_value(self, row, field_object):
         # If the number is an integer we want it to be a literal json number and so
         # don't convert it to a string. However if a decimal to preserve any precision
         # we keep it as a string.
+        instance = field_object["field"]
+        value = getattr(row, field_object["name"])
         if instance.number_type == NUMBER_TYPE_INTEGER:
-            if not instance.number_negative:
-                kwargs["min_value"] = 0
-            return serializers.IntegerField(required=False, allow_null=True, **kwargs)
-        return self.get_serializer_field(instance, **kwargs)
+            return int(value)
 
-    def get_xml_serializer_field(self, instance, **kwargs):
-        return self.get_serializer_field(instance, **kwargs)
+        # DRF's Decimal Serializer knows how to quantize and format the decimal
+        # correctly so lets use it instead of trying to do it ourselves.
+        return self.get_serializer_field(instance).to_representation(value)
 
     def get_model_field(self, instance, **kwargs):
         kwargs["decimal_places"] = (
@@ -272,9 +270,6 @@ class BooleanFieldType(FieldType):
     ):
         setattr(row, field_name, value == "true")
 
-    def get_xml_serializer_field(self, instance, **kwargs):
-        return self.get_serializer_field(instance, **kwargs)
-
 
 class DateFieldType(FieldType):
     type = "date"
@@ -325,9 +320,12 @@ class DateFieldType(FieldType):
             "The value should be a date/time string, date object or " "datetime object."
         )
 
-    def get_csv_serializer_field(self, instance, **kwargs):
-        kwargs["format"] = instance.get_python_format()
-        return self.get_serializer_field(instance, **kwargs)
+    def get_human_export_value(self, row, field_object):
+        value = getattr(row, field_object["name"])
+        if value is None:
+            return value
+        python_format = field_object["field"].get_python_format()
+        return value.strftime(python_format)
 
     def get_serializer_field(self, instance, **kwargs):
         kwargs["required"] = False
@@ -500,15 +498,8 @@ class LinkRowFieldType(FieldType):
             models.Prefetch(name, queryset=related_queryset)
         )
 
-    def get_csv_serializer_field(self, instance, **kwargs):
-        """
-        If a model has already been generated it will be added as a property to the
-        instance. If that is the case then we can extract the primary field from the
-        model and we can pass the name along to the LinkRowValueSerializer. It will
-        be used to include the primary field's value in the response as a string.
-        """
-
-        primary_field_name = None
+    def get_human_export_value(self, row, field_object):
+        instance = field_object["field"]
 
         if hasattr(instance, "_related_model"):
             related_model = instance._related_model
@@ -519,8 +510,12 @@ class LinkRowFieldType(FieldType):
             )
             if primary_field:
                 primary_field_name = primary_field["name"]
-
-        return StringRelatedSubField(sub_field_name=primary_field_name, many=True)
+                value = getattr(row, field_object["name"])
+                primary_field_values = []
+                for sub in value.all():
+                    primary_field_values.append(getattr(sub, primary_field_name))
+                return primary_field_values
+        return []
 
     def get_serializer_field(self, instance, **kwargs):
         """
@@ -970,14 +965,23 @@ class FileFieldType(FieldType):
             **kwargs,
         )
 
-    def get_csv_serializer_field(self, instance, **kwargs):
-        return FileFieldNameUrlStringSerializer(many=True)
+    def get_human_export_value(self, row, field_object):
+        files = []
+        value = getattr(row, field_object["name"])
+        for file in value:
+            if "name" in file:
+                path = UserFileHandler().user_file_path(file["name"])
+                url = default_storage.url(path)
+            else:
+                url = None
+            files.append(
+                {
+                    "visible_name": file["visible_name"],
+                    "url": url,
+                }
+            )
 
-    def get_json_serializer_field(self, instance, **kwargs):
-        return FileFieldNameAndURLSerializer(many=True)
-
-    def get_xml_serializer_field(self, instance, **kwargs):
-        return FileFieldNameAndURLSerializer(many=True)
+        return files
 
     def get_response_serializer_field(self, instance, **kwargs):
         return FileFieldResponseSerializer(many=True, required=False, **kwargs)
@@ -1106,11 +1110,6 @@ class SingleSelectFieldType(FieldType):
         # then the provided value is invalid and a validation error can be raised.
         raise ValidationError(f"The provided value is not a valid option.")
 
-    def get_csv_serializer_field(self, instance, **kwargs):
-        return serializers.CharField(
-            max_length=255, required=False, source=f"field_{instance.id}.value"
-        )
-
     def get_serializer_field(self, instance, **kwargs):
         return serializers.PrimaryKeyRelatedField(
             queryset=SelectOption.objects.filter(field=instance),
@@ -1129,6 +1128,10 @@ class SingleSelectFieldType(FieldType):
             "the field. The response represents chosen field, but also the value and "
             "color is exposed."
         )
+
+    def get_human_export_value(self, row, field_object):
+        value = getattr(row, field_object["name"])
+        return value.value
 
     def get_model_field(self, instance, **kwargs):
         return SingleSelectForeignKey(
