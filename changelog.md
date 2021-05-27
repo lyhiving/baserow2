@@ -9,7 +9,9 @@
 * Made it possible to order the groups by drag and drop.
 * Made it possible to order the applications by drag and drop.
 * Made it possible to order the tables by drag and drop.
-* Tables and views can now be exported to CSV.
+* Tables and views can now be exported to CSV (if you have installed using the ubuntu 
+  guide please use the updated .conf files to enable this feature).
+* **Premium** Tables and views can now be exported to JSON and XML.
 
 ## Released (2021-05-11)
 
