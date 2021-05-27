@@ -73,7 +73,7 @@ def test_hidden_fields_are_excluded(storage_mock, data_fixture):
     )
     _, contents = run_export_job_with_mock_storage(table, grid_view, storage_mock, user)
     bom = "\ufeff"
-    expected = bom + "ID,text_field\r\n" f"1,Something\r\n"
+    expected = bom + "id,text_field\r\n" f"1,Something\r\n"
     assert contents == expected
 
 
@@ -98,7 +98,7 @@ def test_csv_is_sorted_by_sorts(storage_mock, data_fixture):
     data_fixture.create_view_sort(view=grid_view, field=text_field, order="DESC")
     _, contents = run_export_job_with_mock_storage(table, grid_view, storage_mock, user)
     bom = "\ufeff"
-    expected = bom + "ID,text_field\r\n2,Z\r\n1,A\r\n"
+    expected = bom + "id,text_field\r\n2,Z\r\n1,A\r\n"
     assert contents == expected
 
 
@@ -125,7 +125,7 @@ def test_csv_is_filtered_by_filters(storage_mock, data_fixture):
     )
     _, contents = run_export_job_with_mock_storage(table, grid_view, storage_mock, user)
     bom = "\ufeff"
-    expected = bom + "ID,text_field\r\n2,hello world\r\n"
+    expected = bom + "id,text_field\r\n2,hello world\r\n"
     assert contents == expected
 
 
@@ -162,7 +162,7 @@ def test_exporting_table_ignores_view_filters_sorts_hides(storage_mock, data_fix
     _, contents = run_export_job_with_mock_storage(table, None, storage_mock, user)
     bom = "\ufeff"
     expected = (
-        bom + "ID,text_field,text_field\r\n"
+        bom + "id,text_field,text_field\r\n"
         "1,hello,hidden in view\r\n"
         "2,hello world,hidden in view\r\n"
     )
@@ -203,7 +203,7 @@ def test_columns_are_exported_by_order_then_id(storage_mock, data_fixture):
     )
     _, contents = run_export_job_with_mock_storage(table, grid_view, storage_mock, user)
     bom = "\ufeff"
-    expected = bom + "ID,field_c,field_a,field_b\r\n" "1,c,a,b\r\n"
+    expected = bom + "id,field_c,field_a,field_b\r\n" "1,c,a,b\r\n"
     assert contents == expected
 
 
@@ -248,7 +248,7 @@ def test_can_export_every_interesting_different_field_to_csv(
     )
     expected = (
         "\ufeff"
-        f"ID,{expected_header}\r\n"
+        f"id,{expected_header}\r\n"
         f"1,,,,,,,,,False,,,,,,,,\r\n"
         f"2,{expected_values}\r\n"
     )
@@ -619,7 +619,7 @@ def test_can_export_csv_with_different_charsets(storage_mock, data_fixture):
         else:
             bom = ""
         expected = (
-            bom + "ID,text_field,option_field,date_field,File,Price,Customer\r\n"
+            bom + "id,text_field,option_field,date_field,File,Price,Customer\r\n"
             f"2,atest,A,02/01/2020 01:23,,-10.20,linked_row_1\r\n"
             f'1,test,B,02/01/2020 01:23,,10.20,"linked_row_1,linked_row_2"\r\n'
         )
@@ -637,7 +637,7 @@ def test_can_export_csv_with_different_column_separators(storage_mock, data_fixt
         )
         bom = "\ufeff"
         expected = (
-            bom + "ID,text_field,option_field,date_field,File,Price,Customer\r\n"
+            bom + "id,text_field,option_field,date_field,File,Price,Customer\r\n"
             f"2,atest,A,02/01/2020 01:23,,-10.20,linked_row_1\r\n"
             f"1,test,B,02/01/2020 01:23,,10.20,quote_replace\r\n"
         )

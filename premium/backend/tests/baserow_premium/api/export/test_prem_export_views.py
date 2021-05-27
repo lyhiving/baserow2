@@ -242,19 +242,20 @@ def test_exporting_xml_writes_file_to_storage(
 
             file_path = tmpdir.join(settings.EXPORT_FILES_DIRECTORY, filename)
             assert file_path.isfile()
-            expected = """<?xml version="1.0" encoding="utf-8" ?><rows>
-    <row>
-        <id>2</id>
-        <text_field>atest</text_field>
-        <option_field>A</option_field>
-        <date_field>02/01/2020 01:23</date_field>
-    </row>
-    <row>
-        <id>1</id>
-        <text_field>test</text_field>
-        <option_field>B</option_field>
-        <date_field>02/01/2020 01:23</date_field>
-    </row>
+            expected = """<?xml version="1.0" encoding="utf-8" ?>
+<rows>
+<row>
+    <id>2</id>
+    <text_field>atest</text_field>
+    <option_field>A</option_field>
+    <date_field>02/01/2020 01:23</date_field>
+</row>
+<row>
+    <id>1</id>
+    <text_field>test</text_field>
+    <option_field>B</option_field>
+    <date_field>02/01/2020 01:23</date_field>
+</row>
 </rows>
 """
             with open(file_path, "r", encoding="utf-8") as written_file:

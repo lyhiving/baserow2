@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from django.db.models import QuerySet
 
 from baserow.contrib.database.export.exceptions import ExportJobCanceledException
+from baserow.contrib.database.table.models import FieldObject
 from baserow.contrib.database.views.handler import ViewHandler
 from baserow.contrib.database.views.registries import view_type_registry
 
@@ -91,7 +92,10 @@ class PaginatedExportJobFileWriter(FileWriter):
 class QuerysetSerializer(abc.ABC):
     def __init__(self, queryset, ordered_field_objects):
         self.queryset = queryset
-        self.ordered_field_objects = ordered_field_objects
+        self.field_serializers = [lambda row: ("id", "id", row.id)]
+
+        for field_object in ordered_field_objects:
+            self.field_serializers.append(self._get_field_serializer(field_object))
 
     @abc.abstractmethod
     def write_to_file(self, file_writer: FileWriter, **kwargs):
@@ -110,3 +114,21 @@ class QuerysetSerializer(abc.ABC):
         fields, model = view_type.get_fields_and_model(view)
         qs = ViewHandler().get_queryset(view, model=model)
         return cls(qs, fields)
+
+    @staticmethod
+    def _get_field_serializer(field_object: FieldObject) -> Callable[[Any], Any]:
+        def serializer_func(row):
+            attr = getattr(row, field_object["name"])
+
+            if attr is None:
+                result = ""
+            else:
+                result = field_object["type"].get_human_export_value(row, field_object)
+
+            return (
+                field_object["name"],
+                field_object["field"].name,
+                result,
+            )
+
+        return serializer_func

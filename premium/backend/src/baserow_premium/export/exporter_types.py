@@ -1,5 +1,9 @@
 import json
-from typing import Type, List, Callable, Any
+from collections import OrderedDict
+from typing import Type, List
+from xml.dom.minidom import parseString
+
+import dicttoxml as dicttoxml
 
 from baserow.contrib.database.api.export.serializers import (
     BaseExporterOptionsSerializer,
@@ -9,45 +13,18 @@ from baserow.contrib.database.export.file_writer import (
     FileWriter,
 )
 from baserow.contrib.database.export.registries import TableExporter
-from baserow.contrib.database.table.models import FieldObject
 from baserow.contrib.database.views.view_types import GridViewType
 
 
 class JSONQuerysetSerializer(QuerysetSerializer):
-    def __init__(self, queryset, ordered_field_objects):
-        super().__init__(queryset, ordered_field_objects)
-        self.ordered_database_field_serializers = [lambda row: ("id", row.id)]
-
-        for field_object in self.ordered_field_objects:
-            self.ordered_database_field_serializers.append(
-                self._get_json_field_serializer(field_object)
-            )
-
-    @staticmethod
-    def _get_json_field_serializer(field_object: FieldObject) -> Callable[[Any], Any]:
-        def json_serializer_func(row):
-            attr = getattr(row, field_object["name"])
-
-            if attr is None:
-                result = ""
-            else:
-                result = field_object["type"].get_human_export_value(row, field_object)
-
-            return (
-                field_object["field"].name,
-                result,
-            )
-
-        return json_serializer_func
-
     def write_to_file(self, file_writer: FileWriter, export_charset="utf-8"):
         file_writer.write("[\n", encoding=export_charset)
 
         def write_row(row, last_row):
             data = {}
-            for json_serializer in self.ordered_database_field_serializers:
-                field_database_name, field_csv_value = json_serializer(row)
-                data[field_database_name] = field_csv_value
+            for field_serializer in self.field_serializers:
+                _, field_name, field_csv_value = field_serializer(row)
+                data[field_name] = field_csv_value
 
             file_writer.write(json.dumps(data, indent=4), encoding=export_charset)
             if not last_row:
@@ -82,66 +59,33 @@ class JSONTableExporter(TableExporter):
 
 
 class XMLQuerysetSerializer(QuerysetSerializer):
-    def __init__(self, queryset, ordered_field_objects):
-        super().__init__(queryset, ordered_field_objects)
-        self.ordered_database_field_serializers = [lambda row: ("id", row.id)]
-
-        for field_object in self.ordered_field_objects:
-            self.ordered_database_field_serializers.append(
-                self._get_xml_field_serializer(field_object)
-            )
-
     def write_to_file(self, file_writer: FileWriter, export_charset="utf-8"):
         file_writer.write(
-            f'<?xml version="1.0" encoding="{export_charset}" ?><rows>\n',
+            f'<?xml version="1.0" encoding="{export_charset}" ?>\n<rows>\n',
             encoding=export_charset,
         )
 
         def write_row(row, _):
-            file_writer.write("    <row>\n", encoding=export_charset)
-            for xml_serializer in self.ordered_database_field_serializers:
-                field_database_name, field_xml_value = xml_serializer(row)
-                field_xml_value = to_xml(field_xml_value)
-                field = (
-                    f"        <{field_database_name}>{field_xml_value}<"
-                    f"/{field_database_name}>\n"
-                )
-                file_writer.write(field, encoding=export_charset)
-            file_writer.write("    </row>\n", encoding=export_charset)
+            data = OrderedDict()
+            for field_serializer in self.field_serializers:
+                _, field_name, field_xml_value = field_serializer(row)
+                data[field_name] = field_xml_value
 
-        def to_xml(field_xml_value):
-            if isinstance(field_xml_value, list):
-                field_xml_value = "".join(
-                    [f"<item>{to_xml(v)}</item>" for v in field_xml_value]
-                )
-            if isinstance(field_xml_value, dict):
-                field_xml_value = "".join(
-                    [
-                        f"<{key}>{to_xml(val)}</{key}>"
-                        for key, val in field_xml_value.items()
-                    ]
-                )
-            return field_xml_value
+            row_xml = dicttoxml.dicttoxml(
+                {"row": data},
+                root=False,
+                attr_type=False,
+            )
+            # Extract the first node to get rid of the xml declaration at the top
+            # as we are creating that ourselves above and don't want a new one per row.
+            dom = parseString(row_xml).childNodes[0]
+            file_writer.write(
+                dom.toprettyxml(indent="    "),
+                encoding=export_charset,
+            )
 
         file_writer.write_rows(self.queryset, write_row)
         file_writer.write("</rows>\n", encoding=export_charset)
-
-    @staticmethod
-    def _get_xml_field_serializer(field_object: FieldObject) -> Callable[[Any], Any]:
-        def xml_serializer_func(row):
-            attr = getattr(row, field_object["name"])
-
-            if attr is None:
-                result = ""
-            else:
-                result = field_object["type"].get_human_export_value(row, field_object)
-
-            return (
-                field_object["field"].name,
-                result,
-            )
-
-        return xml_serializer_func
 
 
 class XMLTableExporter(TableExporter):

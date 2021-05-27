@@ -286,7 +286,7 @@ def test_exporting_csv_writes_file_to_storage(
             assert file_path.isfile()
             expected = (
                 "\ufeff"
-                "ID,text_field,option_field,date_field\n"
+                "id,text_field,option_field,date_field\n"
                 "2,atest,A,02/01/2020 01:23\n"
                 "1,test,B,02/01/2020 01:23\n"
             )
