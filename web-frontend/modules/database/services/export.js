@@ -1,13 +1,10 @@
 export default (client) => {
   return {
-    export(tableId, viewId, exporterType, exporterOptions) {
-      const exporterOptionsJson = exporterType.convertOptionsToJson(
-        exporterOptions
-      )
+    export(tableId, viewId, exporterType, values) {
       return client.post(`/database/export/table/${tableId}/`, {
         exporter_type: exporterType.type,
         view_id: viewId,
-        ...exporterOptionsJson,
+        ...values,
       })
     },
     get(jobId) {

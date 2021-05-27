@@ -1,3 +1,4 @@
+import time
 from collections import OrderedDict
 from typing import List, Type
 
@@ -69,6 +70,7 @@ class CsvQuerysetSerializer(QuerysetSerializer):
             csv_dict_writer.writerow(self.headers)
 
         def write_row(row, _):
+            time.sleep(10)
             data = {}
             for field_serializer in self.field_serializers:
                 field_database_name, _, field_human_value = field_serializer(row)

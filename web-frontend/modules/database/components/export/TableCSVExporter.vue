@@ -5,10 +5,7 @@
         <div class="control">
           <label class="control__label">Column separator</label>
           <div class="control__elements">
-            <Dropdown
-              v-model="localValue.csvColumnSeparator"
-              :disabled="loading"
-            >
+            <Dropdown v-model="values.csv_column_separator" :disabled="loading">
               <DropdownItem name="," value=","></DropdownItem>
               <DropdownItem name=";" value=";"></DropdownItem>
               <DropdownItem name="|" value="|"></DropdownItem>
@@ -30,7 +27,7 @@
           <label class="control__label">Encoding</label>
           <div class="control__elements">
             <CharsetDropdown
-              v-model="localValue.exportCharset"
+              v-model="values.export_charset"
               :disabled="loading"
             >
             </CharsetDropdown>
@@ -43,7 +40,7 @@
         <div class="control">
           <label class="control__label">First row is header</label>
           <div class="control__elements">
-            <Checkbox v-model="localValue.csvFirstRowHeader" :disabled="loading"
+            <Checkbox v-model="values.csv_first_row_header" :disabled="loading"
               >yes</Checkbox
             >
           </div>
@@ -57,15 +54,13 @@
 // Please keep csvColumnSeparator values in sync with
 // src/baserow/contrib/database/api/export/serializers.py:SUPPORTED_CSV_COLUMN_SEPARATORS
 import CharsetDropdown from '@baserow/modules/core/components/helpers/CharsetDropdown'
+import form from '@baserow/modules/core/mixins/form'
 
 export default {
   name: 'TableCSVExporter',
   components: { CharsetDropdown },
+  mixins: [form],
   props: {
-    value: {
-      type: Object,
-      required: true,
-    },
     loading: {
       type: Boolean,
       required: true,
@@ -73,23 +68,12 @@ export default {
   },
   data() {
     return {
-      localValue: {
-        csvFirstRowHeader: true,
-        exportCharset: 'utf-8',
-        csvColumnSeparator: ',',
+      values: {
+        csv_first_row_header: true,
+        export_charset: 'utf-8',
+        csv_column_separator: ',',
       },
     }
-  },
-  watch: {
-    localValue: {
-      handler(newVal) {
-        this.$emit('input', newVal)
-      },
-      deep: true,
-    },
-  },
-  created() {
-    this.$emit('input', this.localValue)
   },
 }
 </script>

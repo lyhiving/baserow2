@@ -6,7 +6,7 @@
           <label class="control__label">Encoding</label>
           <div class="control__elements">
             <CharsetDropdown
-              v-model="localValue.exportCharset"
+              v-model="values.export_charset"
               :disabled="loading"
             >
             </CharsetDropdown>
@@ -19,15 +19,13 @@
 
 <script>
 import CharsetDropdown from '@baserow/modules/core/components/helpers/CharsetDropdown'
+import form from '@baserow/modules/core/mixins/form'
 
 export default {
   name: 'TableXMLExporter',
   components: { CharsetDropdown },
+  mixins: [form],
   props: {
-    value: {
-      type: Object,
-      required: true,
-    },
     loading: {
       type: Boolean,
       required: true,
@@ -35,21 +33,10 @@ export default {
   },
   data() {
     return {
-      localValue: {
-        exportCharset: 'utf-8',
+      values: {
+        export_charset: 'utf-8',
       },
     }
-  },
-  watch: {
-    localValue: {
-      handler(newVal) {
-        this.$emit('input', newVal)
-      },
-      deep: true,
-    },
-  },
-  created() {
-    this.$emit('input', this.localValue)
   },
 }
 </script>

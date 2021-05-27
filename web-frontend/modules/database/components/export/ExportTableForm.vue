@@ -1,7 +1,7 @@
 <template>
   <div>
     <Error :error="error"></Error>
-    <form @submit.prevent="exportViewOrTable">
+    <form @submit.prevent="submitted">
       <div class="row">
         <div class="col col-12">
           <div class="control">
@@ -14,78 +14,18 @@
               ></ExportTableDropdown>
             </div>
           </div>
-          <div v-if="exporterTypes.length > 0" class="control">
-            <label class="control__label"
-              >To which format would you like to export?</label
-            >
-            <div class="control__elements">
-              <ul class="choice-items">
-                <li
-                  v-for="exporterType in exporterTypes"
-                  :key="exporterType.type"
-                >
-                  <a
-                    class="choice-items__link"
-                    :class="{
-                      active: exporter.type === exporterType.type,
-                      disabled: loading,
-                    }"
-                    @click="switchToExporterType(exporterType)"
-                  >
-                    <i
-                      class="choice-items__icon fas"
-                      :class="'fa-' + exporterType.iconClass"
-                    ></i>
-                    {{ exporterType.name }}
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
+          <ExporterTypeChoices
+            v-model="exporter"
+            :view="selectedView"
+            :loading="loading"
+          ></ExporterTypeChoices>
         </div>
       </div>
-      <component
-        :is="exporterComponent"
-        v-model="exporterOptions"
-        :loading="loading"
-      />
-      <div class="row">
-        <div class="col col-8 export-table-modal__actions">
-          <div v-if="job !== null" class="export-table-modal__loading-bar">
-            <div
-              class="export-table-modal__loading-bar-inner"
-              :style="{
-                width: `${job.progress_percentage * 100}%`,
-                'transition-duration':
-                  job.progress_percentage === 1 ? '0s' : '1s',
-              }"
-            ></div>
-          </div>
-        </div>
-        <div class="col col-4 align-right export-table-modal__actions">
-          <button
-            v-if="job === null"
-            class="button button--large button--primary export-table-modal__export-button"
-            :class="{ 'button--loading': loading }"
-            :disabled="loading || exporter === null"
-          >
-            Export
-          </button>
-          <button
-            v-else-if="jobIsRunning"
-            class="button button--large button--primary button--loading export-table-modal__export-button"
-            :disabled="loading"
-          ></button>
-          <a
-            v-else-if="job.status === 'complete'"
-            class="button button--large button--success export-table-modal__export-button"
-            :href="job.url"
-            target="_blank"
-          >
-            Download
-          </a>
-        </div>
-      </div>
+      <component :is="exporterComponent" :loading="loading" />
+      <ExportTableLoadingBar
+        :job="job"
+        :loading="loading || exporter === null"
+      ></ExportTableLoadingBar>
     </form>
   </div>
 </template>
@@ -94,11 +34,18 @@
 import error from '@baserow/modules/core/mixins/error'
 import ExportTableDropdown from '@baserow/modules/database/components/export/ExportTableDropdown'
 import ExporterService from '@baserow/modules/database/services/export'
+import form from '@baserow/modules/core/mixins/form'
+import ExporterTypeChoices from '@baserow/modules/database/components/export/ExporterTypeChoices'
+import ExportTableLoadingBar from '@baserow/modules/database/components/export/ExportTableLoadingBar'
 
 export default {
   name: 'ExportTableForm',
-  components: { ExportTableDropdown },
-  mixins: [error],
+  components: {
+    ExporterTypeChoices,
+    ExportTableDropdown,
+    ExportTableLoadingBar,
+  },
+  mixins: [error, form],
   props: {
     table: {
       type: Object,
@@ -114,16 +61,13 @@ export default {
     return {
       loading: false,
       exporter: null,
-      exporterOptions: {},
       job: null,
       pollInterval: null,
       selectedView: this.view,
+      values: {},
     }
   },
   computed: {
-    exporterTypes() {
-      return this.getExporterTypes(this.selectedView)
-    },
     exporterComponent() {
       return this.exporter === null ? null : this.exporter.getFormComponent()
     },
@@ -133,62 +77,16 @@ export default {
       )
     },
   },
-  watch: {
-    selectedView() {
-      this.switchToFirstAvailableExporterType()
-    },
-  },
-  created() {
-    this.switchToFirstAvailableExporterType()
-  },
   destroyed() {
     clearInterval(this.pollInterval)
   },
   methods: {
-    switchToFirstAvailableExporterType() {
-      const startingExporterType =
-        this.exporterTypes.length > 0 ? this.exporterTypes[0] : null
-
-      // If there is a currently selected export type and the new view / table also
-      // supports that type then keep it selected.
-      if (
-        this.exporter !== null &&
-        this.exporterTypes.find((t) => t.type === this.exporter.type) !==
-          undefined
-      ) {
-        return
-      }
-      this.switchToExporterType(startingExporterType)
-    },
-    switchToExporterType(exporterType) {
-      if (this.loading) {
-        return
-      }
-
-      this.hideError()
-      this.exporter = exporterType
-      if (this.exporterTypes.length === 0) {
-        this.showError(
-          'No supported exporters found',
-          'Please switch to another view or table.'
-        )
-      }
-    },
-    getExporterTypes(view) {
-      const types = Object.values(this.$registry.getAll('exporter'))
-      return types.filter((exporterType) => {
-        if (view !== null) {
-          return exporterType.getSupportedViews().includes(view.type)
-        } else {
-          return exporterType.getCanExportTable()
-        }
-      })
-    },
     async getLatestJobInfo() {
       try {
         const { data } = await ExporterService(this.$client).get(this.job.id)
         this.job = data
         if (!this.jobIsRunning) {
+          this.loading = false
           clearInterval(this.pollInterval)
         }
         if (this.job.status === 'failed' || this.job.status === 'cancelled') {
@@ -215,7 +113,7 @@ export default {
         this.handleError(error, 'application')
       }
     },
-    async exportViewOrTable() {
+    async submitted(values) {
       this.loading = true
       this.hideError()
 
@@ -224,7 +122,7 @@ export default {
           this.table.id,
           this.selectedView !== null ? this.selectedView.id : null,
           this.exporter,
-          this.exporterOptions
+          values
         )
         this.job = data
         if (this.pollInterval !== null) {
@@ -232,7 +130,7 @@ export default {
         }
         if (this.jobIsRunning) {
           this.pollInterval = setInterval(this.getLatestJobInfo, 1000)
-        } else if (this.job.status !== 'complete') {
+        } else {
           this.loading = false
         }
       } catch (error) {

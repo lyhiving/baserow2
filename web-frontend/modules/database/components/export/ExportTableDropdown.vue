@@ -1,12 +1,17 @@
 <template>
-  <Dropdown v-model="valueOrTable" :show-search="true" :disabled="loading">
-    <DropdownItem name="Export entire table" value="TABLE"></DropdownItem>
+  <Dropdown
+    v-model="view_id"
+    :show-search="true"
+    :disabled="loading"
+    @input="$emit('input', getViewFor($event))"
+  >
+    <DropdownItem :name="'Export entire table'" :value="-1"></DropdownItem>
     <DropdownItem
-      v-for="view in views"
-      :key="view.id"
-      :name="view.name"
-      :value="view"
-      :icon="view._.type.iconClass"
+      v-for="v in views"
+      :key="v.id"
+      :name="v.name"
+      :value="v.id"
+      :icon="v._.type.iconClass"
     >
     </DropdownItem>
   </Dropdown>
@@ -39,7 +44,21 @@ export default {
   },
   data() {
     return {
-      valueOrTable: this.value || 'TABLE',
+      views: [],
+      view_id: this.value === null ? -1 : this.value.id,
+    }
+  },
+  async fetch() {
+    if (this.table._.selected) {
+      this.views = this.selectedTableViews
+    } else {
+      this.loading = true
+      const { data: viewsData } = await ViewService(this.$client).fetchAll(
+        this.table.id
+      )
+      viewsData.forEach((v) => populateView(v, this.$registry))
+      this.views = viewsData
+      this.loading = false
     }
   },
   computed: {
@@ -47,32 +66,13 @@ export default {
       selectedTableViews: (state) => state.view.items,
     }),
   },
-  watch: {
-    valueOrTable: {
-      handler(newVal) {
-        this.$emit('input', newVal === 'TABLE' ? null : newVal)
-      },
-      deep: true,
-    },
-    table(table) {
-      this.populateViews(table)
-    },
-  },
-  created() {
-    this.populateViews(this.table)
-  },
   methods: {
-    async populateViews(table) {
-      if (table._.selected) {
-        this.views = this.selectedTableViews
+    getViewFor(viewId) {
+      if (viewId === -1) {
+        return null
       } else {
-        this.loading = true
-        const { data: viewsData } = await ViewService(this.$client).fetchAll(
-          table.id
-        )
-        viewsData.forEach((v) => populateView(v, this.$registry))
-        this.views = viewsData
-        this.loading = false
+        const index = this.views.findIndex((view) => view.id === viewId)
+        return this.views[index]
       }
     },
   },
