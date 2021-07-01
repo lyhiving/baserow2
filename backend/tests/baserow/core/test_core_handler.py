@@ -2,15 +2,19 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 
+from io import BytesIO
+
 import pytest
 from django.conf import settings
 from django.db import connection
+from django.core.files.storage import FileSystemStorage
 from itsdangerous.exc import BadSignature
 
 from baserow.contrib.database.models import Database, Table
 from baserow.core.exceptions import (
     UserNotInGroup,
     ApplicationTypeDoesNotExist,
+    ApplicationNotInGroup,
     GroupDoesNotExist,
     GroupUserDoesNotExist,
     ApplicationDoesNotExist,
@@ -34,6 +38,7 @@ from baserow.core.models import (
     TemplateCategory,
     GROUP_USER_PERMISSION_ADMIN,
 )
+from baserow.core.user_files.models import UserFile
 
 
 @pytest.mark.django_db
@@ -494,6 +499,20 @@ def test_create_group_invitation(mock_send_email, data_fixture):
     assert invitation.message == ""
     assert GroupInvitation.objects.all().count() == 2
 
+    invitation = handler.create_group_invitation(
+        user=user,
+        group=group,
+        email="test3@test.nl",
+        permissions="ADMIN",
+        base_url="http://localhost:3000/invite",
+    )
+    assert invitation.invited_by_id == user.id
+    assert invitation.group_id == group.id
+    assert invitation.email == "test3@test.nl"
+    assert invitation.permissions == "ADMIN"
+    assert invitation.message == ""
+    assert GroupInvitation.objects.all().count() == 3
+
 
 @pytest.mark.django_db
 def test_update_group_invitation(data_fixture):
@@ -691,6 +710,66 @@ def test_update_database_application(send_mock, data_fixture):
 
 
 @pytest.mark.django_db
+@patch("baserow.core.signals.applications_reordered.send")
+def test_order_applications(send_mock, data_fixture):
+    user = data_fixture.create_user()
+    user_2 = data_fixture.create_user()
+    group = data_fixture.create_group(user=user)
+    application_1 = data_fixture.create_database_application(group=group, order=1)
+    application_2 = data_fixture.create_database_application(group=group, order=2)
+    application_3 = data_fixture.create_database_application(group=group, order=3)
+
+    handler = CoreHandler()
+
+    with pytest.raises(UserNotInGroup):
+        handler.order_applications(user=user_2, group=group, order=[])
+
+    with pytest.raises(ApplicationNotInGroup):
+        handler.order_applications(user=user, group=group, order=[0])
+
+    handler.order_applications(
+        user=user,
+        group=group,
+        order=[application_3.id, application_2.id, application_1.id],
+    )
+    application_1.refresh_from_db()
+    application_2.refresh_from_db()
+    application_3.refresh_from_db()
+    assert application_1.order == 3
+    assert application_2.order == 2
+    assert application_3.order == 1
+
+    send_mock.assert_called_once()
+    assert send_mock.call_args[1]["group"].id == group.id
+    assert send_mock.call_args[1]["user"].id == user.id
+    assert send_mock.call_args[1]["order"] == [
+        application_3.id,
+        application_2.id,
+        application_1.id,
+    ]
+
+    handler.order_applications(
+        user=user,
+        group=group,
+        order=[application_1.id, application_3.id, application_2.id],
+    )
+    application_1.refresh_from_db()
+    application_2.refresh_from_db()
+    application_3.refresh_from_db()
+    assert application_1.order == 1
+    assert application_2.order == 3
+    assert application_3.order == 2
+
+    handler.order_applications(user=user, group=group, order=[application_1.id])
+    application_1.refresh_from_db()
+    application_2.refresh_from_db()
+    application_3.refresh_from_db()
+    assert application_1.order == 1
+    assert application_2.order == 0
+    assert application_3.order == 0
+
+
+@pytest.mark.django_db
 @patch("baserow.core.signals.application_deleted.send")
 def test_delete_database_application(send_mock, data_fixture):
     user = data_fixture.create_user()
@@ -748,9 +827,9 @@ def test_export_import_group_application(data_fixture):
     data_fixture.create_database_table(database=database)
 
     handler = CoreHandler()
-    exported_applications = handler.export_group_applications(group)
-    imported_applications, id_mapping = handler.import_application_to_group(
-        imported_group, exported_applications
+    exported_applications = handler.export_group_applications(group, BytesIO())
+    imported_applications, id_mapping = handler.import_applications_to_group(
+        imported_group, exported_applications, BytesIO(), None
     )
 
     assert len(imported_applications) == 1
@@ -774,11 +853,13 @@ def test_sync_all_templates():
 
 
 @pytest.mark.django_db
-def test_sync_templates(data_fixture):
+def test_sync_templates(data_fixture, tmpdir):
     old_templates = settings.APPLICATION_TEMPLATES_DIR
     settings.APPLICATION_TEMPLATES_DIR = os.path.join(
         settings.BASE_DIR, "../../../tests/templates"
     )
+
+    storage = FileSystemStorage(location=str(tmpdir), base_url="http://localhost")
 
     group_1 = data_fixture.create_group()
     group_2 = data_fixture.create_group()
@@ -803,7 +884,7 @@ def test_sync_templates(data_fixture):
     )
 
     handler = CoreHandler()
-    handler.sync_templates()
+    handler.sync_templates(storage=storage)
 
     groups = Group.objects.all().order_by("id")
     assert len(groups) == 3
@@ -826,7 +907,7 @@ def test_sync_templates(data_fixture):
     assert refreshed_template_2.icon == "file"
     assert (
         refreshed_template_2.export_hash
-        == "f086c9b4b0dfea6956d0bb32af210277bb645ff3faebc5fb37a9eae85c433f2d"
+        == "7d86876e8fa061bb0deec179ce2a1b24a220f5cd4eb6ddacbdccf036160c7bf3"
     )
     assert refreshed_template_2.keywords == "Example,Template,For,Search"
     assert refreshed_template_2.categories.all().first().id == categories[0].id
@@ -840,35 +921,48 @@ def test_sync_templates(data_fixture):
     # nothing was updated.
     assert refreshed_template_3.group.application_set.count() == 0
 
+    # Because the `example-template.json` has a file field that contains the hello
+    # world file, we expect it to exist after syncing the templates.
+    assert UserFile.objects.all().count() == 1
+    user_file = UserFile.objects.all().first()
+    assert user_file.original_name == "hello.txt"
+    file_path = tmpdir.join("user_files", user_file.name)
+    assert file_path.isfile()
+    assert file_path.open().read() == "Hello World"
+
     settings.APPLICATION_TEMPLATES_DIR = old_templates
 
 
 @pytest.mark.django_db
 @patch("baserow.core.signals.application_created.send")
-def test_install_template(send_mock, data_fixture):
+def test_install_template(send_mock, tmpdir, data_fixture):
     old_templates = settings.APPLICATION_TEMPLATES_DIR
     settings.APPLICATION_TEMPLATES_DIR = os.path.join(
         settings.BASE_DIR, "../../../tests/templates"
     )
+
+    storage = FileSystemStorage(location=str(tmpdir), base_url="http://localhost")
 
     user = data_fixture.create_user()
     group = data_fixture.create_group(user=user)
     group_2 = data_fixture.create_group()
 
     handler = CoreHandler()
-    handler.sync_templates()
+    handler.sync_templates(storage=storage)
 
     template_2 = data_fixture.create_template(slug="does-not-exist")
 
     with pytest.raises(TemplateFileDoesNotExist):
-        handler.install_template(user, group, template_2)
+        handler.install_template(user, group, template_2, storage=storage)
 
     template = Template.objects.get(slug="example-template")
 
     with pytest.raises(UserNotInGroup):
-        handler.install_template(user, group_2, template)
+        handler.install_template(user, group_2, template, storage=storage)
 
-    applications, id_mapping = handler.install_template(user, group, template)
+    applications, id_mapping = handler.install_template(
+        user, group, template, storage=storage
+    )
     assert len(applications) == 1
     assert applications[0].group_id == group.id
     assert applications[0].name == "Event marketing"
@@ -877,5 +971,14 @@ def test_install_template(send_mock, data_fixture):
     assert send_mock.call_args[1]["application"].id == applications[0].id
     assert send_mock.call_args[1]["user"].id == user.id
     assert send_mock.call_args[1]["type_name"] == "database"
+
+    # Because the `example-template.json` has a file field that contains the hello
+    # world file, we expect it to exist after syncing the templates.
+    assert UserFile.objects.all().count() == 1
+    user_file = UserFile.objects.all().first()
+    assert user_file.original_name == "hello.txt"
+    file_path = tmpdir.join("user_files", user_file.name)
+    assert file_path.isfile()
+    assert file_path.open().read() == "Hello World"
 
     settings.APPLICATION_TEMPLATES_DIR = old_templates

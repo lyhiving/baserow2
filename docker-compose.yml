@@ -1,4 +1,4 @@
-version: "3.7"
+version: "3"
 
 services:
   db:
@@ -40,6 +40,8 @@ services:
       context: .
     image: baserow_backend:latest
     environment:
+      - PUBLIC_BACKEND_URL=${PUBLIC_BACKEND_URL:-http://localhost:8000}
+      - PUBLIC_WEB_FRONTEND_URL=${PUBLIC_BACKEND_URL:-http://localhost:3000}
       - MIGRATE_ON_STARTUP=${MIGRATE_ON_STARTUP:-true}
       - SYNC_TEMPLATES_ON_STARTUP=${SYNC_TEMPLATES_ON_STARTUP:-true}
       - DATABASE_USER=${DATABASE_USER:-baserow}
@@ -50,6 +52,10 @@ services:
       - EMAIL_SMTP
       - EMAIL_SMTP_HOST
       - EMAIL_SMTP_PORT
+      - EMAIL_SMTP_USE_TLS
+      - EMAIL_SMTP_USER
+      - EMAIL_SMTP_PASSWORD
+      - FROM_EMAIL
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -65,14 +71,63 @@ services:
   celery:
     container_name: celery
     image: baserow_backend:latest
-    command: celery
     environment:
       - ADDITIONAL_APPS
       - EMAIL_SMTP
       - EMAIL_SMTP_HOST
       - EMAIL_SMTP_PORT
+    build:
+      dockerfile: ./backend/Dockerfile
+      context: .
+    command: celery worker -l INFO -Q celery
     depends_on:
       - backend
+    volumes:
+      - media:/baserow/media
+    networks:
+      local:
+
+  celery-export-worker:
+    container_name: celery-export-worker
+    image: baserow_backend:latest
+    build:
+      dockerfile: ./backend/Dockerfile
+      context: .
+    command: celery worker -l INFO -Q export
+    depends_on:
+      - backend
+    environment:
+      - ADDITIONAL_APPS
+      - EMAIL_SMTP
+      - EMAIL_SMTP_HOST
+      - EMAIL_SMTP_PORT
+      - EMAIL_SMPT_USE_TLS
+      - EMAIL_SMTP_USER
+      - EMAIL_SMTP_PASSWORD
+      - FROM_EMAIL
+    volumes:
+      - media:/baserow/media
+    networks:
+      local:
+
+  celery-beat-worker:
+    container_name: celery-beat-worker
+    image: baserow_backend:latest
+    build:
+      dockerfile: ./backend/Dockerfile
+      context: .
+    command: celery beat -l INFO -S redbeat.RedBeatScheduler
+    depends_on:
+      - backend
+    environment:
+      - ADDITIONAL_APPS
+      - EMAIL_SMTP
+      - EMAIL_SMTP_HOST
+      - EMAIL_SMTP_PORT
+      - EMAIL_SMTP_USE_TLS
+      - EMAIL_SMTP_USER
+      - EMAIL_SMTP_PASSWORD
+      - FROM_EMAIL
     volumes:
       - media:/baserow/media
     networks:
@@ -85,6 +140,8 @@ services:
       dockerfile: ./web-frontend/Dockerfile
     image: baserow_web-frontend:latest
     environment:
+      - PUBLIC_BACKEND_URL=${PUBLIC_BACKEND_URL:-http://localhost:8000}
+      - PUBLIC_WEB_FRONTEND_URL=${PUBLIC_BACKEND_URL:-http://localhost:3000}
       - ADDITIONAL_MODULES
     ports:
       - "${WEB_FRONTEND_PORT:-3000}:3000"

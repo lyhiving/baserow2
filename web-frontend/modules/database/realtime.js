@@ -27,6 +27,13 @@ export const registerRealtimeEvents = (realtime) => {
     }
   })
 
+  realtime.registerEvent('tables_reordered', ({ store, app }, data) => {
+    const database = store.getters['application/get'](data.database_id)
+    if (database !== undefined) {
+      store.commit('table/ORDER_TABLES', { database, order: data.order })
+    }
+  })
+
   realtime.registerEvent('table_deleted', ({ store }, data) => {
     const database = store.getters['application/get'](data.database_id)
     if (database !== undefined) {
@@ -88,9 +95,9 @@ export const registerRealtimeEvents = (realtime) => {
       viewType.rowCreated(
         context,
         data.table_id,
-        data.row,
         store.getters['field/getAll'],
         store.getters['field/getPrimary'],
+        data.row,
         'page/'
       )
     }
@@ -102,9 +109,10 @@ export const registerRealtimeEvents = (realtime) => {
       viewType.rowUpdated(
         context,
         data.table_id,
-        data.row,
         store.getters['field/getAll'],
         store.getters['field/getPrimary'],
+        data.row_before_update,
+        data.row,
         'page/'
       )
     }
@@ -116,9 +124,9 @@ export const registerRealtimeEvents = (realtime) => {
       viewType.rowDeleted(
         context,
         data.table_id,
-        data.row_id,
         store.getters['field/getAll'],
         store.getters['field/getPrimary'],
+        data.row,
         'page/'
       )
     }
@@ -145,6 +153,13 @@ export const registerRealtimeEvents = (realtime) => {
           tableId: store.getters['table/getSelectedId'],
         })
       }
+    }
+  })
+
+  realtime.registerEvent('views_reordered', ({ store, app }, data) => {
+    const table = store.getters['table/getSelected']
+    if (table !== undefined && table.id === data.table_id) {
+      store.commit('view/ORDER_ITEMS', data.order)
     }
   })
 

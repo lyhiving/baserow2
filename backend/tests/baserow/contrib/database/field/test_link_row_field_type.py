@@ -1,5 +1,7 @@
 import pytest
 
+from io import BytesIO
+
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 
 from django.shortcuts import reverse
@@ -232,6 +234,7 @@ def test_link_row_field_type_rows(data_fixture):
     customers_table = data_fixture.create_database_table(
         name="Customers", database=database
     )
+    data_fixture.create_text_field(name="Name", table=customers_table, primary=True)
     users_table = data_fixture.create_database_table(name="Users", database=database)
 
     field_handler = FieldHandler()
@@ -352,7 +355,8 @@ def test_link_row_field_type_rows(data_fixture):
 
     # Just check if the field can be deleted can be deleted.
     field_handler.delete_field(user=user, field=link_row_field)
-    assert Field.objects.all().count() == 0
+    # We expect only the primary field to be left.
+    assert Field.objects.all().count() == 1
 
 
 @pytest.mark.django_db
@@ -757,9 +761,11 @@ def test_import_export_link_row_field(data_fixture, user_tables_in_separate_db):
         values={f"field_{link_row_field.id}": [c_row.id, c_row_2.id]},
     )
 
-    exported_applications = core_handler.export_group_applications(database.group)
-    imported_applications, id_mapping = core_handler.import_application_to_group(
-        imported_group, exported_applications
+    exported_applications = core_handler.export_group_applications(
+        database.group, BytesIO()
+    )
+    imported_applications, id_mapping = core_handler.import_applications_to_group(
+        imported_group, exported_applications, BytesIO(), None
     )
     imported_database = imported_applications[0]
     imported_tables = imported_database.table_set.all()

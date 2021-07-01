@@ -24,6 +24,13 @@ export class AdminType extends Registerable {
     return null
   }
 
+  /**
+   * The order value used to sort admin types in the sidebar menu.
+   */
+  getOrder() {
+    return 0
+  }
+
   getRouteName() {
     throw new Error('The route name of an admin type must be set.')
   }
@@ -74,5 +81,9 @@ export class SettingsAdminType extends AdminType {
 
   getRouteName() {
     return 'admin-settings'
+  }
+
+  getOrder() {
+    return 9999
   }
 }

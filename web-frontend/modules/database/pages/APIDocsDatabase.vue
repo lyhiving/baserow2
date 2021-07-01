@@ -63,10 +63,12 @@
               open:
                 navActive === 'section-table-' + table.id ||
                 navActive === 'section-table-' + table.id + '-fields' ||
+                navActive === 'section-table-' + table.id + '-field-list' ||
                 navActive === 'section-table-' + table.id + '-list' ||
                 navActive === 'section-table-' + table.id + '-get' ||
                 navActive === 'section-table-' + table.id + '-create' ||
                 navActive === 'section-table-' + table.id + '-update' ||
+                navActive === 'section-table-' + table.id + '-move' ||
                 navActive === 'section-table-' + table.id + '-delete',
             }"
           >
@@ -80,6 +82,19 @@
                   navigate('section-table-' + table.id + '-fields')
                 "
                 >Fields</a
+              >
+            </li>
+            <li>
+              <a
+                class="api-docs__nav-link"
+                :class="{
+                  active:
+                    navActive === 'section-table-' + table.id + '-field-list',
+                }"
+                @click.prevent="
+                  navigate('section-table-' + table.id + '-field-list')
+                "
+                >List fields</a
               >
             </li>
             <li>
@@ -124,6 +139,16 @@
                   navigate('section-table-' + table.id + '-update')
                 "
                 >Update row</a
+              >
+            </li>
+            <li>
+              <a
+                class="api-docs__nav-link"
+                :class="{
+                  active: navActive === 'section-table-' + table.id + '-move',
+                }"
+                @click.prevent="navigate('section-table-' + table.id + '-move')"
+                >Move row</a
               >
             </li>
             <li>
@@ -281,6 +306,63 @@
         <div class="api-docs__item">
           <div class="api-docs__left">
             <h3
+              :id="'section-table-' + table.id + '-field-list'"
+              class="api-docs__heading-3"
+            >
+              List fields
+            </h3>
+            <p class="api-docs__content">
+              To list fields of the {{ table.name }} table a
+              <code class="api-docs__code">GET</code> request has to be made to
+              the {{ table.name }} fields endpoint. It's only possible to list
+              the fields if the token has read, create or update permissions.
+            </p>
+            <h4 class="api-docs__heading-4">Result field properties</h4>
+            <ul class="api-docs__parameters">
+              <APIDocsParameter name="id" :optional="false" type="integer">
+                Field primary key. Can be used to generate the database column
+                name by adding
+                <code class="api-docs__code">field_</code> prefix.
+              </APIDocsParameter>
+              <APIDocsParameter name="name" :optional="false" type="string">
+                Field name.
+              </APIDocsParameter>
+              <APIDocsParameter
+                name="table_id"
+                :optional="false"
+                type="integer"
+              >
+                Related table id.
+              </APIDocsParameter>
+              <APIDocsParameter name="order" :optional="false" type="integer">
+                Field order in table. 0 for the first field.
+              </APIDocsParameter>
+              <APIDocsParameter name="primary" :optional="false" type="boolean">
+                Indicates if the field is a primary field. If
+                <code class="api-docs__code">true</code> the field cannot be
+                deleted and the value should represent the whole row.
+              </APIDocsParameter>
+              <APIDocsParameter name="type" :optional="false" type="string">
+                Type defined for this field.
+              </APIDocsParameter>
+            </ul>
+            <p class="api-docs__content">
+              Some extra properties are not described here because they are type
+              specific.
+            </p>
+          </div>
+          <div class="api-docs__right">
+            <APIDocsExample
+              v-model="exampleType"
+              type="GET"
+              :url="getFieldsURL(table)"
+              :response="getResponseFields(table)"
+            ></APIDocsExample>
+          </div>
+        </div>
+        <div class="api-docs__item">
+          <div class="api-docs__left">
+            <h3
               :id="'section-table-' + table.id + '-list'"
               class="api-docs__heading-3"
             >
@@ -288,7 +370,7 @@
             </h3>
             <p class="api-docs__content">
               To list rows in the {{ table.name }} table a
-              <code class="api-docs__code">GET</code> request as to be made to
+              <code class="api-docs__code">GET</code> request has to be made to
               the {{ table.name }} endpoint. The response is paginated and by
               default the first page is returned. The correct page can be
               fetched by providing the
@@ -427,7 +509,7 @@
             <h4 class="api-docs__heading-4">Path parameters</h4>
             <ul class="api-docs__parameters">
               <APIDocsParameter name="row_id" type="integer">
-                The unique identifier or the row that is requested.
+                The unique identifier of the row that is requested.
               </APIDocsParameter>
             </ul>
           </div>
@@ -489,7 +571,7 @@
             <h4 class="api-docs__heading-4">Path parameters</h4>
             <ul class="api-docs__parameters">
               <APIDocsParameter name="row_id" type="integer">
-                The unique identifier or the row that needs to be updated.
+                The unique identifier of the row that needs to be updated.
               </APIDocsParameter>
             </ul>
             <h4 class="api-docs__heading-4">Request body schema</h4>
@@ -520,6 +602,48 @@
         <div class="api-docs__item">
           <div class="api-docs__left">
             <h3
+              :id="'section-table-' + table.id + '-move'"
+              class="api-docs__heading-3"
+            >
+              Move row
+            </h3>
+            <p class="api-docs__content">
+              Moves an existing {{ table.name }} row before another row. If no
+              `before_row_id` is provided, then the row will be moved to the end
+              of the table.
+            </p>
+            <h4 class="api-docs__heading-4">Path parameters</h4>
+            <ul class="api-docs__parameters">
+              <APIDocsParameter name="row_id" type="integer">
+                Moves the row related to the value.
+              </APIDocsParameter>
+            </ul>
+            <h4 class="api-docs__heading-4">Query parameters</h4>
+            <ul class="api-docs__parameters">
+              <APIDocsParameter
+                name="before_row_id"
+                type="integer"
+                :optional="true"
+              >
+                Moves the row related to the given `row_id` before the row
+                related to the provided value. If not provided, then the row
+                will be moved to the end.
+              </APIDocsParameter>
+            </ul>
+          </div>
+          <div class="api-docs__right">
+            <APIDocsExample
+              v-model="exampleType"
+              type="PATCH"
+              :url="getItemURL(table) + 'move/'"
+              :response="getResponseItem(table)"
+              :mapping="getFieldMapping(table)"
+            ></APIDocsExample>
+          </div>
+        </div>
+        <div class="api-docs__item">
+          <div class="api-docs__left">
+            <h3
               :id="'section-table-' + table.id + '-delete'"
               class="api-docs__heading-3"
             >
@@ -531,7 +655,7 @@
             <h4 class="api-docs__heading-4">Path parameters</h4>
             <ul class="api-docs__parameters">
               <APIDocsParameter name="row_id" type="integer">
-                The unique identifier or the row that needs to be deleted.
+                The unique identifier of the row that needs to be deleted.
               </APIDocsParameter>
             </ul>
           </div>
@@ -591,7 +715,7 @@
                 <td>400</td>
                 <td>Bad request</td>
                 <td>
-                  The request contains invalid values or the JSON could not be
+                  The request contains invalid values of the JSON could not be
                   parsed.
                 </td>
               </tr>
@@ -682,6 +806,7 @@ export default {
         description: fieldType.getDocsDescription(field),
         requestExample: fieldType.getDocsRequestExample(field),
         responseExample: fieldType.getDocsResponseExample(field),
+        fieldResponseExample: fieldType.getDocsFieldResponseExample(field),
       }
       return field
     }
@@ -783,9 +908,17 @@ export default {
      * Generates an example response object based on the available fields of the table.
      */
     getResponseItem(table) {
-      const item = { id: 0 }
+      const item = { id: 0, order: '1.00000000000000000000' }
       Object.assign(item, this.getRequestExample(table, true))
       return item
+    },
+    /**
+     * Generates a sample field list response based on the available fields of the table.
+     */
+    getResponseFields(table) {
+      return this.fields[table.id]
+        .slice(0, 3)
+        .map(({ _: { fieldResponseExample } }) => fieldResponseExample)
     },
     /**
      * Returns the mapping of the field id as key and the field name as value.
@@ -796,6 +929,9 @@ export default {
         mapping[`field_${field.id}`] = field.name
       })
       return mapping
+    },
+    getFieldsURL(table) {
+      return `${this.$env.PUBLIC_BACKEND_URL}/api/database/fields/table/${table.id}/`
     },
     getListURL(table) {
       return `${this.$env.PUBLIC_BACKEND_URL}/api/database/rows/table/${table.id}/`

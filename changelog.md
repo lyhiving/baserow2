@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+* Made it possible to list table field meta-data with a token.
+* Fix the create group invite endpoint failing when no message provided.
+* Single select options can now be ordered by drag and drop. 
+
+## Released (2021-06-02)
+
+* Fixed bug where the grid view would fail hard if a cell is selected and the component
+  is destroyed.
+* Made it possible to import a JSON file when creating a table.
+* Made it possible to order the views by drag and drop.
+* Made it possible to order the groups by drag and drop.
+* Made it possible to order the applications by drag and drop.
+* Made it possible to order the tables by drag and drop.
+* **Premium**: Added an admin dashboard.
+* **Premium**: Added group admin area allowing management of all baserow groups.
+* Added today, this month and this year filter.
+* Added a page containing external resources to the docs.
+* Added a human-readable error message when a user tries to sign in with a deactivated
+  account.
+* Tables and views can now be exported to CSV (if you have installed using the ubuntu 
+  guide please use the updated .conf files to enable this feature).
+* **Premium** Tables and views can now be exported to JSON and XML.
+* Removed URL field max length and fixed the backend failing hard because of that.
+* Fixed bug where the focus of an Editable component was not always during and after
+  editing if the parent component had overflow hidden.
+* Fixed bug where the selected view would still be visible after deleting it.
+* Templates:
+  * Lightweight CRM
+  * Wedding Planning
+  * Book Catalog
+  * App Pitch Planner
+
+## Released (2021-05-11)
+
+* Added configurable field limit.
 * Fixed memory leak in the `link_row` field.
 * Switch to using a celery based email backend by default.
 * Added `--add-columns` flag to the `fill_table` management command. It creates all the
@@ -10,11 +45,17 @@
 * Make the view header more compact when the content doesn't fit anymore.
 * Allow providing a `template_id` when registering a new account, which will install
   that template instead of the default database.
+* Made it possible to drag and drop rows in the desired order.
+* Fixed bug where the rows could get out of sync during real time collaboration.
+* Made it possible to export and import the file field including contents.
+* Added `fill_users` admin management command which fills baserow with fake users.
+* Made it possible to drag and drop the views in the desired order.
+* **Premium**: Added user admin area allowing management of all baserow users.
 
 ## Released (2021-04-08)
 
 * Added support for importing tables from XML files.
-* Added support for different character encodings when importing CSV files.
+* Added support for different** character encodings when importing CSV files.
 * Prevent websocket reconnect loop when the authentication fails.
 * Refactored the GridView component and improved interface speed.
 * Prevent websocket reconnect when the connection closes without error.
@@ -32,9 +73,11 @@
 * Fixed 100X backend web socket errors when refreshing the page.
 * Fixed SSRF bug in the file upload by URL by blocking urls to the private network.
 * Fixed bug where an invalid date could be converted to 0001-01-01.
-* The list_database_table_rows search query parameter now searches all possible field types.
+* The list_database_table_rows search query parameter now searches all possible field
+  types.
 * Add Phone Number field.
-* Add support for Date, Number and Single Select fields to the Contains and Not Contains view 
+* Add support for Date, Number and Single Select fields to the Contains and Not Contains
+  view 
   filters.
 * Searching all rows can now be done by clicking the new search icon in the top right.
 

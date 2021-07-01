@@ -1,13 +1,16 @@
 import os
 import json
 import hashlib
+from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlparse, urljoin
 from itsdangerous import URLSafeSerializer
+from zipfile import ZipFile, ZIP_DEFLATED
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Q, Count
+from django.core.files.storage import default_storage
 
 from baserow.core.user.utils import normalize_email_address
 
@@ -25,6 +28,7 @@ from .models import (
 from .exceptions import (
     GroupDoesNotExist,
     ApplicationDoesNotExist,
+    ApplicationNotInGroup,
     BaseURLHostnameNotAllowed,
     GroupInvitationEmailMismatch,
     GroupInvitationDoesNotExist,
@@ -40,6 +44,7 @@ from .signals import (
     application_created,
     application_updated,
     application_deleted,
+    applications_reordered,
     group_created,
     group_updated,
     group_deleted,
@@ -402,7 +407,7 @@ class CoreHandler:
         return group_invitation
 
     def create_group_invitation(
-        self, user, group, email, permissions, message, base_url
+        self, user, group, email, permissions, base_url, message=""
     ):
         """
         Creates a new group invitation for the given email address and sends out an
@@ -418,12 +423,12 @@ class CoreHandler:
         :param permissions: The group permissions that the user will get once he has
             accepted the invitation.
         :type permissions: str
-        :param message: A custom message that will be included in the invitation email.
-        :type message: str
         :param base_url: The base url of the frontend, where the user can accept his
             invitation. The signed invitation id is appended to the URL (base_url +
             '/TOKEN'). Only the PUBLIC_WEB_FRONTEND_HOSTNAME is allowed as domain name.
         :type base_url: str
+        :param message: A custom message that will be included in the invitation email.
+        :type message: Optional[str]
         :raises ValueError: If the provided permissions are not allowed.
         :raises UserInvalidGroupPermissionsError: If the user does not belong to the
             group or doesn't have right permissions in the group.
@@ -653,6 +658,33 @@ class CoreHandler:
 
         return application
 
+    def order_applications(self, user, group, order):
+        """
+        Updates the order of the applications in the given group. The order of the
+        applications that are not in the `order` parameter set set to `0`.
+
+        :param user: The user on whose behalf the tables are ordered.
+        :type user: User
+        :param group: The group of which the applications must be updated.
+        :type group: Group
+        :param order: A list containing the application ids in the desired order.
+        :type order: list
+        :raises ApplicationNotInGroup: If one of the applications ids in the order does
+            not belong to the database.
+        """
+
+        group.has_user(user, raise_error=True)
+
+        queryset = Application.objects.filter(group_id=group.id)
+        application_ids = queryset.values_list("id", flat=True)
+
+        for application_id in order:
+            if application_id not in application_ids:
+                raise ApplicationNotInGroup(application_id)
+
+        Application.order_objects(queryset, order)
+        applications_reordered.send(self, group=group, order=order, user=user)
+
     def delete_application(self, user, application):
         """
         Deletes an existing application instance if the user has access to the
@@ -686,31 +718,44 @@ class CoreHandler:
         application.delete()
         return application
 
-    def export_group_applications(self, group):
+    def export_group_applications(self, group, files_buffer, storage=None):
         """
         Exports the applications of a group to a list. They can later be imported via
-        the `import_application_to_group` method. The result can be serialized to JSON.
+        the `import_applications_to_group` method. The result can be serialized to JSON.
 
         @TODO look into speed optimizations by streaming to a JSON file instead of
             generating the entire file in memory.
 
         :param group: The group of which the applications must be exported.
         :type group: Group
+        :param files_buffer: A file buffer where the files must be written to in ZIP
+            format.
+        :type files_buffer: IOBase
+        :param storage: The storage where the files can be loaded from.
+        :type storage: Storage or None
         :return: A list containing the exported applications.
         :rtype: list
         """
 
-        exported_applications = []
-        applications = group.application_set.all()
-        for a in applications:
-            application = a.specific
-            application_type = application_type_registry.get_by_model(application)
-            exported_application = application_type.export_serialized(application)
-            exported_applications.append(exported_application)
+        if not storage:
+            storage = default_storage
+
+        with ZipFile(files_buffer, "a", ZIP_DEFLATED, False) as files_zip:
+            exported_applications = []
+            applications = group.application_set.all()
+            for a in applications:
+                application = a.specific
+                application_type = application_type_registry.get_by_model(application)
+                exported_application = application_type.export_serialized(
+                    application, files_zip, storage
+                )
+                exported_applications.append(exported_application)
 
         return exported_applications
 
-    def import_application_to_group(self, group, exported_applications):
+    def import_applications_to_group(
+        self, group, exported_applications, files_buffer, storage=None
+    ):
         """
         Imports multiple exported applications into the given group. It is compatible
         with an export of the `export_group_applications` method.
@@ -723,19 +768,27 @@ class CoreHandler:
         :param exported_applications: A list containing the applications generated by
             the `export_group_applications` method.
         :type exported_applications: list
+        :param files_buffer: A file buffer containing the exported files in ZIP format.
+        :type files_buffer: IOBase
+        :param storage: The storage where the files can be copied to.
+        :type storage: Storage or None
         :return: The newly created applications based on the import and a dict
             containing a mapping of old ids to new ids.
         :rtype: list, dict
         """
 
-        id_mapping = {}
-        imported_applications = []
-        for application in exported_applications:
-            application_type = application_type_registry.get(application["type"])
-            imported_application = application_type.import_serialized(
-                group, application, id_mapping
-            )
-            imported_applications.append(imported_application)
+        if not storage:
+            storage = default_storage
+
+        with ZipFile(files_buffer, "a", ZIP_DEFLATED, False) as files_zip:
+            id_mapping = {}
+            imported_applications = []
+            for application in exported_applications:
+                application_type = application_type_registry.get(application["type"])
+                imported_application = application_type.import_serialized(
+                    group, application, id_mapping, files_zip, storage
+                )
+                imported_applications.append(imported_application)
 
         return imported_applications, id_mapping
 
@@ -766,7 +819,7 @@ class CoreHandler:
 
         return template
 
-    def sync_templates(self):
+    def sync_templates(self, storage=None):
         """
         Synchronizes the JSON template files with the templates stored in the database.
         We need to have a copy in the database so that the user can live preview a
@@ -778,6 +831,9 @@ class CoreHandler:
         `export_hash` has changed, if so it means the export has changed. Because we
         don't have updating capability, we delete the old group and create a new one
         where we can import the export into.
+
+        :param storage:
+        :type storage:
         """
 
         installed_templates = (
@@ -821,8 +877,27 @@ class CoreHandler:
             # hash mismatch, which means the group has already been deleted, we can
             # create a new group and import the exported applications into that group.
             if not installed_template or installed_template.export_hash != export_hash:
+                # It is optionally possible for a template to have additional files.
+                # They are stored in a ZIP file and are generated when the template
+                # is exported. They for example contain file field files.
+                try:
+                    files_file_path = f"{os.path.splitext(template_file_path)[0]}.zip"
+                    files_buffer = open(files_file_path, "rb")
+                except FileNotFoundError:
+                    # If the file is not found, we provide a BytesIO buffer to
+                    # maintain backward compatibility and to not brake anything.
+                    files_buffer = BytesIO()
+
                 group = Group.objects.create(name=parsed_json["name"])
-                self.import_application_to_group(group, parsed_json["export"])
+                self.import_applications_to_group(
+                    group,
+                    parsed_json["export"],
+                    files_buffer=files_buffer,
+                    storage=storage,
+                )
+
+                if files_buffer:
+                    files_buffer.close()
             else:
                 group = installed_template.group
                 group.name = parsed_json["name"]
@@ -877,7 +952,7 @@ class CoreHandler:
             num_templates=0
         ).delete()
 
-    def install_template(self, user, group, template):
+    def install_template(self, user, group, template, storage=None):
         """
         Installs the exported applications of a template into the given group if the
         provided user has access to that group.
@@ -888,6 +963,8 @@ class CoreHandler:
         :type group: Group
         :param template: The template that must be installed.
         :type template: Template
+        :param storage: The storage where the files can be copied to.
+        :type storage: Storage or None
         :return: The imported applications.
         :rtype: list
         """
@@ -907,9 +984,24 @@ class CoreHandler:
 
         content = template_path.read_text()
         parsed_json = json.loads(content)
-        applications, id_mapping = self.import_application_to_group(
-            group, parsed_json["export"]
+
+        # It is optionally possible for a template to have additional files. They are
+        # stored in a ZIP file and are generated when the template is exported. They
+        # for example contain file field files.
+        try:
+            files_path = f"{os.path.splitext(template_path)[0]}.zip"
+            files_buffer = open(files_path, "rb")
+        except FileNotFoundError:
+            # If the file is not found, we provide a BytesIO buffer to
+            # maintain backward compatibility and to not brake anything.
+            files_buffer = BytesIO()
+
+        applications, id_mapping = self.import_applications_to_group(
+            group, parsed_json["export"], files_buffer=files_buffer, storage=storage
         )
+
+        if files_buffer:
+            files_buffer.close()
 
         # Because a user has initiated the creation of applications, we need to
         # call the `application_created` signal for each created application.

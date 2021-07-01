@@ -184,7 +184,6 @@ export default {
           field,
           values: {
             field: field.id,
-            value: '',
           },
         })
         this.$emit('refresh')
@@ -230,7 +229,6 @@ export default {
         await this.$store.dispatch(
           this.storePrefix + 'view/grid/updateFieldOptionsOfField',
           {
-            gridId: view.id,
             field,
             values: { hidden: true },
             oldValues: { hidden: false },

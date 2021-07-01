@@ -1,5 +1,4 @@
 from collections import defaultdict
-
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint
@@ -8,6 +7,7 @@ from dateutil import parser
 from dateutil.parser import ParserError
 from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ValidationError
+from django.core.files.storage import default_storage
 from django.core.validators import URLValidator, EmailValidator, RegexValidator
 from django.db import models
 from django.db.models import Case, When, Q, F, Func, Value, CharField
@@ -25,18 +25,19 @@ from baserow.contrib.database.api.fields.errors import (
 from baserow.contrib.database.api.fields.serializers import (
     LinkRowValueSerializer,
     FileFieldRequestSerializer,
-    FileFieldResponseSerializer,
     SelectOptionSerializer,
+    FileFieldResponseSerializer,
 )
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
+from baserow.core.user_files.handler import UserFileHandler
 from .exceptions import (
     LinkRowTableNotInSameDatabase,
     LinkRowTableNotProvided,
     IncompatiblePrimaryFieldTypeError,
 )
 from .field_filters import contains_filter, AnnotatedQ, filename_contains_filter
-from .fields import SingleSelectForeignKey
+from .fields import SingleSelectForeignKey, URLTextField
 from .handler import FieldHandler
 from .models import (
     NUMBER_TYPE_INTEGER,
@@ -121,7 +122,7 @@ class URLFieldType(FieldType):
         )
 
     def get_model_field(self, instance, **kwargs):
-        return models.URLField(default="", blank=True, null=True, **kwargs)
+        return URLTextField(default="", blank=True, null=True, **kwargs)
 
     def random_value(self, instance, fake, cache):
         return fake.url()
@@ -179,6 +180,18 @@ class NumberFieldType(FieldType):
             **kwargs,
         )
 
+    def get_export_value(self, value, field_object):
+        # If the number is an integer we want it to be a literal json number and so
+        # don't convert it to a string. However if a decimal to preserve any precision
+        # we keep it as a string.
+        instance = field_object["field"]
+        if instance.number_type == NUMBER_TYPE_INTEGER:
+            return int(value)
+
+        # DRF's Decimal Serializer knows how to quantize and format the decimal
+        # correctly so lets use it instead of trying to do it ourselves.
+        return self.get_serializer_field(instance).to_representation(value)
+
     def get_model_field(self, instance, **kwargs):
         kwargs["decimal_places"] = (
             0
@@ -230,7 +243,7 @@ class NumberFieldType(FieldType):
     def contains_query(self, *args):
         return contains_filter(*args)
 
-    def get_export_serialized_value(self, row, field_name, cache):
+    def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
         value = getattr(row, field_name)
         return value if value is None else str(value)
 
@@ -248,10 +261,12 @@ class BooleanFieldType(FieldType):
     def random_value(self, instance, fake, cache):
         return fake.pybool()
 
-    def get_export_serialized_value(self, row, field_name, cache):
+    def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
         return "true" if getattr(row, field_name) else "false"
 
-    def set_import_serialized_value(self, row, field_name, value, id_mapping):
+    def set_import_serialized_value(
+        self, row, field_name, value, id_mapping, files_zip, storage
+    ):
         setattr(row, field_name, value == "true")
 
 
@@ -303,6 +318,12 @@ class DateFieldType(FieldType):
         raise ValidationError(
             "The value should be a date/time string, date object or " "datetime object."
         )
+
+    def get_export_value(self, value, field_object):
+        if value is None:
+            return value
+        python_format = field_object["field"].get_python_format()
+        return value.strftime(python_format)
 
     def get_serializer_field(self, instance, **kwargs):
         kwargs["required"] = False
@@ -401,7 +422,7 @@ class DateFieldType(FieldType):
             connection, from_field, to_field
         )
 
-    def get_export_serialized_value(self, row, field_name, cache):
+    def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
         value = getattr(row, field_name)
 
         if value is None:
@@ -409,7 +430,9 @@ class DateFieldType(FieldType):
 
         return value.isoformat()
 
-    def set_import_serialized_value(self, row, field_name, value, id_mapping):
+    def set_import_serialized_value(
+        self, row, field_name, value, id_mapping, files_zip, storage
+    ):
         if not value:
             return value
 
@@ -472,6 +495,49 @@ class LinkRowFieldType(FieldType):
         return queryset.prefetch_related(
             models.Prefetch(name, queryset=related_queryset)
         )
+
+    def get_export_value(self, value, field_object):
+        instance = field_object["field"]
+
+        if hasattr(instance, "_related_model"):
+            related_model = instance._related_model
+            primary_field = next(
+                object
+                for object in related_model._field_objects.values()
+                if object["field"].primary
+            )
+            if primary_field:
+                primary_field_name = primary_field["name"]
+                primary_field_type = primary_field["type"]
+                primary_field_values = []
+                for sub in value.all():
+                    # Ensure we also convert the value from the other table to it's
+                    # export form as it could be an odd field type!
+                    linked_value = getattr(sub, primary_field_name)
+                    if self._is_unnamed_primary_field_value(linked_value):
+                        export_linked_value = f"unnamed row {sub.id}"
+                    else:
+                        export_linked_value = primary_field_type.get_export_value(
+                            getattr(sub, primary_field_name), primary_field
+                        )
+                    primary_field_values.append(export_linked_value)
+                return primary_field_values
+        return []
+
+    @staticmethod
+    def _is_unnamed_primary_field_value(primary_field_value):
+        """
+        Checks if the value for a linked primary field is considered "empty".
+        :param primary_field_value: The value of a primary field row in a linked table.
+        :return: If this value is considered an empty primary field value.
+        """
+
+        if isinstance(primary_field_value, list):
+            return len(primary_field_value) == 0
+        elif isinstance(primary_field_value, dict):
+            return len(primary_field_value.keys()) == 0
+        else:
+            return primary_field_value is None
 
     def get_serializer_field(self, instance, **kwargs):
         """
@@ -793,7 +859,7 @@ class LinkRowFieldType(FieldType):
 
         return field
 
-    def get_export_serialized_value(self, row, field_name, cache):
+    def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
         cache_entry = f"{field_name}_relations"
         if cache_entry not in cache:
             # In order to prevent a lot of lookup queries in the through table,
@@ -812,7 +878,9 @@ class LinkRowFieldType(FieldType):
 
         return cache[cache_entry][row.id]
 
-    def set_import_serialized_value(self, row, field_name, value, id_mapping):
+    def set_import_serialized_value(
+        self, row, field_name, value, id_mapping, files_zip, storage
+    ):
         getattr(row, field_name).set(value)
 
 
@@ -919,6 +987,23 @@ class FileFieldType(FieldType):
             **kwargs,
         )
 
+    def get_export_value(self, value, field_object):
+        files = []
+        for file in value:
+            if "name" in file:
+                path = UserFileHandler().user_file_path(file["name"])
+                url = default_storage.url(path)
+            else:
+                url = None
+            files.append(
+                {
+                    "visible_name": file["visible_name"],
+                    "url": url,
+                }
+            )
+
+        return files
+
     def get_response_serializer_field(self, instance, **kwargs):
         return FileFieldResponseSerializer(many=True, required=False, **kwargs)
 
@@ -960,11 +1045,58 @@ class FileFieldType(FieldType):
     def contains_query(self, *args):
         return filename_contains_filter(*args)
 
-    def get_export_serialized_value(self, row, field_name, cache):
-        raise NotImplementedError("@TODO file field type export")
+    def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
+        file_names = []
+        user_file_handler = UserFileHandler()
 
-    def set_import_serialized_value(self, row, field_name, value, id_mapping):
-        raise NotImplementedError("@TODO file field type import")
+        for file in getattr(row, field_name):
+            # Check if the user file object is already in the cache and if not,
+            # it must be fetched and added to to it.
+            cache_entry = f"user_file_{file['name']}"
+            if cache_entry not in cache:
+                try:
+                    user_file = UserFile.objects.all().name(file["name"]).get()
+                except UserFile.DoesNotExist:
+                    continue
+
+                if file["name"] not in files_zip.namelist():
+                    # Load the user file from the content and write it to the zip file
+                    # because it might not exist in the environment that it is going
+                    # to be imported in.
+                    file_path = user_file_handler.user_file_path(user_file.name)
+                    with storage.open(file_path, mode="rb") as storage_file:
+                        files_zip.writestr(file["name"], storage_file.read())
+
+                cache[cache_entry] = user_file
+
+            file_names.append(
+                {
+                    "name": file["name"],
+                    "visible_name": file["visible_name"],
+                    "original_name": cache[cache_entry].original_name,
+                }
+            )
+        return file_names
+
+    def set_import_serialized_value(
+        self, row, field_name, value, id_mapping, files_zip, storage
+    ):
+        user_file_handler = UserFileHandler()
+        files = []
+
+        for file in value:
+            with files_zip.open(file["name"]) as stream:
+                # Try to upload the user file with the original name to make sure
+                # that if the was already uploaded, it will not be uploaded again.
+                user_file = user_file_handler.upload_user_file(
+                    None, file["original_name"], stream, storage=storage
+                )
+
+            value = user_file.serialize()
+            value["visible_name"] = file["visible_name"]
+            files.append(value)
+
+        setattr(row, field_name, files)
 
 
 class SingleSelectFieldType(FieldType):
@@ -1017,6 +1149,9 @@ class SingleSelectFieldType(FieldType):
             "the field. The response represents chosen field, but also the value and "
             "color is exposed."
         )
+
+    def get_export_value(self, value, field_object):
+        return value.value
 
     def get_model_field(self, instance, **kwargs):
         return SingleSelectForeignKey(
@@ -1199,10 +1334,12 @@ class SingleSelectFieldType(FieldType):
             q={f"select_option_value_{field_name}__icontains": value},
         )
 
-    def get_export_serialized_value(self, row, field_name, cache):
+    def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
         return getattr(row, field_name + "_id")
 
-    def set_import_serialized_value(self, row, field_name, value, id_mapping):
+    def set_import_serialized_value(
+        self, row, field_name, value, id_mapping, files_zip, storage
+    ):
         if not value:
             return
 

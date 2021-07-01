@@ -15,17 +15,23 @@ from baserow.api.utils import PolymorphicCustomFieldRegistrySerializer
 from baserow.api.schemas import get_error_schema
 from baserow.core.exceptions import UserNotInGroup
 from baserow.contrib.database.api.tables.errors import ERROR_TABLE_DOES_NOT_EXIST
+from baserow.contrib.database.api.tokens.authentications import TokenAuthentication
+from baserow.contrib.database.api.tokens.errors import ERROR_NO_PERMISSION_TO_TABLE
 from baserow.contrib.database.table.handler import TableHandler
 from baserow.contrib.database.table.exceptions import TableDoesNotExist
+from baserow.contrib.database.tokens.exceptions import NoPermissionToTable
+from baserow.contrib.database.tokens.handler import TokenHandler
 from baserow.contrib.database.api.fields.errors import (
     ERROR_CANNOT_DELETE_PRIMARY_FIELD,
     ERROR_CANNOT_CHANGE_FIELD_TYPE,
     ERROR_FIELD_DOES_NOT_EXIST,
+    ERROR_MAX_FIELD_COUNT_EXCEEDED,
 )
 from baserow.contrib.database.fields.exceptions import (
     CannotDeletePrimaryField,
     CannotChangeFieldType,
     FieldDoesNotExist,
+    MaxFieldLimitExceeded,
 )
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.handler import FieldHandler
@@ -35,6 +41,7 @@ from .serializers import FieldSerializer, CreateFieldSerializer, UpdateFieldSeri
 
 
 class FieldsView(APIView):
+    authentication_classes = APIView.authentication_classes + [TokenAuthentication]
     permission_classes = (IsAuthenticated,)
 
     def get_permissions(self):
@@ -68,6 +75,7 @@ class FieldsView(APIView):
                 field_type_registry, FieldSerializer, many=True
             ),
             400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
+            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
         },
     )
@@ -75,6 +83,7 @@ class FieldsView(APIView):
         {
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
+            NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
         }
     )
     @method_permission_classes([AllowAny])
@@ -88,6 +97,11 @@ class FieldsView(APIView):
         table.database.group.has_user(
             request.user, raise_error=True, allow_if_template=True
         )
+
+        TokenHandler().check_table_permissions(
+            request, ["read", "create", "update"], table, False
+        )
+
         fields = Field.objects.filter(table=table).select_related("content_type")
 
         data = [
@@ -122,8 +136,13 @@ class FieldsView(APIView):
                 field_type_registry, FieldSerializer
             ),
             400: get_error_schema(
-                ["ERROR_USER_NOT_IN_GROUP", "ERROR_REQUEST_BODY_VALIDATION"]
+                [
+                    "ERROR_USER_NOT_IN_GROUP",
+                    "ERROR_REQUEST_BODY_VALIDATION",
+                    "ERROR_MAX_FIELD_COUNT_EXCEEDED",
+                ]
             ),
+            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
         },
     )
@@ -135,6 +154,8 @@ class FieldsView(APIView):
         {
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
+            MaxFieldLimitExceeded: ERROR_MAX_FIELD_COUNT_EXCEEDED,
+            NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
         }
     )
     def post(self, request, data, table_id):
@@ -144,6 +165,10 @@ class FieldsView(APIView):
         field_type = field_type_registry.get(type_name)
         table = TableHandler().get_table(table_id)
         table.database.group.has_user(request.user, raise_error=True)
+
+        # field_create permission doesn't exists, so any call of this endpoint with a
+        # token will be rejected.
+        TokenHandler().check_table_permissions(request, "field_create", table, False)
 
         # Because each field type can raise custom exceptions while creating the
         # field we need to be able to map those to the correct API exceptions which are
@@ -171,7 +196,7 @@ class FieldView(APIView):
         operation_id="get_database_table_field",
         description=(
             "Returns the existing field if the authorized user has access to the "
-            "related database's group. Depending on the type different properties"
+            "related database's group. Depending on the type different properties "
             "could be returned."
         ),
         responses={

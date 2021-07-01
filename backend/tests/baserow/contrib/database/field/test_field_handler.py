@@ -3,6 +3,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
+from django.conf import settings
 from django.db import models
 from faker import Faker
 
@@ -13,6 +14,7 @@ from baserow.contrib.database.fields.exceptions import (
     FieldDoesNotExist,
     IncompatiblePrimaryFieldTypeError,
     CannotChangeFieldType,
+    MaxFieldLimitExceeded,
 )
 from baserow.contrib.database.fields.field_helpers import (
     construct_all_possible_field_kwargs,
@@ -48,7 +50,27 @@ def test_can_convert_between_all_fields(data_fixture):
     user = data_fixture.create_user()
     database = data_fixture.create_database_application(user=user)
     table = data_fixture.create_database_table(database=database, user=user)
+    # Link tables
     link_table = data_fixture.create_database_table(database=database, user=user)
+    data_fixture.create_text_field(table=link_table, name="text_field", primary=True)
+    decimal_link_table = data_fixture.create_database_table(
+        database=database, user=user
+    )
+    data_fixture.create_number_field(
+        table=decimal_link_table,
+        name="text_field",
+        primary=True,
+        number_type="DECIMAL",
+        number_decimal_places=3,
+        number_negative=True,
+    )
+    file_link_table = data_fixture.create_database_table(database=database, user=user)
+    data_fixture.create_file_field(
+        table=file_link_table,
+        name="file_field",
+        primary=True,
+    )
+
     handler = FieldHandler()
     row_handler = RowHandler()
     fake = Faker()
@@ -63,7 +85,9 @@ def test_can_convert_between_all_fields(data_fixture):
     # different conversion behaviour or entirely different database columns being
     # created. Here the kwargs which control these modes are enumerated so we can then
     # generate every possible type of conversion.
-    all_possible_kwargs_per_type = construct_all_possible_field_kwargs(link_table)
+    all_possible_kwargs_per_type = construct_all_possible_field_kwargs(
+        link_table, decimal_link_table, file_link_table
+    )
 
     i = 1
     for field_type_name, all_possible_kwargs in all_possible_kwargs_per_type.items():
@@ -71,12 +95,10 @@ def test_can_convert_between_all_fields(data_fixture):
             for inner_field_type_name in field_type_registry.get_types():
                 for inner_kwargs in all_possible_kwargs_per_type[inner_field_type_name]:
                     field_type = field_type_registry.get(field_type_name)
-                    field_name = f"field_{i}"
                     from_field = handler.create_field(
                         user=user,
                         table=table,
                         type_name=field_type_name,
-                        name=field_name,
                         **kwargs,
                     )
                     random_value = field_type.random_value(from_field, fake, cache)
@@ -223,6 +245,20 @@ def test_create_field(send_mock, data_fixture):
     assert TextField.objects.all().count() == 1
     assert NumberField.objects.all().count() == 1
     assert BooleanField.objects.all().count() == 1
+
+    field_limit = settings.MAX_FIELD_LIMIT
+    settings.MAX_FIELD_LIMIT = 2
+
+    with pytest.raises(MaxFieldLimitExceeded):
+        handler.create_field(
+            user=user,
+            table=table,
+            type_name="text",
+            name="Test text field",
+            text_default="Some default",
+        )
+
+    settings.MAX_FIELD_LIMIT = field_limit
 
     with pytest.raises(UserNotInGroup):
         handler.create_field(user=user_2, table=table, type_name="text")
