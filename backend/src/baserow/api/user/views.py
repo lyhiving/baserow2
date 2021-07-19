@@ -36,6 +36,7 @@ from baserow.core.user.handler import UserHandler
 from baserow.core.user.exceptions import (
     UserAlreadyExist,
     UserNotFound,
+    InvalidOldPassword,
     InvalidPassword,
     DisabledSignupError,
 )
@@ -53,6 +54,7 @@ from .errors import (
     ERROR_ALREADY_EXISTS,
     ERROR_USER_NOT_FOUND,
     ERROR_INVALID_OLD_PASSWORD,
+    ERROR_INVALID_PASSWORD,
     ERROR_DISABLED_SIGNUP,
 )
 from .schemas import create_user_response_schema, authenticate_user_schema
@@ -153,6 +155,7 @@ class UserView(APIView):
                     "ERROR_GROUP_INVITATION_DOES_NOT_EXIST"
                     "ERROR_REQUEST_BODY_VALIDATION",
                     "BAD_TOKEN_SIGNATURE",
+                    "ERROR_INVALID_PASSWORD",
                 ]
             ),
             404: get_error_schema(["ERROR_GROUP_INVITATION_DOES_NOT_EXIST"]),
@@ -167,6 +170,7 @@ class UserView(APIView):
             GroupInvitationDoesNotExist: ERROR_GROUP_INVITATION_DOES_NOT_EXIST,
             GroupInvitationEmailMismatch: ERROR_GROUP_INVITATION_EMAIL_MISMATCH,
             DisabledSignupError: ERROR_DISABLED_SIGNUP,
+            InvalidPassword: ERROR_INVALID_PASSWORD,
         }
     )
     @validate_body(RegisterSerializer)
@@ -260,6 +264,7 @@ class ResetPasswordView(APIView):
                     "BAD_TOKEN_SIGNATURE",
                     "EXPIRED_TOKEN_SIGNATURE",
                     "ERROR_USER_NOT_FOUND",
+                    "ERROR_INVALID_PASSWORD",
                     "ERROR_REQUEST_BODY_VALIDATION",
                 ]
             ),
@@ -272,6 +277,7 @@ class ResetPasswordView(APIView):
             BadSignature: BAD_TOKEN_SIGNATURE,
             SignatureExpired: EXPIRED_TOKEN_SIGNATURE,
             UserNotFound: ERROR_USER_NOT_FOUND,
+            InvalidPassword: ERROR_INVALID_PASSWORD,
         }
     )
     @validate_body(ResetPasswordBodyValidationSerializer)
@@ -298,14 +304,19 @@ class ChangePasswordView(APIView):
         responses={
             204: None,
             400: get_error_schema(
-                ["ERROR_INVALID_OLD_PASSWORD", "ERROR_REQUEST_BODY_VALIDATION"]
+                [
+                    "ERROR_INVALID_OLD_PASSWORD",
+                    "ERROR_INVALID_PASSWORD",
+                    "ERROR_REQUEST_BODY_VALIDATION",
+                ]
             ),
         },
     )
     @transaction.atomic
     @map_exceptions(
         {
-            InvalidPassword: ERROR_INVALID_OLD_PASSWORD,
+            InvalidOldPassword: ERROR_INVALID_OLD_PASSWORD,
+            InvalidPassword: ERROR_INVALID_PASSWORD,
         }
     )
     @validate_body(ChangePasswordBodyValidationSerializer)
