@@ -158,6 +158,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
+    {
+        "NAME": "baserow.core.validators.MaximumLengthValidator",
+    },
 ]
 
 # We need the `AllowAllUsersModelBackend` in order to respond with a proper error
