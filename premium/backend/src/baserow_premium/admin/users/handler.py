@@ -40,6 +40,7 @@ class UserAdminHandler:
         :param password: Optional new password to securely set for the user.
         :param name: Optional new name to set on the user.
         :param username: Optional new username/email to set for the user.
+        :raises InvalidPassword the provided password value is not a valid password.
         """
 
         self._raise_if_not_permitted(requesting_user)
