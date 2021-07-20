@@ -11,6 +11,7 @@ from baserow_premium.api.admin.users.errors import (
     USER_ADMIN_CANNOT_DEACTIVATE_SELF,
     USER_ADMIN_CANNOT_DELETE_SELF,
     USER_ADMIN_UNKNOWN_USER,
+    USER_ADMIN_INVALID_PASSWORD,
 )
 from baserow_premium.api.admin.users.serializers import (
     UserAdminUpdateSerializer,
@@ -20,6 +21,7 @@ from baserow_premium.admin.users.exceptions import (
     CannotDeactivateYourselfException,
     CannotDeleteYourselfException,
     UserDoesNotExistException,
+    InvalidPassword,
 )
 from baserow_premium.admin.users.handler import UserAdminHandler
 
@@ -97,6 +99,7 @@ class UserAdminView(APIView):
         {
             CannotDeactivateYourselfException: USER_ADMIN_CANNOT_DEACTIVATE_SELF,
             UserDoesNotExistException: USER_ADMIN_UNKNOWN_USER,
+            InvalidPassword: USER_ADMIN_INVALID_PASSWORD,
         }
     )
     @transaction.atomic

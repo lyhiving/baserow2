@@ -1,12 +1,15 @@
 from typing import Optional
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 from baserow.core.exceptions import IsNotAdminError
 from baserow_premium.admin.users.exceptions import (
     CannotDeactivateYourselfException,
     CannotDeleteYourselfException,
     UserDoesNotExistException,
+    InvalidPassword,
 )
 
 User = get_user_model()
@@ -54,6 +57,10 @@ class UserAdminHandler:
         if is_active is not None:
             user.is_active = is_active
         if password is not None:
+            try:
+                validate_password(password, user)
+            except ValidationError as e:
+                raise InvalidPassword(e.messages[0])
             user.set_password(password)
         if name is not None:
             user.first_name = name

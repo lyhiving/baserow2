@@ -18,3 +18,9 @@ USER_ADMIN_UNKNOWN_USER = (
     HTTP_400_BAD_REQUEST,
     "Unknown user supplied.",
 )
+
+USER_ADMIN_INVALID_PASSWORD = (
+    "USER_ADMIN_INVALID_PASSWORD",
+    HTTP_400_BAD_REQUEST,
+    "The provided password is invalid.",
+)
