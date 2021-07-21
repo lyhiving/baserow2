@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Enabled password validation in the backend. 
+
 ## Released (2021-07-16)
 
 * Fix bug preventing fields not being able to be converted to link row fields in some
