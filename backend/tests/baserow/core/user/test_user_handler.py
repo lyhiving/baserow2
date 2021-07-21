@@ -133,9 +133,6 @@ def test_create_user(data_fixture):
 @pytest.mark.django_db
 @pytest.mark.parametrize("invalid_password", invalid_passwords)
 def test_create_user_invalid_password(data_fixture, invalid_password):
-    plugin_mock = MagicMock()
-    plugin_registry.registry["mock"] = plugin_mock
-
     user_handler = UserHandler()
 
     with pytest.raises(InvalidPassword):
