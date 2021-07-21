@@ -330,3 +330,6 @@ def test_change_password_invalid_new_password(data_fixture, invalid_password):
 
     with pytest.raises(InvalidPassword):
         handler.change_password(user, validOldPW, invalid_password)
+
+    user.refresh_from_db()
+    assert user.check_password(validOldPW)
