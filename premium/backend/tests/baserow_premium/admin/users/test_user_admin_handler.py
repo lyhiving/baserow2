@@ -2,11 +2,11 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from baserow.core.exceptions import IsNotAdminError
+from baserow.core.user.exceptions import PasswordDoesNotMatchValidation
 from baserow_premium.admin.users.exceptions import (
     CannotDeactivateYourselfException,
     CannotDeleteYourselfException,
     UserDoesNotExistException,
-    InvalidPassword,
 )
 from baserow_premium.admin.users.handler import (
     UserAdminHandler,
@@ -191,7 +191,7 @@ def test_updating_a_users_password_with_invalid_password_raises_error(
         is_active=False,
     )
 
-    with pytest.raises(InvalidPassword):
+    with pytest.raises(PasswordDoesNotMatchValidation):
         handler.update_user(
             admin_user,
             user_to_modify.id,

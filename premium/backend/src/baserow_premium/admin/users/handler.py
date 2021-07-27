@@ -5,11 +5,11 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
 from baserow.core.exceptions import IsNotAdminError
+from baserow.core.user.exceptions import PasswordDoesNotMatchValidation
 from baserow_premium.admin.users.exceptions import (
     CannotDeactivateYourselfException,
     CannotDeleteYourselfException,
     UserDoesNotExistException,
-    InvalidPassword,
 )
 
 User = get_user_model()
@@ -61,7 +61,7 @@ class UserAdminHandler:
             try:
                 validate_password(password, user)
             except ValidationError as e:
-                raise InvalidPassword(e.messages[0])
+                raise PasswordDoesNotMatchValidation(e.messages)
             user.set_password(password)
         if name is not None:
             user.first_name = name

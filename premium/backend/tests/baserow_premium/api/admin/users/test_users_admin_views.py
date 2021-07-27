@@ -482,7 +482,10 @@ def test_invalid_password_returns_400(api_client, data_fixture, invalid_password
         HTTP_AUTHORIZATION=f"JWT {token}",
     )
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response.json()["error"] == "USER_ADMIN_INVALID_PASSWORD"
+    assert response.json()["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+    assert (
+        response.json()["detail"]["password"][0]["code"] == "password_validation_failed"
+    )
 
 
 @pytest.mark.django_db
@@ -506,7 +509,6 @@ def test_error_returned_when_invalid_field_supplied_to_edit(api_client, data_fix
         HTTP_AUTHORIZATION=f"JWT {token}",
     )
     assert response.status_code == HTTP_400_BAD_REQUEST
-    print("HELLO: ", response.json()["error"])
     assert response.json()["error"] == "ERROR_REQUEST_BODY_VALIDATION"
 
 
