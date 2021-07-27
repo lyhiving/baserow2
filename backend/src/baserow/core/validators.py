@@ -2,9 +2,6 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import ngettext
 
 
-# Black needs to be turned off here because it currently does not handle long
-# multiline strings.
-# fmt: off
 class MaximumLengthValidator:
     """
     Validate whether the password is of a maximum length.
@@ -25,18 +22,17 @@ class MaximumLengthValidator:
                 "It must not exceed %(max_length)d characters."
             )
             raise ValidationError(
-                ngettext(
-                    error_singular,
-                    error_plural,
-                    self.max_length
-                ),
-                code='password_too_long',
-                params={'max_length': self.max_length},
+                ngettext(error_singular, error_plural, self.max_length),
+                code="password_too_long",
+                params={"max_length": self.max_length},
             )
 
     def get_help_text(self):
-        return ngettext(
-            "Your password must not exceed %(max_length)d character.",
-            "Your password must not exceed %(max_length)d characters.",
-            self.max_length
-        ) % {'max_length': self.max_length}
+        return (
+            ngettext(
+                "Your password must not exceed %(max_length)d character.",
+                "Your password must not exceed %(max_length)d characters.",
+                self.max_length,
+            )
+            % {"max_length": self.max_length}
+        )

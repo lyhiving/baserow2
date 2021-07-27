@@ -15,7 +15,7 @@ from baserow.core.exceptions import GroupInvitationEmailMismatch
 from .exceptions import (
     UserAlreadyExist,
     UserNotFound,
-    InvalidOldPassword,
+    PasswordDoesNotMatchValidation,
     InvalidPassword,
     DisabledSignupError,
 )
@@ -84,8 +84,8 @@ class UserHandler:
         :raises GroupInvitationEmailMismatch: If the group invitation email does not
             match the one of the user.
         :raises SignupDisabledError: If signing up is disabled.
-        :raises InvalidPassword: When a provided password does not match password
-            validation.
+        :raises PasswordDoesNotMatchValidation: When a provided password does not match
+            password validation.
         :return: The user object.
         :rtype: User
         """
@@ -119,7 +119,7 @@ class UserHandler:
         try:
             validate_password(password, user)
         except ValidationError as e:
-            raise InvalidPassword(e.messages[0])
+            raise PasswordDoesNotMatchValidation(e.messages)
 
         user.set_password(password)
 
@@ -197,8 +197,8 @@ class UserHandler:
         :raises SignatureExpired: When the provided token's signature has expired.
         :raises UserNotFound: When a user related to the provided token has not been
             found.
-        :raises InvalidPassword: When a provided password does not match password
-            validation.
+        :raises PasswordDoesNotMatchValidation: When a provided password does not match
+            password validation.
         :return: The updated user instance.
         :rtype: User
         """
@@ -211,7 +211,7 @@ class UserHandler:
         try:
             validate_password(password, user)
         except ValidationError as e:
-            raise InvalidPassword(e.messages[0])
+            raise PasswordDoesNotMatchValidation(e.messages)
 
         user.set_password(password)
         user.save()
@@ -231,20 +231,20 @@ class UserHandler:
         :param new_password: The new password of the user. After changing the user
             can only authenticate with this password.
         :type new_password: str
-        :raises InvalidOldPassword: When the provided old password is incorrect.
-        :raises InvalidPassword: When a provided password does not match password
-            validation.
+        :raises InvalidPassword: When the provided old password is incorrect.
+        :raises PasswordDoesNotMatchValidation: When a provided password does not match
+            password validation.
         :return: The changed user instance.
         :rtype: User
         """
 
         if not user.check_password(old_password):
-            raise InvalidOldPassword("The provided old password is incorrect.")
+            raise InvalidPassword("The provided old password is incorrect.")
 
         try:
             validate_password(new_password, user)
         except ValidationError as e:
-            raise InvalidPassword(e.messages[0])
+            raise PasswordDoesNotMatchValidation(e.messages)
 
         user.set_password(new_password)
         user.save()

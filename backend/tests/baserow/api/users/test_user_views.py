@@ -85,7 +85,13 @@ def test_create_user(client, data_fixture):
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
-    assert response_json["detail"]["password"][0]["code"] == "max_length"
+    assert (
+        response_json["detail"]["password"][0]["code"] == "password_validation_failed"
+    )
+    assert (
+        response_json["detail"]["password"][0]["error"]
+        == "This password is too long. It must not exceed 256 characters."
+    )
 
     response = client.post(
         reverse("api:user:index"),
@@ -94,8 +100,14 @@ def test_create_user(client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json["error"] == "ERROR_INVALID_PASSWORD"
-    assert response_json["detail"] == ""
+    assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+    assert (
+        response_json["detail"]["password"][0]["code"] == "password_validation_failed"
+    )
+    assert (
+        response_json["detail"]["password"][0]["error"]
+        == "This password is too short. It must contain at least 8 characters."
+    )
 
 
 @pytest.mark.django_db
@@ -353,7 +365,15 @@ def test_password_reset(data_fixture, client):
         )
         response_json = response.json()
         assert response.status_code == HTTP_400_BAD_REQUEST
-        assert response_json["error"] == "ERROR_INVALID_PASSWORD"
+        assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+        assert (
+            response_json["detail"]["password"][0]["code"]
+            == "password_validation_failed"
+        )
+        assert (
+            response_json["detail"]["password"][0]["error"]
+            == "This password is too short. It must contain at least 8 characters."
+        )
 
     user.refresh_from_db()
     assert not user.check_password(short_password)
@@ -366,7 +386,15 @@ def test_password_reset(data_fixture, client):
         )
         response_json = response.json()
         assert response.status_code == HTTP_400_BAD_REQUEST
-        assert response_json["error"] == "ERROR_INVALID_PASSWORD"
+        assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+        assert (
+            response_json["detail"]["password"][0]["code"]
+            == "password_validation_failed"
+        )
+        assert (
+            response_json["detail"]["password"][0]["error"]
+            == "This password is too long. It must not exceed 256 characters."
+        )
 
     user.refresh_from_db()
     assert not user.check_password(long_password)
@@ -405,7 +433,7 @@ def test_change_password(data_fixture, client):
     )
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json["error"] == "ERROR_INVALID_OLD_PASSWORD"
+    assert response_json["error"] == "ERROR_INVALID_PASSWORD"
 
     user.refresh_from_db()
     assert user.check_password(valid_old_password)
@@ -418,7 +446,15 @@ def test_change_password(data_fixture, client):
     )
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json["error"] == "ERROR_INVALID_PASSWORD"
+    assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+    assert (
+        response_json["detail"]["new_password"][0]["code"]
+        == "password_validation_failed"
+    )
+    assert (
+        response_json["detail"]["new_password"][0]["error"]
+        == "This password is too short. It must contain at least 8 characters."
+    )
 
     user.refresh_from_db()
     assert user.check_password(valid_old_password)
@@ -431,7 +467,15 @@ def test_change_password(data_fixture, client):
     )
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json["error"] == "ERROR_INVALID_PASSWORD"
+    assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+    assert (
+        response_json["detail"]["new_password"][0]["code"]
+        == "password_validation_failed"
+    )
+    assert (
+        response_json["detail"]["new_password"][0]["error"]
+        == "This password is too long. It must not exceed 256 characters."
+    )
 
     user.refresh_from_db()
     assert user.check_password(valid_old_password)

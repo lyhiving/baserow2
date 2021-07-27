@@ -2,13 +2,30 @@ from rest_framework import serializers
 from rest_framework_jwt.serializers import JSONWebTokenSerializer
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.models import update_last_login
+from django.core.exceptions import ValidationError
 
 from baserow.api.groups.invitations.serializers import UserGroupInvitationSerializer
 from baserow.core.user.utils import normalize_email_address
 from baserow.core.models import Template, UserLogEntry
 
 User = get_user_model()
+
+
+def password_validation(value):
+    """
+    Verifies that the provided password adheres to the password validation as defined
+    in the django core settings.
+    """
+    try:
+        validate_password(value)
+    except ValidationError as e:
+        raise serializers.ValidationError(
+            e.messages[0], code="password_validation_failed"
+        )
+
+    return value
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -26,7 +43,7 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField(
         help_text="The email address is also going to be the username."
     )
-    password = serializers.CharField(max_length=256)
+    password = serializers.CharField(validators=[password_validation])
     authenticate = serializers.BooleanField(
         required=False,
         default=False,
@@ -61,12 +78,12 @@ class SendResetPasswordEmailBodyValidationSerializer(serializers.Serializer):
 
 class ResetPasswordBodyValidationSerializer(serializers.Serializer):
     token = serializers.CharField()
-    password = serializers.CharField()
+    password = serializers.CharField(validators=[password_validation])
 
 
 class ChangePasswordBodyValidationSerializer(serializers.Serializer):
     old_password = serializers.CharField()
-    new_password = serializers.CharField()
+    new_password = serializers.CharField(validators=[password_validation])
 
 
 class NormalizedEmailField(serializers.EmailField):

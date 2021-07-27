@@ -29,7 +29,7 @@ from baserow.core.registries import plugin_registry
 from baserow.core.user.exceptions import (
     UserAlreadyExist,
     UserNotFound,
-    InvalidOldPassword,
+    PasswordDoesNotMatchValidation,
     InvalidPassword,
     DisabledSignupError,
 )
@@ -135,7 +135,7 @@ def test_create_user(data_fixture):
 def test_create_user_invalid_password(data_fixture, invalid_password):
     user_handler = UserHandler()
 
-    with pytest.raises(InvalidPassword):
+    with pytest.raises(PasswordDoesNotMatchValidation):
         user_handler.create_user("Test1", "test@test.nl", invalid_password)
 
 
@@ -300,7 +300,7 @@ def test_reset_password_invalid_new_password(data_fixture, invalid_password):
     signer = handler.get_reset_password_signer()
     token = signer.dumps(user.id)
 
-    with pytest.raises(InvalidPassword):
+    with pytest.raises(PasswordDoesNotMatchValidation):
         handler.reset_password(token, invalid_password)
 
 
@@ -311,7 +311,7 @@ def test_change_password(data_fixture):
     user = data_fixture.create_user(email="test@localhost", password=valid_password)
     handler = UserHandler()
 
-    with pytest.raises(InvalidOldPassword):
+    with pytest.raises(InvalidPassword):
         handler.change_password(user, "INCORRECT", valid_new_password)
 
     user.refresh_from_db()
@@ -328,7 +328,7 @@ def test_change_password_invalid_new_password(data_fixture, invalid_password):
     user = data_fixture.create_user(email="test@localhost", password=validOldPW)
     handler = UserHandler()
 
-    with pytest.raises(InvalidPassword):
+    with pytest.raises(PasswordDoesNotMatchValidation):
         handler.change_password(user, validOldPW, invalid_password)
 
     user.refresh_from_db()

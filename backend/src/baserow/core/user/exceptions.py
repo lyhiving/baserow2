@@ -6,12 +6,12 @@ class UserAlreadyExist(Exception):
     """Raised when a user could not be created because the email already exists."""
 
 
-class InvalidOldPassword(Exception):
-    """Raised when the provided old/current password is incorrect."""
+class PasswordDoesNotMatchValidation(Exception):
+    """Raised when the provided password does not match validation."""
 
 
 class InvalidPassword(Exception):
-    """Raised when the provided password is not a valid password."""
+    """Raised when the provided password is incorrect."""
 
 
 class DisabledSignupError(Exception):
