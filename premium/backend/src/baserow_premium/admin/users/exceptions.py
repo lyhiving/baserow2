@@ -14,9 +14,3 @@ class UserDoesNotExistException(Exception):
     """
     Raised when a delete or update operation is attempted on an unknown user.
     """
-
-
-class InvalidPassword(Exception):
-    """
-    Raised when the provided password is not a valid password.
-    """
