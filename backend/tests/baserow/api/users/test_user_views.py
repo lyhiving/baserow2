@@ -433,7 +433,7 @@ def test_change_password(data_fixture, client):
     )
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json["error"] == "ERROR_INVALID_PASSWORD"
+    assert response_json["error"] == "ERROR_INVALID_OLD_PASSWORD"
 
     user.refresh_from_db()
     assert user.check_password(valid_old_password)

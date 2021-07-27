@@ -52,7 +52,7 @@ from .serializers import (
 from .errors import (
     ERROR_ALREADY_EXISTS,
     ERROR_USER_NOT_FOUND,
-    ERROR_INVALID_PASSWORD,
+    ERROR_INVALID_OLD_PASSWORD,
     ERROR_DISABLED_SIGNUP,
 )
 from .schemas import create_user_response_schema, authenticate_user_schema
@@ -300,7 +300,7 @@ class ChangePasswordView(APIView):
             204: None,
             400: get_error_schema(
                 [
-                    "ERROR_INVALID_PASSWORD",
+                    "ERROR_INVALID_OLD_PASSWORD",
                     "ERROR_REQUEST_BODY_VALIDATION",
                 ]
             ),
@@ -309,7 +309,7 @@ class ChangePasswordView(APIView):
     @transaction.atomic
     @map_exceptions(
         {
-            InvalidPassword: ERROR_INVALID_PASSWORD,
+            InvalidPassword: ERROR_INVALID_OLD_PASSWORD,
         }
     )
     @validate_body(ChangePasswordBodyValidationSerializer)
