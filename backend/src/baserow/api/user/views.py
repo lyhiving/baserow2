@@ -153,7 +153,6 @@ class UserView(APIView):
                     "ERROR_GROUP_INVITATION_DOES_NOT_EXIST"
                     "ERROR_REQUEST_BODY_VALIDATION",
                     "BAD_TOKEN_SIGNATURE",
-                    "ERROR_INVALID_PASSWORD",
                 ]
             ),
             404: get_error_schema(["ERROR_GROUP_INVITATION_DOES_NOT_EXIST"]),
