@@ -12,6 +12,7 @@
 * Made it possible to use the "F2"-Key to edit a cell without clearing the cell content.
 * Added password validation to password reset page.
 * Add backup and restore database management commands.
+* Prevent storing duplicate user files if the same file is uploaded at the same time.
 
 ## Released (2021-07-16)
 

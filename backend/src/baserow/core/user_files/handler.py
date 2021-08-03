@@ -14,6 +14,7 @@ from PIL import Image, ImageOps
 from django.conf import settings
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import connection
 
 from baserow.core.utils import sha256_hash, stream_size, random_string, truncate_middle
 
@@ -175,14 +176,6 @@ class UserFileHandler:
         storage = storage or default_storage
         hash = sha256_hash(stream)
         file_name = truncate_middle(file_name, 64)
-
-        existing_user_file = UserFile.objects.filter(
-            original_name=file_name, sha256_hash=hash
-        ).first()
-
-        if existing_user_file:
-            return existing_user_file
-
         extension = pathlib.Path(file_name).suffix[1:].lower()
         mime_type = mimetypes.guess_type(file_name)[0] or ""
         unique = self.generate_unique(hash, extension)
@@ -203,18 +196,36 @@ class UserFileHandler:
         except IOError:
             pass
 
-        user_file = UserFile.objects.create(
-            original_name=file_name,
-            original_extension=extension,
-            size=size,
-            mime_type=mime_type,
-            unique=unique,
-            uploaded_by=user,
-            sha256_hash=hash,
-            is_image=is_image,
-            image_width=image_width,
-            image_height=image_height,
+        # We acquire a `SHARE UPDATE EXCLUSIVE` lock to prevent new rows from being
+        # created. If another user is uploading a file, he as to wait until this
+        # one is one processed. This prevents duplicate user files if a user
+        # accidentally uploads the same file simultaneously. It is still possible to
+        # select user files during the lock.
+        cursor = connection.cursor()
+        cursor.execute(
+            "LOCK TABLE %s IN %s MODE"
+            % (UserFile._meta.db_table, "SHARE UPDATE EXCLUSIVE")
         )
+        user_file, created = UserFile.objects.get_or_create(
+            original_name=file_name,
+            sha256_hash=hash,
+            defaults={
+                "original_extension": extension,
+                "size": size,
+                "mime_type": mime_type,
+                "unique": unique,
+                "uploaded_by": user,
+                "is_image": is_image,
+                "image_width": image_width,
+                "image_height": image_height,
+            },
+        )
+
+        # If the file has not been created, we can return the user_file instance
+        # because it has already been uploaded once in the past.
+        if not created:
+            del image
+            return user_file
 
         # If the uploaded file is an image we need to generate the configurable
         # thumbnails for it. We want to generate them before the file is saved to the
