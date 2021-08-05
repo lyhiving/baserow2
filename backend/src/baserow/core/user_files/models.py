@@ -29,6 +29,7 @@ class UserFile(models.Model):
 
     class Meta:
         ordering = ("id",)
+        unique_together = ("original_name", "sha256_hash")
 
     def serialize(self):
         """

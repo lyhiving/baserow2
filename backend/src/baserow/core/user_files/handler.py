@@ -203,18 +203,29 @@ class UserFileHandler:
         except IOError:
             pass
 
-        user_file = UserFile.objects.create(
+        # We need to do a `get_or_create` here because it could happen that while the
+        # image is loaded in memory to extract the dimensions, another user uploaded
+        # the exact same file with the same name. If that's the case, then that user
+        # file is fetched instead of created. If it already existed, we can return
+        # that file and we don't have to generate the thumbnails. Doing this instead
+        # of a `create` prevents an IntegrityError.
+        user_file, created = UserFile.objects.get_or_create(
             original_name=file_name,
-            original_extension=extension,
-            size=size,
-            mime_type=mime_type,
-            unique=unique,
-            uploaded_by=user,
             sha256_hash=hash,
-            is_image=is_image,
-            image_width=image_width,
-            image_height=image_height,
+            defaults={
+                "original_extension": extension,
+                "size": size,
+                "mime_type": mime_type,
+                "unique": unique,
+                "uploaded_by": user,
+                "is_image": is_image,
+                "image_width": image_width,
+                "image_height": image_height,
+            },
         )
+
+        if not created:
+            return user_file
 
         # If the uploaded file is an image we need to generate the configurable
         # thumbnails for it. We want to generate them before the file is saved to the

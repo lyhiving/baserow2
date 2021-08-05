@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* Prevent duplicate user files during simultaneous upload.
 * Made it possible to leave a group.
 * Changed web-frontend `/api/docs` route into `/api-docs`.
 * Bumped the dependencies.
