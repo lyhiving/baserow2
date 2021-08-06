@@ -1,5 +1,5 @@
 import pytest
-from baserow.core.validators import MaximumLengthValidator
+from baserow.core.user.password_validation import MaximumLengthValidator
 from django.core.exceptions import ValidationError
 
 very_long_password = (

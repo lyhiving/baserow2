@@ -8,7 +8,7 @@ from rest_framework.serializers import ModelSerializer
 
 from baserow.api.mixins import UnknownFieldRaisesExceptionSerializerMixin
 from baserow.core.models import GroupUser
-from baserow.api.user.serializers import password_validation
+from baserow.api.user.validators import password_validation
 
 User = get_user_model()
 

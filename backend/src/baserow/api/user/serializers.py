@@ -2,30 +2,14 @@ from rest_framework import serializers
 from rest_framework_jwt.serializers import JSONWebTokenSerializer
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.models import update_last_login
-from django.core.exceptions import ValidationError
 
 from baserow.api.groups.invitations.serializers import UserGroupInvitationSerializer
 from baserow.core.user.utils import normalize_email_address
+from baserow.api.user.validators import password_validation
 from baserow.core.models import Template, UserLogEntry
 
 User = get_user_model()
-
-
-def password_validation(value):
-    """
-    Verifies that the provided password adheres to the password validation as defined
-    in the django core settings.
-    """
-    try:
-        validate_password(value)
-    except ValidationError as e:
-        raise serializers.ValidationError(
-            e.messages[0], code="password_validation_failed"
-        )
-
-    return value
 
 
 class UserSerializer(serializers.ModelSerializer):
