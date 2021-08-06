@@ -18,6 +18,7 @@
 * Hide view types that can't be exported in the export modal.
 * Relaxed the URL field validator and made it consistent between the backend and 
   web-frontend.
+* Enabled password validation in the backend.
 
 ## Released (2021-07-16)
 
