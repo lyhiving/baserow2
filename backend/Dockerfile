@@ -10,15 +10,21 @@ ENV GID=${GID:-9999}
 RUN groupadd -g $GID baserow_docker_group || exit 0
 RUN useradd --shell /bin/bash -u $UID -g $GID -o -c "" -m baserow_docker_user || exit 0
 
+RUN apt-get update && apt-get install -y \
+    wget \
+    lsb-release \
+    gnupg2 \
+    && sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' \
+    && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    gnupg2 \
     libpq-dev \
     dos2unix \
     tini \
-    postgresql-client \
+    postgresql-client-12 \
     && apt-get autoclean \
     && apt-get clean \
     && apt-get autoremove \
