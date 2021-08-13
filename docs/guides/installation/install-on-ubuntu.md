@@ -28,13 +28,21 @@ are new to firewalls.
 
 ## Install & Setup PostgreSQL
 
-Baserow uses PostgreSQL in order to store its user data. You can install PostgreSQL
+Baserow uses PostgreSQL 12 in order to store its user data. You can install PostgreSQL
 with the following commands:
 
 ```bash
-$ sudo apt install postgresql postgresql-contrib -y
+$ sudo apt update
+$ sudo apt install lsb-core wget gnupg2
+$ sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+$ wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+$ sudo apt update
+$ sudo apt install postgresql-12 -y
 # Make sure you replace 'yourpassword' below with a secure password for your database
 # user.
+# After the Installation is completed, start your PostgreSQL server
+$ pg_ctlcluster 12 main start
+# Now you can create a database and user
 $ sudo -u postgres psql << EOF
 create database baserow;
 create user baserow with encrypted password 'yourpassword';
@@ -45,6 +53,9 @@ EOF
 Make sure that you use a secure password instead of `yourpassword`! Also take care that
 you use the password you've chosen in any upcoming commands that need the PostgreSQL
 baserow user password.
+
+For more information about how to install PostgreSQL please read the following pages
+[here](https://www.postgresql.org/download/linux/ubuntu/)
 
 ## Install & Setup Redis
 
@@ -361,6 +372,11 @@ running even if there is an unforeseen termination of them.
 If you already have Baserow installed on your server and you want to update to the
 latest version then you can execute the following commands. This only works if there
 aren't any additional instructions in the previous release blog posts.
+
+> If you are updating from version 1.5 or prior to version 1.6 or later, please
+> make sure that you upgrade your PostgreSQL Installation to version 12, since as
+> of version 1.6 Baserow is no longer compatible with PostgreSQL versions lower than 12.
+> Follow the official PostgreSQL guide [here](https://www.postgresql.org/docs/12/upgrading.html).
 
 Follow these steps if you installed after June first 2021:
 
