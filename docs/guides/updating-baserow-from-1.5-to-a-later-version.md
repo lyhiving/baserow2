@@ -154,3 +154,14 @@ and start up Baserow:
 $ docker-compose build
 $ docker-compose up -d
 ```
+
+## Clean-Up
+
+If the update was successful or you rolled back you can delete the backup
+volume, backup folder and the clone utility.
+
+```bash
+$ rm -rf ~/baserow_backups
+$ docker volume rm baserow_pgdata_backup
+$ rm docker_clone_volume.sh
+```
