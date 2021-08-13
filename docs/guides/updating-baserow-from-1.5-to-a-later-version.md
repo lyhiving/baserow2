@@ -88,6 +88,10 @@ $ mkdir ~/baserow_backups
 # when using ./dev.sh
 $ sudo chown 9999:9999 ~/baserow_backups/ 
 $ docker-compose run -e PGPASSWORD=baserow -v ~/baserow_backups:/baserow/backups backend manage backup_baserow -h db -d baserow -U baserow -f /baserow/backups/baserow_backup.tar.gz 
+$ docker-compose down
+# You want the new db container running PG12 to initialize it's own datadir, therefore
+# you have to remove the old volume
+$ docker volume rm baserow_pgdata
 # ~/baserow_backups/ now contains your Baserow backup.
 ```
 
@@ -126,6 +130,7 @@ the containers.
 
 
 ```bash
+$ docker-compose down
 $ git checkout 1.5.0
 ```
 
@@ -136,6 +141,7 @@ created in a step above. You do the inverse now in order to use that data
 with the docker-compose.yml file:
 
 ```bash
+$ docker volume rm baserow_pgdata
 $ ./docker_clone_volume.sh baserow_pgdata_backup baserow_pgdata
 ```
 
