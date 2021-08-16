@@ -37,6 +37,7 @@ import FunctionalGridViewFieldDate from '@baserow/modules/database/components/vi
 import FunctionalGridViewFieldFile from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldFile'
 import FunctionalGridViewFieldSingleSelect from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldSingleSelect'
 import FunctionalGridViewFieldPhoneNumber from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldPhoneNumber'
+import FunctionalGridViewFieldFormula from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldFormula'
 
 import RowEditFieldText from '@baserow/modules/database/components/row/RowEditFieldText'
 import RowEditFieldLongText from '@baserow/modules/database/components/row/RowEditFieldLongText'
@@ -62,6 +63,8 @@ import {
   filenameContainsFilter,
   genericContainsFilter,
 } from '@baserow/modules/database/utils/fieldFilters'
+import GridViewFieldFormula from '~/modules/database/components/view/grid/fields/GridViewFieldFormula'
+import FieldFormulaSubForm from '~/modules/database/components/field/FieldFormulaSubForm'
 
 export class FieldType extends Registerable {
   /**
@@ -1592,5 +1595,86 @@ export class PhoneNumberFieldType extends FieldType {
 
   getContainsFilterFunction() {
     return genericContainsFilter
+  }
+}
+
+export class FormulaFieldType extends FieldType {
+  static getType() {
+    return 'formula'
+  }
+
+  getIconClass() {
+    return 'square-root-alt'
+  }
+
+  getName() {
+    return 'Formula'
+  }
+
+  getGridViewFieldComponent() {
+    return GridViewFieldFormula
+  }
+
+  getFunctionalGridViewFieldComponent() {
+    return FunctionalGridViewFieldFormula
+  }
+
+  getRowEditFieldComponent() {
+    return RowEditFieldEmail
+  }
+
+  prepareValueForPaste(field, clipboardData) {
+    const value = clipboardData.getData('text')
+    return value
+  }
+
+  getSort(name, order) {
+    return (a, b) => {
+      const stringA = a[name] === null ? '' : '' + a[name]
+      const stringB = b[name] === null ? '' : '' + b[name]
+
+      return order === 'ASC'
+        ? stringA.localeCompare(stringB)
+        : stringB.localeCompare(stringA)
+    }
+  }
+
+  getEmptyValue(field) {
+    return ''
+  }
+
+  getValidationError(field, value) {
+    if (value === null || value === '') {
+      return null
+    }
+    return null
+  }
+
+  getDocsDataType(field) {
+    return 'string'
+  }
+
+  getDocsDescription(field) {
+    return 'Readonly formula field'
+  }
+
+  getDocsRequestExample(field) {
+    return 'UPPER("dsdads")'
+  }
+
+  getContainsFilterFunction() {
+    return genericContainsFilter
+  }
+
+  getFormComponent() {
+    return FieldFormulaSubForm
+  }
+
+  getIsReadOnly() {
+    return true
+  }
+
+  shouldRefreshWhenAdded() {
+    return true
   }
 }

@@ -22,8 +22,10 @@ export default Object.assign(base(), {
           exclude: /(node_modules)/,
         })
       }
+      config.node = { fs: 'empty' }
+      config.stats = 'verbose'
     },
-
+    babel: { compact: true },
     plugins: [
       new StyleLintPlugin({
         syntax: 'scss',

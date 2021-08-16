@@ -11,6 +11,11 @@ from baserow.contrib.database.api.rows.serializers import (
 )
 
 
+def refresh_row(row, model):
+    get = model.objects.get(id=row.id)
+    return get
+
+
 @receiver(row_signals.row_created)
 def row_created(sender, row, before, user, table, model, **kwargs):
     table_page_type = page_registry.get("table")
@@ -20,7 +25,7 @@ def row_created(sender, row, before, user, table, model, **kwargs):
                 "type": "row_created",
                 "table_id": table.id,
                 "row": get_row_serializer_class(model, RowSerializer, is_response=True)(
-                    row
+                    refresh_row(row, model)
                 ).data,
                 "metadata": row_metadata_registry.generate_and_merge_metadata_for_row(
                     table, row.id

@@ -368,7 +368,7 @@ class RowHandler:
         for name, value in manytomany_values.items():
             getattr(instance, name).set(value)
 
-        return instance
+        return model.objects.get(id=instance.id)
 
     # noinspection PyMethodMayBeStatic
     def map_user_field_name_dict_to_internal(

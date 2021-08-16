@@ -1,0 +1,48 @@
+# Generated from /home/nigel/work/src/baserow/formula_lang/src/BaserowFormula.g4 by ANTLR 4.9.1
+from antlr4 import *
+if __name__ is not None and "." in __name__:
+    from .BaserowFormula import BaserowFormula
+else:
+    from BaserowFormula import BaserowFormula
+
+# This class defines a complete generic visitor for a parse tree produced by BaserowFormula.
+
+class BaserowFormulaVisitor(ParseTreeVisitor):
+
+    # Visit a parse tree produced by BaserowFormula#root.
+    def visitRoot(self, ctx:BaserowFormula.RootContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BaserowFormula#StringLiteral.
+    def visitStringLiteral(self, ctx:BaserowFormula.StringLiteralContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BaserowFormula#FunctionCall.
+    def visitFunctionCall(self, ctx:BaserowFormula.FunctionCallContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BaserowFormula#Indentifier.
+    def visitIndentifier(self, ctx:BaserowFormula.IndentifierContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BaserowFormula#func_name.
+    def visitFunc_name(self, ctx:BaserowFormula.Func_nameContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BaserowFormula#func_call.
+    def visitFunc_call(self, ctx:BaserowFormula.Func_callContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BaserowFormula#identifier.
+    def visitIdentifier(self, ctx:BaserowFormula.IdentifierContext):
+        return self.visitChildren(ctx)
+
+
+
+del BaserowFormula

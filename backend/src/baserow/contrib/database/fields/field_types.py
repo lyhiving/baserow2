@@ -1,4 +1,3 @@
-import pytz
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from datetime import datetime, date
@@ -6,6 +5,7 @@ from decimal import Decimal
 from random import randrange, randint
 from typing import Any, Callable, Dict, List
 
+import pytz
 from dateutil import parser
 from dateutil.parser import ParserError
 from django.contrib.postgres.fields import JSONField
@@ -40,7 +40,7 @@ from .exceptions import (
     IncompatiblePrimaryFieldTypeError,
 )
 from .field_filters import contains_filter, AnnotatedQ, filename_contains_filter
-from .fields import SingleSelectForeignKey
+from .fields import SingleSelectForeignKey, GeneratedColumnField
 from .handler import FieldHandler
 from .models import (
     NUMBER_TYPE_INTEGER,
@@ -59,8 +59,12 @@ from .models import (
     SingleSelectField,
     SelectOption,
     PhoneNumberField,
+    FormulaField,
 )
 from .registries import FieldType, field_type_registry
+from baserow.contrib.database.formula.compiler import (
+    baserow_formula_to_generated_column_sql,
+)
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1705,3 +1709,58 @@ class PhoneNumberFieldType(CharFieldMatchingRegexFieldType):
 
     def random_value(self, instance, fake, cache):
         return fake.phone_number()
+
+
+class FormulaFieldType(FieldType):
+    type = "formula"
+    model_class = FormulaField
+    allowed_fields = [
+        "formula",
+    ]
+    serializer_field_names = ["formula"]
+    can_be_primary_field = False
+    can_be_in_form_view = False
+
+    def get_serializer_field(self, instance, **kwargs):
+        required = kwargs.get("required", False)
+        return serializers.CharField(
+            **{
+                "required": required,
+                "allow_null": not required,
+                "allow_blank": not required,
+                **kwargs,
+            }
+        )
+
+    def get_model_field(self, instance, **kwargs):
+        return GeneratedColumnField(
+            null=True,
+            blank=True,
+            generated_column_sql=instance.formula,
+            generated_column_sql_type="text",
+        )
+
+    def prepare_value_for_db(self, instance, value):
+        """
+        Since the LastModified and CreatedOnFieldTypes are read only fields, we raise a
+        ValidationError when there is a value present.
+        """
+
+        if not value:
+            return value
+
+        raise ValidationError(
+            f"Field of type {self.type} is read only and should not be set manually."
+        )
+
+    def prepare_values(self, values, user):
+        """
+        This method checks if the provided link row table is an int because then it
+        needs to be converted to a table instance.
+        """
+
+        formula = values["formula"]
+
+        values["formula"] = baserow_formula_to_generated_column_sql(formula)
+
+        return values

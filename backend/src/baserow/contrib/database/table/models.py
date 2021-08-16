@@ -21,6 +21,7 @@ from baserow.core.mixins import (
     OrderableMixin,
     CreatedAndUpdatedOnMixin,
     TrashableModelMixin,
+    ExcludeReadOnlyFieldTypesFromInsertsAndUpdatesMixin,
 )
 from baserow.core.utils import split_comma_separated_string
 
@@ -412,9 +413,9 @@ class Table(
             if field.primary:
                 attrs["_primary_field_id"] = field.id
 
-            # Add the field to the attribute dict that is used to generate the model.
-            # All the kwargs that are passed to the `get_model_field` method are going
-            # to be passed along to the model field.
+            # Add the field to the attribute dict that is used to generate the
+            # model. All the kwargs that are passed to the `get_model_field`
+            # method are going to be passed along to the model field.
             attrs[field_name] = field_type.get_model_field(
                 field, db_column=field.db_column, verbose_name=field.name
             )
@@ -426,6 +427,7 @@ class Table(
                 GeneratedTableModel,
                 TrashableModelMixin,
                 CreatedAndUpdatedOnMixin,
+                ExcludeReadOnlyFieldTypesFromInsertsAndUpdatesMixin,
                 models.Model,
             ),
             attrs,

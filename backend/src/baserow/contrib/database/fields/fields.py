@@ -28,3 +28,25 @@ class SingleSelectForwardManyToOneDescriptor(ForwardManyToOneDescriptor):
 
 class SingleSelectForeignKey(models.ForeignKey):
     forward_related_accessor_class = SingleSelectForwardManyToOneDescriptor
+
+
+class GeneratedColumnField(models.Field):
+    _baserow_read_only_field = True
+
+    def __init__(
+        self, generated_column_sql, generated_column_sql_type, *args, **kwargs
+    ):
+        self.generated_column_sql = generated_column_sql
+        self.generated_column_sql_type = generated_column_sql_type
+        super().__init__(*args, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs["generated_column_sql"] = self.generated_column_sql
+        return name, path, args, kwargs
+
+    def db_type(self, connection):
+        return (
+            f"{self.generated_column_sql_type} GENERATED ALWAYS AS "
+            f"({self.generated_column_sql}) STORED"
+        )

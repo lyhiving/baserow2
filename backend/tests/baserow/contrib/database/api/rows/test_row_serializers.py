@@ -285,4 +285,5 @@ def test_get_row_serializer_with_user_field_names(data_fixture):
         },
         "text": "text",
         "url": "https://www.google.com",
+        "formula": "test FORMULA",
     }

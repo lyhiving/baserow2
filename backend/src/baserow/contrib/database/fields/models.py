@@ -237,3 +237,7 @@ class SingleSelectField(Field):
 
 class PhoneNumberField(Field):
     pass
+
+
+class FormulaField(Field):
+    formula = models.TextField()

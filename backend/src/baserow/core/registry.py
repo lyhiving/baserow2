@@ -1,4 +1,5 @@
 import contextlib
+from typing import TypeVar, Generic, List, Dict, Union
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -196,7 +197,10 @@ class ImportExportMixin:
         raise NotImplementedError("The import_serialized method must be implemented.")
 
 
-class Registry(object):
+T = TypeVar("T", bound=Instance)
+
+
+class Registry(Generic[T]):
     name = None
     """The unique name that is used when raising exceptions."""
 
@@ -213,18 +217,16 @@ class Registry(object):
                 "InstanceModelRegistry to raise proper errors."
             )
 
-        self.registry = {}
+        self.registry: Dict[str, T] = {}
 
-    def get(self, type_name):
+    def get(self, type_name: str) -> T:
         """
         Returns a registered instance of the given type name.
 
         :param type_name: The unique name of the registered instance.
-        :type type_name: str
         :raises InstanceTypeDoesNotExist: If the instance with the provided `type_name`
             does not exist in the registry.
         :return: The requested instance.
-        :rtype: InstanceModelInstance
         """
 
         if type_name not in self.registry:
@@ -234,32 +236,29 @@ class Registry(object):
 
         return self.registry[type_name]
 
-    def get_all(self):
+    def get_all(self) -> List[T]:
         """
         Returns all registered instances
 
         :return: A list of the registered instances.
-        :rtype: List[InstanceModelInstance]
         """
 
-        return self.registry.values()
+        return list(self.registry.values())
 
-    def get_types(self):
+    def get_types(self) -> List[str]:
         """
         Returns a list of available type names.
 
         :return: The list of available types.
-        :rtype: List
         """
 
         return list(self.registry.keys())
 
-    def register(self, instance):
+    def register(self, instance: T):
         """
         Registers a new instance in the registry.
 
         :param instance: The instance that needs to be registered.
-        :type instance: Instance
         :raises ValueError: When the provided instance is not an instance of Instance.
         :raises InstanceTypeAlreadyRegistered: When the instance's type has already
             been registered.
@@ -275,7 +274,7 @@ class Registry(object):
 
         self.registry[instance.type] = instance
 
-    def unregister(self, value):
+    def unregister(self, value: Union[T, str]):
         """
         Removes a registered instance from the registry. An instance or type name can be
         provided as value.
@@ -295,7 +294,7 @@ class Registry(object):
             del self.registry[value]
         else:
             raise ValueError(
-                f"The value must either be an {self.name} instance or " f"type name"
+                f"The value must either be an {self.name} instance or type name"
             )
 
 

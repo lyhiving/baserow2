@@ -57,7 +57,8 @@ def test_can_export_every_interesting_different_field_to_json(
     "file_link_row": [],
     "file": [],
     "single_select": "",
-    "phone_number": ""
+    "phone_number": "",
+    "formula": "test FORMULA"
 },
 {
     "id": 2,
@@ -112,7 +113,8 @@ def test_can_export_every_interesting_different_field_to_json(
         }
     ],
     "single_select": "A",
-    "phone_number": "+4412345678"
+    "phone_number": "+4412345678",
+    "formula": "test FORMULA"
 }
 ]
 """
@@ -190,6 +192,7 @@ def test_can_export_every_interesting_different_field_to_xml(
     <file/>
     <single-select/>
     <phone-number/>
+    <formula>test FORMULA</formula>
 </row>
 <row>
     <id>2</id>
@@ -247,6 +250,7 @@ def test_can_export_every_interesting_different_field_to_xml(
     </file>
     <single-select>A</single-select>
     <phone-number>+4412345678</phone-number>
+    <formula>test FORMULA</formula>
 </row>
 </rows>
 """

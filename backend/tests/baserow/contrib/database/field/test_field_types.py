@@ -508,6 +508,7 @@ def test_human_readable_values(data_fixture):
         "single_select": "",
         "text": "",
         "url": "",
+        "formula": "test FORMULA",
     }
     assert results == {
         "boolean": "True",
@@ -537,4 +538,5 @@ def test_human_readable_values(data_fixture):
         "single_select": "A",
         "text": "text",
         "url": "https://www.google.com",
+        "formula": "test FORMULA",
     }

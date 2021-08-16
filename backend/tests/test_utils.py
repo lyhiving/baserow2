@@ -128,6 +128,7 @@ def setup_interesting_test_table(data_fixture):
         ],
         "single_select": SelectOption.objects.get(value="A"),
         "phone_number": "+4412345678",
+        "formula": "test FORMULA",
     }
 
     missing_fields = set(name_to_field_id.keys()) - set(values.keys())
@@ -146,7 +147,9 @@ def setup_interesting_test_table(data_fixture):
     # the current daylight savings time information.
     with freeze_time("2021-01-02 12:00"):
         blank_row = model.objects.create(**{})
+        blank_row = model.objects.get(id=blank_row.id)
         row = model.objects.create(**row_values)
+        row = model.objects.get(id=row.id)
 
     # Setup the link rows
     linked_row_1 = row_handler.create_row(

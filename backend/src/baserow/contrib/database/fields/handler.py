@@ -190,7 +190,12 @@ class FieldHandler:
 
         field_type.after_create(instance, to_model, user, connection, before)
 
-        field_created.send(self, field=instance, user=user, type_name=type_name)
+        field_created.send(
+            self,
+            field=instance,
+            user=user,
+            type_name=type_name,
+        )
 
         return instance
 
