@@ -16,7 +16,7 @@ docker-compose.yml file in order to run Baserow on your server. If you have a cu
 setup you need to take care of updating PostgreSQL and the PostgreSQL datadir to version 12
 by yourself (please be sure to make a backup before you do any updates).
 
-Here are some useful link for that:
+Here is a useful link for that:
 [Updating Postgres to Version 12](https://www.postgresql.org/docs/12/upgrading.html)
 
 ## How to

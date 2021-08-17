@@ -31,7 +31,7 @@ Need some help with setting things up?
   to manually install Baserow on Cloudron.
 * [Install on Ubuntu](./guides/installation/install-on-ubuntu.md): A step-by-step guide
   to install Baserow on an Ubuntu server.
-* [Update Baserow from 1.5 to a later version](./guides/installation/updating-baserow-from-1.5-to-a-later-version.md): A step-by-step guide
+* [Update Baserow from 1.5 to a later version](./guides/updating-baserow-from-1.5-to-a-later-version.md): A step-by-step guide
   to update Baserow from 1.5 to a later version.
 
 ## Development
