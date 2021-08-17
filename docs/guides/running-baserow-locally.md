@@ -100,3 +100,5 @@ start using the software.
   operations and commands.
 - See [docker usage](../reference/baserow-docker-api.md) for more detail on how
   Baserow's docker setup can be used and configured.
+- See [update Baserow from 1.5 to a later version](./guides/installation/updating-baserow-from-1.5-to-a-later-version.md)
+  for more details on how to update from version 1.5.

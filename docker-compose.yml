@@ -5,7 +5,7 @@ services:
     container_name: db
     # Please ensure the postgres-client's major version in the backend image is kept in
     # sync with this major version so pg_dump remains compatible.
-    image: postgres:12.7
+    image: postgres:12.8
     environment:
       - POSTGRES_USER=${DATABASE_USER:-baserow}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD:-baserow}

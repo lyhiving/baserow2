@@ -1,7 +1,7 @@
 # Updating Baserow Docker from version 1.5 to a later version
 
 In case you are self hosting Baserow via our docker-compose.yml file and are 
-upgrading from version 1.5 or prior to 1.6 or later you need upgrade your PostgreSQL datadir.
+upgrading from version 1.5 or prior to 1.6 or later you need to upgrade your PostgreSQL datadir.
 With the release of Baserow 1.6 we are upgrading the minimum required version of 
 PostgreSQL from 11 to 12.
 In order for PostgreSQL to work correctly after the update some manual steps are needed.
@@ -55,6 +55,12 @@ $ docker volume ls
 ```
 
 to get a list of all the available volumes.
+
+> In case you are running a version of Baserow prior to 1.2 you need to be aware that there 
+> will be no "baserow_pgdata" volume, as the "named volume" was introduced in Baserow 1.2.
+> Therefore you need to inspect the "db" container to find out which volume belongs to it.
+> Run the following: docker inspect -f '{{ .Mounts }}' db
+> Copy the volume ID and use that in the subsequent commands instead of "baserow_pgdata".
 
 To make it even simpler you can download the following helper script in order to
 clone a volume:

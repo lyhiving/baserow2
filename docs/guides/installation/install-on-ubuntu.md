@@ -32,16 +32,13 @@ Baserow uses PostgreSQL 12 in order to store its user data. You can install Post
 with the following commands:
 
 ```bash
-$ sudo apt update
-$ sudo apt install lsb-core wget gnupg2
+$ sudo apt install lsb-core wget gnupg2 -y
 $ sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 $ wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
 $ sudo apt update
 $ sudo apt install postgresql-12 -y
 # Make sure you replace 'yourpassword' below with a secure password for your database
 # user.
-# After the Installation is completed, start your PostgreSQL server
-$ pg_ctlcluster 12 main start
 # Now you can create a database and user
 $ sudo -u postgres psql << EOF
 create database baserow;
