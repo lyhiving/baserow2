@@ -2,6 +2,11 @@
 # Bash strict mode: http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -euo pipefail
 
+# This script builds the Dockerfile found in the same folder, which is a simple image
+# containing the antlr4 parser generator. It then uses this image and runs it with
+# the grammar files mounted into to, then generates the appropriate parsers for Baserow
+# and finally copies the generated code for those parsers to the correct location.
+
 GREEN=$(tput setaf 2)
 RED=$(tput setaf 1)
 NC=$(tput sgr0) # No Color
@@ -21,6 +26,8 @@ fi
 echo "Ensuring output folder is clean..."
 rm out/ -rf
 
+# Build the antlr build image and run it as the current user so the generated files
+# are owned by the user and not root.
 USER_ID="$(id -u "$USER")"
 GROUP_ID="$(id -g "$USER")"
 
