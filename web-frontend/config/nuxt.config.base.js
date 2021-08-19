@@ -15,7 +15,7 @@ export default function (base = '@') {
     modules,
     build: {
       extend(config, ctx) {
-        config.node.fs = 'empty'
+        config.node = { fs: 'empty' }
       },
       babel: { compact: true },
     },

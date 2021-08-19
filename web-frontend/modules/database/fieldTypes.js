@@ -63,8 +63,8 @@ import {
   filenameContainsFilter,
   genericContainsFilter,
 } from '@baserow/modules/database/utils/fieldFilters'
-import GridViewFieldFormula from '~/modules/database/components/view/grid/fields/GridViewFieldFormula'
-import FieldFormulaSubForm from '~/modules/database/components/field/FieldFormulaSubForm'
+import GridViewFieldFormula from '@baserow/modules/database/components/view/grid/fields/GridViewFieldFormula'
+import FieldFormulaSubForm from '@baserow/modules/database/components/field/FieldFormulaSubForm'
 
 export class FieldType extends Registerable {
   /**

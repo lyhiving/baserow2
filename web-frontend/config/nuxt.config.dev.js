@@ -23,7 +23,6 @@ export default Object.assign(base(), {
         })
       }
       config.node = { fs: 'empty' }
-      config.stats = 'verbose'
     },
     babel: { compact: true },
     plugins: [
