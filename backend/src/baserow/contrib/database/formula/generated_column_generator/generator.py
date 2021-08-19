@@ -10,6 +10,7 @@ from baserow.contrib.database.formula.ast.tree import (
 from baserow.contrib.database.formula.generated_column_generator.errors import (
     UnknownFunctionDefinitionType,
 )
+from psycopg2.extensions import adapt
 
 
 def tree_to_generated_column_sql(formula_tree):
@@ -31,5 +32,5 @@ class BaserowFormulaToGeneratedColumnGenerator(BaserowFormulaASTVisitor):
             raise UnknownFunctionDefinitionType(function_type)
 
     def visit_string_literal(self, string_literal: BaserowStringLiteral):
-        escaped_literal = string_literal.literal.replace("'", "\\'")
-        return f"'{escaped_literal}'"
+        # noinspection PyArgumentList
+        return str(adapt(string_literal.literal))
