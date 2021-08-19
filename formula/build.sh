@@ -30,6 +30,7 @@ BACKEND_OUTPUT_DIR=./../backend/src/baserow/contrib/database/formula/parser/gene
 mkdir -p $BACKEND_OUTPUT_DIR
 rm -f "$BACKEND_OUTPUT_DIR"BaserowFormula*
 cp out/backend_parser/* $BACKEND_OUTPUT_DIR
+touch "$BACKEND_OUTPUT_DIR"__init__.py
 
 echo "Moving tokens next to grammar files.."
 # Place the generated tokens next to the grammar files also so IDE plugins can use them
