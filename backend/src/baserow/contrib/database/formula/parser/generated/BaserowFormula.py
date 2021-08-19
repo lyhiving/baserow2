@@ -1,4 +1,4 @@
-# Generated from /home/nigel/work/src/baserow/formula_lang/src/BaserowFormula.g4 by ANTLR 4.9.1
+# Generated from BaserowFormula.g4 by ANTLR 4.8
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -162,7 +162,7 @@ class BaserowFormula ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.9.1")
+        self.checkVersion("4.8")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -170,7 +170,6 @@ class BaserowFormula ( Parser ):
 
 
     class RootContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -223,7 +222,6 @@ class BaserowFormula ( Parser ):
 
 
     class ExprContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -403,7 +401,6 @@ class BaserowFormula ( Parser ):
 
 
     class Func_nameContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -451,7 +448,6 @@ class BaserowFormula ( Parser ):
 
 
     class Func_callContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -495,7 +491,6 @@ class BaserowFormula ( Parser ):
 
 
     class IdentifierContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)

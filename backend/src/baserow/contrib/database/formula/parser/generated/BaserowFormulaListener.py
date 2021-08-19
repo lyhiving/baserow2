@@ -1,4 +1,4 @@
-# Generated from /home/nigel/work/src/baserow/formula_lang/src/BaserowFormula.g4 by ANTLR 4.9.1
+# Generated from BaserowFormula.g4 by ANTLR 4.8
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .BaserowFormula import BaserowFormula

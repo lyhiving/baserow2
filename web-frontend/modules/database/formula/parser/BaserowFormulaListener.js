@@ -1,117 +1,78 @@
-// Generated from /home/nigel/work/src/baserow/formula_lang/src/BaserowFormula.g4 by ANTLR 4.9.1
+// Generated from BaserowFormula.g4 by ANTLR 4.8
 // jshint ignore: start
-import antlr4 from 'antlr4';
+var antlr4 = require('antlr4/index');
 
 // This class defines a complete listener for a parse tree produced by BaserowFormula.
-export default class BaserowFormulaListener extends antlr4.tree.ParseTreeListener {
-
-	// Enter a parse tree produced by BaserowFormula#root.
-	enterRoot(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#root.
-	exitRoot(ctx) {
-	}
-
-
-	// Enter a parse tree produced by BaserowFormula#expr.
-	enterExpr(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#expr.
-	exitExpr(ctx) {
-	}
-
-
-	// Enter a parse tree produced by BaserowFormula#bool_expr.
-	enterBool_expr(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#bool_expr.
-	exitBool_expr(ctx) {
-	}
-
-
-	// Enter a parse tree produced by BaserowFormula#case_expr.
-	enterCase_expr(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#case_expr.
-	exitCase_expr(ctx) {
-	}
-
-
-	// Enter a parse tree produced by BaserowFormula#expr_list.
-	enterExpr_list(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#expr_list.
-	exitExpr_list(ctx) {
-	}
-
-
-	// Enter a parse tree produced by BaserowFormula#type_name.
-	enterType_name(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#type_name.
-	exitType_name(ctx) {
-	}
-
-
-	// Enter a parse tree produced by BaserowFormula#data_type.
-	enterData_type(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#data_type.
-	exitData_type(ctx) {
-	}
-
-
-	// Enter a parse tree produced by BaserowFormula#func_name.
-	enterFunc_name(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#func_name.
-	exitFunc_name(ctx) {
-	}
-
-
-	// Enter a parse tree produced by BaserowFormula#func_call.
-	enterFunc_call(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#func_call.
-	exitFunc_call(ctx) {
-	}
-
-
-	// Enter a parse tree produced by BaserowFormula#predicate.
-	enterPredicate(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#predicate.
-	exitPredicate(ctx) {
-	}
-
-
-	// Enter a parse tree produced by BaserowFormula#non_reserved_keyword.
-	enterNon_reserved_keyword(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#non_reserved_keyword.
-	exitNon_reserved_keyword(ctx) {
-	}
-
-
-	// Enter a parse tree produced by BaserowFormula#identifier.
-	enterIdentifier(ctx) {
-	}
-
-	// Exit a parse tree produced by BaserowFormula#identifier.
-	exitIdentifier(ctx) {
-	}
-
-
-
+function BaserowFormulaListener() {
+	antlr4.tree.ParseTreeListener.call(this);
+	return this;
 }
+
+BaserowFormulaListener.prototype = Object.create(antlr4.tree.ParseTreeListener.prototype);
+BaserowFormulaListener.prototype.constructor = BaserowFormulaListener;
+
+// Enter a parse tree produced by BaserowFormula#root.
+BaserowFormulaListener.prototype.enterRoot = function(ctx) {
+};
+
+// Exit a parse tree produced by BaserowFormula#root.
+BaserowFormulaListener.prototype.exitRoot = function(ctx) {
+};
+
+
+// Enter a parse tree produced by BaserowFormula#StringLiteral.
+BaserowFormulaListener.prototype.enterStringLiteral = function(ctx) {
+};
+
+// Exit a parse tree produced by BaserowFormula#StringLiteral.
+BaserowFormulaListener.prototype.exitStringLiteral = function(ctx) {
+};
+
+
+// Enter a parse tree produced by BaserowFormula#FunctionCall.
+BaserowFormulaListener.prototype.enterFunctionCall = function(ctx) {
+};
+
+// Exit a parse tree produced by BaserowFormula#FunctionCall.
+BaserowFormulaListener.prototype.exitFunctionCall = function(ctx) {
+};
+
+
+// Enter a parse tree produced by BaserowFormula#Indentifier.
+BaserowFormulaListener.prototype.enterIndentifier = function(ctx) {
+};
+
+// Exit a parse tree produced by BaserowFormula#Indentifier.
+BaserowFormulaListener.prototype.exitIndentifier = function(ctx) {
+};
+
+
+// Enter a parse tree produced by BaserowFormula#func_name.
+BaserowFormulaListener.prototype.enterFunc_name = function(ctx) {
+};
+
+// Exit a parse tree produced by BaserowFormula#func_name.
+BaserowFormulaListener.prototype.exitFunc_name = function(ctx) {
+};
+
+
+// Enter a parse tree produced by BaserowFormula#func_call.
+BaserowFormulaListener.prototype.enterFunc_call = function(ctx) {
+};
+
+// Exit a parse tree produced by BaserowFormula#func_call.
+BaserowFormulaListener.prototype.exitFunc_call = function(ctx) {
+};
+
+
+// Enter a parse tree produced by BaserowFormula#identifier.
+BaserowFormulaListener.prototype.enterIdentifier = function(ctx) {
+};
+
+// Exit a parse tree produced by BaserowFormula#identifier.
+BaserowFormulaListener.prototype.exitIdentifier = function(ctx) {
+};
+
+
+
+exports.BaserowFormulaListener = BaserowFormulaListener;
