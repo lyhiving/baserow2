@@ -25,8 +25,8 @@ import form from '@baserow/modules/core/mixins/form'
 import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
 import { required } from 'vuelidate/lib/validators'
 import antlr4 from 'antlr4'
-import BaserowFormulaLexer from '@baserow/modules/database/formula/parser/BaserowFormulaLexer'
-import BaserowFormula from '@baserow/modules/database/formula/parser/BaserowFormula'
+import BaserowFormulaLexer from '@baserow/modules/database/formula/parser/generated/BaserowFormulaLexer'
+import BaserowFormula from '@baserow/modules/database/formula/parser/generated/BaserowFormula'
 import { mapGetters } from 'vuex'
 
 export default {
