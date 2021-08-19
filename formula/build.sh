@@ -61,6 +61,10 @@ echo "Moving tokens next to grammar files.."
 cp out/backend_parser/*.tokens .
 
 echo "Cleaning up out folder..."
-rm out/ -rf
+rm out/backend_parser/* -f
+rm out/frontend_parser/* -f
+rmdir out/backend_parser
+rmdir out/frontend_parser
+rmdir out
 
 echo "${GREEN}Build successfully finished!${NC}"
