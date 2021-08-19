@@ -35,7 +35,7 @@ web-frontend-test:
 
 backend-flake8:
   stage: lint
-  image: python:3.7
+  image: python:3.7-bullseye
   script:
     - mkdir backend/plugins && cp -r premium/backend backend/plugins/premium
     - cd backend
@@ -45,7 +45,7 @@ backend-flake8:
 
 backend-pytest:
   stage: test
-  image: python:3.7-buster
+  image: python:3.7-bullseye
   services:
     - name: postgres:12.8
       alias: db
@@ -65,7 +65,7 @@ backend-pytest:
 
 backend-setup:
   stage: build
-  image: python:3.7-buster
+  image: python:3.7-bullseye
   script:
     - pip install -e ./backend
     - python -c 'import baserow'
