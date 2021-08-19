@@ -1,11 +1,15 @@
 from antlr4 import InputStream, CommonTokenStream
+from antlr4.error.ErrorListener import ErrorListener
 
 from baserow.contrib.database.formula.ast.function import BaserowFunctionDefinition
 from baserow.contrib.database.formula.ast.tree import (
     BaserowStringLiteral,
     BaserowFunctionCall,
 )
-from baserow.contrib.database.formula.parser.errors import InvalidNumberOfArguments
+from baserow.contrib.database.formula.parser.errors import (
+    InvalidNumberOfArguments,
+    BaserowFormulaSyntaxError,
+)
 from baserow.contrib.database.formula.parser.generated.BaserowFormula import (
     BaserowFormula,
 )
@@ -18,10 +22,19 @@ from baserow.contrib.database.formula.parser.generated.BaserowFormulaVisitor imp
 from baserow.contrib.database.formula.registries import formula_function_registry
 
 
+class BaserowFormulaErrorListener(ErrorListener):
+    # noinspection PyPep8Naming
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        message = f"{offendingSymbol} line {line}, col {column}: {msg}"
+        raise BaserowFormulaSyntaxError(message)
+
+
 def raw_formula_to_tree(formula):
     lexer = BaserowFormulaLexer(InputStream(formula))
     stream = CommonTokenStream(lexer)
     parser = BaserowFormula(stream)
+    parser.removeErrorListeners()
+    parser.addErrorListener(BaserowFormulaErrorListener())
     tree = parser.root()
     return BaserowFormulaToBaserowASTMapper().visit(tree)
 

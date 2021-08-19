@@ -9,3 +9,7 @@ class InvalidNumberOfArguments(Exception):
             f"function {function_def.type}. It excepts "
             f"{function_def.num_args} but instead {num_args} were given."
         )
+
+
+class BaserowFormulaSyntaxError(BaserowFormulaParserError):
+    pass

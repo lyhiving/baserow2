@@ -1,6 +1,9 @@
+import pytest
+
 from baserow.contrib.database.formula.compiler import (
     baserow_formula_to_generated_column_sql,
 )
+from baserow.contrib.database.formula.parser.errors import BaserowFormulaSyntaxError
 
 
 def test_convert():
@@ -18,3 +21,5 @@ def test_convert():
         )
         == """UPPER(LOWER('test'))||'test"'||'test\\''"""
     )
+    with pytest.raises(BaserowFormulaSyntaxError):
+        baserow_formula_to_generated_column_sql("""UPPER('test\\\') || ASCII('b')""")
