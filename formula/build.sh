@@ -2,6 +2,22 @@
 # Bash strict mode: http://redsymbol.net/articles/unofficial-bash-strict-mode/
 set -euo pipefail
 
+GREEN=$(tput setaf 2)
+RED=$(tput setaf 1)
+NC=$(tput sgr0) # No Color
+
+# Make sure we run the script in the directory where build.sh is found
+# see https://stackoverflow.com/questions/3349105/how-can-i-set-the-current-working-directory-to-the-directory-of-the-script-in-ba
+# for the source of this command. The goal is a portable command that cds into the
+# current scripts directory.
+cd "$(dirname "$(realpath "$0")")";
+
+# Double check the above command worked and we are now indeed in the formula directory
+if [ ! -f BaserowFormula.g4 ] || [ ! -f BaserowFormulaLexer.g4 ] || [ ! -d ../backend ] ; then
+    echo "${RED}Grammar files or baserow code not found in build scripts directory, cannot continue...${NC}"
+    exit 1
+fi
+
 echo "Ensuring output folder is clean..."
 rm out/ -rf
 
@@ -40,6 +56,4 @@ cp out/backend_parser/*.tokens .
 echo "Cleaning up out folder..."
 rm out/ -rf
 
-GREEN=$(tput setaf 2)
-NC=$(tput sgr0) # No Color
 echo "${GREEN}Build successfully finished!${NC}"
