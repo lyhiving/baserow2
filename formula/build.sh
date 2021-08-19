@@ -37,15 +37,15 @@ docker run -it --rm \
     -u "$USER_ID":"$GROUP_ID" \
     "$(docker build -q --build-arg UID="$USER_ID" --build-arg GID="$GROUP_ID" . )" sh -c "
         cd src
-        java -jar ../antlr.jar -Dlanguage=JavaScript -o out/frontend_parser -visitor -listener BaserowFormulaLexer.g4
-        java -jar ../antlr.jar -Dlanguage=JavaScript -o out/frontend_parser -visitor -listener BaserowFormula.g4
-        java -jar ../antlr.jar -Dlanguage=Python3 -o out/backend_parser -visitor -listener BaserowFormulaLexer.g4
-        java -jar ../antlr.jar -Dlanguage=Python3 -o out/backend_parser -visitor -listener BaserowFormula.g4
+        java -jar ../antlr.jar -Dlanguage=JavaScript -o out/frontend_parser -visitor -listener BaserowFormulaLexer.g4 BaserowFormula.g4
+        java -jar ../antlr.jar -Dlanguage=Python3 -o out/backend_parser -visitor -listener BaserowFormulaLexer.g4 BaserowFormula.g4
     "
 
-echo "Moving generated parsers into the Baserow source code..."
+echo "Copying the new generated parsers into Baserow's source code overwriting the old ones..."
 FRONTEND_OUTPUT_DIR=./../web-frontend/modules/database/formula/parser/generated/
 mkdir -p $FRONTEND_OUTPUT_DIR
+# Delete all old parser files already in the source code to ensure we are getting a
+# fresh clean build
 rm -f "$FRONTEND_OUTPUT_DIR"BaserowFormula*
 cp out/frontend_parser/* $FRONTEND_OUTPUT_DIR
 
