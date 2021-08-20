@@ -141,7 +141,7 @@ from .views import ExampleView
 
 app_name = 'my_baserow_plugin.api'
 urlpatterns = [
-    url(r'example/$', ExampleView.as_view(), name='example'),
+    re_path(r'example/$', ExampleView.as_view(), name='example'),
 ]
 ```
 
