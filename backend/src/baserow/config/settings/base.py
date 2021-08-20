@@ -322,3 +322,8 @@ OLD_TRASH_CLEANUP_CHECK_INTERVAL_MINUTES = 5
 MAX_ROW_COMMENT_LENGTH = 10000
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
+# For now force the old os dependant behaviour of file uploads as users might be relying
+# on it. See
+# https://docs.djangoproject.com/en/3.2/releases/3.0/#new-default-value-for-the-file-upload-permissions-setting
+FILE_UPLOAD_PERMISSIONS = None
