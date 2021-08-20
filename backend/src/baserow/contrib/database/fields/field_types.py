@@ -899,12 +899,15 @@ class LinkRowFieldType(FieldType):
         # the related name should be. If the related if is not found that means that it
         # has not yet been created.
         for related_field in related_model._field_objects.values():
-            if (
-                isinstance(related_field["field"], self.model_class)
-                and related_field["field"].link_row_related_field
-                and related_field["field"].link_row_related_field.id == instance.id
-            ):
-                related_name = related_field["name"]
+            try:
+                if (
+                    isinstance(related_field["field"], self.model_class)
+                    and related_field["field"].link_row_related_field
+                    and related_field["field"].link_row_related_field.id == instance.id
+                ):
+                    related_name = related_field["name"]
+            except Exception as e:
+                raise e
 
         # Note that the through model will not be registered with the apps because of
         # the `DatabaseConfig.prevent_generated_model_for_registering` hack.

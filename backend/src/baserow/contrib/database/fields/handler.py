@@ -194,7 +194,7 @@ class FieldHandler:
 
         return instance
 
-    def update_field(self, user, field, new_type_name=None, **kwargs):
+    def update_field(self, user, field, new_type_name=None, test=False, **kwargs):
         """
         Updates the values of the given field, if provided it is also possible to change
         the type.
@@ -239,7 +239,7 @@ class FieldHandler:
                 raise IncompatiblePrimaryFieldTypeError(new_type_name)
 
             new_model_class = field_type.model_class
-            field.change_polymorphic_type_to(new_model_class)
+            field.change_polymorphic_type_to(new_model_class, test=test)
 
             # If the field type changes it could be that some dependencies,
             # like filters or sortings need to be changed.

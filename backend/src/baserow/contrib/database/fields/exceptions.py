@@ -46,7 +46,7 @@ class LinkRowTableNotInSameDatabase(Exception):
 
 
 class MaxFieldLimitExceeded(Exception):
-    """ Raised when the field count exceeds the limit"""
+    """Raised when the field count exceeds the limit"""
 
 
 class OrderByFieldNotFound(Exception):
