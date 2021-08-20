@@ -410,7 +410,7 @@ def test_update_field(api_client, data_fixture):
         HTTP_AUTHORIZATION=f"JWT {token}",
     )
     response_json = response.json()
-    assert response.status_code == HTTP_200_OK, response.json()
+    assert response.status_code == HTTP_200_OK
     assert response_json["name"] == "Test 2"
     assert response_json["type"] == "boolean"
     assert "number_type" not in response_json
