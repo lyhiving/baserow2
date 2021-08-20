@@ -189,6 +189,7 @@ export default {
       name: {
         required,
         minLength: minLength(2),
+        maxLength: minLength(150),
       },
       password: passwordValidation,
       passwordConfirm: {
