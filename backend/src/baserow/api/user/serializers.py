@@ -25,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.Serializer):
-    name = serializers.CharField(max_length=32)
+    name = serializers.CharField(max_length=150)
     email = serializers.EmailField(
         help_text="The email address is also going to be the username."
     )
