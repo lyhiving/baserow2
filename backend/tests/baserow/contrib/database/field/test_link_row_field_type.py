@@ -204,7 +204,6 @@ def test_link_row_field_type(data_fixture):
         link_field_2,
         new_type_name="link_row",
         link_row_table=customers_table,
-        test=True,
     )
 
     assert link_field_2.link_row_related_field.name == "Example"

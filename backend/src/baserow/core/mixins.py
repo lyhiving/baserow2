@@ -113,7 +113,7 @@ class PolymorphicContentTypeMixin:
         content_type = ContentType.objects.get_for_id(self.content_type_id)
         return content_type.model_class()
 
-    def change_polymorphic_type_to(self, new_model_class, test=False):
+    def change_polymorphic_type_to(self, new_model_class):
         """
         If you for example have two polymorphic types TypeA and TypeB which both have
         unique fields, an instance with TypeA can be changed to TypeB while keeping the
@@ -143,14 +143,17 @@ class PolymorphicContentTypeMixin:
             name = get_field_name(field)
             if name in self.__dict__:
                 del self.__dict__[name]
+
             if isinstance(field, FieldCacheMixin) and field.is_cached(self):
                 field.delete_cached_value(self)
 
         for field in field_names_to_add:
             name = get_field_name(field)
             field = new_model_class._meta.get_field(name)
+
             if isinstance(field, FieldCacheMixin) and field.is_cached(self):
                 field.delete_cached_value(self)
+
             if hasattr(field, "default"):
                 self.__dict__[name] = (
                     field.default if field.default != NOT_PROVIDED else None
