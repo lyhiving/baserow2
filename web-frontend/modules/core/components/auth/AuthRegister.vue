@@ -52,7 +52,7 @@
             @blur="$v.account.name.$touch()"
           />
           <div v-if="$v.account.name.$error" class="error">
-            A minimum of two characters is required here.
+            A minimum of two characters and a maximum of 150 is required here.
           </div>
         </div>
       </div>
@@ -96,7 +96,13 @@
 </template>
 
 <script>
-import { email, minLength, required, sameAs } from 'vuelidate/lib/validators'
+import {
+  email,
+  maxLength,
+  minLength,
+  required,
+  sameAs,
+} from 'vuelidate/lib/validators'
 import { ResponseErrorMessage } from '@baserow/modules/core/plugins/clientHandler'
 import error from '@baserow/modules/core/mixins/error'
 import PasswordInput from '@baserow/modules/core/components/helpers/PasswordInput'
@@ -189,6 +195,7 @@ export default {
       name: {
         required,
         minLength: minLength(2),
+        maxLength: maxLength(150),
       },
       password: passwordValidation,
       passwordConfirm: {

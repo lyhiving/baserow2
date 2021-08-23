@@ -9,6 +9,8 @@
 * Fixed error when pasting into a single select field.
 * Pasting the value of a single select option into a single select field now selects the
   first option with that value.
+* Upgraded Django to version 3.2.6 and also upgraded all other backend libraries to 
+  their latest versions.
 
 ## Released (2021-08-11)
 
