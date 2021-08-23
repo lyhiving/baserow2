@@ -171,12 +171,12 @@ class ExcludeReadOnlyFieldTypesFromInsertsAndUpdatesMixin(models.Model):
     are never inserted into the database.
     """
 
-    def _do_insert(self, manager, using, fields, update_pk, raw):
+    def _do_insert(self, manager, using, fields, returning_fields, raw):
         return super()._do_insert(
             manager,
             using,
             [f for f in fields if not getattr(f, "_baserow_read_only_field", False)],
-            update_pk,
+            returning_fields,
             raw,
         )
 

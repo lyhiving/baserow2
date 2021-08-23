@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("database", "0036_createdonfield_lastmodifiedfield"),
+        ("database", "0037_alter_exportjob_export_options"),
     ]
 
     operations = [

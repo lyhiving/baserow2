@@ -32,6 +32,7 @@ class SingleSelectForeignKey(models.ForeignKey):
 
 class GeneratedColumnField(models.Field):
     _baserow_read_only_field = True
+    db_returning = True
 
     def __init__(
         self, generated_column_sql, generated_column_sql_type, *args, **kwargs
