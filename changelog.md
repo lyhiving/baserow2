@@ -4,6 +4,13 @@
 
 * Fixed bug where a user could not be edited in the admin interface without providing 
   a password.
+* Fixed bug where sometimes fields would not be ordered correctly in view exports.
+* Fixed bug where brand-new fields weren't included in view exports.
+* Fixed error when pasting into a single select field.
+* Pasting the value of a single select option into a single select field now selects the
+  first option with that value.
+* Upgraded Django to version 3.2.6 and also upgraded all other backend libraries to 
+  their latest versions.
 
 ## Released (2021-08-11)
 
