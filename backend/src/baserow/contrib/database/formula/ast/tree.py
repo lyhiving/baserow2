@@ -1,6 +1,7 @@
 import abc
 from typing import List
 
+from baserow.contrib.database.formula.ast.errors import InvalidStringLiteralProvided
 from baserow.contrib.database.formula.ast.function import BaserowFunctionDefinition
 
 
@@ -12,6 +13,8 @@ class BaserowExpression(abc.ABC):
 
 class BaserowStringLiteral(BaserowExpression):
     def __init__(self, literal: str):
+        if not isinstance(literal, str):
+            raise InvalidStringLiteralProvided()
         self.literal = literal
 
     def accept(self, visitor: "BaserowFormulaASTVisitor"):
