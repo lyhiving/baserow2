@@ -11,7 +11,7 @@ from dateutil.parser import ParserError
 from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
-from django.db import models
+from django.db import models, OperationalError
 from django.db.models import Case, When, Q, F, Func, Value, CharField
 from django.db.models.expressions import RawSQL
 from django.db.models.functions import Coalesce
@@ -26,6 +26,7 @@ from baserow.contrib.database.api.fields.errors import (
     ERROR_PARSING_FORMULA,
     ERROR_COMPILING_FORMULA,
     ERROR_MAPPING_FORMULA,
+    ERROR_TOO_DEEPLY_NESTED_FORMULA,
 )
 from baserow.contrib.database.api.fields.serializers import (
     LinkRowValueSerializer,
@@ -1730,6 +1731,9 @@ class FormulaFieldType(FieldType):
         BaserowFormulaParserError: ERROR_PARSING_FORMULA,
         GeneratedColumnCompilerException: ERROR_COMPILING_FORMULA,
         BaserowFormulaASTException: ERROR_MAPPING_FORMULA,
+        OperationalError: lambda e: ERROR_TOO_DEEPLY_NESTED_FORMULA
+        if "stack depth limit exceeded" in str(e)
+        else None,
     }
 
     def get_serializer_field(self, instance, **kwargs):

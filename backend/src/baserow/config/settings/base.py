@@ -327,3 +327,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 # on it. See
 # https://docs.djangoproject.com/en/3.2/releases/3.0/#new-default-value-for-the-file-upload-permissions-setting
 FILE_UPLOAD_PERMISSIONS = None
+
+
+MAX_FORMULA_STRING_LENGTH = 10000

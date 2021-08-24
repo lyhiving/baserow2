@@ -48,6 +48,11 @@ def map_exceptions(mapping):
         status_code = status.HTTP_400_BAD_REQUEST
         detail = ""
 
+        if callable(value):
+            value = value(e)
+            if value is None:
+                raise e
+
         if isinstance(value, str):
             error = value
         if isinstance(value, tuple):

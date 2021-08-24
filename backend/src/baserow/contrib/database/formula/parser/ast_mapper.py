@@ -5,10 +5,12 @@ from baserow.contrib.database.formula.ast.function import BaserowFunctionDefinit
 from baserow.contrib.database.formula.ast.tree import (
     BaserowStringLiteral,
     BaserowFunctionCall,
+    BaserowExpression,
 )
 from baserow.contrib.database.formula.parser.errors import (
     InvalidNumberOfArguments,
     BaserowFormulaSyntaxError,
+    MaximumFormulaDepthError,
 )
 from baserow.contrib.database.formula.parser.generated.BaserowFormula import (
     BaserowFormula,
@@ -26,19 +28,22 @@ from baserow.core.exceptions import InstanceTypeDoesNotExist
 class BaserowFormulaErrorListener(ErrorListener):
     # noinspection PyPep8Naming
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        msg = msg.replace("<EOF>", "the formula to end instead")
+        msg = msg.replace("<EOF>", "the end of the formula")
         message = f"Invalid syntax at line {line}, col {column}: {msg}"
         raise BaserowFormulaSyntaxError(message)
 
 
-def raw_formula_to_tree(formula):
-    lexer = BaserowFormulaLexer(InputStream(formula))
-    stream = CommonTokenStream(lexer)
-    parser = BaserowFormula(stream)
-    parser.removeErrorListeners()
-    parser.addErrorListener(BaserowFormulaErrorListener())
-    tree = parser.root()
-    return BaserowFormulaToBaserowASTMapper().visit(tree)
+def raw_formula_to_tree(formula: str) -> BaserowExpression:
+    try:
+        lexer = BaserowFormulaLexer(InputStream(formula))
+        stream = CommonTokenStream(lexer)
+        parser = BaserowFormula(stream)
+        parser.removeErrorListeners()
+        parser.addErrorListener(BaserowFormulaErrorListener())
+        tree = parser.root()
+        return BaserowFormulaToBaserowASTMapper().visit(tree)
+    except RecursionError:
+        raise MaximumFormulaDepthError()
 
 
 class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
@@ -67,9 +72,6 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
             raise InvalidNumberOfArguments(function_def, num_expressions)
         args = [expr.accept(self) for expr in expr_children]
         return BaserowFunctionCall(function_def, args)
-
-    def visitIndentifier(self, ctx: BaserowFormula.IndentifierContext):
-        return ctx.getText()
 
     def visitFunc_name(self, ctx: BaserowFormula.Func_nameContext):
         return ctx.getText()

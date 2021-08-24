@@ -38,30 +38,12 @@ BaserowFormulaListener.prototype.exitFunctionCall = function(ctx) {
 };
 
 
-// Enter a parse tree produced by BaserowFormula#Indentifier.
-BaserowFormulaListener.prototype.enterIndentifier = function(ctx) {
-};
-
-// Exit a parse tree produced by BaserowFormula#Indentifier.
-BaserowFormulaListener.prototype.exitIndentifier = function(ctx) {
-};
-
-
 // Enter a parse tree produced by BaserowFormula#func_name.
 BaserowFormulaListener.prototype.enterFunc_name = function(ctx) {
 };
 
 // Exit a parse tree produced by BaserowFormula#func_name.
 BaserowFormulaListener.prototype.exitFunc_name = function(ctx) {
-};
-
-
-// Enter a parse tree produced by BaserowFormula#func_call.
-BaserowFormulaListener.prototype.enterFunc_call = function(ctx) {
-};
-
-// Exit a parse tree produced by BaserowFormula#func_call.
-BaserowFormulaListener.prototype.exitFunc_call = function(ctx) {
 };
 
 

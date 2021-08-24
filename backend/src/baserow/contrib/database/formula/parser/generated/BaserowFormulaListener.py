@@ -35,30 +35,12 @@ class BaserowFormulaListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by BaserowFormula#Indentifier.
-    def enterIndentifier(self, ctx:BaserowFormula.IndentifierContext):
-        pass
-
-    # Exit a parse tree produced by BaserowFormula#Indentifier.
-    def exitIndentifier(self, ctx:BaserowFormula.IndentifierContext):
-        pass
-
-
     # Enter a parse tree produced by BaserowFormula#func_name.
     def enterFunc_name(self, ctx:BaserowFormula.Func_nameContext):
         pass
 
     # Exit a parse tree produced by BaserowFormula#func_name.
     def exitFunc_name(self, ctx:BaserowFormula.Func_nameContext):
-        pass
-
-
-    # Enter a parse tree produced by BaserowFormula#func_call.
-    def enterFunc_call(self, ctx:BaserowFormula.Func_callContext):
-        pass
-
-    # Exit a parse tree produced by BaserowFormula#func_call.
-    def exitFunc_call(self, ctx:BaserowFormula.Func_callContext):
         pass
 
 

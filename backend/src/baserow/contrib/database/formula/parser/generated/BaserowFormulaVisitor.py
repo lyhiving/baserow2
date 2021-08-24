@@ -24,18 +24,8 @@ class BaserowFormulaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by BaserowFormula#Indentifier.
-    def visitIndentifier(self, ctx:BaserowFormula.IndentifierContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by BaserowFormula#func_name.
     def visitFunc_name(self, ctx:BaserowFormula.Func_nameContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by BaserowFormula#func_call.
-    def visitFunc_call(self, ctx:BaserowFormula.Func_callContext):
         return self.visitChildren(ctx)
 
 

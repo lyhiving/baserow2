@@ -67,10 +67,15 @@ ERROR_PARSING_FORMULA = (
 ERROR_MAPPING_FORMULA = (
     "ERROR_MAPPING_FORMULA",
     HTTP_400_BAD_REQUEST,
-    "The formula failed to map to a valid formula.",
+    "The formula failed to map to a valid formula due to: {e}.",
 )
 ERROR_COMPILING_FORMULA = (
     "ERROR_COMPILING_FORMULA",
     HTTP_400_BAD_REQUEST,
     "The formula failed to compile.",
+)
+ERROR_TOO_DEEPLY_NESTED_FORMULA = (
+    "ERROR_TOO_DEEPLY_NESTED_FORMULA",
+    HTTP_400_BAD_REQUEST,
+    "The formula is too deeply nested.",
 )

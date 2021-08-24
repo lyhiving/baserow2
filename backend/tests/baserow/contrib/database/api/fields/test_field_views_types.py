@@ -1149,11 +1149,7 @@ def test_formula_field_type(api_client, data_fixture):
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert response_json["error"] == "ERROR_PARSING_FORMULA"
-    assert (
-        response_json["detail"]
-        == "The formula failed to parse due to: Invalid syntax at line 1, col 5: "
-        "mismatched input 'database' expecting the formula to end instead."
-    )
+    assert "Invalid syntax" in response_json["detail"]
 
     # You cannot create a field calling an invalid function
     response = api_client.post(

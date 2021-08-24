@@ -8,32 +8,30 @@ var grammarFileName = "BaserowFormula.g4";
 
 
 var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
-    "\u0003Q)\u0004\u0002\t\u0002\u0004\u0003\t\u0003\u0004\u0004\t\u0004",
-    "\u0004\u0005\t\u0005\u0004\u0006\t\u0006\u0003\u0002\u0003\u0002\u0003",
-    "\u0002\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003",
-    "\u0003\u0003\u0003\u0007\u0003\u0017\n\u0003\f\u0003\u000e\u0003\u001a",
-    "\u000b\u0003\u0005\u0003\u001c\n\u0003\u0003\u0003\u0003\u0003\u0003",
-    "\u0003\u0005\u0003!\n\u0003\u0003\u0004\u0003\u0004\u0003\u0005\u0003",
-    "\u0005\u0003\u0006\u0003\u0006\u0003\u0006\u0002\u0002\u0007\u0002\u0004",
-    "\u0006\b\n\u0002\u0003\u0003\u0002\u0019\u001a\u0002(\u0002\f\u0003",
-    "\u0002\u0002\u0002\u0004 \u0003\u0002\u0002\u0002\u0006\"\u0003\u0002",
-    "\u0002\u0002\b$\u0003\u0002\u0002\u0002\n&\u0003\u0002\u0002\u0002\f",
-    "\r\u0005\u0004\u0003\u0002\r\u000e\u0007\u0002\u0002\u0003\u000e\u0003",
-    "\u0003\u0002\u0002\u0002\u000f!\u0007\u0017\u0002\u0002\u0010!\u0007",
-    "\u0018\u0002\u0002\u0011\u0012\u0005\u0006\u0004\u0002\u0012\u001b\u0007",
-    "\r\u0002\u0002\u0013\u0018\u0005\u0004\u0003\u0002\u0014\u0015\u0007",
-    "\u0007\u0002\u0002\u0015\u0017\u0005\u0004\u0003\u0002\u0016\u0014\u0003",
-    "\u0002\u0002\u0002\u0017\u001a\u0003\u0002\u0002\u0002\u0018\u0016\u0003",
-    "\u0002\u0002\u0002\u0018\u0019\u0003\u0002\u0002\u0002\u0019\u001c\u0003",
-    "\u0002\u0002\u0002\u001a\u0018\u0003\u0002\u0002\u0002\u001b\u0013\u0003",
-    "\u0002\u0002\u0002\u001b\u001c\u0003\u0002\u0002\u0002\u001c\u001d\u0003",
-    "\u0002\u0002\u0002\u001d\u001e\u0007\u000e\u0002\u0002\u001e!\u0003",
-    "\u0002\u0002\u0002\u001f!\u0005\n\u0006\u0002 \u000f\u0003\u0002\u0002",
-    "\u0002 \u0010\u0003\u0002\u0002\u0002 \u0011\u0003\u0002\u0002\u0002",
-    " \u001f\u0003\u0002\u0002\u0002!\u0005\u0003\u0002\u0002\u0002\"#\u0005",
-    "\n\u0006\u0002#\u0007\u0003\u0002\u0002\u0002$%\u0003\u0002\u0002\u0002",
-    "%\t\u0003\u0002\u0002\u0002&\'\t\u0002\u0002\u0002\'\u000b\u0003\u0002",
-    "\u0002\u0002\u0005\u0018\u001b "].join("");
+    "\u0003Q$\u0004\u0002\t\u0002\u0004\u0003\t\u0003\u0004\u0004\t\u0004",
+    "\u0004\u0005\t\u0005\u0003\u0002\u0003\u0002\u0003\u0002\u0003\u0003",
+    "\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003",
+    "\u0007\u0003\u0015\n\u0003\f\u0003\u000e\u0003\u0018\u000b\u0003\u0005",
+    "\u0003\u001a\n\u0003\u0003\u0003\u0003\u0003\u0005\u0003\u001e\n\u0003",
+    "\u0003\u0004\u0003\u0004\u0003\u0005\u0003\u0005\u0003\u0005\u0002\u0002",
+    "\u0006\u0002\u0004\u0006\b\u0002\u0003\u0003\u0002\u0019\u001a\u0002",
+    "#\u0002\n\u0003\u0002\u0002\u0002\u0004\u001d\u0003\u0002\u0002\u0002",
+    "\u0006\u001f\u0003\u0002\u0002\u0002\b!\u0003\u0002\u0002\u0002\n\u000b",
+    "\u0005\u0004\u0003\u0002\u000b\f\u0007\u0002\u0002\u0003\f\u0003\u0003",
+    "\u0002\u0002\u0002\r\u001e\u0007\u0017\u0002\u0002\u000e\u001e\u0007",
+    "\u0018\u0002\u0002\u000f\u0010\u0005\u0006\u0004\u0002\u0010\u0019\u0007",
+    "\r\u0002\u0002\u0011\u0016\u0005\u0004\u0003\u0002\u0012\u0013\u0007",
+    "\u0007\u0002\u0002\u0013\u0015\u0005\u0004\u0003\u0002\u0014\u0012\u0003",
+    "\u0002\u0002\u0002\u0015\u0018\u0003\u0002\u0002\u0002\u0016\u0014\u0003",
+    "\u0002\u0002\u0002\u0016\u0017\u0003\u0002\u0002\u0002\u0017\u001a\u0003",
+    "\u0002\u0002\u0002\u0018\u0016\u0003\u0002\u0002\u0002\u0019\u0011\u0003",
+    "\u0002\u0002\u0002\u0019\u001a\u0003\u0002\u0002\u0002\u001a\u001b\u0003",
+    "\u0002\u0002\u0002\u001b\u001c\u0007\u000e\u0002\u0002\u001c\u001e\u0003",
+    "\u0002\u0002\u0002\u001d\r\u0003\u0002\u0002\u0002\u001d\u000e\u0003",
+    "\u0002\u0002\u0002\u001d\u000f\u0003\u0002\u0002\u0002\u001e\u0005\u0003",
+    "\u0002\u0002\u0002\u001f \u0005\b\u0005\u0002 \u0007\u0003\u0002\u0002",
+    "\u0002!\"\t\u0002\u0002\u0002\"\t\u0003\u0002\u0002\u0002\u0005\u0016",
+    "\u0019\u001d"].join("");
 
 
 var atn = new antlr4.atn.ATNDeserializer().deserialize(serializedATN);
@@ -73,7 +71,7 @@ var symbolicNames = [ null, "WHITESPACE", "BLOCK_COMMENT", "LINE_COMMENT",
                       "TIL_GT_TIL", "TIL_LTE_TIL", "TIL_LT_TIL", "TIL_STAR", 
                       "TIL_TIL", "SEMI", "ErrorCharacter" ];
 
-var ruleNames =  [ "root", "expr", "func_name", "func_call", "identifier" ];
+var ruleNames =  [ "root", "expr", "func_name", "identifier" ];
 
 function BaserowFormula (input) {
 	antlr4.Parser.call(this, input);
@@ -177,8 +175,7 @@ BaserowFormula.ErrorCharacter = 79;
 BaserowFormula.RULE_root = 0;
 BaserowFormula.RULE_expr = 1;
 BaserowFormula.RULE_func_name = 2;
-BaserowFormula.RULE_func_call = 3;
-BaserowFormula.RULE_identifier = 4;
+BaserowFormula.RULE_identifier = 3;
 
 
 function RootContext(parser, parent, invokingState) {
@@ -236,9 +233,9 @@ BaserowFormula.prototype.root = function() {
     this.enterRule(localctx, 0, BaserowFormula.RULE_root);
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 10;
+        this.state = 8;
         this.expr();
-        this.state = 11;
+        this.state = 9;
         this.match(BaserowFormula.EOF);
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
@@ -275,41 +272,6 @@ ExprContext.prototype.constructor = ExprContext;
  
 ExprContext.prototype.copyFrom = function(ctx) {
     antlr4.ParserRuleContext.prototype.copyFrom.call(this, ctx);
-};
-
-
-function IndentifierContext(parser, ctx) {
-	ExprContext.call(this, parser);
-    ExprContext.prototype.copyFrom.call(this, ctx);
-    return this;
-}
-
-IndentifierContext.prototype = Object.create(ExprContext.prototype);
-IndentifierContext.prototype.constructor = IndentifierContext;
-
-BaserowFormula.IndentifierContext = IndentifierContext;
-
-IndentifierContext.prototype.identifier = function() {
-    return this.getTypedRuleContext(IdentifierContext,0);
-};
-IndentifierContext.prototype.enterRule = function(listener) {
-    if(listener instanceof BaserowFormulaListener ) {
-        listener.enterIndentifier(this);
-	}
-};
-
-IndentifierContext.prototype.exitRule = function(listener) {
-    if(listener instanceof BaserowFormulaListener ) {
-        listener.exitIndentifier(this);
-	}
-};
-
-IndentifierContext.prototype.accept = function(visitor) {
-    if ( visitor instanceof BaserowFormulaVisitor ) {
-        return visitor.visitIndentifier(this);
-    } else {
-        return visitor.visitChildren(this);
-    }
 };
 
 
@@ -427,62 +389,54 @@ BaserowFormula.prototype.expr = function() {
     this.enterRule(localctx, 2, BaserowFormula.RULE_expr);
     var _la = 0; // Token type
     try {
-        this.state = 30;
+        this.state = 27;
         this._errHandler.sync(this);
-        var la_ = this._interp.adaptivePredict(this._input,2,this._ctx);
-        switch(la_) {
-        case 1:
+        switch(this._input.LA(1)) {
+        case BaserowFormula.SINGLEQ_STRING_LITERAL:
             localctx = new StringLiteralContext(this, localctx);
             this.enterOuterAlt(localctx, 1);
-            this.state = 13;
+            this.state = 11;
             this.match(BaserowFormula.SINGLEQ_STRING_LITERAL);
             break;
-
-        case 2:
+        case BaserowFormula.DOUBLEQ_STRING_LITERAL:
             localctx = new StringLiteralContext(this, localctx);
             this.enterOuterAlt(localctx, 2);
-            this.state = 14;
+            this.state = 12;
             this.match(BaserowFormula.DOUBLEQ_STRING_LITERAL);
             break;
-
-        case 3:
+        case BaserowFormula.IDENTIFIER:
+        case BaserowFormula.IDENTIFIER_UNICODE:
             localctx = new FunctionCallContext(this, localctx);
             this.enterOuterAlt(localctx, 3);
-            this.state = 15;
+            this.state = 13;
             this.func_name();
-            this.state = 16;
+            this.state = 14;
             this.match(BaserowFormula.OPEN_PAREN);
-            this.state = 25;
+            this.state = 23;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
             if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << BaserowFormula.SINGLEQ_STRING_LITERAL) | (1 << BaserowFormula.DOUBLEQ_STRING_LITERAL) | (1 << BaserowFormula.IDENTIFIER) | (1 << BaserowFormula.IDENTIFIER_UNICODE))) !== 0)) {
-                this.state = 17;
+                this.state = 15;
                 this.expr();
-                this.state = 22;
+                this.state = 20;
                 this._errHandler.sync(this);
                 _la = this._input.LA(1);
                 while(_la===BaserowFormula.COMMA) {
-                    this.state = 18;
+                    this.state = 16;
                     this.match(BaserowFormula.COMMA);
-                    this.state = 19;
+                    this.state = 17;
                     this.expr();
-                    this.state = 24;
+                    this.state = 22;
                     this._errHandler.sync(this);
                     _la = this._input.LA(1);
                 }
             }
 
-            this.state = 27;
+            this.state = 25;
             this.match(BaserowFormula.CLOSE_PAREN);
             break;
-
-        case 4:
-            localctx = new IndentifierContext(this, localctx);
-            this.enterOuterAlt(localctx, 4);
-            this.state = 29;
-            this.identifier();
-            break;
-
+        default:
+            throw new antlr4.error.NoViableAltException(this);
         }
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
@@ -550,72 +504,8 @@ BaserowFormula.prototype.func_name = function() {
     this.enterRule(localctx, 4, BaserowFormula.RULE_func_name);
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 32;
+        this.state = 29;
         this.identifier();
-    } catch (re) {
-    	if(re instanceof antlr4.error.RecognitionException) {
-	        localctx.exception = re;
-	        this._errHandler.reportError(this, re);
-	        this._errHandler.recover(this, re);
-	    } else {
-	    	throw re;
-	    }
-    } finally {
-        this.exitRule();
-    }
-    return localctx;
-};
-
-
-function Func_callContext(parser, parent, invokingState) {
-	if(parent===undefined) {
-	    parent = null;
-	}
-	if(invokingState===undefined || invokingState===null) {
-		invokingState = -1;
-	}
-	antlr4.ParserRuleContext.call(this, parent, invokingState);
-    this.parser = parser;
-    this.ruleIndex = BaserowFormula.RULE_func_call;
-    return this;
-}
-
-Func_callContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
-Func_callContext.prototype.constructor = Func_callContext;
-
-
-Func_callContext.prototype.enterRule = function(listener) {
-    if(listener instanceof BaserowFormulaListener ) {
-        listener.enterFunc_call(this);
-	}
-};
-
-Func_callContext.prototype.exitRule = function(listener) {
-    if(listener instanceof BaserowFormulaListener ) {
-        listener.exitFunc_call(this);
-	}
-};
-
-Func_callContext.prototype.accept = function(visitor) {
-    if ( visitor instanceof BaserowFormulaVisitor ) {
-        return visitor.visitFunc_call(this);
-    } else {
-        return visitor.visitChildren(this);
-    }
-};
-
-
-
-
-BaserowFormula.Func_callContext = Func_callContext;
-
-BaserowFormula.prototype.func_call = function() {
-
-    var localctx = new Func_callContext(this, this._ctx, this.state);
-    this.enterRule(localctx, 6, BaserowFormula.RULE_func_call);
-    try {
-        this.enterOuterAlt(localctx, 1);
-
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
 	        localctx.exception = re;
@@ -683,11 +573,11 @@ BaserowFormula.IdentifierContext = IdentifierContext;
 BaserowFormula.prototype.identifier = function() {
 
     var localctx = new IdentifierContext(this, this._ctx, this.state);
-    this.enterRule(localctx, 8, BaserowFormula.RULE_identifier);
+    this.enterRule(localctx, 6, BaserowFormula.RULE_identifier);
     var _la = 0; // Token type
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 36;
+        this.state = 31;
         _la = this._input.LA(1);
         if(!(_la===BaserowFormula.IDENTIFIER || _la===BaserowFormula.IDENTIFIER_UNICODE)) {
         this._errHandler.recoverInline(this);
