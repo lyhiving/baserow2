@@ -50,7 +50,8 @@ INVALID_FORMULA_TESTS = [
         "UPPER('" + "t" * (settings.MAX_FORMULA_STRING_LENGTH + 1) + "')",
         "ERROR_MAPPING_FORMULA",
         "The formula failed to map to a valid formula due to: an embedded "
-        "string in the formula over the maximum length of 10000 .",
+        f"string in the formula over the maximum length of "
+        f"{settings.MAX_FORMULA_STRING_LENGTH} .",
     ),
 ]
 
