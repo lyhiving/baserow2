@@ -23,12 +23,18 @@ from baserow.contrib.database.api.fields.errors import (
     ERROR_LINK_ROW_TABLE_NOT_IN_SAME_DATABASE,
     ERROR_LINK_ROW_TABLE_NOT_PROVIDED,
     ERROR_INCOMPATIBLE_PRIMARY_FIELD_TYPE,
+    ERROR_PARSING_FORMULA,
+    ERROR_COMPILING_FORMULA,
+    ERROR_MAPPING_FORMULA,
 )
 from baserow.contrib.database.api.fields.serializers import (
     LinkRowValueSerializer,
     FileFieldRequestSerializer,
     SelectOptionSerializer,
     FileFieldResponseSerializer,
+)
+from baserow.contrib.database.formula.compiler import (
+    baserow_formula_to_generated_column_sql,
 )
 from baserow.contrib.database.validators import UnicodeRegexValidator
 from baserow.core.models import UserFile
@@ -62,9 +68,9 @@ from .models import (
     FormulaField,
 )
 from .registries import FieldType, field_type_registry
-from baserow.contrib.database.formula.compiler import (
-    baserow_formula_to_generated_column_sql,
-)
+from ..formula.ast.errors import BaserowFormulaASTException
+from ..formula.generated_column_generator.errors import GeneratedColumnCompilerException
+from ..formula.parser.errors import BaserowFormulaParserError
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1720,6 +1726,11 @@ class FormulaFieldType(FieldType):
     serializer_field_names = ["formula"]
     can_be_primary_field = False
     can_be_in_form_view = False
+    api_exceptions_map = {
+        BaserowFormulaParserError: ERROR_PARSING_FORMULA,
+        GeneratedColumnCompilerException: ERROR_COMPILING_FORMULA,
+        BaserowFormulaASTException: ERROR_MAPPING_FORMULA,
+    }
 
     def get_serializer_field(self, instance, **kwargs):
         required = kwargs.get("required", False)
@@ -1736,8 +1747,9 @@ class FormulaFieldType(FieldType):
         return GeneratedColumnField(
             null=True,
             blank=True,
-            generated_column_sql=instance.formula,
-            generated_column_sql_type="text",
+            generated_column_expression=instance.formula,
+            generated_column_expression_type="text",
+            **kwargs,
         )
 
     def prepare_value_for_db(self, instance, value):
@@ -1764,3 +1776,15 @@ class FormulaFieldType(FieldType):
         values["formula"] = baserow_formula_to_generated_column_sql(formula)
 
         return values
+
+    def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
+        # We don't want to export the per row formula values as they can all and
+        # should be derived from the formula itself.
+        return None
+
+    def set_import_serialized_value(
+        self, row, field_name, value, id_mapping, files_zip, storage
+    ):
+        # We don't want to import any per row formula values as they can all and
+        # should be derived from the formula itself.
+        pass

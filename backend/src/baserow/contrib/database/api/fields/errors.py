@@ -59,3 +59,18 @@ ERROR_INVALID_BASEROW_FIELD_NAME = (
     HTTP_400_BAD_REQUEST,
     "Fields must not be blank or only consist of whitespace.",
 )
+ERROR_PARSING_FORMULA = (
+    "ERROR_PARSING_FORMULA",
+    HTTP_400_BAD_REQUEST,
+    "The formula failed to parse due to: {e}.",
+)
+ERROR_MAPPING_FORMULA = (
+    "ERROR_MAPPING_FORMULA",
+    HTTP_400_BAD_REQUEST,
+    "The formula failed to map to a valid formula.",
+)
+ERROR_COMPILING_FORMULA = (
+    "ERROR_COMPILING_FORMULA",
+    HTTP_400_BAD_REQUEST,
+    "The formula failed to compile.",
+)

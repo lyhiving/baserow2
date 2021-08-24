@@ -7,7 +7,6 @@ from baserow.contrib.database.formula.compiler import (
 from baserow.contrib.database.formula.generated_column_generator.generator import (
     tree_to_generated_column_sql,
 )
-from baserow.contrib.database.formula.parser.ast_mapper import raw_formula_to_tree
 from baserow.contrib.database.formula.parser.errors import BaserowFormulaSyntaxError
 
 
@@ -30,7 +29,7 @@ def test_convert():
 
 
 @pytest.mark.django_db
-def test_injection(data_fixture):
+def test_cannot_inject_sql_even_with_direct_control_of_ast_construction(data_fixture):
     user = data_fixture.create_user()
     table_1 = data_fixture.create_database_table(user=user)
     table_2 = data_fixture.create_database_table(user=user)
@@ -58,17 +57,12 @@ def test_injection(data_fixture):
     model.objects.create()
     assert model.objects.count() == 1
 
-    dangerous_formula2 = (
-        f"test\\') STORED; TRUNCATE TABLE database_table_{table_2.id}; "
-        "ALTER TABLE "
-        f"database_table_{table_1.id} ADD COLUMN new_test_col text GENERATED ALWAYS "
-        "AS ('hah"
-    )
-    dangerous_formula_made_safe = BaserowStringLiteral(dangerous_formula2)
+    dangerous_formula_made_safe = BaserowStringLiteral(dangerous_formula)
     safe_formula = tree_to_generated_column_sql(dangerous_formula_made_safe)
     assert safe_formula == (
-        "'test\\'') STORED; TRUNCATE TABLE database_table_2; ALTER TABLE "
-        "database_table_1 ADD COLUMN new_test_col text GENERATED ALWAYS AS (''hah'"
+        f"'test'') STORED; TRUNCATE TABLE database_table_{table_2.id}; ALTER TABLE "
+        f"database_table_{table_1.id} ADD COLUMN new_test_col text GENERATED ALWAYS AS "
+        f"(''hah'"
     )
     data_fixture.create_formula_field(user=user, formula=safe_formula)
     assert model.objects.count() == 1

@@ -20,12 +20,14 @@ from baserow.contrib.database.formula.parser.generated.BaserowFormulaVisitor imp
     BaserowFormulaVisitor,
 )
 from baserow.contrib.database.formula.registries import formula_function_registry
+from baserow.core.exceptions import InstanceTypeDoesNotExist
 
 
 class BaserowFormulaErrorListener(ErrorListener):
     # noinspection PyPep8Naming
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        message = f"{offendingSymbol} line {line}, col {column}: {msg}"
+        msg = msg.replace("<EOF>", "the formula to end instead")
+        message = f"Invalid syntax at line {line}, col {column}: {msg}"
         raise BaserowFormulaSyntaxError(message)
 
 
@@ -55,9 +57,12 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
         function_name = ctx.func_name().accept(self).lower()
         expr_children = ctx.expr()
         num_expressions = len(expr_children)
-        function_def: BaserowFunctionDefinition = formula_function_registry.get(
-            function_name
-        )
+        try:
+            function_def: BaserowFunctionDefinition = formula_function_registry.get(
+                function_name
+            )
+        except InstanceTypeDoesNotExist:
+            raise BaserowFormulaSyntaxError(f"{function_name} is not a valid function")
         if not function_def.num_args.test(num_expressions):
             raise InvalidNumberOfArguments(function_def, num_expressions)
         args = [expr.accept(self) for expr in expr_children]

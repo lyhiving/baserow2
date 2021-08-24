@@ -18,6 +18,7 @@ from baserow.contrib.database.fields.models import (
     FileField,
     NumberField,
     PhoneNumberField,
+    FormulaField,
 )
 
 
@@ -1069,3 +1070,102 @@ def test_created_on_field_type(api_client, data_fixture):
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+
+
+@pytest.mark.django_db
+def test_formula_field_type(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table = data_fixture.create_database_table(user=user)
+
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula", "type": "formula", "formula": "'test'"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK
+    assert response_json["type"] == "formula"
+    assert FormulaField.objects.all().count() == 1
+    formula_field_id = response_json["id"]
+    assert formula_field_id
+
+    # Create a row
+    api_client.post(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    # Verify the value of the formula field is the sql expression evaluated for that row
+    model = table.get_model(attribute_names=True)
+    row = model.objects.get()
+    assert row.formula == "test"
+
+    # You cannot modify a formula field row value
+    response = api_client.patch(
+        reverse(
+            "api:database:rows:item",
+            kwargs={"table_id": table.id, "row_id": row.id},
+        ),
+        {f"field_{formula_field_id}": "test_second"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+    assert (
+        response_json["detail"]
+        == "Field of type formula is read only and should not be set manually."
+    )
+
+    # You cannot create a row with a formula field value
+    response = api_client.post(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {
+            f"field_{formula_field_id}": "some value",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+    assert (
+        response_json["detail"]
+        == "Field of type formula is read only and should not be set manually."
+    )
+
+    # You cannot create a field with an invalid formula
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula2", "type": "formula", "formula": "drop database baserow;"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response_json["error"] == "ERROR_PARSING_FORMULA"
+    assert (
+        response_json["detail"]
+        == "The formula failed to parse due to: Invalid syntax at line 1, col 5: "
+        "mismatched input 'database' expecting the formula to end instead."
+    )
+
+    # You cannot create a field calling an invalid function
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula2", "type": "formula", "formula": "version()"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response_json["error"] == "ERROR_PARSING_FORMULA"
+    assert (
+        response_json["detail"]
+        == "The formula failed to parse due to: version is not a valid function."
+    )

@@ -40,7 +40,11 @@ def map_exceptions(mapping):
     try:
         yield
     except tuple(mapping.keys()) as e:
-        value = mapping.get(e.__class__)
+        value = None
+        for clazz in e.__class__.mro():
+            value = mapping.get(clazz)
+            if value:
+                break
         status_code = status.HTTP_400_BAD_REQUEST
         detail = ""
 
