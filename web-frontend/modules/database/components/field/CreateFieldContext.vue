@@ -57,7 +57,6 @@ export default {
           this.hide()
         }
         if (fieldType.shouldRefreshWhenAdded()) {
-          console.log('ref')
           this.$emit('refresh', { callback })
         } else {
           await callback()
