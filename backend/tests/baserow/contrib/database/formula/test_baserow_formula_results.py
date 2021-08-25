@@ -22,6 +22,11 @@ VALID_FORMULA_TESTS = [
         "UPPER('" + "t" * settings.MAX_FORMULA_STRING_LENGTH + "')",
         "T" * settings.MAX_FORMULA_STRING_LENGTH,
     ),
+    ("'https://उदाहरण.परीक्षा'", "https://उदाहरण.परीक्षा"),
+    ("UPPER('https://उदाहरण.परीक्षा')", "HTTPS://उदाहरण.परीक्षा"),
+    ("CONCAT('https://उदाहरण.परीक्षा', '/api')", "https://उदाहरण.परीक्षा/api"),
+    ("LOWER('HTTPS://उदाहरण.परीक्षा')", "https://उदाहरण.परीक्षा"),
+    ("CONCAT('\ntest', '\n')", "\ntest\n"),
 ]
 
 INVALID_FORMULA_TESTS = [
@@ -53,12 +58,61 @@ INVALID_FORMULA_TESTS = [
         f"string in the formula over the maximum length of "
         f"{settings.MAX_FORMULA_STRING_LENGTH} .",
     ),
+    (
+        "CONCAT()",
+        "ERROR_PARSING_FORMULA",
+        "The formula failed to parse due to: An invalid number of arguments were "
+        "provided to the function concat. It excepts more than 1 arguments but "
+        "instead 0 were given.",
+    ),
+    (
+        "CONCAT('a')",
+        "ERROR_PARSING_FORMULA",
+        "The formula failed to parse due to: An invalid number of arguments were "
+        "provided to the function concat. It excepts more than 1 arguments but "
+        "instead 1 were given.",
+    ),
+    (
+        "UPPER()",
+        "ERROR_PARSING_FORMULA",
+        "The formula failed to parse due to: An invalid number of arguments were "
+        "provided to the function upper. It excepts exactly 1 arguments but "
+        "instead 0 were given.",
+    ),
+    (
+        "LOWER()",
+        "ERROR_PARSING_FORMULA",
+        "The formula failed to parse due to: An invalid number of arguments were "
+        "provided to the function lower. It excepts exactly 1 arguments but "
+        "instead 0 were given.",
+    ),
+    (
+        "UPPER('a','a')",
+        "ERROR_PARSING_FORMULA",
+        "The formula failed to parse due to: An invalid number of arguments were "
+        "provided to the function upper. It excepts exactly 1 arguments but "
+        "instead 2 were given.",
+    ),
+    (
+        "LOWER('a','a')",
+        "ERROR_PARSING_FORMULA",
+        "The formula failed to parse due to: An invalid number of arguments were "
+        "provided to the function lower. It excepts exactly 1 arguments but "
+        "instead 2 were given.",
+    ),
+    (
+        "LOWER('a', CONCAT())",
+        "ERROR_PARSING_FORMULA",
+        "The formula failed to parse due to: An invalid number of arguments were "
+        "provided to the function lower. It excepts exactly 1 arguments but "
+        "instead 2 were given.",
+    ),
 ]
 
 
 @pytest.mark.parametrize("test_input,expected", VALID_FORMULA_TESTS)
 @pytest.mark.django_db
-def test_formulas(test_input, expected, data_fixture, api_client):
+def test_valid_formulas(test_input, expected, data_fixture, api_client):
     user, token = data_fixture.create_user_and_token()
     table = data_fixture.create_database_table(user=user)
     response = api_client.post(

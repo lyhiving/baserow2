@@ -43,7 +43,7 @@ class NumOfArgsGreaterThan(ArgCountSpecifier):
         return f"more than {self.count} arguments"
 
     def test(self, num_args):
-        return self.count <= num_args
+        return self.count < num_args
 
 
 class BaserowFunctionDefinition(Instance, abc.ABC):

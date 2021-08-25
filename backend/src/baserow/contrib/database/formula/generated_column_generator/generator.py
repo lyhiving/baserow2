@@ -1,6 +1,7 @@
 import abc
 from typing import Dict
 
+from django.db import connection
 from psycopg2.extensions import adapt
 
 from baserow.contrib.database.formula.ast.function import (
@@ -74,4 +75,10 @@ class BaserowFormulaToGeneratedColumnGenerator(BaserowFormulaASTVisitor[str]):
 
     def visit_string_literal(self, string_literal: BaserowStringLiteral) -> str:
         # noinspection PyArgumentList
-        return str(adapt(string_literal.literal))
+        encoded = adapt(string_literal.literal)
+        # We don't have a psycopg2 connection here the adapt function can use to get
+        # the encoding, so it defaults to latin-1. Django by default uses utf-8
+        # connections to postgres so we set it here to ensure we don't get any
+        # encoding errors.
+        encoded.encoding = "utf-8"
+        return str(encoded)
