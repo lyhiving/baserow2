@@ -25,6 +25,7 @@ def test_equal_filter_type(data_fixture):
         table=table, number_type="DECIMAL", number_decimal_places=2
     )
     boolean_field = data_fixture.create_boolean_field(table=table)
+    formula_field = data_fixture.create_formula_field(table=table, formula="'test'")
 
     handler = ViewHandler()
     model = table.get_model()
@@ -132,6 +133,21 @@ def test_equal_filter_type(data_fixture):
     view_filter.save()
     assert handler.apply_filters(grid_view, model.objects.all()).count() == 3
 
+    view_filter.field = formula_field
+    view_filter.value = "nottest"
+    view_filter.save()
+    assert handler.apply_filters(grid_view, model.objects.all()).count() == 0
+
+    view_filter.field = formula_field
+    view_filter.value = "test"
+    view_filter.save()
+    assert handler.apply_filters(grid_view, model.objects.all()).count() == 3
+
+    view_filter.field = formula_field
+    view_filter.value = ""
+    view_filter.save()
+    assert handler.apply_filters(grid_view, model.objects.all()).count() == 3
+
 
 @pytest.mark.django_db
 def test_not_equal_filter_type(data_fixture):
@@ -145,6 +161,7 @@ def test_not_equal_filter_type(data_fixture):
         table=table, number_type="DECIMAL", number_decimal_places=2
     )
     boolean_field = data_fixture.create_boolean_field(table=table)
+    formula_field = data_fixture.create_formula_field(table=table, formula="'test'")
 
     handler = ViewHandler()
     model = table.get_model()
@@ -256,9 +273,24 @@ def test_not_equal_filter_type(data_fixture):
     view_filter.save()
     assert handler.apply_filters(grid_view, model.objects.all()).count() == 3
 
+    view_filter.field = formula_field
+    view_filter.value = "nottest"
+    view_filter.save()
+    assert handler.apply_filters(grid_view, model.objects.all()).count() == 3
+
+    view_filter.field = formula_field
+    view_filter.value = "test"
+    view_filter.save()
+    assert handler.apply_filters(grid_view, model.objects.all()).count() == 0
+
+    view_filter.field = formula_field
+    view_filter.value = ""
+    view_filter.save()
+    assert handler.apply_filters(grid_view, model.objects.all()).count() == 3
+
 
 @pytest.mark.django_db
-def test_contains_filter_type(data_fixture):
+def test_contains_filter_type(data_fixture, django_assert_num_queries):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
     grid_view = data_fixture.create_grid_view(table=table)
@@ -280,6 +312,7 @@ def test_contains_filter_type(data_fixture):
     option_b = data_fixture.create_select_option(
         field=single_select_field, value="BC", color="red"
     )
+    formula_field = data_fixture.create_formula_field(table=table, formula="'test'")
 
     handler = ViewHandler()
     model = table.get_model()
@@ -422,6 +455,18 @@ def test_contains_filter_type(data_fixture):
     assert row.id in ids
     assert row_3.id in ids
 
+    view_filter.field = formula_field
+    view_filter.value = "tes"
+    view_filter.save()
+    ids = [r.id for r in handler.apply_filters(grid_view, model.objects.all()).all()]
+    assert len(ids) == 3
+
+    view_filter.field = formula_field
+    view_filter.value = "xx"
+    view_filter.save()
+    ids = [r.id for r in handler.apply_filters(grid_view, model.objects.all()).all()]
+    assert len(ids) == 0
+
 
 @pytest.mark.django_db
 def test_contains_not_filter_type(data_fixture):
@@ -446,6 +491,7 @@ def test_contains_not_filter_type(data_fixture):
     option_b = data_fixture.create_select_option(
         field=single_select_field, value="BC", color="red"
     )
+    formula_field = data_fixture.create_formula_field(table=table, formula="'test'")
 
     handler = ViewHandler()
     model = table.get_model()
@@ -583,6 +629,18 @@ def test_contains_not_filter_type(data_fixture):
     ids = [r.id for r in handler.apply_filters(grid_view, model.objects.all()).all()]
     assert len(ids) == 1
     assert row_2.id in ids
+
+    view_filter.field = formula_field
+    view_filter.value = "tes"
+    view_filter.save()
+    ids = [r.id for r in handler.apply_filters(grid_view, model.objects.all()).all()]
+    assert len(ids) == 0
+
+    view_filter.field = formula_field
+    view_filter.value = "xx"
+    view_filter.save()
+    ids = [r.id for r in handler.apply_filters(grid_view, model.objects.all()).all()]
+    assert len(ids) == 3
 
 
 @pytest.mark.django_db
@@ -2047,6 +2105,10 @@ def test_empty_filter_type(data_fixture):
     file_field = data_fixture.create_file_field(table=table)
     single_select_field = data_fixture.create_single_select_field(table=table)
     option_1 = data_fixture.create_select_option(field=single_select_field)
+    populated_formula_field = data_fixture.create_formula_field(
+        table=table, formula="'test'"
+    )
+    empty_formula_field = data_fixture.create_formula_field(table=table, formula="''")
 
     tmp_table = data_fixture.create_database_table(database=table.database)
     tmp_field = data_fixture.create_text_field(table=tmp_table, primary=True)
@@ -2153,6 +2215,14 @@ def test_empty_filter_type(data_fixture):
     view_filter.save()
     assert handler.apply_filters(grid_view, model.objects.all()).get().id == row.id
 
+    view_filter.field = empty_formula_field
+    view_filter.save()
+    assert handler.apply_filters(grid_view, model.objects.all()).count() == 3
+
+    view_filter.field = populated_formula_field
+    view_filter.save()
+    assert handler.apply_filters(grid_view, model.objects.all()).count() == 0
+
 
 @pytest.mark.django_db
 def test_not_empty_filter_type(data_fixture):
@@ -2173,6 +2243,10 @@ def test_not_empty_filter_type(data_fixture):
     file_field = data_fixture.create_file_field(table=table)
     single_select_field = data_fixture.create_single_select_field(table=table)
     option_1 = data_fixture.create_select_option(field=single_select_field)
+    populated_formula_field = data_fixture.create_formula_field(
+        table=table, formula="'test'"
+    )
+    empty_formula_field = data_fixture.create_formula_field(table=table, formula="''")
 
     tmp_table = data_fixture.create_database_table(database=table.database)
     tmp_field = data_fixture.create_text_field(table=tmp_table, primary=True)
@@ -2259,6 +2333,14 @@ def test_not_empty_filter_type(data_fixture):
     view_filter.field = single_select_field
     view_filter.save()
     assert handler.apply_filters(grid_view, model.objects.all()).get().id == row_2.id
+
+    view_filter.field = empty_formula_field
+    view_filter.save()
+    assert handler.apply_filters(grid_view, model.objects.all()).count() == 0
+
+    view_filter.field = populated_formula_field
+    view_filter.save()
+    assert handler.apply_filters(grid_view, model.objects.all()).count() == 2
 
 
 @pytest.mark.django_db

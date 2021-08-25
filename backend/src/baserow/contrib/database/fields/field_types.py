@@ -1792,3 +1792,6 @@ class FormulaFieldType(FieldType):
         # We don't want to import any per row formula values as they can all and
         # should be derived from the formula itself.
         pass
+
+    def contains_query(self, *args):
+        return contains_filter(*args)

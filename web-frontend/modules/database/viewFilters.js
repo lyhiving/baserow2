@@ -111,7 +111,15 @@ export class EqualViewFilterType extends ViewFilterType {
   }
 
   getCompatibleFieldTypes() {
-    return ['text', 'long_text', 'url', 'email', 'number', 'phone_number']
+    return [
+      'text',
+      'long_text',
+      'url',
+      'email',
+      'number',
+      'phone_number',
+      'formula',
+    ]
   }
 
   matches(rowValue, filterValue, field, fieldType) {
@@ -139,7 +147,15 @@ export class NotEqualViewFilterType extends ViewFilterType {
   }
 
   getCompatibleFieldTypes() {
-    return ['text', 'long_text', 'url', 'email', 'number', 'phone_number']
+    return [
+      'text',
+      'long_text',
+      'url',
+      'email',
+      'number',
+      'phone_number',
+      'formula',
+    ]
   }
 
   matches(rowValue, filterValue, field, fieldType) {
@@ -200,6 +216,7 @@ export class ContainsViewFilterType extends ViewFilterType {
       'created_on',
       'single_select',
       'number',
+      'formula',
     ]
   }
 
@@ -233,6 +250,7 @@ export class ContainsNotViewFilterType extends ViewFilterType {
       'created_on',
       'single_select',
       'number',
+      'formula',
     ]
   }
 
@@ -734,6 +752,7 @@ export class EmptyViewFilterType extends ViewFilterType {
       'file',
       'single_select',
       'phone_number',
+      'formula',
     ]
   }
 
@@ -779,6 +798,7 @@ export class NotEmptyViewFilterType extends ViewFilterType {
       'file',
       'single_select',
       'phone_number',
+      'formula',
     ]
   }
 

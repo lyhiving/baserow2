@@ -2,10 +2,10 @@ import BigNumber from 'bignumber.js'
 
 import moment from '@baserow/modules/core/moment'
 import {
-  isValidURL,
-  isValidEmail,
-  isSimplePhoneNumber,
   isNumeric,
+  isSimplePhoneNumber,
+  isValidEmail,
+  isValidURL,
 } from '@baserow/modules/core/utils/string'
 import { Registerable } from '@baserow/modules/core/registry'
 
@@ -66,6 +66,7 @@ import {
 } from '@baserow/modules/database/utils/fieldFilters'
 import GridViewFieldFormula from '@baserow/modules/database/components/view/grid/fields/GridViewFieldFormula'
 import FieldFormulaSubForm from '@baserow/modules/database/components/field/FieldFormulaSubForm'
+import RowEditFieldFormula from '@/modules/database/components/row/RowEditFieldFormula'
 
 export class FieldType extends Registerable {
   /**
@@ -1634,12 +1635,7 @@ export class FormulaFieldType extends FieldType {
   }
 
   getRowEditFieldComponent() {
-    return RowEditFieldEmail
-  }
-
-  prepareValueForPaste(field, clipboardData) {
-    const value = clipboardData.getData('text')
-    return value
+    return RowEditFieldFormula
   }
 
   getSort(name, order) {
@@ -1657,23 +1653,19 @@ export class FormulaFieldType extends FieldType {
     return ''
   }
 
-  getValidationError(field, value) {
-    if (value === null || value === '') {
-      return null
-    }
+  getDocsDataType(field) {
     return null
   }
 
-  getDocsDataType(field) {
-    return 'string'
-  }
-
   getDocsDescription(field) {
-    return 'Readonly formula field'
+    return (
+      'A read-only field defined by a formula written in the Baserow formula' +
+      ' language.'
+    )
   }
 
   getDocsRequestExample(field) {
-    return 'UPPER("dsdads")'
+    return 'UPPER(CONCAT("some", "text"))'
   }
 
   getContainsFilterFunction() {
@@ -1690,5 +1682,13 @@ export class FormulaFieldType extends FieldType {
 
   shouldRefreshWhenAdded() {
     return true
+  }
+
+  getFormViewFieldComponent() {
+    return null
+  }
+
+  getCanBePrimaryField() {
+    return false
   }
 }

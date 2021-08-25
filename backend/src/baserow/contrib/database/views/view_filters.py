@@ -28,6 +28,7 @@ from baserow.contrib.database.fields.field_types import (
     FileFieldType,
     SingleSelectFieldType,
     PhoneNumberFieldType,
+    FormulaFieldType,
 )
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.core.expressions import Timezone
@@ -57,6 +58,7 @@ class EqualViewFilterType(ViewFilterType):
         BooleanFieldType.type,
         EmailFieldType.type,
         PhoneNumberFieldType.type,
+        FormulaFieldType.type,
     ]
 
     def get_filter(self, field_name, value, model_field, field):
@@ -112,6 +114,7 @@ class ContainsViewFilterType(ViewFilterType):
         CreatedOnFieldType.type,
         SingleSelectFieldType.type,
         NumberFieldType.type,
+        FormulaFieldType.type,
     ]
 
     def get_filter(self, field_name, value, model_field, field) -> OptionallyAnnotatedQ:
@@ -563,6 +566,7 @@ class EmptyViewFilterType(ViewFilterType):
         FileFieldType.type,
         SingleSelectFieldType.type,
         PhoneNumberFieldType.type,
+        FormulaFieldType.type,
     ]
 
     def get_filter(self, field_name, value, model_field, field):
