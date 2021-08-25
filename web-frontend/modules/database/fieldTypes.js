@@ -66,7 +66,7 @@ import {
 } from '@baserow/modules/database/utils/fieldFilters'
 import GridViewFieldFormula from '@baserow/modules/database/components/view/grid/fields/GridViewFieldFormula'
 import FieldFormulaSubForm from '@baserow/modules/database/components/field/FieldFormulaSubForm'
-import RowEditFieldFormula from '@/modules/database/components/row/RowEditFieldFormula'
+import RowEditFieldFormula from '@baserow/modules/database/components/row/RowEditFieldFormula'
 
 export class FieldType extends Registerable {
   /**
