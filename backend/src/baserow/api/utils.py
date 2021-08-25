@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from typing import Dict, Union, Tuple, Callable, Optional, Type
 
 from django.utils.encoding import force_str
 from rest_framework import status
@@ -9,9 +10,24 @@ from rest_framework.serializers import ModelSerializer
 from baserow.core.exceptions import InstanceTypeDoesNotExist
 from .exceptions import RequestBodyValidationException
 
+ErrorTupleType = Tuple[str, int, str]
+ExceptionMappingType = Dict[
+    Type[Exception],
+    Union[
+        str,
+        ErrorTupleType,
+        Callable[
+            [
+                Exception,
+            ],
+            Optional[Union[str, ErrorTupleType]],
+        ],
+    ],
+]
+
 
 @contextmanager
-def map_exceptions(mapping):
+def map_exceptions(mapping: ExceptionMappingType):
     """
     This utility function simplifies mapping uncaught exceptions to a standard api
     response exception.
@@ -35,16 +51,40 @@ def map_exceptions(mapping):
         "error": "ERROR_1",
         "detail": "Other message"
       }
+
+    Example 3:
+      with map_api_exceptions(
+          {
+              SomeException: lambda e: ('ERROR_1, 404, 'Conditional Error')
+              if "something" in str(e)
+              else None
+          }
+      ):
+          raise SomeException('something')
+
+      HTTP/1.1 404
+      {
+        "error": "ERROR_1",
+        "detail": "Conditional Error"
+      }
+
+    Example 4:
+      with map_api_exceptions(
+          {
+              SomeException: lambda e: ('ERROR_1, 404, 'Conditional Error')
+              if "something" in str(e)
+              else None
+          }
+      ):
+          raise SomeException('doesnt match')
+
+      # SomeException will be thrown directly if the provided callable returns None.
     """
 
     try:
         yield
     except tuple(mapping.keys()) as e:
-        value = None
-        for clazz in e.__class__.mro():
-            value = mapping.get(clazz)
-            if value:
-                break
+        value = _search_up_class_hierarchy_for_mapping(e, mapping)
         status_code = status.HTTP_400_BAD_REQUEST
         detail = ""
 
@@ -52,7 +92,6 @@ def map_exceptions(mapping):
             value = value(e)
             if value is None:
                 raise e
-
         if isinstance(value, str):
             error = value
         if isinstance(value, tuple):
@@ -66,6 +105,14 @@ def map_exceptions(mapping):
         exc.status_code = status_code
 
         raise exc
+
+
+def _search_up_class_hierarchy_for_mapping(e, mapping):
+    for clazz in e.__class__.mro():
+        value = mapping.get(clazz)
+        if value:
+            return value
+    return None
 
 
 def validate_data(serializer_class, data, partial=False):

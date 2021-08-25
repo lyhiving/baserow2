@@ -1,7 +1,6 @@
 import abc
 from typing import Dict
 
-from django.db import connection
 from psycopg2.extensions import adapt
 
 from baserow.contrib.database.formula.ast.function import (

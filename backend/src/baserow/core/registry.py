@@ -3,7 +3,7 @@ from typing import TypeVar, Generic, List, Dict, Union
 
 from django.core.exceptions import ImproperlyConfigured
 
-from baserow.api.utils import get_serializer_class, map_exceptions
+from baserow.api.utils import get_serializer_class, map_exceptions, ExceptionMappingType
 from .exceptions import InstanceTypeDoesNotExist, InstanceTypeAlreadyRegistered
 
 
@@ -146,7 +146,7 @@ class MapAPIExceptionsInstanceMixin:
         }
     """
 
-    api_exceptions_map = {}
+    api_exceptions_map: ExceptionMappingType = {}
 
     @contextlib.contextmanager
     def map_api_exceptions(self):
