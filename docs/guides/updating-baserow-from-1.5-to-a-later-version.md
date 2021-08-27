@@ -99,8 +99,8 @@ docker run --rm \
 
 ```bash
 $ git pull && git fetch
-# It might be a good idea to checkout the tag of the release
-$ git checkout 1.6.0 
+# It might be a good idea to checkout the tag of the release you are upgrading to.
+$ git checkout X.X.X 
 $ docker-compose build
 $ docker-compose up -d
 ```
