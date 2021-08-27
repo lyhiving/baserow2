@@ -21,11 +21,10 @@ Here is a useful link for that:
 
 ## How to
 
-First of all, before any update gets applied, you should create a backup of your
-PostgreSQL data. Since you are running the docker-compose.yml variant of Baserow
-all that data lives in a Docker volume. There are several ways to create a backup.
-With this guide you are going to create two backups. One for the Baserow Database
-and one of the whole volume (just in case).
+Before you upgrade the Baserow PostgreSQL database, you need to rename the current
+docker volume which holds the PostgreSQL data. With this guide you are going to create
+a new docker volume with a PostgreSQL 12 compatible data directory. This new volume is going
+to be named the same as the current volume.
 
 ### Power down the whole application
 
@@ -39,15 +38,12 @@ $ docker-compose down
 as any of the subsequent steps need to be taken, when no application and/or user
 is accessing the database.
 
-### Backup the volume
+### Rename the volume
 
-There are several ways you could backup a docker volume. For example you could 
-follow the official docs [here](https://docs.docker.com/storage/volumes/#backup-restore-or-migrate-data-volumes)
+There is not a straightforward way to rename a docker volume, which is why you
+are going to clone the volume to a new volume and remove the old volume.
 
-In this guide you are simply going to clone the volume. Just make sure that there is enough
-disk space on the server.
-
-The volume you want to backup is most likely called "baserow_pgdata", that is
+The volume you want to rename is most likely called "baserow_pgdata", that is
 if you haven't changed anything in the docker-compose.yml file. To be sure you can use
 
 ```bash
@@ -62,8 +58,7 @@ to get a list of all the available volumes.
 > Run the following: docker inspect -f '{{ .Mounts }}' db
 > Copy the volume ID and use that in the subsequent commands instead of "baserow_pgdata".
 
-To make it even simpler you can download the following helper script in order to
-clone a volume:
+Download the following helper script in order to clone a volume:
 
 ```bash
 $ curl -o docker_clone_volume.sh https://raw.githubusercontent.com/gdiepen/docker-convenience-scripts/master/docker_clone_volume.sh
@@ -75,19 +70,21 @@ update the command accordingly):
 
 ```bash
 $ ./docker_clone_volume.sh baserow_pgdata baserow_pgdata11
+
+# Only remove the volume if the previous command succeeded
 $ docker volume rm baserow_pgdata
 ```
 
-If any of the following steps fail, you can simply clone the volume back into the previous volume
+If any of the following steps fail, you can simply clone the volume back 
 and be good to go.
 
-### Backup the Baserow PostgreSQL database
+### Upgrade the Baserow PostgreSQL database
 
 One of the recommended ways to move to a newer version of PostgreSQL is
 using PostgreSQLs own "pg_upgrade" utility. There is a Github
 repository that provides Docker images for migrating PostgreSQL datadirs 
 from one version to another, utilizing "pg_upgrade". You can find it [here](https://github.com/tianon/docker-postgres-upgrade).
-In the following command you are going to make use of one of their Docker images.
+With the following command you are going to make use of one of their Docker images.
 
 ```bash
 docker run --rm \
@@ -153,7 +150,6 @@ If the update was successful or you rolled back you can delete the backup
 volume, backup folder and the clone utility.
 
 ```bash
-$ rm -rf ~/baserow_backups
-$ docker volume rm baserow_pgdata_backup
+$ docker volume rm baserow_pgdata11
 $ rm docker_clone_volume.sh
 ```
