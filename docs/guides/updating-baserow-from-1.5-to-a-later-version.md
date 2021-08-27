@@ -74,7 +74,8 @@ Now clone the baserow_pgdata volume (in case your volume is named differently, p
 update the command accordingly):
 
 ```bash
-$ ./docker_clone_volume.sh baserow_pgdata baserow_pgdata_backup
+$ ./docker_clone_volume.sh baserow_pgdata baserow_pgdata11
+$ docker volume rm baserow_pgdata
 ```
 
 If any of the following steps fail, you can simply clone the volume back into the previous volume
@@ -83,42 +84,27 @@ and be good to go.
 ### Backup the Baserow PostgreSQL database
 
 One of the recommended ways to move to a newer version of PostgreSQL is
-dumping the old database and restoring that dump in the new version. You are going
-to make use of baserows internal backup and restore functionality in order to do
-so.
+using PostgreSQLs own "pg_upgrade" utility. There is a Github
+repository that provides Docker images for migrating PostgreSQL datadirs 
+from one version to another, utilizing "pg_upgrade". You can find it [here](https://github.com/tianon/docker-postgres-upgrade).
+In the following command you are going to make use of one of their Docker images.
 
 ```bash
-$ mkdir ~/baserow_backups
-# The folder must be the same UID:GID as the user running inside the container, which
-# for the local env is 9999:9999, for the dev env it is 1000:1000 or your own UID:GID
-# when using ./dev.sh
-$ sudo chown 9999:9999 ~/baserow_backups/ 
-$ docker-compose run -e PGPASSWORD=baserow -v ~/baserow_backups:/baserow/backups backend manage backup_baserow -h db -d baserow -U baserow -f /baserow/backups/baserow_backup.tar.gz 
-$ docker-compose down
-# You want the new db container running PG12 to initialize it's own datadir, therefore
-# you have to remove the old volume
-$ docker volume rm baserow_pgdata
-# ~/baserow_backups/ now contains your Baserow backup.
+docker run --rm \
+	-v baserow_pgdata11:/var/lib/postgresql/11/data \
+	-v baserow_pgdata:/var/lib/postgresql/12/data  \
+	-e POSTGRES_INITDB_ARGS="--username=${DATABASE_USER:-baserow} --pwfile=<(echo ${DATABASE_PASSWORD:-baserow}) && printf '\nhost all all all md5' >> /var/lib/postgresql/12/data/pg_hba.conf" \
+	tianon/postgres-upgrade:11-to-12 \
+	--username=${DATABASE_USER:-baserow}
 ```
 
-### Pull the latest changes from the repository and build
+### Pull the latest changes from the repository, build and boot the application
 
 ```bash
 $ git pull && git fetch
 # It might be a good idea to checkout the tag of the release
 $ git checkout 1.6.0 
 $ docker-compose build
-```
-
-### Restore the Baserow database
-
-```bash
-$ docker-compose run -e PGPASSWORD=baserow -v ~/baserow_backups/:/baserow/backups/ backend manage restore_baserow -h db -d baserow -U baserow -f /baserow/backups/baserow_backup.tar.gz
-```
-
-### Boot up Baserow
-
-```bash
 $ docker-compose up -d
 ```
 
@@ -148,7 +134,7 @@ with the docker-compose.yml file:
 
 ```bash
 $ docker volume rm baserow_pgdata
-$ ./docker_clone_volume.sh baserow_pgdata_backup baserow_pgdata
+$ ./docker_clone_volume.sh baserow_pgdata11 baserow_pgdata
 ```
 
 ### Rebuild the images and start the containers
