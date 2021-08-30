@@ -13,7 +13,7 @@ class InvalidNumberOfArguments(BaserowFormulaParserError):
 
 class MaximumFormulaDepthError(BaserowFormulaParserError):
     def __init__(self):
-        super().__init__("it exceeded the maximum nested formula depth allowed")
+        super().__init__("it exceeded the maximum formula size")
 
 
 class BaserowFormulaSyntaxError(BaserowFormulaParserError):

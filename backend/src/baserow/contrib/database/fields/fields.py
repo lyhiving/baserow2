@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Expression
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
 
 
@@ -30,49 +31,45 @@ class SingleSelectForeignKey(models.ForeignKey):
     forward_related_accessor_class = SingleSelectForwardManyToOneDescriptor
 
 
-class GeneratedColumnField(models.Field):
+class ExpressionField(models.Field):
     """
-    A PostgreSQL stored generated column field, provide a SQL expression and the type
-    of the expression and every row of this field will be the evaluated upto date
-    result of that expression. Please see the following documentation for more details:
-    https://www.postgresql.org/docs/12/ddl-generated-columns.html
+    A Custom Django field which is always set to the value of the provided Django
+    Expression.
     """
 
-    # Ensure that Django never tries to INSERT or UPDATE a generated column field
-    # as it is not allowed by Postgres (and makes no sense) and will cause database
-    # error.
-    _baserow_read_only_field = True
     # Ensure when a model using one of these fields is created that the values of any
     # generated columns are returned using a INSERT ... RETURNING pk, gen_col_1, etc
-    # as there is no default and no way of knowing what the e
+    # as there is no default and no way of knowing what the expression evaluates to
     db_returning = True
 
     def __init__(
         self,
-        generated_column_expression: str,
-        generated_column_expression_type: str,
+        expression: Expression,
         *args,
         **kwargs,
     ):
         """
-        :param generated_column_expression: A PostgreSQL expression valid for use
-            when defining a generated column.
-        :param generated_column_expression_type: The PostgreSQL type of the expression
-            provided above.
+        :param expression: The Django expression used to calculate this fields value.
         """
 
-        self.generated_column_sql = generated_column_expression
-        self.generated_column_sql_type = generated_column_expression_type
+        self.expression = expression
         super().__init__(*args, **kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
-        kwargs["generated_column_expression"] = self.generated_column_sql
-        kwargs["generated_column_expression_type"] = self.generated_column_sql_type
+        kwargs["expression"] = self.expression
         return name, path, args, kwargs
 
-    def db_type(self, connection):
-        return (
-            f"{self.generated_column_sql_type} GENERATED ALWAYS AS "
-            f"({self.generated_column_sql}) STORED"
-        )
+    def get_internal_type(self):
+        internal_type = self.expression.output_field.__class__.__name__
+        # Expressions will by default set their output type as a CharField, however
+        # as we don't want to have to set a varchar length we switch to using the
+        # unlimited length text field.
+        if internal_type == "CharField":
+            internal_type = "TextField"
+        return internal_type
+
+    def pre_save(self, model_instance, add):
+        # Force the instance to use the expression to calculate its value.
+        setattr(model_instance, self.attname, self.expression)
+        return self.expression

@@ -143,7 +143,7 @@ def test_create_row(send_mock, data_fixture):
     )
     assert getattr(row_1, f"field_{name_field.id}") == "Tesla"
     assert getattr(row_1, f"field_{speed_field.id}") == 240
-    assert getattr(row_1, f"field_{price_field.id}") == Decimal("59999.99")
+    assert getattr(row_1, f"field_{price_field.id}") == 59999.99
     assert not getattr(row_1, f"field_9999", None)
     assert row_1.order == 1
     row_1.refresh_from_db()

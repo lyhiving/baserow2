@@ -12,9 +12,8 @@ It consists of 3 sub modules:
     Formula abstract syntax tree representation.
     2. ast: the definition of the internal Baserow Formula abstract syntax tree (AST).
     Essentially a graph which can be used to represent a Baserow Formula neatly.
-    3. generated_column_generator: takes a Baserow Formula AST and generates a SQL
-    expression which can be used to define a Postgresql generated column in such a way
-    that the column calculates the Baserow Formula execution results.
+    3. expression_generator: takes a Baserow Formula AST and generates a Django
+    Expression object which calculates the result of executing the formula.
 
 The abstract syntax tree abstraction is used to decouple the specifics of the antlr4
 parser from the specifics of turning a Baserow formula into generated SQL. It lets us

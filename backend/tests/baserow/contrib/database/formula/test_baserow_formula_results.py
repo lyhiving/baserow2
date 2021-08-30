@@ -43,13 +43,12 @@ INVALID_FORMULA_TESTS = [
         + "'test'"
         + ")" * (sys.getrecursionlimit()),
         "ERROR_PARSING_FORMULA",
-        "The formula failed to parse due to: it exceeded the maximum nested formula "
-        "depth allowed.",
+        "The formula failed to parse due to: it exceeded the maximum formula size.",
     ),
     (
         "CONCAT(" + ",".join(["'test'"] * 5000) + ")",
-        "ERROR_TOO_DEEPLY_NESTED_FORMULA",
-        "The formula is too deeply nested.",
+        "ERROR_PARSING_FORMULA",
+        "The formula failed to parse due to: it exceeded the maximum formula size.",
     ),
     (
         "UPPER('" + "t" * (settings.MAX_FORMULA_STRING_LENGTH + 1) + "')",

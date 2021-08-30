@@ -34,16 +34,13 @@ class BaserowFormulaErrorListener(ErrorListener):
 
 
 def raw_formula_to_tree(formula: str) -> BaserowExpression:
-    try:
-        lexer = BaserowFormulaLexer(InputStream(formula))
-        stream = CommonTokenStream(lexer)
-        parser = BaserowFormula(stream)
-        parser.removeErrorListeners()
-        parser.addErrorListener(BaserowFormulaErrorListener())
-        tree = parser.root()
-        return BaserowFormulaToBaserowASTMapper().visit(tree)
-    except RecursionError:
-        raise MaximumFormulaDepthError()
+    lexer = BaserowFormulaLexer(InputStream(formula))
+    stream = CommonTokenStream(lexer)
+    parser = BaserowFormula(stream)
+    parser.removeErrorListeners()
+    parser.addErrorListener(BaserowFormulaErrorListener())
+    tree = parser.root()
+    return BaserowFormulaToBaserowASTMapper().visit(tree)
 
 
 class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):

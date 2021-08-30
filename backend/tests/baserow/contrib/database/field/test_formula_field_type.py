@@ -1,5 +1,6 @@
 import pytest
 
+from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.registries import field_type_registry
 
 
@@ -12,6 +13,25 @@ def test_creating_a_model_with_formula_field_immediately_populates_it(data_fixtu
     row = model.objects.create()
 
     assert getattr(row, formula_field_name) == "test"
+
+
+@pytest.mark.django_db
+def test_adding_a_formula_field_to_an_existing_table_populates_it_for_all_rows(
+    data_fixture,
+):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    before_model = table.get_model()
+    existing_row = before_model.objects.create()
+    formula_field = FieldHandler().create_field(
+        user, table, "formula", name="formula", formula="'test'"
+    )
+    formula_field_name = f"field_{formula_field.id}"
+    model = table.get_model()
+    row = model.objects.create()
+
+    assert getattr(row, formula_field_name) == "test"
+    assert getattr(model.objects.get(id=existing_row.id), formula_field_name) == "test"
 
 
 @pytest.mark.django_db

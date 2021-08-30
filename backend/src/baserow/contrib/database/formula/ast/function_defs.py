@@ -7,12 +7,12 @@ from baserow.contrib.database.formula.ast.function import (
 
 
 def register_functions(registry):
-    registry.register(Upper())
-    registry.register(Lower())
-    registry.register(Concat())
+    registry.register(BaserowUpper())
+    registry.register(BaserowLower())
+    registry.register(BaserowConcat())
 
 
-class Upper(BaserowFunctionDefinition):
+class BaserowUpper(BaserowFunctionDefinition):
     type = "upper"
 
     @property
@@ -20,7 +20,7 @@ class Upper(BaserowFunctionDefinition):
         return FixedNumOfArgs(1)
 
 
-class Lower(BaserowFunctionDefinition):
+class BaserowLower(BaserowFunctionDefinition):
     type = "lower"
 
     @property
@@ -28,7 +28,7 @@ class Lower(BaserowFunctionDefinition):
         return FixedNumOfArgs(1)
 
 
-class Concat(BaserowFunctionDefinition):
+class BaserowConcat(BaserowFunctionDefinition):
     type = "concat"
 
     @property

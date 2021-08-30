@@ -35,7 +35,7 @@ from baserow.contrib.database.api.fields.serializers import (
     FileFieldResponseSerializer,
 )
 from baserow.contrib.database.formula.compiler import (
-    baserow_formula_to_generated_column_sql,
+    baserow_formula_to_django_expression,
 )
 from baserow.contrib.database.validators import UnicodeRegexValidator
 from baserow.core.models import UserFile
@@ -47,7 +47,7 @@ from .exceptions import (
     IncompatiblePrimaryFieldTypeError,
 )
 from .field_filters import contains_filter, AnnotatedQ, filename_contains_filter
-from .fields import SingleSelectForeignKey, GeneratedColumnField
+from .fields import SingleSelectForeignKey, ExpressionField
 from .handler import FieldHandler
 from .models import (
     NUMBER_TYPE_INTEGER,
@@ -70,9 +70,8 @@ from .models import (
 )
 from .registries import FieldType, field_type_registry
 from baserow.contrib.database.formula.ast.errors import BaserowFormulaASTException
-from baserow.contrib.database.formula.generated_column_generator import errors
 from baserow.contrib.database.formula.parser.errors import BaserowFormulaParserError
-from ..formula.generated_column_generator.errors import GeneratedColumnCompilerException
+from ..formula.expression_generator.errors import ExpressionGeneratorException
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1731,7 +1730,7 @@ class FormulaFieldType(FieldType):
     can_be_in_form_view = False
     api_exceptions_map = {
         BaserowFormulaParserError: ERROR_PARSING_FORMULA,
-        GeneratedColumnCompilerException: ERROR_COMPILING_FORMULA,
+        ExpressionGeneratorException: ERROR_COMPILING_FORMULA,
         BaserowFormulaASTException: ERROR_MAPPING_FORMULA,
         OperationalError: lambda e: ERROR_TOO_DEEPLY_NESTED_FORMULA
         if "stack depth limit exceeded" in str(e)
@@ -1751,17 +1750,16 @@ class FormulaFieldType(FieldType):
         )
 
     def get_model_field(self, instance, **kwargs):
-        return GeneratedColumnField(
+        return ExpressionField(
             null=True,
             blank=True,
-            generated_column_expression=instance.formula,
-            generated_column_expression_type="text",
+            expression=baserow_formula_to_django_expression(instance.formula),
             **kwargs,
         )
 
     def prepare_value_for_db(self, instance, value):
         """
-        Since the LastModified and CreatedOnFieldTypes are read only fields, we raise a
+        Since the Formula Field is a read only field, we raise a
         ValidationError when there is a value present.
         """
 
@@ -1771,18 +1769,6 @@ class FormulaFieldType(FieldType):
         raise ValidationError(
             f"Field of type {self.type} is read only and should not be set manually."
         )
-
-    def prepare_values(self, values, user):
-        """
-        This method checks if the provided link row table is an int because then it
-        needs to be converted to a table instance.
-        """
-
-        formula = values["formula"]
-
-        values["formula"] = baserow_formula_to_generated_column_sql(formula)
-
-        return values
 
     def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
         # We don't want to export the per row formula values as they can all and
@@ -1798,3 +1784,13 @@ class FormulaFieldType(FieldType):
 
     def contains_query(self, *args):
         return contains_filter(*args)
+
+    def after_create(self, field, model, user, connection, before):
+        """
+        Immediately after the field has been created, we need to populate the values
+        with the formula
+        """
+
+        model.objects.all().update(
+            **{f"{field.db_column}": model._meta.get_field(field.db_column).expression}
+        )
