@@ -69,9 +69,10 @@ from .models import (
     FormulaField,
 )
 from .registries import FieldType, field_type_registry
-from ..formula.ast.errors import BaserowFormulaASTException
+from baserow.contrib.database.formula.ast.errors import BaserowFormulaASTException
+from baserow.contrib.database.formula.generated_column_generator import errors
+from baserow.contrib.database.formula.parser.errors import BaserowFormulaParserError
 from ..formula.generated_column_generator.errors import GeneratedColumnCompilerException
-from ..formula.parser.errors import BaserowFormulaParserError
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -559,6 +560,7 @@ class DateFieldType(FieldType):
 
 
 class CreatedOnLastModifiedBaseFieldType(DateFieldType):
+    read_only = True
     can_be_in_form_view = False
     allowed_fields = DateFieldType.allowed_fields + ["timezone"]
     serializer_field_names = DateFieldType.serializer_field_names + ["timezone"]
@@ -1735,6 +1737,7 @@ class FormulaFieldType(FieldType):
         if "stack depth limit exceeded" in str(e)
         else None,
     }
+    read_only = True
 
     def get_serializer_field(self, instance, **kwargs):
         required = kwargs.get("required", False)

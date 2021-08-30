@@ -60,18 +60,29 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
 
     def visitFunctionCall(self, ctx: BaserowFormula.FunctionCallContext):
         function_name = ctx.func_name().accept(self).lower()
-        expr_children = ctx.expr()
-        num_expressions = len(expr_children)
+        function_argument_expressions = ctx.expr()
+
+        function_def = self._get_function_def(function_name)
+        self._check_function_call_valid(function_argument_expressions, function_def)
+
+        args = [expr.accept(self) for expr in function_argument_expressions]
+        return BaserowFunctionCall(function_def, args)
+
+    @staticmethod
+    def _check_function_call_valid(function_argument_expressions, function_def):
+        num_expressions = len(function_argument_expressions)
+        if not function_def.num_args.test(num_expressions):
+            raise InvalidNumberOfArguments(function_def, num_expressions)
+
+    @staticmethod
+    def _get_function_def(function_name):
         try:
             function_def: BaserowFunctionDefinition = formula_function_registry.get(
                 function_name
             )
         except InstanceTypeDoesNotExist:
             raise BaserowFormulaSyntaxError(f"{function_name} is not a valid function")
-        if not function_def.num_args.test(num_expressions):
-            raise InvalidNumberOfArguments(function_def, num_expressions)
-        args = [expr.accept(self) for expr in expr_children]
-        return BaserowFunctionCall(function_def, args)
+        return function_def
 
     def visitFunc_name(self, ctx: BaserowFormula.Func_nameContext):
         return ctx.getText()

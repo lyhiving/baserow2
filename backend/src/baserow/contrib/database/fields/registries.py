@@ -65,6 +65,10 @@ class FieldType(
     can_be_in_form_view = True
     """Indicates whether the field is compatible with the form view."""
 
+    read_only = False
+    """Indicates whether the field allows inserting/updating row values or if it is 
+    read only."""
+
     def prepare_value_for_db(self, instance, value):
         """
         When a row is created or updated all the values are going to be prepared for the

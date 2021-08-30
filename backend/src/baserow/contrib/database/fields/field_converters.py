@@ -1,5 +1,5 @@
-from .registries import FieldConverter
 from .models import LinkRowField, FileField, FormulaField
+from .registries import FieldConverter
 
 
 class RecreateFieldConverter(FieldConverter):

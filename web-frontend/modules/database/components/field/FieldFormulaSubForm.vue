@@ -18,7 +18,7 @@
           <template v-if="!$v.values.formula.required">
             This field is required.
           </template>
-          <template v-else-if="!$v.values.formula.check">
+          <template v-else-if="!$v.values.formula.parseFormula">
             <strong
               >Error in the formula on line {{ error.line }} starting at letter
               {{ error.character }}</strong
@@ -37,11 +37,8 @@ import form from '@baserow/modules/core/mixins/form'
 
 import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
 import { required } from 'vuelidate/lib/validators'
-import antlr4 from 'antlr4'
-import { BaserowFormulaLexer } from '@baserow/modules/database/formula/parser/generated/BaserowFormulaLexer'
-import { BaserowFormula } from '@baserow/modules/database/formula/parser/generated/BaserowFormula'
 import { mapGetters } from 'vuex'
-import BaserowFormulaParserError from '@/modules/database/formula/parser/errors'
+import parseBaserowFormula from '@/modules/database/formula/parser/parser'
 
 export default {
   name: 'FieldFormulaSubForm',
@@ -84,36 +81,12 @@ export default {
         .replace('}', '')
       return s + '.'
     },
-    check(value) {
+    parseFormula(value) {
       if (!value.trim()) {
         return false
       }
       try {
-        const chars = new antlr4.InputStream(value)
-        const lexer = new BaserowFormulaLexer(chars)
-        const tokens = new antlr4.CommonTokenStream(lexer)
-        const parser = new BaserowFormula(tokens)
-        parser.removeErrorListeners()
-        parser.addErrorListener({
-          syntaxError: (
-            recognizer,
-            offendingSymbol,
-            line,
-            column,
-            msg,
-            err
-          ) => {
-            throw new BaserowFormulaParserError(
-              offendingSymbol,
-              line,
-              column,
-              msg
-            )
-          },
-        })
-        parser.buildParseTrees = true
-        parser.root()
-        return true
+        parseBaserowFormula(value)
       } catch (e) {
         this.error = e
         return false
@@ -125,7 +98,7 @@ export default {
       values: {
         formula: {
           required,
-          check: this.check,
+          parseFormula: this.parseFormula,
         },
       },
     }
