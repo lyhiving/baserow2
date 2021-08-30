@@ -1,4 +1,7 @@
 import abc
+from typing import Type
+
+from django.db.models import Func
 
 from baserow.core.registry import Instance
 
@@ -55,6 +58,10 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
     @property
     @abc.abstractmethod
     def type(self) -> str:
+        pass
+
+    @abc.abstractmethod
+    def to_django_function(self) -> Type[Func]:
         pass
 
     @property
