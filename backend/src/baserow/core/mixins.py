@@ -165,35 +165,6 @@ class PolymorphicContentTypeMixin:
         del self.specific_class
 
 
-class ExcludeReadOnlyFieldTypesFromInsertsAndUpdatesMixin(models.Model):
-    """
-    This mixin overrides the django protected method to ensure that read only fields
-    are never inserted into the database.
-    """
-
-    def _do_insert(self, manager, using, fields, returning_fields, raw):
-        return super()._do_insert(
-            manager,
-            using,
-            [f for f in fields if not getattr(f, "_baserow_read_only_field", False)],
-            returning_fields,
-            raw,
-        )
-
-    def _do_update(self, base_qs, using, pk_val, values, update_fields, forced_update):
-        return super()._do_update(
-            base_qs,
-            using,
-            pk_val,
-            [f for f in values if not getattr(f[0], "_baserow_read_only_field", False)],
-            update_fields,
-            forced_update,
-        )
-
-    class Meta:
-        abstract = True
-
-
 class CreatedAndUpdatedOnMixin(models.Model):
     """
     This mixin introduces two new fields that store the created on and updated on

@@ -10,7 +10,6 @@ from baserow.contrib.database.formula.ast.tree import (
 from baserow.contrib.database.formula.parser.errors import (
     InvalidNumberOfArguments,
     BaserowFormulaSyntaxError,
-    MaximumFormulaDepthError,
 )
 from baserow.contrib.database.formula.parser.generated.BaserowFormula import (
     BaserowFormula,

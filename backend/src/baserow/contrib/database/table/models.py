@@ -21,7 +21,6 @@ from baserow.core.mixins import (
     OrderableMixin,
     CreatedAndUpdatedOnMixin,
     TrashableModelMixin,
-    ExcludeReadOnlyFieldTypesFromInsertsAndUpdatesMixin,
 )
 from baserow.core.utils import split_comma_separated_string
 
@@ -427,7 +426,6 @@ class Table(
                 GeneratedTableModel,
                 TrashableModelMixin,
                 CreatedAndUpdatedOnMixin,
-                ExcludeReadOnlyFieldTypesFromInsertsAndUpdatesMixin,
                 models.Model,
             ),
             attrs,
