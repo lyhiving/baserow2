@@ -728,6 +728,159 @@
               </li>
             </ul>
           </div>
+          <div class="formula-compiler">
+            <div class="formula-compiler__input">
+              <AutoResizingTextarea
+                class="formula-compiler__input-formula"
+                :value="'concat(field(“Text”), field(“Text”))'"
+              ></AutoResizingTextarea>
+            </div>
+            <div class="formula-compiler__body">
+              <div class="formula-compiler__items">
+                <ul class="formula-compiler__item-group">
+                  <li class="formula-compiler__item-group-title">Fields</li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-font formula-compiler__item-icon" />
+                      Text
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-hashtag formula-compiler__item-icon" />
+                      Number
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i
+                        class="fas fa-check-square formula-compiler__item-icon"
+                      />
+                      Checkbox
+                    </a>
+                  </li>
+                </ul>
+                <ul class="formula-compiler__item-group">
+                  <li class="formula-compiler__item-group-title">Constants</li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-hashtag formula-compiler__item-icon" />
+                      e
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-hashtag formula-compiler__item-icon" />
+                      pi
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i
+                        class="fas fa-check-square formula-compiler__item-icon"
+                      />
+                      true
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i
+                        class="fas fa-check-square formula-compiler__item-icon"
+                      />
+                      false
+                    </a>
+                  </li>
+                </ul>
+                <ul class="formula-compiler__item-group">
+                  <li class="formula-compiler__item-group-title">Operators</li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-font formula-compiler__item-icon" />
+                      If
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-hashtag formula-compiler__item-icon" />
+                      add
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-hashtag formula-compiler__item-icon" />
+                      subtract
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-hashtag formula-compiler__item-icon" />
+                      multiply
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-hashtag formula-compiler__item-icon" />
+                      divide
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-hashtag formula-compiler__item-icon" />
+                      pow
+                    </a>
+                  </li>
+                </ul>
+                <ul class="formula-compiler__item-group">
+                  <li class="formula-compiler__item-group-title">Functions</li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-font formula-compiler__item-icon" />
+                      concat
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-font formula-compiler__item-icon" />
+                      join
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-font formula-compiler__item-icon" />
+                      slice
+                    </a>
+                  </li>
+                  <li class="formula-compiler__item">
+                    <a href="#" class="formula-compiler__item-link">
+                      <i class="fas fa-hashtag formula-compiler__item-icon" />
+                      length
+                    </a>
+                  </li>
+                </ul>
+              </div>
+              <div class="formula-compiler__description">
+                <div class="formula-compiler__description-heading-1">
+                  concat
+                </div>
+                <div class="formula-compiler__description-text">
+                  Concatenates its arguments and returns the result.
+                </div>
+                <div class="formula-compiler__description-heading-2">
+                  Syntax
+                </div>
+                <pre
+                  class="formula-compiler__description-example"
+                ><code>concat(text...)</code></pre>
+                <div class="formula-compiler__description-heading-2">
+                  Examples
+                </div>
+                <pre
+                  class="formula-compiler__description-example"
+                ><code>concat(“Hello”, “World”) == “HelloWorld”
+“Hello” + “World” == “HelloWorld”</code></pre>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="margin-bottom-3">
           <a class="button" @click="$refs.context1.toggle($event.target)">
@@ -965,9 +1118,11 @@
 
 <script>
 import Notifications from '@baserow/modules/core/components/notifications/Notifications'
+import AutoResizingTextarea from '@baserow/modules/core/components/helpers/AutoResizingTextarea'
 
 export default {
   components: {
+    AutoResizingTextarea,
     Notifications,
   },
   data() {

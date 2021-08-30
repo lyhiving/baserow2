@@ -1,0 +1,124 @@
+.formula-compiler {
+  @extend .context;
+
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 510px;
+  border: solid 1px $color-neutral-300;
+}
+
+.formula-compiler__input {
+  flex-shrink: 0;
+  background-color: $color-neutral-100;
+  border-bottom: solid 1px $color-neutral-200;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  padding: 14px;
+}
+
+.formula-compiler__input-formula {
+  width: 100%;
+  font-family: monospace;
+  font-size: 13px;
+  color: $color-neutral-900;
+  resize: none;
+  border: none;
+  overflow-y: auto;
+  outline: none;
+  box-shadow: none;
+  padding: 0;
+  line-height: 22px;
+  height: 22px;
+  max-height: 88px;
+  background-color: transparent;
+}
+
+.formula-compiler__body {
+  display: flex;
+  max-height: 322px;
+}
+
+.formula-compiler__items {
+  flex: 0 0 134px;
+  overflow-y: auto;
+  border-right: solid 1px $color-neutral-200;
+}
+
+.formula-compiler__item-group {
+  list-style: none;
+  margin: 0;
+  padding: 12px 0;
+
+  &:not(:last-child) {
+    border-bottom: solid 1px $color-neutral-200;
+  }
+}
+
+.formula-compiler__item-group-title {
+  font-size: 12px;
+  color: $color-neutral-600;
+  padding: 0 12px 6px 12px;
+}
+
+.formula-compiler__item {
+  &:not(:last-child) {
+    margin-bottom: 4px;
+  }
+}
+
+.formula-compiler__item-link {
+  display: block;
+  margin: 0 6px;
+  padding: 0 6px;
+  font-size: 13px;
+  line-height: 24px;
+  color: $color-primary-900;
+  border-radius: 3px;
+
+  &:hover {
+    text-decoration: none;
+    background-color: $color-neutral-100;
+  }
+}
+
+.formula-compiler__item-icon {
+  font-size: 11px;
+  color: $color-neutral-600;
+  width: 14px;
+}
+
+.formula-compiler__description {
+  width: 100%;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.formula-compiler__description-heading-1 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.formula-compiler__description-heading-2 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.formula-compiler__description-text {
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.formula-compiler__description-example {
+  font-family: monospace;
+  background-color: $color-neutral-100;
+  border-radius: 3px;
+  padding: 6px 10px;
+
+  code {
+    font-size: 13px;
+    line-height: 180%;
+  }
+}
