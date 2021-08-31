@@ -30,6 +30,18 @@ BaserowFormulaVisitor.prototype.visitFunctionCall = function(ctx) {
 };
 
 
+// Visit a parse tree produced by BaserowFormula#IntegerLiteral.
+BaserowFormulaVisitor.prototype.visitIntegerLiteral = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by BaserowFormula#BinaryOp.
+BaserowFormulaVisitor.prototype.visitBinaryOp = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by BaserowFormula#func_name.
 BaserowFormulaVisitor.prototype.visitFunc_name = function(ctx) {
   return this.visitChildren(ctx);

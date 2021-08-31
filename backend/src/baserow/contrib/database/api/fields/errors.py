@@ -72,7 +72,7 @@ ERROR_MAPPING_FORMULA = (
 ERROR_COMPILING_FORMULA = (
     "ERROR_COMPILING_FORMULA",
     HTTP_400_BAD_REQUEST,
-    "The formula failed to compile.",
+    "The formula failed to compile due to: {e}.",
 )
 ERROR_TOO_DEEPLY_NESTED_FORMULA = (
     "ERROR_TOO_DEEPLY_NESTED_FORMULA",

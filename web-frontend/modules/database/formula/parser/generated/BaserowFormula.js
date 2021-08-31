@@ -8,30 +8,36 @@ var grammarFileName = "BaserowFormula.g4";
 
 
 var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
-    "\u0003Q$\u0004\u0002\t\u0002\u0004\u0003\t\u0003\u0004\u0004\t\u0004",
+    "\u0003Q.\u0004\u0002\t\u0002\u0004\u0003\t\u0003\u0004\u0004\t\u0004",
     "\u0004\u0005\t\u0005\u0003\u0002\u0003\u0002\u0003\u0002\u0003\u0003",
     "\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003",
-    "\u0007\u0003\u0015\n\u0003\f\u0003\u000e\u0003\u0018\u000b\u0003\u0005",
-    "\u0003\u001a\n\u0003\u0003\u0003\u0003\u0003\u0005\u0003\u001e\n\u0003",
-    "\u0003\u0004\u0003\u0004\u0003\u0005\u0003\u0005\u0003\u0005\u0002\u0002",
-    "\u0006\u0002\u0004\u0006\b\u0002\u0003\u0003\u0002\u0019\u001a\u0002",
-    "#\u0002\n\u0003\u0002\u0002\u0002\u0004\u001d\u0003\u0002\u0002\u0002",
-    "\u0006\u001f\u0003\u0002\u0002\u0002\b!\u0003\u0002\u0002\u0002\n\u000b",
-    "\u0005\u0004\u0003\u0002\u000b\f\u0007\u0002\u0002\u0003\f\u0003\u0003",
-    "\u0002\u0002\u0002\r\u001e\u0007\u0017\u0002\u0002\u000e\u001e\u0007",
-    "\u0018\u0002\u0002\u000f\u0010\u0005\u0006\u0004\u0002\u0010\u0019\u0007",
-    "\r\u0002\u0002\u0011\u0016\u0005\u0004\u0003\u0002\u0012\u0013\u0007",
-    "\u0007\u0002\u0002\u0013\u0015\u0005\u0004\u0003\u0002\u0014\u0012\u0003",
-    "\u0002\u0002\u0002\u0015\u0018\u0003\u0002\u0002\u0002\u0016\u0014\u0003",
-    "\u0002\u0002\u0002\u0016\u0017\u0003\u0002\u0002\u0002\u0017\u001a\u0003",
-    "\u0002\u0002\u0002\u0018\u0016\u0003\u0002\u0002\u0002\u0019\u0011\u0003",
-    "\u0002\u0002\u0002\u0019\u001a\u0003\u0002\u0002\u0002\u001a\u001b\u0003",
-    "\u0002\u0002\u0002\u001b\u001c\u0007\u000e\u0002\u0002\u001c\u001e\u0003",
-    "\u0002\u0002\u0002\u001d\r\u0003\u0002\u0002\u0002\u001d\u000e\u0003",
-    "\u0002\u0002\u0002\u001d\u000f\u0003\u0002\u0002\u0002\u001e\u0005\u0003",
-    "\u0002\u0002\u0002\u001f \u0005\b\u0005\u0002 \u0007\u0003\u0002\u0002",
-    "\u0002!\"\t\u0002\u0002\u0002\"\t\u0003\u0002\u0002\u0002\u0005\u0016",
-    "\u0019\u001d"].join("");
+    "\u0003\u0003\u0003\u0003\u0007\u0003\u0017\n\u0003\f\u0003\u000e\u0003",
+    "\u001a\u000b\u0003\u0005\u0003\u001c\n\u0003\u0003\u0003\u0003\u0003",
+    "\u0005\u0003 \n\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0007\u0003",
+    "%\n\u0003\f\u0003\u000e\u0003(\u000b\u0003\u0003\u0004\u0003\u0004\u0003",
+    "\u0005\u0003\u0005\u0003\u0005\u0002\u0003\u0004\u0006\u0002\u0004\u0006",
+    "\b\u0002\u0004\u0004\u0002;;AA\u0003\u0002\u0019\u001a\u0002/\u0002",
+    "\n\u0003\u0002\u0002\u0002\u0004\u001f\u0003\u0002\u0002\u0002\u0006",
+    ")\u0003\u0002\u0002\u0002\b+\u0003\u0002\u0002\u0002\n\u000b\u0005\u0004",
+    "\u0003\u0002\u000b\f\u0007\u0002\u0002\u0003\f\u0003\u0003\u0002\u0002",
+    "\u0002\r\u000e\b\u0003\u0001\u0002\u000e \u0007\u0017\u0002\u0002\u000f",
+    " \u0007\u0018\u0002\u0002\u0010 \u0007\u0014\u0002\u0002\u0011\u0012",
+    "\u0005\u0006\u0004\u0002\u0012\u001b\u0007\r\u0002\u0002\u0013\u0018",
+    "\u0005\u0004\u0003\u0002\u0014\u0015\u0007\u0007\u0002\u0002\u0015\u0017",
+    "\u0005\u0004\u0003\u0002\u0016\u0014\u0003\u0002\u0002\u0002\u0017\u001a",
+    "\u0003\u0002\u0002\u0002\u0018\u0016\u0003\u0002\u0002\u0002\u0018\u0019",
+    "\u0003\u0002\u0002\u0002\u0019\u001c\u0003\u0002\u0002\u0002\u001a\u0018",
+    "\u0003\u0002\u0002\u0002\u001b\u0013\u0003\u0002\u0002\u0002\u001b\u001c",
+    "\u0003\u0002\u0002\u0002\u001c\u001d\u0003\u0002\u0002\u0002\u001d\u001e",
+    "\u0007\u000e\u0002\u0002\u001e \u0003\u0002\u0002\u0002\u001f\r\u0003",
+    "\u0002\u0002\u0002\u001f\u000f\u0003\u0002\u0002\u0002\u001f\u0010\u0003",
+    "\u0002\u0002\u0002\u001f\u0011\u0003\u0002\u0002\u0002 &\u0003\u0002",
+    "\u0002\u0002!\"\f\u0004\u0002\u0002\"#\t\u0002\u0002\u0002#%\u0005\u0004",
+    "\u0003\u0005$!\u0003\u0002\u0002\u0002%(\u0003\u0002\u0002\u0002&$\u0003",
+    "\u0002\u0002\u0002&\'\u0003\u0002\u0002\u0002\'\u0005\u0003\u0002\u0002",
+    "\u0002(&\u0003\u0002\u0002\u0002)*\u0005\b\u0005\u0002*\u0007\u0003",
+    "\u0002\u0002\u0002+,\t\u0003\u0002\u0002,\t\u0003\u0002\u0002\u0002",
+    "\u0006\u0018\u001b\u001f&"].join("");
 
 
 var atn = new antlr4.atn.ATNDeserializer().deserialize(serializedATN);
@@ -234,7 +240,7 @@ BaserowFormula.prototype.root = function() {
     try {
         this.enterOuterAlt(localctx, 1);
         this.state = 8;
-        this.expr();
+        this.expr(0);
         this.state = 9;
         this.match(BaserowFormula.EOF);
     } catch (re) {
@@ -273,7 +279,6 @@ ExprContext.prototype.constructor = ExprContext;
 ExprContext.prototype.copyFrom = function(ctx) {
     antlr4.ParserRuleContext.prototype.copyFrom.call(this, ctx);
 };
-
 
 function StringLiteralContext(parser, ctx) {
 	ExprContext.call(this, parser);
@@ -380,74 +385,210 @@ FunctionCallContext.prototype.accept = function(visitor) {
 };
 
 
+function IntegerLiteralContext(parser, ctx) {
+	ExprContext.call(this, parser);
+    ExprContext.prototype.copyFrom.call(this, ctx);
+    return this;
+}
 
-BaserowFormula.ExprContext = ExprContext;
+IntegerLiteralContext.prototype = Object.create(ExprContext.prototype);
+IntegerLiteralContext.prototype.constructor = IntegerLiteralContext;
 
-BaserowFormula.prototype.expr = function() {
+BaserowFormula.IntegerLiteralContext = IntegerLiteralContext;
 
-    var localctx = new ExprContext(this, this._ctx, this.state);
-    this.enterRule(localctx, 2, BaserowFormula.RULE_expr);
+IntegerLiteralContext.prototype.INTEGER_LITERAL = function() {
+    return this.getToken(BaserowFormula.INTEGER_LITERAL, 0);
+};
+IntegerLiteralContext.prototype.enterRule = function(listener) {
+    if(listener instanceof BaserowFormulaListener ) {
+        listener.enterIntegerLiteral(this);
+	}
+};
+
+IntegerLiteralContext.prototype.exitRule = function(listener) {
+    if(listener instanceof BaserowFormulaListener ) {
+        listener.exitIntegerLiteral(this);
+	}
+};
+
+IntegerLiteralContext.prototype.accept = function(visitor) {
+    if ( visitor instanceof BaserowFormulaVisitor ) {
+        return visitor.visitIntegerLiteral(this);
+    } else {
+        return visitor.visitChildren(this);
+    }
+};
+
+
+function BinaryOpContext(parser, ctx) {
+	ExprContext.call(this, parser);
+    this.op = null; // Token;
+    ExprContext.prototype.copyFrom.call(this, ctx);
+    return this;
+}
+
+BinaryOpContext.prototype = Object.create(ExprContext.prototype);
+BinaryOpContext.prototype.constructor = BinaryOpContext;
+
+BaserowFormula.BinaryOpContext = BinaryOpContext;
+
+BinaryOpContext.prototype.expr = function(i) {
+    if(i===undefined) {
+        i = null;
+    }
+    if(i===null) {
+        return this.getTypedRuleContexts(ExprContext);
+    } else {
+        return this.getTypedRuleContext(ExprContext,i);
+    }
+};
+
+BinaryOpContext.prototype.PLUS = function() {
+    return this.getToken(BaserowFormula.PLUS, 0);
+};
+
+BinaryOpContext.prototype.MINUS = function() {
+    return this.getToken(BaserowFormula.MINUS, 0);
+};
+BinaryOpContext.prototype.enterRule = function(listener) {
+    if(listener instanceof BaserowFormulaListener ) {
+        listener.enterBinaryOp(this);
+	}
+};
+
+BinaryOpContext.prototype.exitRule = function(listener) {
+    if(listener instanceof BaserowFormulaListener ) {
+        listener.exitBinaryOp(this);
+	}
+};
+
+BinaryOpContext.prototype.accept = function(visitor) {
+    if ( visitor instanceof BaserowFormulaVisitor ) {
+        return visitor.visitBinaryOp(this);
+    } else {
+        return visitor.visitChildren(this);
+    }
+};
+
+
+
+BaserowFormula.prototype.expr = function(_p) {
+	if(_p===undefined) {
+	    _p = 0;
+	}
+    var _parentctx = this._ctx;
+    var _parentState = this.state;
+    var localctx = new ExprContext(this, this._ctx, _parentState);
+    var _prevctx = localctx;
+    var _startState = 2;
+    this.enterRecursionRule(localctx, 2, BaserowFormula.RULE_expr, _p);
     var _la = 0; // Token type
     try {
-        this.state = 27;
+        this.enterOuterAlt(localctx, 1);
+        this.state = 29;
         this._errHandler.sync(this);
         switch(this._input.LA(1)) {
         case BaserowFormula.SINGLEQ_STRING_LITERAL:
             localctx = new StringLiteralContext(this, localctx);
-            this.enterOuterAlt(localctx, 1);
-            this.state = 11;
+            this._ctx = localctx;
+            _prevctx = localctx;
+
+            this.state = 12;
             this.match(BaserowFormula.SINGLEQ_STRING_LITERAL);
             break;
         case BaserowFormula.DOUBLEQ_STRING_LITERAL:
             localctx = new StringLiteralContext(this, localctx);
-            this.enterOuterAlt(localctx, 2);
-            this.state = 12;
+            this._ctx = localctx;
+            _prevctx = localctx;
+            this.state = 13;
             this.match(BaserowFormula.DOUBLEQ_STRING_LITERAL);
+            break;
+        case BaserowFormula.INTEGER_LITERAL:
+            localctx = new IntegerLiteralContext(this, localctx);
+            this._ctx = localctx;
+            _prevctx = localctx;
+            this.state = 14;
+            this.match(BaserowFormula.INTEGER_LITERAL);
             break;
         case BaserowFormula.IDENTIFIER:
         case BaserowFormula.IDENTIFIER_UNICODE:
             localctx = new FunctionCallContext(this, localctx);
-            this.enterOuterAlt(localctx, 3);
-            this.state = 13;
+            this._ctx = localctx;
+            _prevctx = localctx;
+            this.state = 15;
             this.func_name();
-            this.state = 14;
+            this.state = 16;
             this.match(BaserowFormula.OPEN_PAREN);
-            this.state = 23;
+            this.state = 25;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
-            if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << BaserowFormula.SINGLEQ_STRING_LITERAL) | (1 << BaserowFormula.DOUBLEQ_STRING_LITERAL) | (1 << BaserowFormula.IDENTIFIER) | (1 << BaserowFormula.IDENTIFIER_UNICODE))) !== 0)) {
-                this.state = 15;
-                this.expr();
-                this.state = 20;
+            if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << BaserowFormula.INTEGER_LITERAL) | (1 << BaserowFormula.SINGLEQ_STRING_LITERAL) | (1 << BaserowFormula.DOUBLEQ_STRING_LITERAL) | (1 << BaserowFormula.IDENTIFIER) | (1 << BaserowFormula.IDENTIFIER_UNICODE))) !== 0)) {
+                this.state = 17;
+                this.expr(0);
+                this.state = 22;
                 this._errHandler.sync(this);
                 _la = this._input.LA(1);
                 while(_la===BaserowFormula.COMMA) {
-                    this.state = 16;
+                    this.state = 18;
                     this.match(BaserowFormula.COMMA);
-                    this.state = 17;
-                    this.expr();
-                    this.state = 22;
+                    this.state = 19;
+                    this.expr(0);
+                    this.state = 24;
                     this._errHandler.sync(this);
                     _la = this._input.LA(1);
                 }
             }
 
-            this.state = 25;
+            this.state = 27;
             this.match(BaserowFormula.CLOSE_PAREN);
             break;
         default:
             throw new antlr4.error.NoViableAltException(this);
         }
-    } catch (re) {
-    	if(re instanceof antlr4.error.RecognitionException) {
-	        localctx.exception = re;
-	        this._errHandler.reportError(this, re);
-	        this._errHandler.recover(this, re);
+        this._ctx.stop = this._input.LT(-1);
+        this.state = 36;
+        this._errHandler.sync(this);
+        var _alt = this._interp.adaptivePredict(this._input,3,this._ctx)
+        while(_alt!=2 && _alt!=antlr4.atn.ATN.INVALID_ALT_NUMBER) {
+            if(_alt===1) {
+                if(this._parseListeners!==null) {
+                    this.triggerExitRuleEvent();
+                }
+                _prevctx = localctx;
+                localctx = new BinaryOpContext(this, new ExprContext(this, _parentctx, _parentState));
+                this.pushNewRecursionContext(localctx, _startState, BaserowFormula.RULE_expr);
+                this.state = 31;
+                if (!( this.precpred(this._ctx, 2))) {
+                    throw new antlr4.error.FailedPredicateException(this, "this.precpred(this._ctx, 2)");
+                }
+                this.state = 32;
+                localctx.op = this._input.LT(1);
+                _la = this._input.LA(1);
+                if(!(_la===BaserowFormula.MINUS || _la===BaserowFormula.PLUS)) {
+                    localctx.op = this._errHandler.recoverInline(this);
+                }
+                else {
+                	this._errHandler.reportMatch(this);
+                    this.consume();
+                }
+                this.state = 33;
+                this.expr(3); 
+            }
+            this.state = 38;
+            this._errHandler.sync(this);
+            _alt = this._interp.adaptivePredict(this._input,3,this._ctx);
+        }
+
+    } catch( error) {
+        if(error instanceof antlr4.error.RecognitionException) {
+	        localctx.exception = error;
+	        this._errHandler.reportError(this, error);
+	        this._errHandler.recover(this, error);
 	    } else {
-	    	throw re;
+	    	throw error;
 	    }
     } finally {
-        this.exitRule();
+        this.unrollRecursionContexts(_parentctx)
     }
     return localctx;
 };
@@ -504,7 +645,7 @@ BaserowFormula.prototype.func_name = function() {
     this.enterRule(localctx, 4, BaserowFormula.RULE_func_name);
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 29;
+        this.state = 39;
         this.identifier();
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
@@ -577,7 +718,7 @@ BaserowFormula.prototype.identifier = function() {
     var _la = 0; // Token type
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 31;
+        this.state = 41;
         _la = this._input.LA(1);
         if(!(_la===BaserowFormula.IDENTIFIER || _la===BaserowFormula.IDENTIFIER_UNICODE)) {
         this._errHandler.recoverInline(this);
@@ -598,6 +739,25 @@ BaserowFormula.prototype.identifier = function() {
         this.exitRule();
     }
     return localctx;
+};
+
+
+BaserowFormula.prototype.sempred = function(localctx, ruleIndex, predIndex) {
+	switch(ruleIndex) {
+	case 1:
+			return this.expr_sempred(localctx, predIndex);
+    default:
+        throw "No predicate with index:" + ruleIndex;
+   }
+};
+
+BaserowFormula.prototype.expr_sempred = function(localctx, predIndex) {
+	switch(predIndex) {
+		case 0:
+			return this.precpred(this._ctx, 2);
+		default:
+			throw "No predicate with index:" + predIndex;
+	}
 };
 
 

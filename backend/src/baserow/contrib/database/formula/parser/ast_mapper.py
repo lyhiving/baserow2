@@ -6,6 +6,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowStringLiteral,
     BaserowFunctionCall,
     BaserowExpression,
+    BaserowIntegerLiteral,
 )
 from baserow.contrib.database.formula.parser.errors import (
     InvalidNumberOfArguments,
@@ -58,11 +59,18 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
         function_name = ctx.func_name().accept(self).lower()
         function_argument_expressions = ctx.expr()
 
+        return self._do_func(function_argument_expressions, function_name)
+
+    def _do_func(self, function_argument_expressions, function_name):
         function_def = self._get_function_def(function_name)
         self._check_function_call_valid(function_argument_expressions, function_def)
-
         args = [expr.accept(self) for expr in function_argument_expressions]
         return BaserowFunctionCall(function_def, args)
+
+    def visitBinaryOp(self, ctx: BaserowFormula.BinaryOpContext):
+        op = "add" if ctx.PLUS() else "minus"
+
+        return self._do_func(ctx.expr(), op)
 
     @staticmethod
     def _check_function_call_valid(function_argument_expressions, function_def):
@@ -85,3 +93,6 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
 
     def visitIdentifier(self, ctx: BaserowFormula.IdentifierContext):
         return ctx.getText()
+
+    def visitIntegerLiteral(self, ctx: BaserowFormula.IntegerLiteralContext):
+        return BaserowIntegerLiteral(int(ctx.getText()))

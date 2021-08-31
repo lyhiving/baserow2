@@ -24,6 +24,16 @@ class BaserowFormulaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by BaserowFormula#IntegerLiteral.
+    def visitIntegerLiteral(self, ctx:BaserowFormula.IntegerLiteralContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BaserowFormula#BinaryOp.
+    def visitBinaryOp(self, ctx:BaserowFormula.BinaryOpContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by BaserowFormula#func_name.
     def visitFunc_name(self, ctx:BaserowFormula.Func_nameContext):
         return self.visitChildren(ctx)

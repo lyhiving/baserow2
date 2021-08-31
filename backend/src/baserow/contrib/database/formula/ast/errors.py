@@ -9,6 +9,10 @@ class InvalidStringLiteralProvided(BaserowFormulaASTException):
     pass
 
 
+class InvalidIntLiteralProvided(BaserowFormulaASTException):
+    pass
+
+
 class TooLargeStringLiteralProvided(BaserowFormulaASTException):
     def __init__(self):
         super().__init__(

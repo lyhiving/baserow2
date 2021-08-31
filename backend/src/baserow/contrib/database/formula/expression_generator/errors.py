@@ -9,3 +9,7 @@ class UnknownBaserowFunction(ExpressionGeneratorException):
             f"An unknown function called {function_def.type} was given to the "
             f"expression generator."
         )
+
+
+class InvalidTypes(ExpressionGeneratorException):
+    pass

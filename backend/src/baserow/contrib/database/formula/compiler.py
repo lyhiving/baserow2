@@ -1,5 +1,7 @@
+from django.core.exceptions import FieldError
 from django.db.models import Expression
 
+from baserow.contrib.database.formula.expression_generator.errors import InvalidTypes
 from baserow.contrib.database.formula.expression_generator.generator import (
     tree_to_django_expression,
 )
@@ -24,8 +26,15 @@ def baserow_formula_to_django_expression(baserow_formula_raw_string: str) -> Exp
     """
 
     try:
-        return tree_to_django_expression(
+        expression = tree_to_django_expression(
             raw_formula_to_tree(baserow_formula_raw_string)
         )
+        try:
+            # Django will raise a FieldError if the expression contains mixed types
+            # and hence is invalid.
+            expression.output_field
+        except FieldError:
+            raise InvalidTypes()
+        return expression
     except RecursionError:
         raise MaximumFormulaDepthError()

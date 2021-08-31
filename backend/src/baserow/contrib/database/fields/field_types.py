@@ -9,7 +9,7 @@ import pytz
 from dateutil import parser
 from dateutil.parser import ParserError
 from django.contrib.postgres.fields import JSONField
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, FieldError
 from django.core.files.storage import default_storage
 from django.db import models, OperationalError
 from django.db.models import Case, When, Q, F, Func, Value, CharField
@@ -71,7 +71,10 @@ from .models import (
 from .registries import FieldType, field_type_registry
 from baserow.contrib.database.formula.ast.errors import BaserowFormulaASTException
 from baserow.contrib.database.formula.parser.errors import BaserowFormulaParserError
-from ..formula.expression_generator.errors import ExpressionGeneratorException
+from ..formula.expression_generator.errors import (
+    ExpressionGeneratorException,
+    InvalidTypes,
+)
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1750,10 +1753,11 @@ class FormulaFieldType(FieldType):
         )
 
     def get_model_field(self, instance, **kwargs):
+        expression = baserow_formula_to_django_expression(instance.formula)
         return ExpressionField(
             null=True,
             blank=True,
-            expression=baserow_formula_to_django_expression(instance.formula),
+            expression=expression,
             **kwargs,
         )
 
@@ -1793,4 +1797,28 @@ class FormulaFieldType(FieldType):
 
         model.objects.all().update(
             **{f"{field.db_column}": model._meta.get_field(field.db_column).expression}
+        )
+
+    def after_update(
+        self,
+        from_field,
+        to_field,
+        from_model,
+        to_model,
+        user,
+        connection,
+        altered_column,
+        before,
+    ):
+        """
+        If the field type has changed, we need to update the values from the from
+        the source_field_name column.
+        """
+
+        to_model.objects.all().update(
+            **{
+                f"{to_field.db_column}": to_model._meta.get_field(
+                    to_field.db_column
+                ).expression
+            }
         )

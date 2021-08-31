@@ -6,6 +6,7 @@ from django.conf import settings
 from baserow.contrib.database.formula.ast.errors import (
     InvalidStringLiteralProvided,
     TooLargeStringLiteralProvided,
+    InvalidIntLiteralProvided,
 )
 from baserow.contrib.database.formula.ast.function import BaserowFunctionDefinition
 
@@ -27,6 +28,22 @@ class BaserowStringLiteral(BaserowExpression):
     def accept(self, visitor: "BaserowFormulaASTVisitor"):
         return visitor.visit_string_literal(self)
 
+    def __str__(self):
+        return self.literal
+
+
+class BaserowIntegerLiteral(BaserowExpression):
+    def __init__(self, literal: int):
+        if not isinstance(literal, int):
+            raise InvalidIntLiteralProvided()
+        self.literal = literal
+
+    def accept(self, visitor: "BaserowFormulaASTVisitor"):
+        return visitor.visit_int_literal(self)
+
+    def __str__(self):
+        return self.literal
+
 
 class BaserowFunctionCall(BaserowExpression):
     def __init__(
@@ -37,6 +54,9 @@ class BaserowFunctionCall(BaserowExpression):
 
     def accept(self, visitor: "BaserowFormulaASTVisitor"):
         return visitor.visit_function_call(self)
+
+    def __str__(self):
+        return f"{self.function_def.type}({','.join([str(a) for a in self.args])})"
 
 
 T = TypeVar("T")
@@ -49,4 +69,7 @@ class BaserowFormulaASTVisitor(abc.ABC, Generic[T]):
 
     @abc.abstractmethod
     def visit_function_call(self, function_call: BaserowFunctionCall) -> T:
+        pass
+
+    def visit_int_literal(self, int_literal: BaserowIntegerLiteral):
         pass

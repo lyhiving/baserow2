@@ -35,6 +35,24 @@ class BaserowFormulaListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by BaserowFormula#IntegerLiteral.
+    def enterIntegerLiteral(self, ctx:BaserowFormula.IntegerLiteralContext):
+        pass
+
+    # Exit a parse tree produced by BaserowFormula#IntegerLiteral.
+    def exitIntegerLiteral(self, ctx:BaserowFormula.IntegerLiteralContext):
+        pass
+
+
+    # Enter a parse tree produced by BaserowFormula#BinaryOp.
+    def enterBinaryOp(self, ctx:BaserowFormula.BinaryOpContext):
+        pass
+
+    # Exit a parse tree produced by BaserowFormula#BinaryOp.
+    def exitBinaryOp(self, ctx:BaserowFormula.BinaryOpContext):
+        pass
+
+
     # Enter a parse tree produced by BaserowFormula#func_name.
     def enterFunc_name(self, ctx:BaserowFormula.Func_nameContext):
         pass

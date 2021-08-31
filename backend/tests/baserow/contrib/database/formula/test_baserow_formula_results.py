@@ -27,6 +27,7 @@ VALID_FORMULA_TESTS = [
     ("CONCAT('https://उदाहरण.परीक्षा', '/api')", "https://उदाहरण.परीक्षा/api"),
     ("LOWER('HTTPS://उदाहरण.परीक्षा')", "https://उदाहरण.परीक्षा"),
     ("CONCAT('\ntest', '\n')", "\ntest\n"),
+    ("1+1", "2"),
 ]
 
 INVALID_FORMULA_TESTS = [
@@ -106,6 +107,13 @@ INVALID_FORMULA_TESTS = [
         "provided to the function lower. It excepts exactly 1 arguments but "
         "instead 2 were given.",
     ),
+    ("'a' + 2", "ERROR_COMPILING_FORMULA", None),
+    ("CONCAT('a',2)", "ERROR_COMPILING_FORMULA", None),
+    ("CONCAT(1,2)", "ERROR_COMPILING_FORMULA", None),
+    ("UPPER(1,2)", "ERROR_PARSING_FORMULA", None),
+    ("UPPER(1)", "ERROR_COMPILING_FORMULA", None),
+    ("LOWER(1,2)", "ERROR_PARSING_FORMULA", None),
+    ("LOWER(1)", "ERROR_COMPILING_FORMULA", None),
 ]
 
 
@@ -120,7 +128,7 @@ def test_valid_formulas(test_input, expected, data_fixture, api_client):
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, response.json()
     field_id = response.json()["id"]
     response = api_client.post(
         reverse("api:database:rows:list", kwargs={"table_id": table.id}),
@@ -154,7 +162,8 @@ def test_invalid_formulas(test_input, error, detail, data_fixture, api_client):
     assert response.status_code == 400
     response_json = response.json()
     assert response_json["error"] == error
-    assert response_json["detail"] == detail
+    if detail:
+        assert response_json["detail"] == detail
 
     response = api_client.get(
         reverse("api:database:fields:list", kwargs={"table_id": table.id}),

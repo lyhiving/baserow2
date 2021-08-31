@@ -1,7 +1,7 @@
 import abc
-from typing import Type
+from typing import Type, List
 
-from django.db.models import Func
+from django.db.models import Func, Expression
 
 from baserow.core.registry import Instance
 
@@ -61,7 +61,7 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def to_django_function(self) -> Type[Func]:
+    def to_django_expression(self, args: List[Expression]) -> Expression:
         pass
 
     @property
