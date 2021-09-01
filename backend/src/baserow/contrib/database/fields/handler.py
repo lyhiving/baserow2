@@ -182,7 +182,7 @@ class FieldHandler:
 
         # Add the field to the table schema.
         with connection.schema_editor() as schema_editor:
-            to_model = table.get_model(field_ids=[], fields=[instance])
+            to_model = table.get_model()
             model_field = to_model._meta.get_field(instance.db_column)
 
             if do_schema_change:
@@ -266,7 +266,7 @@ class FieldHandler:
         # If no converter is found we are going to convert to field using the
         # lenient schema editor which will alter the field's type and set the data
         # value to null if it can't be converted.
-        to_model = field.table.get_model(field_ids=[], fields=[field])
+        to_model = field.table.get_model()
         from_model_field = from_model._meta.get_field(field.db_column)
         to_model_field = to_model._meta.get_field(field.db_column)
 

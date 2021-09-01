@@ -8,7 +8,6 @@ from baserow.contrib.database.formula.ast.errors import (
     TooLargeStringLiteralProvided,
     InvalidIntLiteralProvided,
 )
-from baserow.contrib.database.formula.ast.function import BaserowFunctionDefinition
 
 
 class BaserowExpression(abc.ABC):
@@ -42,13 +41,11 @@ class BaserowIntegerLiteral(BaserowExpression):
         return visitor.visit_int_literal(self)
 
     def __str__(self):
-        return self.literal
+        return str(self.literal)
 
 
 class BaserowFunctionCall(BaserowExpression):
-    def __init__(
-        self, function_def: BaserowFunctionDefinition, args: List[BaserowExpression]
-    ):
+    def __init__(self, function_def, args: List[BaserowExpression]):
         self.function_def = function_def
         self.args = args
 
@@ -57,6 +54,17 @@ class BaserowFunctionCall(BaserowExpression):
 
     def __str__(self):
         return f"{self.function_def.type}({','.join([str(a) for a in self.args])})"
+
+
+class BaserowFieldReference(BaserowExpression):
+    def accept(self, visitor: "BaserowFormulaASTVisitor"):
+        return visitor.visit_field_reference(self)
+
+    def __init__(self, referenced_field: str):
+        self.referenced_field = referenced_field
+
+    def __str__(self):
+        return f"field({self.referenced_field})"
 
 
 T = TypeVar("T")
@@ -71,5 +79,10 @@ class BaserowFormulaASTVisitor(abc.ABC, Generic[T]):
     def visit_function_call(self, function_call: BaserowFunctionCall) -> T:
         pass
 
+    @abc.abstractmethod
     def visit_int_literal(self, int_literal: BaserowIntegerLiteral):
+        pass
+
+    @abc.abstractmethod
+    def visit_field_reference(self, field_reference: BaserowFieldReference):
         pass

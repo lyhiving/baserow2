@@ -18,6 +18,12 @@ BaserowFormulaVisitor.prototype.visitRoot = function(ctx) {
 };
 
 
+// Visit a parse tree produced by BaserowFormula#FieldReference.
+BaserowFormulaVisitor.prototype.visitFieldReference = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by BaserowFormula#StringLiteral.
 BaserowFormulaVisitor.prototype.visitStringLiteral = function(ctx) {
   return this.visitChildren(ctx);
@@ -44,6 +50,12 @@ BaserowFormulaVisitor.prototype.visitBinaryOp = function(ctx) {
 
 // Visit a parse tree produced by BaserowFormula#func_name.
 BaserowFormulaVisitor.prototype.visitFunc_name = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
+// Visit a parse tree produced by BaserowFormula#field_reference.
+BaserowFormulaVisitor.prototype.visitField_reference = function(ctx) {
   return this.visitChildren(ctx);
 };
 

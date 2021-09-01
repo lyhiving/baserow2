@@ -14,6 +14,11 @@ class BaserowFormulaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by BaserowFormula#FieldReference.
+    def visitFieldReference(self, ctx:BaserowFormula.FieldReferenceContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by BaserowFormula#StringLiteral.
     def visitStringLiteral(self, ctx:BaserowFormula.StringLiteralContext):
         return self.visitChildren(ctx)
@@ -36,6 +41,11 @@ class BaserowFormulaVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by BaserowFormula#func_name.
     def visitFunc_name(self, ctx:BaserowFormula.Func_nameContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by BaserowFormula#field_reference.
+    def visitField_reference(self, ctx:BaserowFormula.Field_referenceContext):
         return self.visitChildren(ctx)
 
 

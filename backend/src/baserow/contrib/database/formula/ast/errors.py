@@ -13,6 +13,19 @@ class InvalidIntLiteralProvided(BaserowFormulaASTException):
     pass
 
 
+class NoSelfReferencesError(BaserowFormulaASTException):
+    pass
+
+
+class NoCircularReferencesError(BaserowFormulaASTException):
+    pass
+
+
+class UnknownFieldReference(BaserowFormulaASTException):
+    def __init__(self, referenced_field):
+        super().__init__(f"An unknown field called: {referenced_field} was referenced")
+
+
 class TooLargeStringLiteralProvided(BaserowFormulaASTException):
     def __init__(self):
         super().__init__(

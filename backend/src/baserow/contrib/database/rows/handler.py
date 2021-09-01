@@ -450,6 +450,7 @@ class RowHandler:
                 setattr(row, name, value)
 
             row.save()
+            row.refresh_from_db()
 
             for name, value in manytomany_values.items():
                 getattr(row, name).set(value)

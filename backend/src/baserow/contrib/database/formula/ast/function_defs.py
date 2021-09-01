@@ -3,10 +3,11 @@ from typing import Type, List, Union
 from django.db.models import (
     Expression,
     Field,
-    FloatField,
     IntegerField,
     CharField,
     TextField,
+    DecimalField,
+    FloatField,
 )
 from django.db.models.functions import Upper, Lower, Concat
 
@@ -31,8 +32,11 @@ class BaserowUpper(BaserowFunctionDefinition):
     type = "upper"
 
     def to_django_expression(self, args: List[Expression]) -> Expression:
-        check_types(args, [TextField, CharField], "")
         return Upper(*args)
+
+    def to_django_field_type(self, arg_types: List[Field]) -> Field:
+        check_types(arg_types, [TextField, CharField], "")
+        return TextField()
 
     @property
     def num_args(self) -> ArgCountSpecifier:
@@ -46,8 +50,11 @@ class BaserowLower(BaserowFunctionDefinition):
     def num_args(self) -> ArgCountSpecifier:
         return FixedNumOfArgs(1)
 
+    def to_django_field_type(self, arg_types: List[Field]) -> Field:
+        check_types(arg_types, [TextField, CharField], "")
+        return TextField()
+
     def to_django_expression(self, args: List[Expression]) -> Expression:
-        check_types(args, [TextField, CharField], "")
         return Lower(*args)
 
 
@@ -58,24 +65,28 @@ class BaserowConcat(BaserowFunctionDefinition):
     def num_args(self) -> ArgCountSpecifier:
         return NumOfArgsGreaterThan(1)
 
+    def to_django_field_type(self, arg_types: List[Field]) -> Field:
+        check_types(
+            arg_types,
+            [TextField, CharField, IntegerField, DecimalField, FloatField],
+            "",
+        )
+        return TextField()
+
     def to_django_expression(self, args: List[Expression]) -> Expression:
-        check_types(args, [TextField, CharField], "")
-        return Concat(*args)
+        return Concat(*args, output_field=TextField())
 
 
-def check_type(expression: Expression, field_type: List[Type[Field]], msg):
-    expression_output_field = expression.output_field
+def check_type(arg: Field, field_type: List[Type[Field]], msg=""):
     for t in field_type:
-        if isinstance(expression_output_field, t):
+        if isinstance(arg, t):
             return
-    raise InvalidTypes(
-        msg + f" but instead was a " f"{expression_output_field.__class__.__name__}"
-    )
+    raise InvalidTypes(msg + f" but instead was a {arg}")
 
 
-def check_types(expressions: List[Expression], field_type: List[Type[Field]], msg):
-    for e in expressions:
-        check_type(e, field_type, msg)
+def check_types(args: List[Field], field_type: List[Type[Field]], msg=""):
+    for a in args:
+        check_type(a, field_type, msg)
 
 
 class BaserowAdd(BaserowFunctionDefinition):
@@ -85,9 +96,11 @@ class BaserowAdd(BaserowFunctionDefinition):
     def num_args(self) -> ArgCountSpecifier:
         return FixedNumOfArgs(2)
 
+    def to_django_field_type(self, arg_types: List[Field]) -> Field:
+        check_types(arg_types, [IntegerField, DecimalField], "add")
+        return IntegerField()
+
     def to_django_expression(self, args: List[Expression]) -> Expression:
-        check_type(args[0], [IntegerField, FloatField], "Arg 1 to + must be a number")
-        check_type(args[1], [IntegerField, FloatField], "Arg 2 to + must be a number")
         return args[0] + args[1]
 
 
@@ -98,7 +111,9 @@ class BaserowMinus(BaserowFunctionDefinition):
     def num_args(self) -> ArgCountSpecifier:
         return FixedNumOfArgs(2)
 
+    def to_django_field_type(self, arg_types: List[Field]) -> Field:
+        check_types(arg_types, [IntegerField, DecimalField], "minus")
+        return IntegerField()
+
     def to_django_expression(self, args: List[Expression]) -> Expression:
-        check_type(args[0], [IntegerField, FloatField], "Arg 1 to + must be a number")
-        check_type(args[1], [IntegerField, FloatField], "Arg 2 to + must be a number")
         return args[0] - args[1]

@@ -62,6 +62,7 @@ fragment SQUOTA_STRING                : '\'' ('\\'. | ~('\'' | '\\'))* '\'';
 fragment BQUOTA_STRING                : '`' ( '\\'. | '``' | ~('`' | '\\'))* '`';
 
 IF                                   : I F;
+FIELD                                : F I E L D;
 
 // language tokens
 COMMA                                : ',';

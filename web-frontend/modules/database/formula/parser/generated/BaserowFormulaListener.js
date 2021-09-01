@@ -20,6 +20,15 @@ BaserowFormulaListener.prototype.exitRoot = function(ctx) {
 };
 
 
+// Enter a parse tree produced by BaserowFormula#FieldReference.
+BaserowFormulaListener.prototype.enterFieldReference = function(ctx) {
+};
+
+// Exit a parse tree produced by BaserowFormula#FieldReference.
+BaserowFormulaListener.prototype.exitFieldReference = function(ctx) {
+};
+
+
 // Enter a parse tree produced by BaserowFormula#StringLiteral.
 BaserowFormulaListener.prototype.enterStringLiteral = function(ctx) {
 };
@@ -62,6 +71,15 @@ BaserowFormulaListener.prototype.enterFunc_name = function(ctx) {
 
 // Exit a parse tree produced by BaserowFormula#func_name.
 BaserowFormulaListener.prototype.exitFunc_name = function(ctx) {
+};
+
+
+// Enter a parse tree produced by BaserowFormula#field_reference.
+BaserowFormulaListener.prototype.enterField_reference = function(ctx) {
+};
+
+// Exit a parse tree produced by BaserowFormula#field_reference.
+BaserowFormulaListener.prototype.exitField_reference = function(ctx) {
 };
 
 

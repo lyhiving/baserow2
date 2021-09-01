@@ -9,7 +9,7 @@ import pytz
 from dateutil import parser
 from dateutil.parser import ParserError
 from django.contrib.postgres.fields import JSONField
-from django.core.exceptions import ValidationError, FieldError
+from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.db import models, OperationalError
 from django.db.models import Case, When, Q, F, Func, Value, CharField
@@ -34,9 +34,8 @@ from baserow.contrib.database.api.fields.serializers import (
     SelectOptionSerializer,
     FileFieldResponseSerializer,
 )
-from baserow.contrib.database.formula.compiler import (
-    baserow_formula_to_django_expression,
-)
+from baserow.contrib.database.formula.ast.errors import BaserowFormulaASTException
+from baserow.contrib.database.formula.parser.errors import BaserowFormulaParserError
 from baserow.contrib.database.validators import UnicodeRegexValidator
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
@@ -69,12 +68,10 @@ from .models import (
     FormulaField,
 )
 from .registries import FieldType, field_type_registry
-from baserow.contrib.database.formula.ast.errors import BaserowFormulaASTException
-from baserow.contrib.database.formula.parser.errors import BaserowFormulaParserError
 from ..formula.expression_generator.errors import (
     ExpressionGeneratorException,
-    InvalidTypes,
 )
+from ..formula.expression_generator.generator import tree_to_django_expression
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1753,11 +1750,9 @@ class FormulaFieldType(FieldType):
         )
 
     def get_model_field(self, instance, **kwargs):
-        expression = baserow_formula_to_django_expression(instance.formula)
         return ExpressionField(
             null=True,
             blank=True,
-            expression=expression,
             **kwargs,
         )
 
@@ -1795,9 +1790,9 @@ class FormulaFieldType(FieldType):
         with the formula
         """
 
-        model.objects.all().update(
-            **{f"{field.db_column}": model._meta.get_field(field.db_column).expression}
-        )
+        f = model._meta.get_field(field.db_column)
+        expr = tree_to_django_expression(f.ast, f.field_types, None, True)
+        model.objects.all().update(**{f"{field.db_column}": expr})
 
     def after_update(
         self,
@@ -1814,11 +1809,6 @@ class FormulaFieldType(FieldType):
         If the field type has changed, we need to update the values from the from
         the source_field_name column.
         """
-
-        to_model.objects.all().update(
-            **{
-                f"{to_field.db_column}": to_model._meta.get_field(
-                    to_field.db_column
-                ).expression
-            }
-        )
+        f = to_model._meta.get_field(to_field.db_column)
+        expr = tree_to_django_expression(f.ast, f.field_types, None, True)
+        to_model.objects.all().update(**{f"{to_field.db_column}": expr})

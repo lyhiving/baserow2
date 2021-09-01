@@ -1,6 +1,13 @@
+from typing import Type
+
 from django.db import models
-from django.db.models import Expression
+from django.db.models import Field
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
+
+from baserow.contrib.database.formula.ast.tree import BaserowExpression
+from baserow.contrib.database.formula.expression_generator.generator import (
+    tree_to_django_expression,
+)
 
 
 class SingleSelectForwardManyToOneDescriptor(ForwardManyToOneDescriptor):
@@ -44,7 +51,9 @@ class ExpressionField(models.Field):
 
     def __init__(
         self,
-        expression: Expression,
+        ast: BaserowExpression,
+        expression_type: Field,
+        field_types,
         *args,
         **kwargs,
     ):
@@ -52,24 +61,25 @@ class ExpressionField(models.Field):
         :param expression: The Django expression used to calculate this fields value.
         """
 
-        self.expression = expression
+        self.ast = ast
+        self.expression_type = expression_type
+        self.field_types = field_types
         super().__init__(*args, **kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
-        kwargs["expression"] = self.expression
+        kwargs["ast"] = self.ast
+        kwargs["expression_type"] = self.expression_type
+        kwargs["field_types"] = self.field_types
         return name, path, args, kwargs
 
     def get_internal_type(self):
-        internal_type = self.expression.output_field.__class__.__name__
-        # Expressions will by default set their output type as a CharField, however
-        # as we don't want to have to set a varchar length we switch to using the
-        # unlimited length text field.
-        if internal_type == "CharField":
-            internal_type = "TextField"
-        return internal_type
+        return self.expression_type.__class__.__name__
 
     def pre_save(self, model_instance, add):
         # Force the instance to use the expression to calculate its value.
-        setattr(model_instance, self.attname, self.expression)
-        return self.expression
+        expression = tree_to_django_expression(
+            self.ast, self.field_types, model_instance, False
+        )
+        setattr(model_instance, self.attname, expression)
+        return expression

@@ -17,6 +17,15 @@ class BaserowFormulaListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by BaserowFormula#FieldReference.
+    def enterFieldReference(self, ctx:BaserowFormula.FieldReferenceContext):
+        pass
+
+    # Exit a parse tree produced by BaserowFormula#FieldReference.
+    def exitFieldReference(self, ctx:BaserowFormula.FieldReferenceContext):
+        pass
+
+
     # Enter a parse tree produced by BaserowFormula#StringLiteral.
     def enterStringLiteral(self, ctx:BaserowFormula.StringLiteralContext):
         pass
@@ -59,6 +68,15 @@ class BaserowFormulaListener(ParseTreeListener):
 
     # Exit a parse tree produced by BaserowFormula#func_name.
     def exitFunc_name(self, ctx:BaserowFormula.Func_nameContext):
+        pass
+
+
+    # Enter a parse tree produced by BaserowFormula#field_reference.
+    def enterField_reference(self, ctx:BaserowFormula.Field_referenceContext):
+        pass
+
+    # Exit a parse tree produced by BaserowFormula#field_reference.
+    def exitField_reference(self, ctx:BaserowFormula.Field_referenceContext):
         pass
 
 

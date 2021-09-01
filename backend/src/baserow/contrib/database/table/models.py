@@ -15,6 +15,7 @@ from baserow.contrib.database.fields.field_filters import (
     FILTER_TYPE_OR,
 )
 from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.contrib.database.formula.ast.types import type_table
 from baserow.contrib.database.views.exceptions import ViewFilterTypeNotAllowedForField
 from baserow.contrib.database.views.registries import view_filter_type_registry
 from baserow.core.mixins import (
@@ -351,6 +352,8 @@ class Table(
         # database.
         fields_query = self.field_set(manager="objects_and_trash").all()
 
+        field_types, formula_asts = type_table(fields_query)
+
         # If the field ids are provided we must only fetch the fields of which the ids
         # are in that list.
         if isinstance(field_ids, list):
@@ -415,8 +418,16 @@ class Table(
             # Add the field to the attribute dict that is used to generate the
             # model. All the kwargs that are passed to the `get_model_field`
             # method are going to be passed along to the model field.
+            extra_kwargs = {}
+            if field_type.type == "formula":
+                extra_kwargs["ast"] = formula_asts[field.db_column]
+                extra_kwargs["expression_type"] = field_types[field.db_column]
+                extra_kwargs["field_types"] = field_types
             attrs[field_name] = field_type.get_model_field(
-                field, db_column=field.db_column, verbose_name=field.name
+                field,
+                db_column=field.db_column,
+                verbose_name=field.name,
+                **extra_kwargs,
             )
 
         # Create the model class.

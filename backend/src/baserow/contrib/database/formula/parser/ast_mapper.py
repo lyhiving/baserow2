@@ -1,12 +1,13 @@
 from antlr4 import InputStream, CommonTokenStream
 from antlr4.error.ErrorListener import ErrorListener
 
-from baserow.contrib.database.formula.ast.function import BaserowFunctionDefinition
+from baserow.contrib.database.formula.ast.errors import UnknownFieldReference
 from baserow.contrib.database.formula.ast.tree import (
     BaserowStringLiteral,
     BaserowFunctionCall,
     BaserowExpression,
     BaserowIntegerLiteral,
+    BaserowFieldReference,
 )
 from baserow.contrib.database.formula.parser.errors import (
     InvalidNumberOfArguments,
@@ -33,27 +34,35 @@ class BaserowFormulaErrorListener(ErrorListener):
         raise BaserowFormulaSyntaxError(message)
 
 
-def raw_formula_to_tree(formula: str) -> BaserowExpression:
+def raw_formula_to_tree(formula: str, field_db_names) -> BaserowExpression:
     lexer = BaserowFormulaLexer(InputStream(formula))
     stream = CommonTokenStream(lexer)
     parser = BaserowFormula(stream)
     parser.removeErrorListeners()
     parser.addErrorListener(BaserowFormulaErrorListener())
     tree = parser.root()
-    return BaserowFormulaToBaserowASTMapper().visit(tree)
+    # need to save name -> field_1
+    return BaserowFormulaToBaserowASTMapper(field_db_names).visit(tree)
 
 
 class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
+    def __init__(self, field_db_names):
+        self.field_db_names = field_db_names
+
     def visitRoot(self, ctx: BaserowFormula.RootContext):
         return ctx.expr().accept(self)
 
     def visitStringLiteral(self, ctx: BaserowFormula.StringLiteralContext):
+        literal = self.process_string(ctx)
+        return BaserowStringLiteral(literal)
+
+    def process_string(self, ctx):
         literal_without_outer_quotes = ctx.getText()[1:-1]
         if ctx.SINGLEQ_STRING_LITERAL() is not None:
             literal = literal_without_outer_quotes.replace("\\'", "'")
         else:
             literal = literal_without_outer_quotes.replace('\\"', '"')
-        return BaserowStringLiteral(literal)
+        return literal
 
     def visitFunctionCall(self, ctx: BaserowFormula.FunctionCallContext):
         function_name = ctx.func_name().accept(self).lower()
@@ -81,9 +90,7 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
     @staticmethod
     def _get_function_def(function_name):
         try:
-            function_def: BaserowFunctionDefinition = formula_function_registry.get(
-                function_name
-            )
+            function_def = formula_function_registry.get(function_name)
         except InstanceTypeDoesNotExist:
             raise BaserowFormulaSyntaxError(f"{function_name} is not a valid function")
         return function_def
@@ -96,3 +103,9 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
 
     def visitIntegerLiteral(self, ctx: BaserowFormula.IntegerLiteralContext):
         return BaserowIntegerLiteral(int(ctx.getText()))
+
+    def visitFieldReference(self, ctx: BaserowFormula.FieldReferenceContext):
+        field_name = self.process_string(ctx.field_reference())
+        if field_name not in self.field_db_names:
+            raise UnknownFieldReference(field_name)
+        return BaserowFieldReference(self.field_db_names[field_name])

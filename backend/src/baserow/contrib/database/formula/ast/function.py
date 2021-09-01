@@ -1,7 +1,7 @@
 import abc
-from typing import Type, List
+from typing import List, Type
 
-from django.db.models import Func, Expression
+from django.db.models import Expression, Field
 
 from baserow.core.registry import Instance
 
@@ -67,4 +67,8 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
     @property
     @abc.abstractmethod
     def num_args(self) -> ArgCountSpecifier:
+        pass
+
+    @abc.abstractmethod
+    def to_django_field_type(self, arg_types: List[Field]) -> Field:
         pass
