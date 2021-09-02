@@ -305,10 +305,20 @@ class FieldView(APIView):
         # field we need to be able to map those to the correct API exceptions which are
         # defined in the type.
         with field_type.map_api_exceptions():
-            field = FieldHandler().update_field(request.user, field, type_name, **data)
+            field, related_fields = FieldHandler().update_field(
+                request.user, field, type_name, **data
+            )
 
         serializer = field_type_registry.get_serializer(field, FieldSerializer)
-        return Response(serializer.data)
+        return Response(
+            {
+                "field": serializer.data,
+                "related_fields": [
+                    field_type_registry.get_serializer(f, FieldSerializer).data
+                    for f in related_fields
+                ],
+            }
+        )
 
     @extend_schema(
         parameters=[

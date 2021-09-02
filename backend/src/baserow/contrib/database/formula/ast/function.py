@@ -3,6 +3,7 @@ from typing import List, Type
 
 from django.db.models import Expression, Field
 
+from baserow.contrib.database.formula.ast.types import TypeResult
 from baserow.core.registry import Instance
 
 
@@ -70,5 +71,5 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def to_django_field_type(self, arg_types: List[Field]) -> Field:
+    def to_django_field_type(self, arg_types: List[Field]) -> TypeResult:
         pass

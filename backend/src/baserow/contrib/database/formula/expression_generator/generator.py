@@ -11,6 +11,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowIntegerLiteral,
     BaserowFieldReference,
 )
+from baserow.contrib.database.formula.ast.types import TypeResult
 
 
 def tree_to_django_expression(
@@ -24,7 +25,7 @@ def tree_to_django_expression(
 class BaserowFormulaToDjangoExpressionGenerator(BaserowFormulaASTVisitor[Expression]):
     def __init__(
         self,
-        field_types: Dict[str, Field],
+        field_types: Dict[str, TypeResult],
         field_values: Dict[str, Expression],
         for_update: bool,
     ):
@@ -36,14 +37,18 @@ class BaserowFormulaToDjangoExpressionGenerator(BaserowFormulaASTVisitor[Express
         if self.for_update:
             return ExpressionWrapper(
                 F(field_reference.referenced_field),
-                output_field=self.field_types[field_reference.referenced_field],
+                output_field=self.field_types[
+                    field_reference.referenced_field
+                ].resulting_field_type,
             )
         elif not hasattr(self.field_values, field_reference.referenced_field):
             raise UnknownFieldReference(field_reference.referenced_field)
         else:
             return Value(
                 getattr(self.field_values, field_reference.referenced_field),
-                output_field=self.field_types[field_reference.referenced_field],
+                output_field=self.field_types[
+                    field_reference.referenced_field
+                ].resulting_field_type,
             )
 
     def visit_function_call(self, function_call: BaserowFunctionCall) -> Expression:

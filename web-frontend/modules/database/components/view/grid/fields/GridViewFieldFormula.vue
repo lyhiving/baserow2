@@ -1,6 +1,6 @@
 <template>
   <div ref="cell" class="grid-view__cell active">
-    <div class="grid-field grid-field-text">{{ value }}</div>
+    <div class="grid-field grid-field-text">{{ field.error ? '' : value }}</div>
   </div>
 </template>
 

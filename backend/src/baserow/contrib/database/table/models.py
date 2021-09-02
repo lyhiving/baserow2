@@ -15,7 +15,7 @@ from baserow.contrib.database.fields.field_filters import (
     FILTER_TYPE_OR,
 )
 from baserow.contrib.database.fields.registries import field_type_registry
-from baserow.contrib.database.formula.ast.types import type_table
+from baserow.contrib.database.formula.ast.types import Typer
 from baserow.contrib.database.views.exceptions import ViewFilterTypeNotAllowedForField
 from baserow.contrib.database.views.registries import view_filter_type_registry
 from baserow.core.mixins import (
@@ -256,6 +256,7 @@ class Table(
         field_names=None,
         attribute_names=False,
         manytomany_models=None,
+        typer=None,
     ):
         """
         Generates a temporary Django model based on available fields that belong to
@@ -352,8 +353,6 @@ class Table(
         # database.
         fields_query = self.field_set(manager="objects_and_trash").all()
 
-        field_types, formula_asts = type_table(fields_query)
-
         # If the field ids are provided we must only fetch the fields of which the ids
         # are in that list.
         if isinstance(field_ids, list):
@@ -374,13 +373,17 @@ class Table(
         # table.
         fields = list(fields) + [field for field in fields_query]
 
+        # TODO: Given a subset of fields, calculate the ones that must be generated
+        # on the model for any formula fields in that subset to work
+        typer = typer or Typer(self)
+        extra_fields = typer.calculate_all_depended_on_fields(fields)
         # If there are duplicate field names we have to store them in a list so we know
         # later which ones are duplicate.
         duplicate_field_names = []
 
         # We will have to add each field to with the correct field name and model field
         # to the attribute list in order for the model to work.
-        for field in fields:
+        for field in fields + extra_fields:
             trashed = field.trashed
             field = field.specific
             field_type = field_type_registry.get_by_model(field)
@@ -420,9 +423,9 @@ class Table(
             # method are going to be passed along to the model field.
             extra_kwargs = {}
             if field_type.type == "formula":
-                extra_kwargs["ast"] = formula_asts[field.db_column]
-                extra_kwargs["expression_type"] = field_types[field.db_column]
-                extra_kwargs["field_types"] = field_types
+                extra_kwargs["ast"] = typer.formula_asts[field.db_column]
+                extra_kwargs["expression_type"] = typer.field_types[field.db_column]
+                extra_kwargs["field_types"] = typer.field_types
             attrs[field_name] = field_type.get_model_field(
                 field,
                 db_column=field.db_column,

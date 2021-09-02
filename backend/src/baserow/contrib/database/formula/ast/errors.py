@@ -21,6 +21,10 @@ class NoCircularReferencesError(BaserowFormulaASTException):
     pass
 
 
+class InvalidFieldType(BaserowFormulaASTException):
+    pass
+
+
 class UnknownFieldReference(BaserowFormulaASTException):
     def __init__(self, referenced_field):
         super().__init__(f"An unknown field called: {referenced_field} was referenced")

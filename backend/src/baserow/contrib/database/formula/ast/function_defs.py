@@ -1,4 +1,4 @@
-from typing import Type, List, Union
+from typing import Type, List
 
 from django.db.models import (
     Expression,
@@ -17,7 +17,36 @@ from baserow.contrib.database.formula.ast.function import (
     NumOfArgsGreaterThan,
     FixedNumOfArgs,
 )
-from baserow.contrib.database.formula.expression_generator.errors import InvalidTypes
+from baserow.contrib.database.formula.ast.types import TypeResult
+
+
+def check_type(
+    arg: Field, valid_types: List[Type[Field]], resulting_type: Field
+) -> TypeResult:
+    for valid_type in valid_types:
+        if isinstance(arg, valid_type):
+            return TypeResult.valid_type(resulting_type)
+    valid_types_str = ",".join([str(t) for t in valid_types])
+    return TypeResult.invalid_type(
+        f"must be one of {valid_types_str} but was instead {type(arg)}"
+    )
+
+
+def check_types(
+    args: List[Field], valid_types: List[Type[Field]], resulting_type: Field
+) -> TypeResult:
+    invalid_types = []
+    for i, arg in enumerate(args):
+        arg_type_result = check_type(arg, valid_types, resulting_type)
+        if arg_type_result.is_invalid():
+            invalid_types.append((i, arg_type_result))
+    if len(invalid_types) > 0:
+        error = ",".join(
+            [f"argument {i} invalid as it {r.error}" for i, r in invalid_types]
+        )
+        return TypeResult.invalid_type(error)
+    else:
+        return TypeResult.valid_type(resulting_type)
 
 
 def register_functions(registry):
@@ -34,9 +63,12 @@ class BaserowUpper(BaserowFunctionDefinition):
     def to_django_expression(self, args: List[Expression]) -> Expression:
         return Upper(*args)
 
-    def to_django_field_type(self, arg_types: List[Field]) -> Field:
-        check_types(arg_types, [TextField, CharField], "")
-        return TextField()
+    def to_django_field_type(self, arg_types: List[Field]) -> TypeResult:
+        return check_type(
+            arg=arg_types[0],
+            valid_types=[TextField, CharField],
+            resulting_type=TextField(),
+        )
 
     @property
     def num_args(self) -> ArgCountSpecifier:
@@ -50,9 +82,12 @@ class BaserowLower(BaserowFunctionDefinition):
     def num_args(self) -> ArgCountSpecifier:
         return FixedNumOfArgs(1)
 
-    def to_django_field_type(self, arg_types: List[Field]) -> Field:
-        check_types(arg_types, [TextField, CharField], "")
-        return TextField()
+    def to_django_field_type(self, arg_types: List[Field]) -> TypeResult:
+        return check_type(
+            arg=arg_types[0],
+            valid_types=[TextField, CharField],
+            resulting_type=TextField(),
+        )
 
     def to_django_expression(self, args: List[Expression]) -> Expression:
         return Lower(*args)
@@ -65,28 +100,15 @@ class BaserowConcat(BaserowFunctionDefinition):
     def num_args(self) -> ArgCountSpecifier:
         return NumOfArgsGreaterThan(1)
 
-    def to_django_field_type(self, arg_types: List[Field]) -> Field:
-        check_types(
+    def to_django_field_type(self, arg_types: List[Field]) -> TypeResult:
+        return check_types(
             arg_types,
             [TextField, CharField, IntegerField, DecimalField, FloatField],
-            "",
+            TextField(),
         )
-        return TextField()
 
     def to_django_expression(self, args: List[Expression]) -> Expression:
         return Concat(*args, output_field=TextField())
-
-
-def check_type(arg: Field, field_type: List[Type[Field]], msg=""):
-    for t in field_type:
-        if isinstance(arg, t):
-            return
-    raise InvalidTypes(msg + f" but instead was a {arg}")
-
-
-def check_types(args: List[Field], field_type: List[Type[Field]], msg=""):
-    for a in args:
-        check_type(a, field_type, msg)
 
 
 class BaserowAdd(BaserowFunctionDefinition):
@@ -96,12 +118,31 @@ class BaserowAdd(BaserowFunctionDefinition):
     def num_args(self) -> ArgCountSpecifier:
         return FixedNumOfArgs(2)
 
-    def to_django_field_type(self, arg_types: List[Field]) -> Field:
-        check_types(arg_types, [IntegerField, DecimalField], "add")
-        return IntegerField()
+    def to_django_field_type(self, arg_types: List[Field]) -> TypeResult:
+        return check_types_for_decimal(arg_types)
 
     def to_django_expression(self, args: List[Expression]) -> Expression:
         return args[0] + args[1]
+
+
+def check_types_for_decimal(arg_types):
+    resulting_type = check_types(arg_types, [DecimalField], IntegerField())
+    if resulting_type.is_invalid():
+        return resulting_type
+    else:
+        max_max_digits = 0
+        max_decimal_places = 0
+        for a in arg_types:
+            max_max_digits = max(max_max_digits, a.max_digits)
+            max_decimal_places = max(max_decimal_places, a.decimal_places)
+        return TypeResult.valid_type(
+            DecimalField(
+                null=True,
+                blank=True,
+                max_digits=max_max_digits,
+                decimal_places=max_decimal_places,
+            )
+        )
 
 
 class BaserowMinus(BaserowFunctionDefinition):
@@ -111,9 +152,8 @@ class BaserowMinus(BaserowFunctionDefinition):
     def num_args(self) -> ArgCountSpecifier:
         return FixedNumOfArgs(2)
 
-    def to_django_field_type(self, arg_types: List[Field]) -> Field:
-        check_types(arg_types, [IntegerField, DecimalField], "minus")
-        return IntegerField()
+    def to_django_field_type(self, arg_types: List[Field]) -> TypeResult:
+        return check_types_for_decimal(arg_types)
 
     def to_django_expression(self, args: List[Expression]) -> Expression:
         return args[0] - args[1]

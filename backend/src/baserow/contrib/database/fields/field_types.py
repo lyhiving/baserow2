@@ -1725,7 +1725,10 @@ class FormulaFieldType(FieldType):
     allowed_fields = [
         "formula",
     ]
-    serializer_field_names = ["formula"]
+    serializer_field_names = ["formula", "error"]
+    serializer_field_overrides = {
+        "error": serializers.CharField(required=False),
+    }
     can_be_primary_field = False
     can_be_in_form_view = False
     api_exceptions_map = {
@@ -1753,6 +1756,7 @@ class FormulaFieldType(FieldType):
         return ExpressionField(
             null=True,
             blank=True,
+            error=instance.error,
             **kwargs,
         )
 

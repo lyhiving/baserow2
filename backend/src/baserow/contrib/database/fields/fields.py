@@ -1,10 +1,11 @@
-from typing import Type
+from typing import Type, Optional
 
 from django.db import models
 from django.db.models import Field
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
 
 from baserow.contrib.database.formula.ast.tree import BaserowExpression
+from baserow.contrib.database.formula.ast.types import TypeResult
 from baserow.contrib.database.formula.expression_generator.generator import (
     tree_to_django_expression,
 )
@@ -52,8 +53,9 @@ class ExpressionField(models.Field):
     def __init__(
         self,
         ast: BaserowExpression,
-        expression_type: Field,
+        expression_type: TypeResult,
         field_types,
+        error: Optional[str],
         *args,
         **kwargs,
     ):
@@ -64,22 +66,31 @@ class ExpressionField(models.Field):
         self.ast = ast
         self.expression_type = expression_type
         self.field_types = field_types
+        self.error = error
         super().__init__(*args, **kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
         kwargs["ast"] = self.ast
         kwargs["expression_type"] = self.expression_type
+        kwargs["error"] = self.error
         kwargs["field_types"] = self.field_types
         return name, path, args, kwargs
 
     def get_internal_type(self):
-        return self.expression_type.__class__.__name__
+        return self.expression_type
+
+    def db_type(self, connection):
+        if self.error:
+            return "TEXT"
+        else:
+            return self.expression_type.resulting_field_type.db_type(connection)
 
     def pre_save(self, model_instance, add):
         # Force the instance to use the expression to calculate its value.
-        expression = tree_to_django_expression(
-            self.ast, self.field_types, model_instance, False
-        )
-        setattr(model_instance, self.attname, expression)
-        return expression
+        if self.error:
+            return super().pre_save(model_instance, add)
+        else:
+            return tree_to_django_expression(
+                self.ast, self.field_types, model_instance, False
+            )

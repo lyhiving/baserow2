@@ -450,6 +450,9 @@ class RowHandler:
                 setattr(row, name, value)
 
             row.save()
+            # We need to refresh here as ExpressionFields might have had their values
+            # updated. Django does not support UPDATE .... RETURNING and so we need to
+            # query for the rows updated values instead.
             row.refresh_from_db()
 
             for name, value in manytomany_values.items():

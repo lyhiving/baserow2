@@ -241,3 +241,4 @@ class PhoneNumberField(Field):
 
 class FormulaField(Field):
     formula = models.TextField()
+    error = models.TextField(null=True, blank=True)

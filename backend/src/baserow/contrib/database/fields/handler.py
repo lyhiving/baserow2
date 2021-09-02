@@ -25,7 +25,8 @@ from .exceptions import (
 from .models import Field, SelectOption
 from .registries import field_type_registry, field_converter_registry
 from .signals import field_created, field_updated, field_deleted
-from ..table.models import Table
+from baserow.contrib.database.formula.ast.types import Typer
+from baserow.contrib.database.table.models import Table
 
 logger = logging.getLogger(__name__)
 
@@ -176,13 +177,17 @@ class FieldHandler:
             table, primary, field_values, last_order, user
         )
 
-        instance = model_class.objects.create(
+        instance = model_class(
             table=table, order=last_order, primary=primary, **field_values
         )
+        typer = Typer(table, new_field=instance)
+        typer.set_field_type_or_raise(field_type, instance)
+        instance.save()
+        typer.update_pk(instance.pk)
 
         # Add the field to the table schema.
         with connection.schema_editor() as schema_editor:
-            to_model = table.get_model()
+            to_model = table.get_model(field_ids=[], fields=[instance], typer=typer)
             model_field = to_model._meta.get_field(instance.db_column)
 
             if do_schema_change:
@@ -261,12 +266,21 @@ class FieldHandler:
         before = field_type.before_update(old_field, field_values, user)
 
         field = set_allowed_attrs(field_values, allowed_fields, field)
+        # Calculate the type of the field and all other fields
+        # If valid set this fields type
+        # Update types of all other fields
+        typer = Typer(field.table, field_override=field)
+        typer.set_field_type_or_raise(field_type, field)
         field.save()
+        updated_fields = typer.update_fields()
+        # TODO: Trigger an after_update for related fields
 
         # If no converter is found we are going to convert to field using the
         # lenient schema editor which will alter the field's type and set the data
         # value to null if it can't be converted.
-        to_model = field.table.get_model()
+        to_model = field.table.get_model(field_ids=[], fields=[field], typer=typer)
+        # TODO List of updated fields from get_model, change their error to be
+        #   appropriate and send signals for all of those fields
         from_model_field = from_model._meta.get_field(field.db_column)
         to_model_field = to_model._meta.get_field(field.db_column)
 
@@ -363,9 +377,9 @@ class FieldHandler:
             before,
         )
 
-        field_updated.send(self, field=field, user=user)
+        field_updated.send(self, field=field, related_fields=updated_fields, user=user)
 
-        return field
+        return field, updated_fields
 
     def delete_field(self, user, field):
         """

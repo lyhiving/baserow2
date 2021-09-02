@@ -89,6 +89,12 @@ export const registerRealtimeEvents = (realtime) => {
     const field = store.getters['field/get'](data.field.id)
     if (field !== undefined) {
       const oldField = clone(field)
+      const oldRelatedFields = data.related_fields
+        .map((f) => {
+          return { field: store.getters['field/get'](f.id), data: f }
+        })
+        .filter((f) => f.field !== undefined)
+        .map((f) => (f.oldField = clone(f)))
       // We want to wait for the table to reload before actually updating the field
       // in order to prevent incompatible values for the field.
       const callback = async () => {
@@ -97,6 +103,9 @@ export const registerRealtimeEvents = (realtime) => {
           oldField,
           data: data.field,
         })
+        for (const f of oldRelatedFields) {
+          await store.dispatch('field/forceUpdate', f)
+        }
       }
       if (store.getters['table/getSelectedId'] === data.field.table_id) {
         app.$bus.$emit('table-refresh', {

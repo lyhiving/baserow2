@@ -3,6 +3,7 @@ import sys
 import pytest
 from django.conf import settings
 from django.urls import reverse
+from rest_framework.status import HTTP_200_OK
 
 from baserow.contrib.database.fields.models import FormulaField
 
@@ -331,3 +332,140 @@ def test_valid_formulas2(data_fixture, api_client, django_assert_num_queries):
     response_json = response.json()
     assert response_json["count"] == 1
     assert response_json["results"][0][f"field_{formula_field_id}"] == "3"
+
+
+@pytest.mark.django_db
+def test_changing_type_of_reference_field_to_invalid_one_for_formula(
+    api_client, data_fixture
+):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table, fields, rows = data_fixture.build_table(
+        columns=[("number", "number")], rows=[[1]], user=user
+    )
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    formula_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+
+    response = api_client.patch(
+        reverse("api:database:fields:item", kwargs={"field_id": fields[0].id}),
+        {"type": "boolean"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+
+    response = api_client.get(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    assert "argument 0 invalid" in response_json[1]["error"]
+
+
+@pytest.mark.django_db
+def test_changing_type_of_reference_field_to_invalid_one_for_formula(
+    api_client, data_fixture
+):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table, fields, rows = data_fixture.build_table(
+        columns=[("number", "number")], rows=[[1]], user=user
+    )
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    formula_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+
+    response = api_client.patch(
+        reverse("api:database:fields:item", kwargs={"field_id": fields[0].id}),
+        {"type": "boolean"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+
+    response = api_client.get(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    assert "argument 0 invalid" in response_json[1]["error"]
+
+    response = api_client.patch(
+        reverse("api:database:fields:item", kwargs={"field_id": formula_field_id}),
+        {"name": "Formula", "type": "formula", "formula": "1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "1"

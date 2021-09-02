@@ -171,7 +171,7 @@ export const actions = {
    * Updates the values of the provided field.
    */
   async update(context, { field, type, values, forceUpdate = true }) {
-    const { dispatch } = context
+    const { dispatch, getters } = context
 
     if (Object.prototype.hasOwnProperty.call(values, 'type')) {
       throw new Error(
@@ -190,7 +190,22 @@ export const actions = {
 
     const { data } = await FieldService(this.$client).update(field.id, postData)
     const forceUpdateCallback = async () => {
-      return await dispatch('forceUpdate', { field, oldField, data })
+      const result = await dispatch('forceUpdate', {
+        field,
+        oldField,
+        data: data.field,
+      })
+      for (const f of data.related_fields) {
+        const field = getters.get(f.id)
+        const oldField = clone(field)
+        await dispatch('forceUpdate', {
+          field,
+          oldField,
+          data: f,
+        })
+      }
+
+      return result
     }
 
     return forceUpdate ? await forceUpdateCallback() : forceUpdateCallback
