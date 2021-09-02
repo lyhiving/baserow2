@@ -16,5 +16,13 @@ class MaximumFormulaDepthError(BaserowFormulaParserError):
         super().__init__("it exceeded the maximum formula size")
 
 
+class UnexpectedFieldReference(BaserowFormulaParserError):
+    pass
+
+
+class UnknownFieldReference(BaserowFormulaParserError):
+    pass
+
+
 class BaserowFormulaSyntaxError(BaserowFormulaParserError):
     pass

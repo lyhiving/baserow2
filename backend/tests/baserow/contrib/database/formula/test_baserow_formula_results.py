@@ -394,9 +394,7 @@ def test_changing_type_of_reference_field_to_invalid_one_for_formula(
 
 
 @pytest.mark.django_db
-def test_changing_type_of_reference_field_to_invalid_one_for_formula(
-    api_client, data_fixture
-):
+def test_changing_name_of_referenced_field_by_formula(api_client, data_fixture):
     user, token = data_fixture.create_user_and_token(
         email="test@test.nl", password="password", first_name="Test1"
     )
@@ -425,7 +423,7 @@ def test_changing_type_of_reference_field_to_invalid_one_for_formula(
 
     response = api_client.patch(
         reverse("api:database:fields:item", kwargs={"field_id": fields[0].id}),
-        {"type": "boolean"},
+        {"name": "new_name"},
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
     )
@@ -441,31 +439,3 @@ def test_changing_type_of_reference_field_to_invalid_one_for_formula(
     response_json = response.json()
     assert response_json["count"] == 1
     assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
-
-    response = api_client.get(
-        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {token}",
-    )
-    response_json = response.json()
-    assert response.status_code == HTTP_200_OK, response_json
-    assert "argument 0 invalid" in response_json[1]["error"]
-
-    response = api_client.patch(
-        reverse("api:database:fields:item", kwargs={"field_id": formula_field_id}),
-        {"name": "Formula", "type": "formula", "formula": "1"},
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {token}",
-    )
-    response_json = response.json()
-    assert response.status_code == HTTP_200_OK, response_json
-
-    response = api_client.get(
-        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
-        {},
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {token}",
-    )
-    response_json = response.json()
-    assert response_json["count"] == 1
-    assert response_json["results"][0][f"field_{formula_field_id}"] == "1"

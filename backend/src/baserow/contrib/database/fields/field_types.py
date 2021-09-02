@@ -72,6 +72,7 @@ from ..formula.expression_generator.errors import (
     ExpressionGeneratorException,
 )
 from ..formula.expression_generator.generator import tree_to_django_expression
+from ..formula.parser.ast_mapper import translate_formula_for_backend
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1816,3 +1817,12 @@ class FormulaFieldType(FieldType):
         f = to_model._meta.get_field(to_field.db_column)
         expr = tree_to_django_expression(f.ast, f.field_types, None, True)
         to_model.objects.all().update(**{f"{to_field.db_column}": expr})
+
+    def before_create(self, table, primary, values, order, user):
+        values["formula"] = translate_formula_for_backend(values["formula"], table)
+
+    def before_update(self, old_field, values, user):
+        if "formula" in values:
+            values["formula"] = translate_formula_for_backend(
+                values["formula"], old_field.table
+            )

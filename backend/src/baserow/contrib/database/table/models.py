@@ -423,8 +423,8 @@ class Table(
             # method are going to be passed along to the model field.
             extra_kwargs = {}
             if field_type.type == "formula":
-                extra_kwargs["ast"] = typer.formula_asts[field.db_column]
-                extra_kwargs["expression_type"] = typer.field_types[field.db_column]
+                extra_kwargs["ast"] = typer.formula_asts[field.id]
+                extra_kwargs["expression_type"] = typer.field_types[field.id]
                 extra_kwargs["field_types"] = typer.field_types
             attrs[field_name] = field_type.get_model_field(
                 field,

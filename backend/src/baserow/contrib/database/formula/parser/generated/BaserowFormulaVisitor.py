@@ -29,6 +29,11 @@ class BaserowFormulaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by BaserowFormula#FieldByIdReference.
+    def visitFieldByIdReference(self, ctx:BaserowFormula.FieldByIdReferenceContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by BaserowFormula#IntegerLiteral.
     def visitIntegerLiteral(self, ctx:BaserowFormula.IntegerLiteralContext):
         return self.visitChildren(ctx)

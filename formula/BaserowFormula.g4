@@ -13,6 +13,7 @@ expr
     | INTEGER_LITERAL # IntegerLiteral
     | expr op=(PLUS | MINUS) expr # BinaryOp
     | FIELD OPEN_PAREN field_reference CLOSE_PAREN # FieldReference
+    | FIELDBYID OPEN_PAREN INTEGER_LITERAL CLOSE_PAREN # FieldByIdReference
     | func_name OPEN_PAREN (expr (COMMA expr)*)? CLOSE_PAREN # FunctionCall
     ;
 

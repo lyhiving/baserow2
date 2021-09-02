@@ -2,6 +2,9 @@ import pytest
 
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.contrib.database.formula.parser.ast_mapper import (
+    translate_formula_for_backend,
+)
 
 
 @pytest.mark.django_db
@@ -99,3 +102,24 @@ def test_get_set_export_serialized_value_formula_field(data_fixture):
 
     assert old_row_1_value == getattr(row_1, formula_field_name)
     assert old_row_2_value == getattr(row_2, formula_field_name)
+
+
+@pytest.mark.django_db
+def test_sub(data_fixture):
+    # assert (
+    #     sub_formula('field("My Field Name")', {"My Field Name": "sub"})
+    #     == 'field("sub")'
+    # )
+    assert (
+        translate_formula_for_backend(
+            'field\n(\n"My Field Name")', {"My Field Name": 1}
+        )
+        == "field_by_id\n(\n1)"
+    )
+    assert (
+        translate_formula_for_backend(
+            """concat(\n"field('My Field Name')", 'test')""",
+            {"My Field " "Name": "sub"},
+        )
+        == """concat(\n"field('My Field Name')", 'test')"""
+    )

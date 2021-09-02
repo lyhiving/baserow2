@@ -23,7 +23,7 @@
 lexer grammar BaserowFormulaLexer;
 
 // Skip
-WHITESPACE          : [ \t\r\n]+    -> skip;
+WHITESPACE          : [ \t\r\n]+    -> channel(HIDDEN);
 BLOCK_COMMENT       : '/*' .*? '*/' -> channel(HIDDEN);
 LINE_COMMENT        : '--' .*? '\n' -> channel(HIDDEN);
 
@@ -54,6 +54,7 @@ fragment W          : ('W'|'w') ;
 fragment X          : ('X'|'x') ;
 fragment Y          : ('Y'|'y') ;
 fragment Z          : ('Z'|'z') ;
+fragment UNDERSCORE : '_' ;
 
 fragment HEX_DIGIT                    : [0-9A-F];
 fragment DEC_DIGIT                    : [0-9];
@@ -63,6 +64,7 @@ fragment BQUOTA_STRING                : '`' ( '\\'. | '``' | ~('`' | '\\'))* '`'
 
 IF                                   : I F;
 FIELD                                : F I E L D;
+FIELDBYID                            : F I E L D UNDERSCORE B Y UNDERSCORE I D;
 
 // language tokens
 COMMA                                : ',';

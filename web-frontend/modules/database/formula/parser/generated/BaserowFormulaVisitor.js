@@ -36,6 +36,12 @@ BaserowFormulaVisitor.prototype.visitFunctionCall = function(ctx) {
 };
 
 
+// Visit a parse tree produced by BaserowFormula#FieldByIdReference.
+BaserowFormulaVisitor.prototype.visitFieldByIdReference = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by BaserowFormula#IntegerLiteral.
 BaserowFormulaVisitor.prototype.visitIntegerLiteral = function(ctx) {
   return this.visitChildren(ctx);

@@ -44,6 +44,15 @@ class BaserowFormulaListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by BaserowFormula#FieldByIdReference.
+    def enterFieldByIdReference(self, ctx:BaserowFormula.FieldByIdReferenceContext):
+        pass
+
+    # Exit a parse tree produced by BaserowFormula#FieldByIdReference.
+    def exitFieldByIdReference(self, ctx:BaserowFormula.FieldByIdReferenceContext):
+        pass
+
+
     # Enter a parse tree produced by BaserowFormula#IntegerLiteral.
     def enterIntegerLiteral(self, ctx:BaserowFormula.IntegerLiteralContext):
         pass

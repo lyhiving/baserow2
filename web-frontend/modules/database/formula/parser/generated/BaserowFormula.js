@@ -8,41 +8,43 @@ var grammarFileName = "BaserowFormula.g4";
 
 
 var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
-    "\u0003R7\u0004\u0002\t\u0002\u0004\u0003\t\u0003\u0004\u0004\t\u0004",
+    "\u0003S;\u0004\u0002\t\u0002\u0004\u0003\t\u0003\u0004\u0004\t\u0004",
     "\u0004\u0005\t\u0005\u0004\u0006\t\u0006\u0003\u0002\u0003\u0002\u0003",
     "\u0002\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003",
     "\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003",
-    "\u0003\u0003\u0003\u0003\u0003\u0007\u0003\u001e\n\u0003\f\u0003\u000e",
-    "\u0003!\u000b\u0003\u0005\u0003#\n\u0003\u0003\u0003\u0003\u0003\u0005",
-    "\u0003\'\n\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0007\u0003,\n",
-    "\u0003\f\u0003\u000e\u0003/\u000b\u0003\u0003\u0004\u0003\u0004\u0003",
-    "\u0005\u0003\u0005\u0003\u0006\u0003\u0006\u0003\u0006\u0002\u0003\u0004",
-    "\u0007\u0002\u0004\u0006\b\n\u0002\u0005\u0004\u0002<<BB\u0003\u0002",
-    "\u0018\u0019\u0003\u0002\u001a\u001b\u00028\u0002\f\u0003\u0002\u0002",
-    "\u0002\u0004&\u0003\u0002\u0002\u0002\u00060\u0003\u0002\u0002\u0002",
-    "\b2\u0003\u0002\u0002\u0002\n4\u0003\u0002\u0002\u0002\f\r\u0005\u0004",
-    "\u0003\u0002\r\u000e\u0007\u0002\u0002\u0003\u000e\u0003\u0003\u0002",
-    "\u0002\u0002\u000f\u0010\b\u0003\u0001\u0002\u0010\'\u0007\u0018\u0002",
-    "\u0002\u0011\'\u0007\u0019\u0002\u0002\u0012\'\u0007\u0015\u0002\u0002",
-    "\u0013\u0014\u0007\u0007\u0002\u0002\u0014\u0015\u0007\u000e\u0002\u0002",
-    "\u0015\u0016\u0005\b\u0005\u0002\u0016\u0017\u0007\u000f\u0002\u0002",
-    "\u0017\'\u0003\u0002\u0002\u0002\u0018\u0019\u0005\u0006\u0004\u0002",
-    "\u0019\"\u0007\u000e\u0002\u0002\u001a\u001f\u0005\u0004\u0003\u0002",
-    "\u001b\u001c\u0007\b\u0002\u0002\u001c\u001e\u0005\u0004\u0003\u0002",
-    "\u001d\u001b\u0003\u0002\u0002\u0002\u001e!\u0003\u0002\u0002\u0002",
-    "\u001f\u001d\u0003\u0002\u0002\u0002\u001f \u0003\u0002\u0002\u0002",
-    " #\u0003\u0002\u0002\u0002!\u001f\u0003\u0002\u0002\u0002\"\u001a\u0003",
-    "\u0002\u0002\u0002\"#\u0003\u0002\u0002\u0002#$\u0003\u0002\u0002\u0002",
-    "$%\u0007\u000f\u0002\u0002%\'\u0003\u0002\u0002\u0002&\u000f\u0003\u0002",
-    "\u0002\u0002&\u0011\u0003\u0002\u0002\u0002&\u0012\u0003\u0002\u0002",
-    "\u0002&\u0013\u0003\u0002\u0002\u0002&\u0018\u0003\u0002\u0002\u0002",
-    "\'-\u0003\u0002\u0002\u0002()\f\u0005\u0002\u0002)*\t\u0002\u0002\u0002",
-    "*,\u0005\u0004\u0003\u0006+(\u0003\u0002\u0002\u0002,/\u0003\u0002\u0002",
-    "\u0002-+\u0003\u0002\u0002\u0002-.\u0003\u0002\u0002\u0002.\u0005\u0003",
-    "\u0002\u0002\u0002/-\u0003\u0002\u0002\u000201\u0005\n\u0006\u00021",
-    "\u0007\u0003\u0002\u0002\u000223\t\u0003\u0002\u00023\t\u0003\u0002",
-    "\u0002\u000245\t\u0004\u0002\u00025\u000b\u0003\u0002\u0002\u0002\u0006",
-    "\u001f\"&-"].join("");
+    "\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003",
+    "\u0003\u0007\u0003\"\n\u0003\f\u0003\u000e\u0003%\u000b\u0003\u0005",
+    "\u0003\'\n\u0003\u0003\u0003\u0003\u0003\u0005\u0003+\n\u0003\u0003",
+    "\u0003\u0003\u0003\u0003\u0003\u0007\u00030\n\u0003\f\u0003\u000e\u0003",
+    "3\u000b\u0003\u0003\u0004\u0003\u0004\u0003\u0005\u0003\u0005\u0003",
+    "\u0006\u0003\u0006\u0003\u0006\u0002\u0003\u0004\u0007\u0002\u0004\u0006",
+    "\b\n\u0002\u0005\u0004\u0002==CC\u0003\u0002\u0019\u001a\u0003\u0002",
+    "\u001b\u001c\u0002=\u0002\f\u0003\u0002\u0002\u0002\u0004*\u0003\u0002",
+    "\u0002\u0002\u00064\u0003\u0002\u0002\u0002\b6\u0003\u0002\u0002\u0002",
+    "\n8\u0003\u0002\u0002\u0002\f\r\u0005\u0004\u0003\u0002\r\u000e\u0007",
+    "\u0002\u0002\u0003\u000e\u0003\u0003\u0002\u0002\u0002\u000f\u0010\b",
+    "\u0003\u0001\u0002\u0010+\u0007\u0019\u0002\u0002\u0011+\u0007\u001a",
+    "\u0002\u0002\u0012+\u0007\u0016\u0002\u0002\u0013\u0014\u0007\u0007",
+    "\u0002\u0002\u0014\u0015\u0007\u000f\u0002\u0002\u0015\u0016\u0005\b",
+    "\u0005\u0002\u0016\u0017\u0007\u0010\u0002\u0002\u0017+\u0003\u0002",
+    "\u0002\u0002\u0018\u0019\u0007\b\u0002\u0002\u0019\u001a\u0007\u000f",
+    "\u0002\u0002\u001a\u001b\u0007\u0016\u0002\u0002\u001b+\u0007\u0010",
+    "\u0002\u0002\u001c\u001d\u0005\u0006\u0004\u0002\u001d&\u0007\u000f",
+    "\u0002\u0002\u001e#\u0005\u0004\u0003\u0002\u001f \u0007\t\u0002\u0002",
+    " \"\u0005\u0004\u0003\u0002!\u001f\u0003\u0002\u0002\u0002\"%\u0003",
+    "\u0002\u0002\u0002#!\u0003\u0002\u0002\u0002#$\u0003\u0002\u0002\u0002",
+    "$\'\u0003\u0002\u0002\u0002%#\u0003\u0002\u0002\u0002&\u001e\u0003\u0002",
+    "\u0002\u0002&\'\u0003\u0002\u0002\u0002\'(\u0003\u0002\u0002\u0002(",
+    ")\u0007\u0010\u0002\u0002)+\u0003\u0002\u0002\u0002*\u000f\u0003\u0002",
+    "\u0002\u0002*\u0011\u0003\u0002\u0002\u0002*\u0012\u0003\u0002\u0002",
+    "\u0002*\u0013\u0003\u0002\u0002\u0002*\u0018\u0003\u0002\u0002\u0002",
+    "*\u001c\u0003\u0002\u0002\u0002+1\u0003\u0002\u0002\u0002,-\f\u0006",
+    "\u0002\u0002-.\t\u0002\u0002\u0002.0\u0005\u0004\u0003\u0007/,\u0003",
+    "\u0002\u0002\u000203\u0003\u0002\u0002\u00021/\u0003\u0002\u0002\u0002",
+    "12\u0003\u0002\u0002\u00022\u0005\u0003\u0002\u0002\u000231\u0003\u0002",
+    "\u0002\u000245\u0005\n\u0006\u00025\u0007\u0003\u0002\u0002\u000267",
+    "\t\u0003\u0002\u00027\t\u0003\u0002\u0002\u000289\t\u0004\u0002\u0002",
+    "9\u000b\u0003\u0002\u0002\u0002\u0006#&*1"].join("");
 
 
 var atn = new antlr4.atn.ATNDeserializer().deserialize(serializedATN);
@@ -51,21 +53,22 @@ var decisionsToDFA = atn.decisionToState.map( function(ds, index) { return new a
 
 var sharedContextCache = new antlr4.PredictionContextCache();
 
-var literalNames = [ null, null, null, null, null, null, "','", "':'", "'::'", 
-                     "'$'", "'$$'", "'*'", "'('", "')'", "'['", "']'", null, 
-                     null, null, null, null, "'.'", null, null, null, null, 
-                     "'&'", "'&&'", "'&<'", "'@@'", "'@>'", "'@'", "'!'", 
-                     "'!!'", "'!='", "'^'", "'='", "'=>'", "'>'", "'>='", 
-                     "'>>'", "'#'", "'#='", "'#>'", "'#>>'", "'##'", "'->'", 
-                     "'->>'", "'-|-'", "'<'", "'<='", "'<@'", "'<^'", "'<>'", 
-                     "'<->'", "'<<'", "'<<='", "'<?>'", "'-'", "'%'", "'|'", 
-                     "'||'", "'||/'", "'|/'", "'+'", "'?'", "'?&'", "'?#'", 
-                     "'?-'", "'?|'", "'/'", "'~'", "'~='", "'~>=~'", "'~>~'", 
-                     "'~<=~'", "'~<~'", "'~*'", "'~~'", "';'" ];
+var literalNames = [ null, null, null, null, null, null, null, "','", "':'", 
+                     "'::'", "'$'", "'$$'", "'*'", "'('", "')'", "'['", 
+                     "']'", null, null, null, null, null, "'.'", null, null, 
+                     null, null, "'&'", "'&&'", "'&<'", "'@@'", "'@>'", 
+                     "'@'", "'!'", "'!!'", "'!='", "'^'", "'='", "'=>'", 
+                     "'>'", "'>='", "'>>'", "'#'", "'#='", "'#>'", "'#>>'", 
+                     "'##'", "'->'", "'->>'", "'-|-'", "'<'", "'<='", "'<@'", 
+                     "'<^'", "'<>'", "'<->'", "'<<'", "'<<='", "'<?>'", 
+                     "'-'", "'%'", "'|'", "'||'", "'||/'", "'|/'", "'+'", 
+                     "'?'", "'?&'", "'?#'", "'?-'", "'?|'", "'/'", "'~'", 
+                     "'~='", "'~>=~'", "'~>~'", "'~<=~'", "'~<~'", "'~*'", 
+                     "'~~'", "';'" ];
 
 var symbolicNames = [ null, "WHITESPACE", "BLOCK_COMMENT", "LINE_COMMENT", 
-                      "IF", "FIELD", "COMMA", "COLON", "COLON_COLON", "DOLLAR", 
-                      "DOLLAR_DOLLAR", "STAR", "OPEN_PAREN", "CLOSE_PAREN", 
+                      "IF", "FIELD", "FIELDBYID", "COMMA", "COLON", "COLON_COLON", 
+                      "DOLLAR", "DOLLAR_DOLLAR", "STAR", "OPEN_PAREN", "CLOSE_PAREN", 
                       "OPEN_BRACKET", "CLOSE_BRACKET", "BIT_STRING", "REGEX_STRING", 
                       "NUMERIC_LITERAL", "INTEGER_LITERAL", "HEX_INTEGER_LITERAL", 
                       "DOT", "SINGLEQ_STRING_LITERAL", "DOUBLEQ_STRING_LITERAL", 
@@ -108,81 +111,82 @@ BaserowFormula.BLOCK_COMMENT = 2;
 BaserowFormula.LINE_COMMENT = 3;
 BaserowFormula.IF = 4;
 BaserowFormula.FIELD = 5;
-BaserowFormula.COMMA = 6;
-BaserowFormula.COLON = 7;
-BaserowFormula.COLON_COLON = 8;
-BaserowFormula.DOLLAR = 9;
-BaserowFormula.DOLLAR_DOLLAR = 10;
-BaserowFormula.STAR = 11;
-BaserowFormula.OPEN_PAREN = 12;
-BaserowFormula.CLOSE_PAREN = 13;
-BaserowFormula.OPEN_BRACKET = 14;
-BaserowFormula.CLOSE_BRACKET = 15;
-BaserowFormula.BIT_STRING = 16;
-BaserowFormula.REGEX_STRING = 17;
-BaserowFormula.NUMERIC_LITERAL = 18;
-BaserowFormula.INTEGER_LITERAL = 19;
-BaserowFormula.HEX_INTEGER_LITERAL = 20;
-BaserowFormula.DOT = 21;
-BaserowFormula.SINGLEQ_STRING_LITERAL = 22;
-BaserowFormula.DOUBLEQ_STRING_LITERAL = 23;
-BaserowFormula.IDENTIFIER = 24;
-BaserowFormula.IDENTIFIER_UNICODE = 25;
-BaserowFormula.AMP = 26;
-BaserowFormula.AMP_AMP = 27;
-BaserowFormula.AMP_LT = 28;
-BaserowFormula.AT_AT = 29;
-BaserowFormula.AT_GT = 30;
-BaserowFormula.AT_SIGN = 31;
-BaserowFormula.BANG = 32;
-BaserowFormula.BANG_BANG = 33;
-BaserowFormula.BANG_EQUAL = 34;
-BaserowFormula.CARET = 35;
-BaserowFormula.EQUAL = 36;
-BaserowFormula.EQUAL_GT = 37;
-BaserowFormula.GT = 38;
-BaserowFormula.GTE = 39;
-BaserowFormula.GT_GT = 40;
-BaserowFormula.HASH = 41;
-BaserowFormula.HASH_EQ = 42;
-BaserowFormula.HASH_GT = 43;
-BaserowFormula.HASH_GT_GT = 44;
-BaserowFormula.HASH_HASH = 45;
-BaserowFormula.HYPHEN_GT = 46;
-BaserowFormula.HYPHEN_GT_GT = 47;
-BaserowFormula.HYPHEN_PIPE_HYPHEN = 48;
-BaserowFormula.LT = 49;
-BaserowFormula.LTE = 50;
-BaserowFormula.LT_AT = 51;
-BaserowFormula.LT_CARET = 52;
-BaserowFormula.LT_GT = 53;
-BaserowFormula.LT_HYPHEN_GT = 54;
-BaserowFormula.LT_LT = 55;
-BaserowFormula.LT_LT_EQ = 56;
-BaserowFormula.LT_QMARK_GT = 57;
-BaserowFormula.MINUS = 58;
-BaserowFormula.PERCENT = 59;
-BaserowFormula.PIPE = 60;
-BaserowFormula.PIPE_PIPE = 61;
-BaserowFormula.PIPE_PIPE_SLASH = 62;
-BaserowFormula.PIPE_SLASH = 63;
-BaserowFormula.PLUS = 64;
-BaserowFormula.QMARK = 65;
-BaserowFormula.QMARK_AMP = 66;
-BaserowFormula.QMARK_HASH = 67;
-BaserowFormula.QMARK_HYPHEN = 68;
-BaserowFormula.QMARK_PIPE = 69;
-BaserowFormula.SLASH = 70;
-BaserowFormula.TIL = 71;
-BaserowFormula.TIL_EQ = 72;
-BaserowFormula.TIL_GTE_TIL = 73;
-BaserowFormula.TIL_GT_TIL = 74;
-BaserowFormula.TIL_LTE_TIL = 75;
-BaserowFormula.TIL_LT_TIL = 76;
-BaserowFormula.TIL_STAR = 77;
-BaserowFormula.TIL_TIL = 78;
-BaserowFormula.SEMI = 79;
-BaserowFormula.ErrorCharacter = 80;
+BaserowFormula.FIELDBYID = 6;
+BaserowFormula.COMMA = 7;
+BaserowFormula.COLON = 8;
+BaserowFormula.COLON_COLON = 9;
+BaserowFormula.DOLLAR = 10;
+BaserowFormula.DOLLAR_DOLLAR = 11;
+BaserowFormula.STAR = 12;
+BaserowFormula.OPEN_PAREN = 13;
+BaserowFormula.CLOSE_PAREN = 14;
+BaserowFormula.OPEN_BRACKET = 15;
+BaserowFormula.CLOSE_BRACKET = 16;
+BaserowFormula.BIT_STRING = 17;
+BaserowFormula.REGEX_STRING = 18;
+BaserowFormula.NUMERIC_LITERAL = 19;
+BaserowFormula.INTEGER_LITERAL = 20;
+BaserowFormula.HEX_INTEGER_LITERAL = 21;
+BaserowFormula.DOT = 22;
+BaserowFormula.SINGLEQ_STRING_LITERAL = 23;
+BaserowFormula.DOUBLEQ_STRING_LITERAL = 24;
+BaserowFormula.IDENTIFIER = 25;
+BaserowFormula.IDENTIFIER_UNICODE = 26;
+BaserowFormula.AMP = 27;
+BaserowFormula.AMP_AMP = 28;
+BaserowFormula.AMP_LT = 29;
+BaserowFormula.AT_AT = 30;
+BaserowFormula.AT_GT = 31;
+BaserowFormula.AT_SIGN = 32;
+BaserowFormula.BANG = 33;
+BaserowFormula.BANG_BANG = 34;
+BaserowFormula.BANG_EQUAL = 35;
+BaserowFormula.CARET = 36;
+BaserowFormula.EQUAL = 37;
+BaserowFormula.EQUAL_GT = 38;
+BaserowFormula.GT = 39;
+BaserowFormula.GTE = 40;
+BaserowFormula.GT_GT = 41;
+BaserowFormula.HASH = 42;
+BaserowFormula.HASH_EQ = 43;
+BaserowFormula.HASH_GT = 44;
+BaserowFormula.HASH_GT_GT = 45;
+BaserowFormula.HASH_HASH = 46;
+BaserowFormula.HYPHEN_GT = 47;
+BaserowFormula.HYPHEN_GT_GT = 48;
+BaserowFormula.HYPHEN_PIPE_HYPHEN = 49;
+BaserowFormula.LT = 50;
+BaserowFormula.LTE = 51;
+BaserowFormula.LT_AT = 52;
+BaserowFormula.LT_CARET = 53;
+BaserowFormula.LT_GT = 54;
+BaserowFormula.LT_HYPHEN_GT = 55;
+BaserowFormula.LT_LT = 56;
+BaserowFormula.LT_LT_EQ = 57;
+BaserowFormula.LT_QMARK_GT = 58;
+BaserowFormula.MINUS = 59;
+BaserowFormula.PERCENT = 60;
+BaserowFormula.PIPE = 61;
+BaserowFormula.PIPE_PIPE = 62;
+BaserowFormula.PIPE_PIPE_SLASH = 63;
+BaserowFormula.PIPE_SLASH = 64;
+BaserowFormula.PLUS = 65;
+BaserowFormula.QMARK = 66;
+BaserowFormula.QMARK_AMP = 67;
+BaserowFormula.QMARK_HASH = 68;
+BaserowFormula.QMARK_HYPHEN = 69;
+BaserowFormula.QMARK_PIPE = 70;
+BaserowFormula.SLASH = 71;
+BaserowFormula.TIL = 72;
+BaserowFormula.TIL_EQ = 73;
+BaserowFormula.TIL_GTE_TIL = 74;
+BaserowFormula.TIL_GT_TIL = 75;
+BaserowFormula.TIL_LTE_TIL = 76;
+BaserowFormula.TIL_LT_TIL = 77;
+BaserowFormula.TIL_STAR = 78;
+BaserowFormula.TIL_TIL = 79;
+BaserowFormula.SEMI = 80;
+BaserowFormula.ErrorCharacter = 81;
 
 BaserowFormula.RULE_root = 0;
 BaserowFormula.RULE_expr = 1;
@@ -439,6 +443,53 @@ FunctionCallContext.prototype.accept = function(visitor) {
 };
 
 
+function FieldByIdReferenceContext(parser, ctx) {
+	ExprContext.call(this, parser);
+    ExprContext.prototype.copyFrom.call(this, ctx);
+    return this;
+}
+
+FieldByIdReferenceContext.prototype = Object.create(ExprContext.prototype);
+FieldByIdReferenceContext.prototype.constructor = FieldByIdReferenceContext;
+
+BaserowFormula.FieldByIdReferenceContext = FieldByIdReferenceContext;
+
+FieldByIdReferenceContext.prototype.FIELDBYID = function() {
+    return this.getToken(BaserowFormula.FIELDBYID, 0);
+};
+
+FieldByIdReferenceContext.prototype.OPEN_PAREN = function() {
+    return this.getToken(BaserowFormula.OPEN_PAREN, 0);
+};
+
+FieldByIdReferenceContext.prototype.INTEGER_LITERAL = function() {
+    return this.getToken(BaserowFormula.INTEGER_LITERAL, 0);
+};
+
+FieldByIdReferenceContext.prototype.CLOSE_PAREN = function() {
+    return this.getToken(BaserowFormula.CLOSE_PAREN, 0);
+};
+FieldByIdReferenceContext.prototype.enterRule = function(listener) {
+    if(listener instanceof BaserowFormulaListener ) {
+        listener.enterFieldByIdReference(this);
+	}
+};
+
+FieldByIdReferenceContext.prototype.exitRule = function(listener) {
+    if(listener instanceof BaserowFormulaListener ) {
+        listener.exitFieldByIdReference(this);
+	}
+};
+
+FieldByIdReferenceContext.prototype.accept = function(visitor) {
+    if ( visitor instanceof BaserowFormulaVisitor ) {
+        return visitor.visitFieldByIdReference(this);
+    } else {
+        return visitor.visitChildren(this);
+    }
+};
+
+
 function IntegerLiteralContext(parser, ctx) {
 	ExprContext.call(this, parser);
     ExprContext.prototype.copyFrom.call(this, ctx);
@@ -539,7 +590,7 @@ BaserowFormula.prototype.expr = function(_p) {
     var _la = 0; // Token type
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 36;
+        this.state = 40;
         this._errHandler.sync(this);
         switch(this._input.LA(1)) {
         case BaserowFormula.SINGLEQ_STRING_LITERAL:
@@ -577,43 +628,56 @@ BaserowFormula.prototype.expr = function(_p) {
             this.state = 20;
             this.match(BaserowFormula.CLOSE_PAREN);
             break;
+        case BaserowFormula.FIELDBYID:
+            localctx = new FieldByIdReferenceContext(this, localctx);
+            this._ctx = localctx;
+            _prevctx = localctx;
+            this.state = 22;
+            this.match(BaserowFormula.FIELDBYID);
+            this.state = 23;
+            this.match(BaserowFormula.OPEN_PAREN);
+            this.state = 24;
+            this.match(BaserowFormula.INTEGER_LITERAL);
+            this.state = 25;
+            this.match(BaserowFormula.CLOSE_PAREN);
+            break;
         case BaserowFormula.IDENTIFIER:
         case BaserowFormula.IDENTIFIER_UNICODE:
             localctx = new FunctionCallContext(this, localctx);
             this._ctx = localctx;
             _prevctx = localctx;
-            this.state = 22;
+            this.state = 26;
             this.func_name();
-            this.state = 23;
+            this.state = 27;
             this.match(BaserowFormula.OPEN_PAREN);
-            this.state = 32;
+            this.state = 36;
             this._errHandler.sync(this);
             _la = this._input.LA(1);
-            if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << BaserowFormula.FIELD) | (1 << BaserowFormula.INTEGER_LITERAL) | (1 << BaserowFormula.SINGLEQ_STRING_LITERAL) | (1 << BaserowFormula.DOUBLEQ_STRING_LITERAL) | (1 << BaserowFormula.IDENTIFIER) | (1 << BaserowFormula.IDENTIFIER_UNICODE))) !== 0)) {
-                this.state = 24;
+            if((((_la) & ~0x1f) == 0 && ((1 << _la) & ((1 << BaserowFormula.FIELD) | (1 << BaserowFormula.FIELDBYID) | (1 << BaserowFormula.INTEGER_LITERAL) | (1 << BaserowFormula.SINGLEQ_STRING_LITERAL) | (1 << BaserowFormula.DOUBLEQ_STRING_LITERAL) | (1 << BaserowFormula.IDENTIFIER) | (1 << BaserowFormula.IDENTIFIER_UNICODE))) !== 0)) {
+                this.state = 28;
                 this.expr(0);
-                this.state = 29;
+                this.state = 33;
                 this._errHandler.sync(this);
                 _la = this._input.LA(1);
                 while(_la===BaserowFormula.COMMA) {
-                    this.state = 25;
+                    this.state = 29;
                     this.match(BaserowFormula.COMMA);
-                    this.state = 26;
+                    this.state = 30;
                     this.expr(0);
-                    this.state = 31;
+                    this.state = 35;
                     this._errHandler.sync(this);
                     _la = this._input.LA(1);
                 }
             }
 
-            this.state = 34;
+            this.state = 38;
             this.match(BaserowFormula.CLOSE_PAREN);
             break;
         default:
             throw new antlr4.error.NoViableAltException(this);
         }
         this._ctx.stop = this._input.LT(-1);
-        this.state = 43;
+        this.state = 47;
         this._errHandler.sync(this);
         var _alt = this._interp.adaptivePredict(this._input,3,this._ctx)
         while(_alt!=2 && _alt!=antlr4.atn.ATN.INVALID_ALT_NUMBER) {
@@ -624,11 +688,11 @@ BaserowFormula.prototype.expr = function(_p) {
                 _prevctx = localctx;
                 localctx = new BinaryOpContext(this, new ExprContext(this, _parentctx, _parentState));
                 this.pushNewRecursionContext(localctx, _startState, BaserowFormula.RULE_expr);
-                this.state = 38;
-                if (!( this.precpred(this._ctx, 3))) {
-                    throw new antlr4.error.FailedPredicateException(this, "this.precpred(this._ctx, 3)");
+                this.state = 42;
+                if (!( this.precpred(this._ctx, 4))) {
+                    throw new antlr4.error.FailedPredicateException(this, "this.precpred(this._ctx, 4)");
                 }
-                this.state = 39;
+                this.state = 43;
                 localctx.op = this._input.LT(1);
                 _la = this._input.LA(1);
                 if(!(_la===BaserowFormula.MINUS || _la===BaserowFormula.PLUS)) {
@@ -638,10 +702,10 @@ BaserowFormula.prototype.expr = function(_p) {
                 	this._errHandler.reportMatch(this);
                     this.consume();
                 }
-                this.state = 40;
-                this.expr(4); 
+                this.state = 44;
+                this.expr(5); 
             }
-            this.state = 45;
+            this.state = 49;
             this._errHandler.sync(this);
             _alt = this._interp.adaptivePredict(this._input,3,this._ctx);
         }
@@ -712,7 +776,7 @@ BaserowFormula.prototype.func_name = function() {
     this.enterRule(localctx, 4, BaserowFormula.RULE_func_name);
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 46;
+        this.state = 50;
         this.identifier();
     } catch (re) {
     	if(re instanceof antlr4.error.RecognitionException) {
@@ -785,7 +849,7 @@ BaserowFormula.prototype.field_reference = function() {
     var _la = 0; // Token type
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 48;
+        this.state = 52;
         _la = this._input.LA(1);
         if(!(_la===BaserowFormula.SINGLEQ_STRING_LITERAL || _la===BaserowFormula.DOUBLEQ_STRING_LITERAL)) {
         this._errHandler.recoverInline(this);
@@ -865,7 +929,7 @@ BaserowFormula.prototype.identifier = function() {
     var _la = 0; // Token type
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 50;
+        this.state = 54;
         _la = this._input.LA(1);
         if(!(_la===BaserowFormula.IDENTIFIER || _la===BaserowFormula.IDENTIFIER_UNICODE)) {
         this._errHandler.recoverInline(this);
@@ -901,7 +965,7 @@ BaserowFormula.prototype.sempred = function(localctx, ruleIndex, predIndex) {
 BaserowFormula.prototype.expr_sempred = function(localctx, predIndex) {
 	switch(predIndex) {
 		case 0:
-			return this.precpred(this._ctx, 3);
+			return this.precpred(this._ctx, 4);
 		default:
 			throw "No predicate with index:" + predIndex;
 	}

@@ -14,7 +14,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowStringLiteral,
     BaserowFunctionCall,
     BaserowIntegerLiteral,
-    BaserowFieldReference,
+    BaserowFieldByIdReference,
     BaserowExpression,
 )
 from baserow.contrib.database.formula.parser.ast_mapper import raw_formula_to_tree
@@ -38,36 +38,35 @@ class Typer:
             self.all_fields = new_all_fields
         if new_field is not None:
             self.all_fields.append(new_field)
-        self.formula_fields = []
+        self.formula_field_ids = []
         self.field_types = {}
         self.field_references = {}
         self.formula_asts = {}
-        self.field_db_names = {f.name: f.db_column for f in self.all_fields}
-        self.dbname_to_field = {f.db_column: f for f in self.all_fields}
+        self.field_id_to_field = {f.id: f for f in self.all_fields}
 
         self.type_table()
 
     def calculate_all_depended_on_fields(self, fields):
         fields_to_check = fields.copy()
         extra_fields = []
-        extra_field_names = set()
-        current_field_db_names = {f.db_column for f in fields}
+        extra_field_ids = set()
+        current_field_ids = {f.id for f in fields}
         while len(fields_to_check) > 0:
             field = fields_to_check.pop(0)
-            references = self.field_references[field.db_column]
+            references = self.field_references[field.id]
             for ref in references:
-                if ref not in current_field_db_names and ref not in extra_field_names:
-                    new_field = self.dbname_to_field[ref]
+                if ref not in current_field_ids and ref not in extra_field_ids:
+                    new_field = self.field_id_to_field[ref]
                     extra_fields.append(new_field)
-                    extra_field_names.add(ref)
+                    extra_field_ids.add(ref)
                     fields_to_check.append(new_field)
         return extra_fields
 
     def update_fields(self):
         updated_fields = []
-        for formula_field in self.formula_fields:
+        for formula_field in self.formula_field_ids:
             field_type = self.field_types[formula_field]
-            formula_field = self.dbname_to_field[formula_field].specific
+            formula_field = self.field_id_to_field[formula_field].specific
             previous_error = formula_field.error
             if field_type.is_invalid():
                 formula_field.error = field_type.error
@@ -84,23 +83,21 @@ class Typer:
                 specific_class = field.specific_class
                 field_type = field_type_registry.get_by_model(specific_class)
                 if field_type.type == "formula":
-                    self.formula_fields.append(field.db_column)
-                    ast = raw_formula_to_tree(
-                        field.specific.formula, self.field_db_names
-                    )
-                    self.field_references[field.db_column] = ast.accept(
+                    self.formula_field_ids.append(field.id)
+                    ast = raw_formula_to_tree(field.specific.formula)
+                    self.field_references[field.id] = ast.accept(
                         FieldReferenceResolvingVisitor()
                     )
-                    self.formula_asts[field.db_column] = ast
+                    self.formula_asts[field.id] = ast
                 else:
-                    self.field_types[field.db_column] = TypeResult.valid_type(
+                    self.field_types[field.id] = TypeResult.valid_type(
                         field_type.get_model_field(field.specific)
                     )
-                    self.field_references[field.db_column] = []
+                    self.field_references[field.id] = []
 
             check_for_self_references(self.field_references)
             formula_fields_ordered = resolve_formula_field_ordering(
-                self.field_references, self.formula_fields
+                self.field_references, self.formula_field_ids
             )
             for formula_field in formula_fields_ordered:
                 ast = self.formula_asts[formula_field]
@@ -111,12 +108,12 @@ class Typer:
                     UnnestingResolverASTVisitor(self.formula_asts)
                 )
 
-            return (self.field_types), (self.formula_asts), (self.field_references)
+            return self.field_types, self.formula_asts, self.field_references
         except RecursionError:
             raise MaximumFormulaDepthError()
 
     def get_type(self, field):
-        return self.field_types[field.db_column]
+        return self.field_types[field.id]
 
     def set_field_type_or_raise(self, field_type, field):
         if field_type.type == "formula":
@@ -132,16 +129,12 @@ class Typer:
         self._fix_dict(pk, self.field_references)
         self._fix_dict(pk, self.field_types)
         self._fix_dict(pk, self.formula_asts)
-        self._fix_dict(pk, self.dbname_to_field)
-        for name, db_name in self.field_db_names.items():
-            if db_name == "field_None":
-                self.field_db_names[db_name] = f"field_{pk}"
-                return
+        self._fix_dict(pk, self.field_id_to_field)
 
     def _fix_dict(self, pk, dict_to_fix):
-        if "field_None" in dict_to_fix:
-            dict_to_fix[f"field_{pk}"] = dict_to_fix["field_None"]
-            del dict_to_fix["field_None"]
+        if None in dict_to_fix:
+            dict_to_fix[pk] = dict_to_fix[None]
+            del dict_to_fix[None]
 
 
 def check_for_self_references(all_field_references):
@@ -209,8 +202,8 @@ class FieldReferenceResolvingVisitor(BaserowFormulaASTVisitor[List[str]]):
     def visit_int_literal(self, int_literal: BaserowIntegerLiteral):
         return []
 
-    def visit_field_reference(self, field_reference: BaserowFieldReference):
-        return [field_reference.referenced_field]
+    def visit_field_reference(self, field_reference: BaserowFieldByIdReference):
+        return [field_reference.referenced_field_id]
 
 
 class TypeResult:
@@ -260,13 +253,13 @@ class TypeResolverASTVisitor(BaserowFormulaASTVisitor[TypeResult]):
     def visit_int_literal(self, int_literal: BaserowIntegerLiteral):
         return TypeResult.valid_type(DecimalField(max_digits=50, decimal_places=0))
 
-    def visit_field_reference(self, field_reference: BaserowFieldReference):
-        if field_reference.referenced_field not in self.field_types:
+    def visit_field_reference(self, field_reference: BaserowFieldByIdReference):
+        if field_reference.referenced_field_id not in self.field_types:
             return TypeResult.invalid_type(
                 f"Unknown or deleted field referenced: "
-                f"{field_reference.referenced_field}"
+                f"{field_reference.referenced_field_id}"
             )
-        return self.field_types[field_reference.referenced_field]
+        return self.field_types[field_reference.referenced_field_id]
 
 
 class UnnestingResolverASTVisitor(BaserowFormulaASTVisitor[BaserowExpression]):
@@ -287,8 +280,8 @@ class UnnestingResolverASTVisitor(BaserowFormulaASTVisitor[BaserowExpression]):
     def visit_int_literal(self, int_literal: BaserowIntegerLiteral):
         return int_literal
 
-    def visit_field_reference(self, field_reference: BaserowFieldReference):
-        if field_reference.referenced_field in self.field_asts:
-            return self.field_asts[field_reference.referenced_field]
+    def visit_field_reference(self, field_reference: BaserowFieldByIdReference):
+        if field_reference.referenced_field_id in self.field_asts:
+            return self.field_asts[field_reference.referenced_field_id]
         else:
             return field_reference

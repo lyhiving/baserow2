@@ -47,6 +47,15 @@ BaserowFormulaListener.prototype.exitFunctionCall = function(ctx) {
 };
 
 
+// Enter a parse tree produced by BaserowFormula#FieldByIdReference.
+BaserowFormulaListener.prototype.enterFieldByIdReference = function(ctx) {
+};
+
+// Exit a parse tree produced by BaserowFormula#FieldByIdReference.
+BaserowFormulaListener.prototype.exitFieldByIdReference = function(ctx) {
+};
+
+
 // Enter a parse tree produced by BaserowFormula#IntegerLiteral.
 BaserowFormulaListener.prototype.enterIntegerLiteral = function(ctx) {
 };

@@ -9,7 +9,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
     BaserowExpression,
     BaserowIntegerLiteral,
-    BaserowFieldReference,
+    BaserowFieldByIdReference,
 )
 from baserow.contrib.database.formula.ast.types import TypeResult
 
@@ -25,30 +25,28 @@ def tree_to_django_expression(
 class BaserowFormulaToDjangoExpressionGenerator(BaserowFormulaASTVisitor[Expression]):
     def __init__(
         self,
-        field_types: Dict[str, TypeResult],
-        field_values: Dict[str, Expression],
+        field_types: Dict[int, TypeResult],
+        model_instance,
         for_update: bool,
     ):
-        self.field_values = field_values
+        self.model_instance = model_instance
         self.field_types = field_types
         self.for_update = for_update
 
-    def visit_field_reference(self, field_reference: BaserowFieldReference):
+    def visit_field_reference(self, field_reference: BaserowFieldByIdReference):
+        field_id = field_reference.referenced_field_id
+        db_field_name = f"field_{field_id}"
         if self.for_update:
             return ExpressionWrapper(
-                F(field_reference.referenced_field),
-                output_field=self.field_types[
-                    field_reference.referenced_field
-                ].resulting_field_type,
+                F(db_field_name),
+                output_field=self.field_types[field_id].resulting_field_type,
             )
-        elif not hasattr(self.field_values, field_reference.referenced_field):
-            raise UnknownFieldReference(field_reference.referenced_field)
+        elif not hasattr(self.model_instance, db_field_name):
+            raise UnknownFieldReference(field_id)
         else:
             return Value(
-                getattr(self.field_values, field_reference.referenced_field),
-                output_field=self.field_types[
-                    field_reference.referenced_field
-                ].resulting_field_type,
+                getattr(self.model_instance, db_field_name),
+                output_field=self.field_types[field_id].resulting_field_type,
             )
 
     def visit_function_call(self, function_call: BaserowFunctionCall) -> Expression:
