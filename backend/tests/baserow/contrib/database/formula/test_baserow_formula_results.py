@@ -29,6 +29,8 @@ VALID_FORMULA_TESTS = [
     ("LOWER('HTTPS://उदाहरण.परीक्षा')", "https://उदाहरण.परीक्षा"),
     ("CONCAT('\ntest', '\n')", "\ntest\n"),
     ("1+1", "2"),
+    ("CONCAT(1,2)", "12"),
+    ("CONCAT('a',2)", "a2"),
 ]
 
 
@@ -147,13 +149,11 @@ INVALID_FORMULA_TESTS = [
         "provided to the function lower. It excepts exactly 1 arguments but "
         "instead 2 were given.",
     ),
-    ("'a' + 2", "ERROR_COMPILING_FORMULA", None),
-    ("CONCAT('a',2)", "ERROR_COMPILING_FORMULA", None),
-    ("CONCAT(1,2)", "ERROR_COMPILING_FORMULA", None),
+    ("'a' + 2", "ERROR_MAPPING_FORMULA", None),
     ("UPPER(1,2)", "ERROR_PARSING_FORMULA", None),
-    ("UPPER(1)", "ERROR_COMPILING_FORMULA", None),
+    ("UPPER(1)", "ERROR_MAPPING_FORMULA", None),
     ("LOWER(1,2)", "ERROR_PARSING_FORMULA", None),
-    ("LOWER(1)", "ERROR_COMPILING_FORMULA", None),
+    ("LOWER(1)", "ERROR_MAPPING_FORMULA", None),
 ]
 
 

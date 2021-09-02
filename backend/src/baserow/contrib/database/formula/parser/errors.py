@@ -11,7 +11,7 @@ class InvalidNumberOfArguments(BaserowFormulaParserError):
         )
 
 
-class MaximumFormulaDepthError(BaserowFormulaParserError):
+class MaximumFormulaSizeError(BaserowFormulaParserError):
     def __init__(self):
         super().__init__("it exceeded the maximum formula size")
 

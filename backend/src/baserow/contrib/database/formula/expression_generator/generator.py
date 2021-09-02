@@ -12,14 +12,20 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFieldByIdReference,
 )
 from baserow.contrib.database.formula.ast.types import TypeResult
+from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 
 
 def tree_to_django_expression(
     formula_tree: BaserowExpression, field_types, field_values, for_update
 ) -> Expression:
-    return formula_tree.accept(
-        BaserowFormulaToDjangoExpressionGenerator(field_types, field_values, for_update)
-    )
+    try:
+        return formula_tree.accept(
+            BaserowFormulaToDjangoExpressionGenerator(
+                field_types, field_values, for_update
+            )
+        )
+    except RecursionError:
+        raise MaximumFormulaSizeError()
 
 
 class BaserowFormulaToDjangoExpressionGenerator(BaserowFormulaASTVisitor[Expression]):

@@ -17,6 +17,7 @@ from baserow.contrib.database.formula.parser.errors import (
     BaserowFormulaSyntaxError,
     UnexpectedFieldReference,
     UnknownFieldReference,
+    MaximumFormulaSizeError,
 )
 from baserow.contrib.database.formula.parser.generated.BaserowFormula import (
     BaserowFormula,
@@ -40,21 +41,27 @@ class BaserowFormulaErrorListener(ErrorListener):
 
 
 def raw_formula_to_tree(formula: str) -> BaserowExpression:
-    lexer = BaserowFormulaLexer(InputStream(formula))
-    stream = CommonTokenStream(lexer)
-    parser = BaserowFormula(stream)
-    parser.removeErrorListeners()
-    parser.addErrorListener(BaserowFormulaErrorListener())
-    tree = parser.root()
-    return BaserowFormulaToBaserowASTMapper().visit(tree)
+    try:
+        lexer = BaserowFormulaLexer(InputStream(formula))
+        stream = CommonTokenStream(lexer)
+        parser = BaserowFormula(stream)
+        parser.removeErrorListeners()
+        parser.addErrorListener(BaserowFormulaErrorListener())
+        tree = parser.root()
+        return BaserowFormulaToBaserowASTMapper().visit(tree)
+    except RecursionError:
+        raise MaximumFormulaSizeError()
 
 
 def translate_formula_for_backend(formula: str, table) -> str:
-    fields = table.field_set(manager="objects_and_trash").all()
-    field_name_to_id = {f.name: f.id for f in fields}
-    lexer = BaserowFormulaLexer(InputStream(formula))
-    stream = BufferedTokenStream(lexer)
-    return translate_field_to_field_by_id(stream, field_name_to_id)
+    try:
+        fields = table.field_set(manager="objects_and_trash").all()
+        field_name_to_id = {f.name: f.id for f in fields}
+        lexer = BaserowFormulaLexer(InputStream(formula))
+        stream = BufferedTokenStream(lexer)
+        return translate_field_to_field_by_id(stream, field_name_to_id)
+    except RecursionError:
+        raise MaximumFormulaSizeError()
 
 
 def translate_field_to_field_by_id(stream, field_name_to_id):

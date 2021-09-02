@@ -18,7 +18,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
 )
 from baserow.contrib.database.formula.parser.ast_mapper import raw_formula_to_tree
-from baserow.contrib.database.formula.parser.errors import MaximumFormulaDepthError
+from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 
 FIELD_TYPE_LOOKUP = {}
 
@@ -110,7 +110,7 @@ class Typer:
 
             return self.field_types, self.formula_asts, self.field_references
         except RecursionError:
-            raise MaximumFormulaDepthError()
+            raise MaximumFormulaSizeError()
 
     def get_type(self, field):
         return self.field_types[field.id]
