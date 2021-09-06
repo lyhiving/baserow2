@@ -6,6 +6,7 @@ from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.fields.signals import field_restored
+from baserow.contrib.database.formula.ast.types import Typer
 from baserow.contrib.database.rows.signals import row_created
 from baserow.contrib.database.table.models import Table, GeneratedTableModel
 from baserow.contrib.database.table.signals import table_created
@@ -80,11 +81,26 @@ class FieldTrashableItemType(TrashableItemType):
         # the new name set here rather than the name currently in the DB.
         trashed_item.specific.name = trashed_item.name
         trashed_item.save()
+        typer = Typer(
+            trashed_item.table,
+            new_field_names_to_id={trashed_item.name: trashed_item.id},
+        )
+        updated_fields = typer.update_fields(trashed_item)
+        print("error is")
+        print(getattr(trashed_item, "error", "no error"))
+        # TODO attach related fields
         field_restored.send(
             self,
             field=trashed_item,
+            related_fields=updated_fields,
             user=None,
         )
+        for updated_field in updated_fields:
+            specific = updated_field.specific
+            updated_field_type = field_type_registry.get_by_model(specific)
+            updated_field_type.related_field_changed(
+                specific, trashed_item.table.get_model()
+            )
 
     def permanently_delete_item(
         self,
@@ -111,7 +127,12 @@ class FieldTrashableItemType(TrashableItemType):
             model_field = from_model._meta.get_field(field.db_column)
             schema_editor.remove_field(from_model, model_field)
 
+        table = field.table
+        field_id = field.id
+        field_name = field.name
+        typer = Typer(table, deleted_field_id_names={field_id: field_name})
         field.delete()
+        typer.update_fields()
 
         # After the field is deleted we are going to to call the after_delete method of
         # the field type because some instance cleanup might need to happen.

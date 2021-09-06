@@ -376,7 +376,7 @@ class Table(
         # TODO: Given a subset of fields, calculate the ones that must be generated
         # on the model for any formula fields in that subset to work
         typer = typer or Typer(self)
-        extra_fields = typer.calculate_all_depended_on_fields(fields)
+        extra_fields = typer.calculate_all_child_fields(fields)
         # If there are duplicate field names we have to store them in a list so we know
         # later which ones are duplicate.
         duplicate_field_names = []

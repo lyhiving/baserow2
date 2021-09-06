@@ -58,13 +58,24 @@ class BaserowFunctionCall(BaserowExpression):
 
 class BaserowFieldByIdReference(BaserowExpression):
     def accept(self, visitor: "BaserowFormulaASTVisitor"):
-        return visitor.visit_field_reference(self)
+        return visitor.visit_field_by_id_reference(self)
 
     def __init__(self, referenced_field_id: int):
         self.referenced_field_id = referenced_field_id
 
     def __str__(self):
         return f"field_by_id({self.referenced_field_id})"
+
+
+class BaserowFieldReference(BaserowExpression):
+    def accept(self, visitor: "BaserowFormulaASTVisitor"):
+        return visitor.visit_field_reference(self)
+
+    def __init__(self, referenced_field_name: str):
+        self.referenced_field_name = referenced_field_name
+
+    def __str__(self):
+        return f"field({self.referenced_field_name})"
 
 
 T = TypeVar("T")
@@ -84,5 +95,11 @@ class BaserowFormulaASTVisitor(abc.ABC, Generic[T]):
         pass
 
     @abc.abstractmethod
-    def visit_field_reference(self, field_reference: BaserowFieldByIdReference):
+    def visit_field_by_id_reference(
+        self, field_by_id_reference: BaserowFieldByIdReference
+    ):
+        pass
+
+    @abc.abstractmethod
+    def visit_field_reference(self, field_reference: BaserowFieldReference):
         pass

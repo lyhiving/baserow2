@@ -11,11 +11,11 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
     BaserowIntegerLiteral,
     BaserowFieldByIdReference,
+    BaserowFieldReference,
 )
 from baserow.contrib.database.formula.parser.errors import (
     InvalidNumberOfArguments,
     BaserowFormulaSyntaxError,
-    UnexpectedFieldReference,
     UnknownFieldReference,
     MaximumFormulaSizeError,
 )
@@ -40,7 +40,9 @@ class BaserowFormulaErrorListener(ErrorListener):
         raise BaserowFormulaSyntaxError(message)
 
 
-def raw_formula_to_tree(formula: str) -> BaserowExpression:
+def raw_formula_to_tree(
+    formula: str, field_id_to_field, new_field_name_to_id
+) -> BaserowExpression:
     try:
         lexer = BaserowFormulaLexer(InputStream(formula))
         stream = CommonTokenStream(lexer)
@@ -48,20 +50,151 @@ def raw_formula_to_tree(formula: str) -> BaserowExpression:
         parser.removeErrorListeners()
         parser.addErrorListener(BaserowFormulaErrorListener())
         tree = parser.root()
-        return BaserowFormulaToBaserowASTMapper().visit(tree)
+        return BaserowFormulaToBaserowASTMapper(
+            field_id_to_field, new_field_name_to_id
+        ).visit(tree)
     except RecursionError:
         raise MaximumFormulaSizeError()
 
 
 def translate_formula_for_backend(formula: str, table) -> str:
     try:
-        fields = table.field_set(manager="objects_and_trash").all()
+        fields = table.field_set.all()
         field_name_to_id = {f.name: f.id for f in fields}
         lexer = BaserowFormulaLexer(InputStream(formula))
         stream = BufferedTokenStream(lexer)
         return translate_field_to_field_by_id(stream, field_name_to_id)
     except RecursionError:
         raise MaximumFormulaSizeError()
+
+
+def fix_formula(formula: str, trash_ids_to_names, new_names_to_id) -> str:
+    try:
+        lexer = BaserowFormulaLexer(InputStream(formula))
+        stream = BufferedTokenStream(lexer)
+        return translate_trashed_or_deleted_field_by_ids_to_fields(
+            stream, trash_ids_to_names, new_names_to_id
+        )
+    except RecursionError:
+        raise MaximumFormulaSizeError()
+
+
+def translate_trashed_or_deleted_field_by_ids_to_fields(
+    stream, trashed_ids_to_names, new_names_to_ids
+):
+    """
+    Takes a raw token stream of a Baserow formula and translates any field('..')
+    references to field_by_id(..) references. Needs to operate over the raw tokens as
+    we want to preserve any whitespace or comments and persist the translated formula
+    back in a string form to the db.
+    """
+
+    stream.lazyInit()
+    stream.fill()
+    start = 0
+    stop = len(stream.tokens) - 1
+    if start < 0 or stop < 0 or stop < start:
+        return ""
+    field_by_id_reference_started = False
+    searching_for_field_by_id_literal = False
+    field_reference_started = False
+    searching_for_field_reference_literal = False
+    with StringIO() as buf:
+        for i in range(start, stop + 1):
+            t = stream.tokens[i]
+            out = t.text
+
+            # Normal tokens are all tokens other than white space or comments
+            is_normal_token = t.channel == 0
+            if searching_for_field_by_id_literal:
+                # Continue searching through whitespace or comments until we encounter
+                # the next normal token
+                if is_normal_token:
+                    if t.type == BaserowFormulaLexer.INTEGER_LITERAL:
+                        trashed_id = int(t.text)
+                        if trashed_id not in trashed_ids_to_names:
+                            raise UnknownFieldReference()
+                        out = f"'{trashed_ids_to_names[trashed_id]}'"
+                    else:
+                        searching_for_field_by_id_literal = False
+
+            if field_by_id_reference_started:
+                # Continue searching through whitespace or comments until we encounter
+                # the next normal token
+                if is_normal_token:
+                    field_by_id_reference_started = False
+                    if t.type == BaserowFormulaLexer.OPEN_PAREN:
+                        searching_for_field_by_id_literal = True
+
+            if searching_for_field_reference_literal:
+                # Continue searching through whitespace or comments until we encounter
+                # the next normal token
+                if is_normal_token:
+                    is_singleq = t.type == BaserowFormulaLexer.SINGLEQ_STRING_LITERAL
+                    is_doubleq = t.type == BaserowFormulaLexer.DOUBLEQ_STRING_LITERAL
+                    if is_singleq or is_doubleq:
+                        raw_field_name = process_string(t.text, is_singleq)
+                        if raw_field_name not in new_names_to_ids:
+                            raise UnknownFieldReference()
+                        field_id = new_names_to_ids[raw_field_name]
+                        out = str(field_id)
+                    else:
+                        searching_for_field_reference_literal = False
+
+            if field_reference_started:
+                if is_normal_token:
+                    field_reference_started = False
+                    if t.type == BaserowFormulaLexer.OPEN_PAREN:
+                        searching_for_field_reference_literal = True
+
+            if t.type == BaserowFormulaLexer.FIELDBYID:
+                looked_ahead_id = lookahead_to_id(i + 1, stop + 1, stream)
+                if looked_ahead_id and looked_ahead_id in trashed_ids_to_names:
+                    out = "field"
+                    field_by_id_reference_started = True
+            if t.type == BaserowFormulaLexer.FIELD:
+                looked_ahead_name = lookahead_to_name(i + 1, stop + 1, stream)
+                if looked_ahead_name and looked_ahead_name in new_names_to_ids:
+                    out = "field_by_id"
+                    field_reference_started = True
+            if t.type == Token.EOF:
+                break
+            buf.write(out)
+        return buf.getvalue()
+
+
+def lookahead_to_id(start, stop, stream):
+    search_for_field_id = False
+    for i in range(start, stop + 1):
+        t = stream.tokens[i]
+        is_normal_token = t.channel == 0
+        if is_normal_token:
+            if t.type == BaserowFormulaLexer.OPEN_PAREN and not search_for_field_id:
+                search_for_field_id = True
+            elif t.type == BaserowFormulaLexer.INTEGER_LITERAL and search_for_field_id:
+                return int(t.text)
+            else:
+                return None
+        if t.type == Token.EOF:
+            return None
+
+
+def lookahead_to_name(start, stop, stream):
+    search_for_field_name = False
+    for i in range(start, stop + 1):
+        t = stream.tokens[i]
+        is_normal_token = t.channel == 0
+        if is_normal_token:
+            is_singleq = t.type == BaserowFormulaLexer.SINGLEQ_STRING_LITERAL
+            is_doubleq = t.type == BaserowFormulaLexer.DOUBLEQ_STRING_LITERAL
+            if t.type == BaserowFormulaLexer.OPEN_PAREN and not search_for_field_name:
+                search_for_field_name = True
+            elif (is_singleq or is_doubleq) and search_for_field_name:
+                return process_string(t.text, is_singleq)
+            else:
+                return None
+        if t.type == Token.EOF:
+            return None
 
 
 def translate_field_to_field_by_id(stream, field_name_to_id):
@@ -111,8 +244,14 @@ def translate_field_to_field_by_id(stream, field_name_to_id):
                         searching_for_field_ref_literal = True
 
             if t.type == BaserowFormulaLexer.FIELD:
-                field_reference_started = True
-                out = "field_by_id"
+                name = lookahead_to_name(i + 1, stop, stream)
+                if name is None:
+                    raise UnknownFieldReference()
+                elif name in field_name_to_id:
+                    # Only translate field('...') to field_by_id for non trashed
+                    # and known fields. Leave it has a raw field('..') for unknowns.
+                    field_reference_started = True
+                    out = "field_by_id"
             if t.type == Token.EOF:
                 break
             buf.write(out)
@@ -129,6 +268,10 @@ def process_string(text, is_single_q):
 
 
 class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
+    def __init__(self, field_ids_to_fields, new_field_name_to_id):
+        self.field_ids_to_fields = field_ids_to_fields
+        self.new_field_name_to_id = new_field_name_to_id
+
     def visitRoot(self, ctx: BaserowFormula.RootContext):
         return ctx.expr().accept(self)
 
@@ -185,8 +328,17 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
         return BaserowIntegerLiteral(int(ctx.getText()))
 
     def visitFieldReference(self, ctx: BaserowFormula.FieldReferenceContext):
-        raise UnexpectedFieldReference()
+        reference = ctx.field_reference()
+        reference = process_string(
+            reference.getText(), reference.SINGLEQ_STRING_LITERAL()
+        )
+        if reference in self.new_field_name_to_id:
+            return BaserowFieldByIdReference(self.new_field_name_to_id[reference])
+        else:
+            return BaserowFieldReference(reference)
 
     def visitFieldByIdReference(self, ctx: BaserowFormula.FieldByIdReferenceContext):
-        field_name = int(str(ctx.INTEGER_LITERAL()))
-        return BaserowFieldByIdReference(field_name)
+        field_id = int(str(ctx.INTEGER_LITERAL()))
+        if field_id not in self.field_ids_to_fields:
+            raise UnknownFieldReference(f"Field with id {field_id} is unknown")
+        return BaserowFieldByIdReference(field_id)

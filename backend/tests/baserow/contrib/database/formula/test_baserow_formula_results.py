@@ -3,9 +3,10 @@ import sys
 import pytest
 from django.conf import settings
 from django.urls import reverse
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 
 from baserow.contrib.database.fields.models import FormulaField
+from baserow.core.trash.handler import TrashHandler
 
 VALID_FORMULA_TESTS = [
     ("'test'", "test"),
@@ -96,7 +97,7 @@ INVALID_FORMULA_TESTS = [
     (
         "UPPER('" + "t" * (settings.MAX_FORMULA_STRING_LENGTH + 1) + "')",
         "ERROR_MAPPING_FORMULA",
-        "The formula failed to map to a valid formula due to: an embedded "
+        "The formula is invalid because an embedded "
         f"string in the formula over the maximum length of "
         f"{settings.MAX_FORMULA_STRING_LENGTH} .",
     ),
@@ -274,7 +275,9 @@ def test_invalid_formulas(test_input, error, detail, data_fixture, api_client):
 
 
 @pytest.mark.django_db
-def test_valid_formulas2(data_fixture, api_client, django_assert_num_queries):
+def test_altering_value_of_referenced_field(
+    data_fixture, api_client, django_assert_num_queries
+):
     test_input = "field('number')+1"
     expected = "2"
     user, token = data_fixture.create_user_and_token()
@@ -439,3 +442,438 @@ def test_changing_name_of_referenced_field_by_formula(api_client, data_fixture):
     response_json = response.json()
     assert response_json["count"] == 1
     assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+
+
+@pytest.mark.django_db
+def test_trashing_child_field(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table, fields, rows = data_fixture.build_table(
+        columns=[("number", "number")], rows=[[1]], user=user
+    )
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    formula_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+
+    response = api_client.delete(
+        reverse("api:database:fields:item", kwargs={"field_id": fields[0].id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+
+    response = api_client.get(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    assert "Field number is deleted" in response_json[0]["error"]
+
+
+@pytest.mark.django_db
+def test_perm_deleting_child_field(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table, fields, rows = data_fixture.build_table(
+        columns=[("number", "number")], rows=[[1]], user=user
+    )
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    number_field_id = fields[0].id
+    formula_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+
+    TrashHandler.permanently_delete(fields[0])
+
+    response = api_client.get(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    assert "Field number is deleted" in response_json[0]["error"]
+
+
+@pytest.mark.django_db
+def test_trashing_restoring_child_field(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table, fields, rows = data_fixture.build_table(
+        columns=[("number", "number")], rows=[[1]], user=user
+    )
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    formula_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+
+    response = api_client.delete(
+        reverse("api:database:fields:item", kwargs={"field_id": fields[0].id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+
+    response = api_client.get(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    assert "Field number is deleted" in response_json[0]["error"]
+    assert response_json[0]["formula"] == "field('number')+1"
+
+    response = api_client.patch(
+        reverse("api:trash:restore"),
+        {
+            "trash_item_type": "field",
+            "trash_item_id": fields[0].id,
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_204_NO_CONTENT
+
+    response = api_client.get(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    assert response_json[1]["error"] is None
+    assert response_json[1]["formula"] == f"field_by_id({fields[0].id})+1"
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+
+
+@pytest.mark.django_db
+def test_trashing_renaming_child_field(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table, fields, rows = data_fixture.build_table(
+        columns=[("number", "number"), ("number2", "number")], rows=[[1, 2]], user=user
+    )
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    formula_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+
+    response = api_client.delete(
+        reverse("api:database:fields:item", kwargs={"field_id": fields[0].id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+
+    response = api_client.get(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    assert "Field number is deleted" in response_json[1]["error"]
+    assert response_json[1]["formula"] == "field('number')+1"
+
+    # We rename the other field to fit into the formula slot
+    response = api_client.patch(
+        reverse("api:database:fields:item", kwargs={"field_id": fields[1].id}),
+        {"name": "number"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+
+    response = api_client.get(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    assert response_json[1]["error"] is None
+    assert response_json[1]["formula"] == f"field_by_id({fields[1].id})+1"
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "3"
+
+
+@pytest.mark.django_db
+def test_trashing_creating_child_field(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table, fields, rows = data_fixture.build_table(
+        columns=[("number", "number")], rows=[[1]], user=user
+    )
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    formula_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+
+    response = api_client.delete(
+        reverse("api:database:fields:item", kwargs={"field_id": fields[0].id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+
+    response = api_client.get(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    assert "Field number is deleted" in response_json[0]["error"]
+    assert response_json[0]["formula"] == "field('number')+1"
+
+    # We create the another field to fit into the formula slot
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "number", "type": "number"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    new_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:fields:item", kwargs={"field_id": formula_field_id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    assert response_json["error"] is None
+    assert response_json["formula"] == f"field_by_id({new_field_id})+1"
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] is None
+
+
+@pytest.mark.django_db
+def test_cant_make_self_reference(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table = data_fixture.create_database_table(user=user)
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula", "type": "formula", "formula": "field('Formula')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response_json == {
+        "detail": "The formula is invalid because a formula field cannot reference "
+        "itself.",
+        "error": "ERROR_MAPPING_FORMULA",
+    }
+
+
+@pytest.mark.django_db
+def test_cant_make_circular_reference(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table = data_fixture.create_database_table(user=user)
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula", "type": "formula", "formula": "1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+    first_formula_field_id = response.json()["id"]
+
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula2", "type": "formula", "formula": "field('Formula')"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+
+    response = api_client.patch(
+        reverse(
+            "api:database:fields:item", kwargs={"field_id": first_formula_field_id}
+        ),
+        {"name": "Formula", "type": "formula", "formula": "field('Formula2')"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response_json == {
+        "detail": "The formula is invalid because a formula field cannot result in a "
+        "circular reference, detected a circular reference chain of "
+        "Formula->Formula2->Formula.",
+        "error": "ERROR_MAPPING_FORMULA",
+    }
+
+
+@pytest.mark.django_db
+def test_changing_type_of_reference_field_to_valid_one_for_formula(
+    api_client, data_fixture
+):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table, fields, rows = data_fixture.build_table(
+        columns=[("text", "text")], rows=[["1"], ["not a number"]], user=user
+    )
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {
+            "name": "Formula",
+            "type": "formula",
+            "formula": "concat(field('text'),'test')",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    formula_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 2
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "1test"
+    assert (
+        response_json["results"][1][f"field_{formula_field_id}"] == "not a numbertest"
+    )
+
+    response = api_client.patch(
+        reverse("api:database:fields:item", kwargs={"field_id": fields[0].id}),
+        {"type": "number"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 2
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "1test"
+    assert response_json["results"][1][f"field_{formula_field_id}"] == "test"

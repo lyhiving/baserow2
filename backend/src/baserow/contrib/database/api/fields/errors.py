@@ -67,7 +67,7 @@ ERROR_PARSING_FORMULA = (
 ERROR_MAPPING_FORMULA = (
     "ERROR_MAPPING_FORMULA",
     HTTP_400_BAD_REQUEST,
-    "The formula failed to map to a valid formula due to: {e}.",
+    "The formula is invalid because {e}.",
 )
 ERROR_COMPILING_FORMULA = (
     "ERROR_COMPILING_FORMULA",

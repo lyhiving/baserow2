@@ -1728,7 +1728,9 @@ class FormulaFieldType(FieldType):
     ]
     serializer_field_names = ["formula", "error"]
     serializer_field_overrides = {
-        "error": serializers.CharField(required=False),
+        "error": serializers.CharField(
+            required=False, allow_blank=True, allow_null=True
+        ),
     }
     can_be_primary_field = False
     can_be_in_form_view = False
@@ -1826,3 +1828,9 @@ class FormulaFieldType(FieldType):
             values["formula"] = translate_formula_for_backend(
                 values["formula"], old_field.table
             )
+
+    def related_field_changed(self, field, model):
+        if not field.error:
+            f = model._meta.get_field(field.db_column)
+            expr = tree_to_django_expression(f.ast, f.field_types, None, True)
+            model.objects.all().update(**{f"{field.db_column}": expr})

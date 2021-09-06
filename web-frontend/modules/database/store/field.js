@@ -105,7 +105,7 @@ export const actions = {
    * Creates a new field with the provided type for the given table.
    */
   async create(context, { type, table, values, forceCreate = true }) {
-    const { dispatch } = context
+    const { dispatch, getters } = context
 
     if (Object.prototype.hasOwnProperty.call(values, 'type')) {
       throw new Error(
@@ -123,7 +123,19 @@ export const actions = {
 
     const { data } = await FieldService(this.$client).create(table.id, postData)
     const forceCreateCallback = async () => {
-      return await dispatch('forceCreate', { table, values: data })
+      for (const f of data.related_fields) {
+        const field = getters.get(f.id)
+        const oldField = clone(field)
+        await dispatch('forceUpdate', {
+          field,
+          oldField,
+          data: f,
+        })
+      }
+      return await dispatch('forceCreate', {
+        table,
+        values: data,
+      })
     }
 
     return forceCreate ? await forceCreateCallback() : forceCreateCallback
@@ -193,10 +205,14 @@ export const actions = {
       const result = await dispatch('forceUpdate', {
         field,
         oldField,
-        data: data.field,
+        data,
       })
       for (const f of data.related_fields) {
+        console.log(f.id)
+        console.log(JSON.stringify(getters.getAllWithPrimary))
         const field = getters.get(f.id)
+        console.log('UPDATE??')
+        console.log(field)
         const oldField = clone(field)
         await dispatch('forceUpdate', {
           field,
@@ -243,9 +259,25 @@ export const actions = {
    */
   async delete({ commit, dispatch }, field) {
     try {
-      await dispatch('deleteCall', field)
-      dispatch('forceDelete', field)
+      console.log('start???')
+      const { data } = await dispatch('deleteCall', field)
+      console.log('after???')
+      await dispatch('forceDelete', field)
+      console.log('del')
+      console.log(data)
+      for (const f of data.related_fields) {
+        console.log('DELETE')
+        console.log(f)
+        const field = getters.get(f.id)
+        const oldField = clone(field)
+        await dispatch('forceUpdate', {
+          field,
+          oldField,
+          data: f,
+        })
+      }
     } catch (error) {
+      console.log(error)
       // If the field to delete wasn't found we can just delete it from the
       // state.
       if (error.response && error.response.status === 404) {
@@ -259,7 +291,7 @@ export const actions = {
    * Only makes the the delete call to the server.
    */
   async deleteCall({ commit, dispatch }, field) {
-    await FieldService(this.$client).delete(field.id)
+    return await FieldService(this.$client).delete(field.id)
   },
   /**
    * Remove the field from the items without calling the server.
@@ -286,7 +318,8 @@ export const getters = {
     return state.loaded
   },
   get: (state) => (id) => {
-    return state.items.find((item) => item.id === id)
+    const primary = state.primary.id === id ? state.primary : undefined
+    return state.items.find((item) => item.id === id) || primary
   },
   getPrimary: (state) => {
     return state.primary

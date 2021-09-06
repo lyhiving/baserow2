@@ -48,11 +48,20 @@ export const registerRealtimeEvents = (realtime) => {
     const table = store.getters['table/getSelected']
     const fieldType = app.$registry.get('field', data.field.type)
     if (table !== undefined && table.id === data.field.table_id) {
+      const oldRelatedFields = data.related_fields
+        .map((f) => {
+          return { field: store.getters['field/get'](f.id), data: f }
+        })
+        .filter((f) => f.field !== undefined)
+        .map((f) => (f.oldField = clone(f)))
       const callback = async () => {
         await store.dispatch('field/forceCreate', {
           table,
           values: data.field,
         })
+        for (const f of oldRelatedFields) {
+          await store.dispatch('field/forceUpdate', f)
+        }
       }
       if (!fieldType.shouldRefreshWhenAdded()) {
         callback()
@@ -66,11 +75,22 @@ export const registerRealtimeEvents = (realtime) => {
     }
   })
 
-  realtime.registerEvent('field_restored', ({ store, app }, data) => {
+  realtime.registerEvent('field_restored', async ({ store, app }, data) => {
     const table = store.getters['table/getSelected']
     if (table !== undefined && table.id === data.field.table_id) {
       // Trigger a table refresh to get the row data for the field including field
       // options to get those also.
+      const oldRelatedFields = data.related_fields
+        .map((f) => {
+          return { field: store.getters['field/get'](f.id), data: f }
+        })
+        .filter((f) => f.field !== undefined)
+        .map((f) => (f.oldField = clone(f)))
+      console.log('RESTORED', data)
+      for (const f of oldRelatedFields) {
+        console.log(JSON.stringify(f))
+        await store.dispatch('field/forceUpdate', f)
+      }
       app.$bus.$emit('table-refresh', {
         tableId: store.getters['table/getSelectedId'],
         includeFieldOptions: true,
@@ -120,11 +140,20 @@ export const registerRealtimeEvents = (realtime) => {
     }
   })
 
-  realtime.registerEvent('field_deleted', ({ store, app }, data) => {
+  realtime.registerEvent('field_deleted', async ({ store, app }, data) => {
     const field = store.getters['field/get'](data.field_id)
     if (field !== undefined) {
-      store.dispatch('field/forceDelete', field)
+      await store.dispatch('field/forceDelete', field)
+      const oldRelatedFields = data.related_fields
+        .map((f) => {
+          return { field: store.getters['field/get'](f.id), data: f }
+        })
+        .filter((f) => f.field !== undefined)
+        .map((f) => (f.oldField = clone(f)))
       if (store.getters['table/getSelectedId'] === data.table_id) {
+        for (const f of oldRelatedFields) {
+          await store.dispatch('field/forceUpdate', f)
+        }
         app.$bus.$emit('table-refresh', {
           tableId: store.getters['table/getSelectedId'],
         })

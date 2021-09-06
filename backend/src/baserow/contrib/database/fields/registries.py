@@ -660,6 +660,9 @@ class FieldType(
 
         return []
 
+    def related_field_changed(self, field, model):
+        pass
+
 
 class FieldTypeRegistry(
     APIUrlsRegistryMixin, CustomFieldsRegistryMixin, ModelRegistryMixin, Registry

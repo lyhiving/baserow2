@@ -10,6 +10,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
     BaserowIntegerLiteral,
     BaserowFieldByIdReference,
+    BaserowFieldReference,
 )
 from baserow.contrib.database.formula.ast.types import TypeResult
 from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
@@ -39,8 +40,13 @@ class BaserowFormulaToDjangoExpressionGenerator(BaserowFormulaASTVisitor[Express
         self.field_types = field_types
         self.for_update = for_update
 
-    def visit_field_reference(self, field_reference: BaserowFieldByIdReference):
-        field_id = field_reference.referenced_field_id
+    def visit_field_reference(self, field_reference: BaserowFieldReference):
+        raise UnknownFieldReference(field_reference.referenced_field_name)
+
+    def visit_field_by_id_reference(
+        self, field_by_id_reference: BaserowFieldByIdReference
+    ):
+        field_id = field_by_id_reference.referenced_field_id
         db_field_name = f"field_{field_id}"
         if self.for_update:
             return ExpressionWrapper(

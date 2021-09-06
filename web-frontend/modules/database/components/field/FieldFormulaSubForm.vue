@@ -12,7 +12,10 @@
           @blur="$v.values.formula.$touch()"
         />
         <div
-          v-if="$v.values.formula.$dirty && $v.values.formula.$error"
+          v-if="
+            ($v.values.formula.$dirty && $v.values.formula.$error) ||
+            values.error
+          "
           class="error formula-error"
         >
           <template v-if="!$v.values.formula.required">
@@ -26,6 +29,9 @@
             <br />
             {{ toHumanReadableErrorMessage(error) }}
           </template>
+          <template v-else-if="values.error">
+            {{ values.error }}
+          </template>
         </div>
       </div>
     </div>
@@ -38,7 +44,10 @@ import form from '@baserow/modules/core/mixins/form'
 import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
 import { required } from 'vuelidate/lib/validators'
 import { mapGetters } from 'vuex'
-import parseBaserowFormula from '@/modules/database/formula/parser/parser'
+import parseBaserowFormula, {
+  replaceFieldByIdWithFieldRef,
+  replaceFieldWithFieldById,
+} from '@/modules/database/formula/parser/parser'
 
 export default {
   name: 'FieldFormulaSubForm',
@@ -51,10 +60,11 @@ export default {
   },
   data() {
     return {
-      allowedValues: ['formula'],
+      allowedValues: ['formula', 'error'],
       values: {
         formula: '',
       },
+      internalFormulaValue: '',
       error: '',
     }
   },
@@ -62,8 +72,57 @@ export default {
     ...mapGetters({
       fields: 'field/getAllWithPrimary',
     }),
+    fieldIdToNameMap() {
+      return this.fields.reduce(function (map, obj) {
+        map[obj.id] = obj.name
+        return map
+      }, {})
+    },
+    fieldNameToIdMap() {
+      return this.fields.reduce(function (map, obj) {
+        map[obj.name] = obj.id
+        return map
+      }, {})
+    },
+  },
+  watch: {
+    fieldIdToNameMap(newMap) {
+      // A field name has changed so the current this.values.formula might now have
+      // an invalid field('old name') reference. Instead lets re-update it from our
+      // internal format where all references are in the form field_by_id(..)
+      try {
+        this.updateFormulaData(this.internalFormulaValue)
+        this.error = ''
+      } catch (e) {
+        this.error = e
+      }
+    },
+    'values.formula'(newValue, oldValue) {
+      if (!this.error) {
+        try {
+          this.updateFormulaData(newValue)
+          this.error = ''
+        } catch (e) {
+          this.error = e
+        }
+      }
+    },
   },
   methods: {
+    updateFormulaData(formula) {
+      const result = replaceFieldWithFieldById(formula, this.fieldNameToIdMap)
+      if (result !== false) {
+        const { newFormula, errors } = result
+        this.internalFormulaValue = newFormula
+        this.values.formula = replaceFieldByIdWithFieldRef(
+          this.internalFormulaValue,
+          this.fieldIdToNameMap
+        )
+        if (errors.length > 0) {
+          throw new Error(errors.join(', '))
+        }
+      }
+    },
     toHumanReadableErrorMessage(error) {
       const s = error.message
         .replace('extraneous', 'Invalid')
@@ -87,6 +146,8 @@ export default {
       }
       try {
         parseBaserowFormula(value)
+        this.updateFormulaData(value)
+        this.error = ''
         return true
       } catch (e) {
         this.error = e

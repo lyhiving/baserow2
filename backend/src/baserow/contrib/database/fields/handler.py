@@ -180,14 +180,20 @@ class FieldHandler:
         instance = model_class(
             table=table, order=last_order, primary=primary, **field_values
         )
-        typer = Typer(table, new_field=instance)
-        typer.set_field_type_or_raise(field_type, instance)
         instance.save()
-        typer.update_pk(instance.pk)
+        typer = Typer(
+            table,
+            new_field=instance,
+            new_field_names_to_id={instance.name: instance.pk},
+        )
+        typer.set_field_type_or_raise(field_type, instance)
+        updated_fields = typer.update_fields(instance)
 
         # Add the field to the table schema.
         with connection.schema_editor() as schema_editor:
-            to_model = table.get_model(field_ids=[], fields=[instance], typer=typer)
+            to_model = table.get_model(
+                field_ids=[], fields=[instance] + list(updated_fields), typer=typer
+            )
             model_field = to_model._meta.get_field(instance.db_column)
 
             if do_schema_change:
@@ -199,10 +205,16 @@ class FieldHandler:
             self,
             field=instance,
             user=user,
+            related_fields=updated_fields,
             type_name=type_name,
         )
 
-        return instance
+        for updated_field in updated_fields:
+            specific = updated_field.specific
+            updated_field_type = field_type_registry.get_by_model(specific)
+            updated_field_type.related_field_changed(specific, to_model)
+
+        return instance, updated_fields
 
     def update_field(self, user, field, new_type_name=None, **kwargs):
         """
@@ -269,18 +281,30 @@ class FieldHandler:
         # Calculate the type of the field and all other fields
         # If valid set this fields type
         # Update types of all other fields
-        typer = Typer(field.table, field_override=field)
+        typer = Typer(
+            field.table,
+            field_override=field,
+            new_field_names_to_id={field.name: field.id},
+        )
         typer.set_field_type_or_raise(field_type, field)
         field.save()
-        updated_fields = typer.update_fields()
-        # TODO: Trigger an after_update for related fields
+        # Set the errors on any fields which now have an error because of this fields
+        # update.
+        updated_fields = typer.update_fields(field)
+        # Because this fields type has changed we need trigger a recalculation for any
+        # valid fields which depend on this field (parent fields). We don't want to
+        # bother updating invalid fields as by definition they are invalid and can't be
+        # calculated.
+        parent_fields = typer.calculate_all_parent_valid_fields(field)
+        updated_fields_and_parents = list(updated_fields.union(set(parent_fields)))
+        extra_fields = (
+            [field] + parent_fields + typer.calculate_all_child_fields(parent_fields)
+        )
 
         # If no converter is found we are going to convert to field using the
         # lenient schema editor which will alter the field's type and set the data
         # value to null if it can't be converted.
-        to_model = field.table.get_model(field_ids=[], fields=[field], typer=typer)
-        # TODO List of updated fields from get_model, change their error to be
-        #   appropriate and send signals for all of those fields
+        to_model = field.table.get_model(field_ids=[], fields=extra_fields, typer=typer)
         from_model_field = from_model._meta.get_field(field.db_column)
         to_model_field = to_model._meta.get_field(field.db_column)
 
@@ -376,6 +400,10 @@ class FieldHandler:
             altered_column,
             before,
         )
+        for updated_field in updated_fields_and_parents:
+            specific = updated_field.specific
+            updated_field_type = field_type_registry.get_by_model(specific)
+            updated_field_type.related_field_changed(specific, to_model)
 
         field_updated.send(self, field=field, related_fields=updated_fields, user=user)
 
@@ -406,9 +434,18 @@ class FieldHandler:
             )
 
         field = field.specific
+        typer = Typer(field.table, deleted_field_id_names={field.id: field.name})
         TrashHandler.trash(user, group, field.table.database, field)
         field_id = field.id
-        field_deleted.send(self, field_id=field_id, field=field, user=user)
+        updated_fields = typer.update_fields(field)
+        field_deleted.send(
+            self,
+            field_id=field_id,
+            field=field,
+            related_fields=updated_fields,
+            user=user,
+        )
+        return updated_fields
 
     def update_field_select_options(self, user, field, select_options):
         """

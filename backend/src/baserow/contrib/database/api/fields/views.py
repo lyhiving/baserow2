@@ -46,6 +46,17 @@ from baserow.contrib.database.fields.registries import field_type_registry
 from .serializers import FieldSerializer, CreateFieldSerializer, UpdateFieldSerializer
 
 
+def make_response(field, updated_fields):
+    serializer = field_type_registry.get_serializer(field, FieldSerializer)
+    serializer_data = serializer.data
+    serializer_data["related_fields"] = [
+        field_type_registry.get_serializer(f, FieldSerializer).data
+        for f in updated_fields
+    ]
+
+    return Response(serializer_data)
+
+
 class FieldsView(APIView):
     authentication_classes = APIView.authentication_classes + [TokenAuthentication]
     permission_classes = (IsAuthenticated,)
@@ -186,10 +197,11 @@ class FieldsView(APIView):
         # field we need to be able to map those to the correct API exceptions which are
         # defined in the type.
         with field_type.map_api_exceptions():
-            field = FieldHandler().create_field(request.user, table, type_name, **data)
+            field, updated_fields = FieldHandler().create_field(
+                request.user, table, type_name, **data
+            )
 
-        serializer = field_type_registry.get_serializer(field, FieldSerializer)
-        return Response(serializer.data)
+        return make_response(field, updated_fields)
 
 
 class FieldView(APIView):
@@ -309,16 +321,7 @@ class FieldView(APIView):
                 request.user, field, type_name, **data
             )
 
-        serializer = field_type_registry.get_serializer(field, FieldSerializer)
-        return Response(
-            {
-                "field": serializer.data,
-                "related_fields": [
-                    field_type_registry.get_serializer(f, FieldSerializer).data
-                    for f in related_fields
-                ],
-            }
-        )
+        return make_response(field, related_fields)
 
     @extend_schema(
         parameters=[
@@ -357,6 +360,13 @@ class FieldView(APIView):
         """Deletes an existing field if the user belongs to the group."""
 
         field = FieldHandler().get_field(field_id)
-        FieldHandler().delete_field(request.user, field)
+        updated_fields = FieldHandler().delete_field(request.user, field)
 
-        return Response(status=204)
+        return Response(
+            {
+                "related_fields": [
+                    field_type_registry.get_serializer(f, FieldSerializer).data
+                    for f in updated_fields
+                ],
+            }
+        )
