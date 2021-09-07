@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from django.db.models import Field, TextField, DecimalField
+from django.db.models import TextField, DecimalField, Field
 
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.formula.ast.errors import (

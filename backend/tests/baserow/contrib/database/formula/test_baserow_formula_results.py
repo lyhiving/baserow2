@@ -30,6 +30,9 @@ VALID_FORMULA_TESTS = [
     ("LOWER('HTTPS://उदाहरण.परीक्षा')", "https://उदाहरण.परीक्षा"),
     ("CONCAT('\ntest', '\n')", "\ntest\n"),
     ("1+1", "2"),
+    ("1/0", "NaN"),
+    ("10/3", "3"),
+    ("(10+2)/3", "4"),
     ("CONCAT(1,2)", "12"),
     ("CONCAT('a',2)", "a2"),
 ]
@@ -155,6 +158,9 @@ INVALID_FORMULA_TESTS = [
     ("UPPER(1)", "ERROR_MAPPING_FORMULA", None),
     ("LOWER(1,2)", "ERROR_PARSING_FORMULA", None),
     ("LOWER(1)", "ERROR_MAPPING_FORMULA", None),
+    ("10/LOWER(1)", "ERROR_MAPPING_FORMULA", None),
+    ("'t'/1", "ERROR_MAPPING_FORMULA", None),
+    ("1/'t'", "ERROR_MAPPING_FORMULA", None),
 ]
 
 

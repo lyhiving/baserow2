@@ -18,6 +18,7 @@ from baserow.contrib.database.formula.parser.errors import (
     BaserowFormulaSyntaxError,
     UnknownFieldReference,
     MaximumFormulaSizeError,
+    UnknownBinaryOperator,
 )
 from baserow.contrib.database.formula.parser.generated.BaserowFormula import (
     BaserowFormula,
@@ -279,6 +280,9 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
         literal = self.process_string(ctx)
         return BaserowStringLiteral(literal)
 
+    def visitBrackets(self, ctx: BaserowFormula.BracketsContext):
+        return ctx.expr().accept(self)
+
     def process_string(self, ctx):
         literal_without_outer_quotes = ctx.getText()[1:-1]
         if ctx.SINGLEQ_STRING_LITERAL() is not None:
@@ -300,7 +304,14 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
         return BaserowFunctionCall(function_def, args)
 
     def visitBinaryOp(self, ctx: BaserowFormula.BinaryOpContext):
-        op = "add" if ctx.PLUS() else "minus"
+        if ctx.PLUS():
+            op = "add"
+        elif ctx.MINUS():
+            op = "minus"
+        elif ctx.SLASH():
+            op = "divide"
+        else:
+            raise UnknownBinaryOperator(ctx.getText())
 
         return self._do_func(ctx.expr(), op)
 

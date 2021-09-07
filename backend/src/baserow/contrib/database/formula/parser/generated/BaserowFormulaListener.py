@@ -35,6 +35,15 @@ class BaserowFormulaListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by BaserowFormula#Brackets.
+    def enterBrackets(self, ctx:BaserowFormula.BracketsContext):
+        pass
+
+    # Exit a parse tree produced by BaserowFormula#Brackets.
+    def exitBrackets(self, ctx:BaserowFormula.BracketsContext):
+        pass
+
+
     # Enter a parse tree produced by BaserowFormula#FunctionCall.
     def enterFunctionCall(self, ctx:BaserowFormula.FunctionCallContext):
         pass

@@ -8,8 +8,9 @@ from django.db.models import (
     TextField,
     DecimalField,
     FloatField,
+    Value,
 )
-from django.db.models.functions import Upper, Lower, Concat
+from django.db.models.functions import Upper, Lower, Concat, NullIf, Coalesce
 
 from baserow.contrib.database.formula.ast.function import (
     BaserowFunctionDefinition,
@@ -55,6 +56,7 @@ def register_functions(registry):
     registry.register(BaserowConcat())
     registry.register(BaserowAdd())
     registry.register(BaserowMinus())
+    registry.register(BaserowDivide())
 
 
 class BaserowUpper(BaserowFunctionDefinition):
@@ -157,3 +159,19 @@ class BaserowMinus(BaserowFunctionDefinition):
 
     def to_django_expression(self, args: List[Expression]) -> Expression:
         return args[0] - args[1]
+
+
+class BaserowDivide(BaserowFunctionDefinition):
+    type = "divide"
+
+    @property
+    def num_args(self) -> ArgCountSpecifier:
+        return FixedNumOfArgs(2)
+
+    def to_django_field_type(self, arg_types: List[Field]) -> TypeResult:
+        return check_types_for_decimal(arg_types)
+
+    def to_django_expression(self, args: List[Expression]) -> Expression:
+        # Prevent divide by zero's by swapping 0 for NaN causing the entire expression
+        # to evaluate to NaN.
+        return args[0] / Coalesce(NullIf(args[1], 0), Value(float("NaN")))

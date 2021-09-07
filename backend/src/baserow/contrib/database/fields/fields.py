@@ -1,7 +1,6 @@
-from typing import Type, Optional
+from typing import Optional
 
 from django.db import models
-from django.db.models import Field
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
 
 from baserow.contrib.database.formula.ast.tree import BaserowExpression

@@ -24,6 +24,11 @@ class BaserowFormulaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by BaserowFormula#Brackets.
+    def visitBrackets(self, ctx:BaserowFormula.BracketsContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by BaserowFormula#FunctionCall.
     def visitFunctionCall(self, ctx:BaserowFormula.FunctionCallContext):
         return self.visitChildren(ctx)

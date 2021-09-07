@@ -12,26 +12,27 @@ else:
 def serializedATN():
     with StringIO() as buf:
         buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3S")
-        buf.write(";\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\3\2\3\2\3\2")
+        buf.write("?\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\3\2\3\2\3\2")
         buf.write("\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3")
-        buf.write("\3\3\3\3\3\3\3\3\3\7\3\"\n\3\f\3\16\3%\13\3\5\3\'\n\3")
-        buf.write("\3\3\3\3\5\3+\n\3\3\3\3\3\3\3\7\3\60\n\3\f\3\16\3\63\13")
-        buf.write("\3\3\4\3\4\3\5\3\5\3\6\3\6\3\6\2\3\4\7\2\4\6\b\n\2\5\4")
-        buf.write("\2==CC\3\2\31\32\3\2\33\34\2=\2\f\3\2\2\2\4*\3\2\2\2\6")
-        buf.write("\64\3\2\2\2\b\66\3\2\2\2\n8\3\2\2\2\f\r\5\4\3\2\r\16\7")
-        buf.write("\2\2\3\16\3\3\2\2\2\17\20\b\3\1\2\20+\7\31\2\2\21+\7\32")
-        buf.write("\2\2\22+\7\26\2\2\23\24\7\7\2\2\24\25\7\17\2\2\25\26\5")
-        buf.write("\b\5\2\26\27\7\20\2\2\27+\3\2\2\2\30\31\7\b\2\2\31\32")
-        buf.write("\7\17\2\2\32\33\7\26\2\2\33+\7\20\2\2\34\35\5\6\4\2\35")
-        buf.write("&\7\17\2\2\36#\5\4\3\2\37 \7\t\2\2 \"\5\4\3\2!\37\3\2")
-        buf.write("\2\2\"%\3\2\2\2#!\3\2\2\2#$\3\2\2\2$\'\3\2\2\2%#\3\2\2")
-        buf.write("\2&\36\3\2\2\2&\'\3\2\2\2\'(\3\2\2\2()\7\20\2\2)+\3\2")
-        buf.write("\2\2*\17\3\2\2\2*\21\3\2\2\2*\22\3\2\2\2*\23\3\2\2\2*")
-        buf.write("\30\3\2\2\2*\34\3\2\2\2+\61\3\2\2\2,-\f\6\2\2-.\t\2\2")
-        buf.write("\2.\60\5\4\3\7/,\3\2\2\2\60\63\3\2\2\2\61/\3\2\2\2\61")
-        buf.write("\62\3\2\2\2\62\5\3\2\2\2\63\61\3\2\2\2\64\65\5\n\6\2\65")
-        buf.write("\7\3\2\2\2\66\67\t\3\2\2\67\t\3\2\2\289\t\4\2\29\13\3")
-        buf.write("\2\2\2\6#&*\61")
+        buf.write("\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\7\3&\n\3\f\3\16\3)")
+        buf.write("\13\3\5\3+\n\3\3\3\3\3\5\3/\n\3\3\3\3\3\3\3\7\3\64\n\3")
+        buf.write("\f\3\16\3\67\13\3\3\4\3\4\3\5\3\5\3\6\3\6\3\6\2\3\4\7")
+        buf.write("\2\4\6\b\n\2\5\5\2==CCII\3\2\31\32\3\2\33\34\2B\2\f\3")
+        buf.write("\2\2\2\4.\3\2\2\2\68\3\2\2\2\b:\3\2\2\2\n<\3\2\2\2\f\r")
+        buf.write("\5\4\3\2\r\16\7\2\2\3\16\3\3\2\2\2\17\20\b\3\1\2\20/\7")
+        buf.write("\31\2\2\21/\7\32\2\2\22/\7\26\2\2\23\24\7\17\2\2\24\25")
+        buf.write("\5\4\3\2\25\26\7\20\2\2\26/\3\2\2\2\27\30\7\7\2\2\30\31")
+        buf.write("\7\17\2\2\31\32\5\b\5\2\32\33\7\20\2\2\33/\3\2\2\2\34")
+        buf.write("\35\7\b\2\2\35\36\7\17\2\2\36\37\7\26\2\2\37/\7\20\2\2")
+        buf.write(" !\5\6\4\2!*\7\17\2\2\"\'\5\4\3\2#$\7\t\2\2$&\5\4\3\2")
+        buf.write("%#\3\2\2\2&)\3\2\2\2\'%\3\2\2\2\'(\3\2\2\2(+\3\2\2\2)")
+        buf.write("\'\3\2\2\2*\"\3\2\2\2*+\3\2\2\2+,\3\2\2\2,-\7\20\2\2-")
+        buf.write("/\3\2\2\2.\17\3\2\2\2.\21\3\2\2\2.\22\3\2\2\2.\23\3\2")
+        buf.write("\2\2.\27\3\2\2\2.\34\3\2\2\2. \3\2\2\2/\65\3\2\2\2\60")
+        buf.write("\61\f\6\2\2\61\62\t\2\2\2\62\64\5\4\3\7\63\60\3\2\2\2")
+        buf.write("\64\67\3\2\2\2\65\63\3\2\2\2\65\66\3\2\2\2\66\5\3\2\2")
+        buf.write("\2\67\65\3\2\2\289\5\n\6\29\7\3\2\2\2:;\t\3\2\2;\t\3\2")
+        buf.write("\2\2<=\t\4\2\2=\13\3\2\2\2\6\'*.\65")
         return buf.getvalue()
 
 
@@ -303,6 +304,35 @@ class BaserowFormula ( Parser ):
                 return visitor.visitChildren(self)
 
 
+    class BracketsContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a BaserowFormula.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def OPEN_PAREN(self):
+            return self.getToken(BaserowFormula.OPEN_PAREN, 0)
+        def expr(self):
+            return self.getTypedRuleContext(BaserowFormula.ExprContext,0)
+
+        def CLOSE_PAREN(self):
+            return self.getToken(BaserowFormula.CLOSE_PAREN, 0)
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBrackets" ):
+                listener.enterBrackets(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBrackets" ):
+                listener.exitBrackets(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBrackets" ):
+                return visitor.visitBrackets(self)
+            else:
+                return visitor.visitChildren(self)
+
+
     class FunctionCallContext(ExprContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a BaserowFormula.ExprContext
@@ -414,6 +444,8 @@ class BaserowFormula ( Parser ):
             return self.getToken(BaserowFormula.PLUS, 0)
         def MINUS(self):
             return self.getToken(BaserowFormula.MINUS, 0)
+        def SLASH(self):
+            return self.getToken(BaserowFormula.SLASH, 0)
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterBinaryOp" ):
@@ -441,7 +473,7 @@ class BaserowFormula ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 40
+            self.state = 44
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [BaserowFormula.SINGLEQ_STRING_LITERAL]:
@@ -466,68 +498,79 @@ class BaserowFormula ( Parser ):
                 self.state = 16
                 self.match(BaserowFormula.INTEGER_LITERAL)
                 pass
+            elif token in [BaserowFormula.OPEN_PAREN]:
+                localctx = BaserowFormula.BracketsContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
+                self.state = 17
+                self.match(BaserowFormula.OPEN_PAREN)
+                self.state = 18
+                self.expr(0)
+                self.state = 19
+                self.match(BaserowFormula.CLOSE_PAREN)
+                pass
             elif token in [BaserowFormula.FIELD]:
                 localctx = BaserowFormula.FieldReferenceContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 17
+                self.state = 21
                 self.match(BaserowFormula.FIELD)
-                self.state = 18
+                self.state = 22
                 self.match(BaserowFormula.OPEN_PAREN)
-                self.state = 19
+                self.state = 23
                 self.field_reference()
-                self.state = 20
+                self.state = 24
                 self.match(BaserowFormula.CLOSE_PAREN)
                 pass
             elif token in [BaserowFormula.FIELDBYID]:
                 localctx = BaserowFormula.FieldByIdReferenceContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 22
+                self.state = 26
                 self.match(BaserowFormula.FIELDBYID)
-                self.state = 23
+                self.state = 27
                 self.match(BaserowFormula.OPEN_PAREN)
-                self.state = 24
+                self.state = 28
                 self.match(BaserowFormula.INTEGER_LITERAL)
-                self.state = 25
+                self.state = 29
                 self.match(BaserowFormula.CLOSE_PAREN)
                 pass
             elif token in [BaserowFormula.IDENTIFIER, BaserowFormula.IDENTIFIER_UNICODE]:
                 localctx = BaserowFormula.FunctionCallContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 26
+                self.state = 30
                 self.func_name()
-                self.state = 27
+                self.state = 31
                 self.match(BaserowFormula.OPEN_PAREN)
-                self.state = 36
+                self.state = 40
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << BaserowFormula.FIELD) | (1 << BaserowFormula.FIELDBYID) | (1 << BaserowFormula.INTEGER_LITERAL) | (1 << BaserowFormula.SINGLEQ_STRING_LITERAL) | (1 << BaserowFormula.DOUBLEQ_STRING_LITERAL) | (1 << BaserowFormula.IDENTIFIER) | (1 << BaserowFormula.IDENTIFIER_UNICODE))) != 0):
-                    self.state = 28
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << BaserowFormula.FIELD) | (1 << BaserowFormula.FIELDBYID) | (1 << BaserowFormula.OPEN_PAREN) | (1 << BaserowFormula.INTEGER_LITERAL) | (1 << BaserowFormula.SINGLEQ_STRING_LITERAL) | (1 << BaserowFormula.DOUBLEQ_STRING_LITERAL) | (1 << BaserowFormula.IDENTIFIER) | (1 << BaserowFormula.IDENTIFIER_UNICODE))) != 0):
+                    self.state = 32
                     self.expr(0)
-                    self.state = 33
+                    self.state = 37
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     while _la==BaserowFormula.COMMA:
-                        self.state = 29
+                        self.state = 33
                         self.match(BaserowFormula.COMMA)
-                        self.state = 30
+                        self.state = 34
                         self.expr(0)
-                        self.state = 35
+                        self.state = 39
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
 
 
 
-                self.state = 38
+                self.state = 42
                 self.match(BaserowFormula.CLOSE_PAREN)
                 pass
             else:
                 raise NoViableAltException(self)
 
             self._ctx.stop = self._input.LT(-1)
-            self.state = 47
+            self.state = 51
             self._errHandler.sync(self)
             _alt = self._interp.adaptivePredict(self._input,3,self._ctx)
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -537,21 +580,21 @@ class BaserowFormula ( Parser ):
                     _prevctx = localctx
                     localctx = BaserowFormula.BinaryOpContext(self, BaserowFormula.ExprContext(self, _parentctx, _parentState))
                     self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                    self.state = 42
+                    self.state = 46
                     if not self.precpred(self._ctx, 4):
                         from antlr4.error.Errors import FailedPredicateException
                         raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
-                    self.state = 43
+                    self.state = 47
                     localctx.op = self._input.LT(1)
                     _la = self._input.LA(1)
-                    if not(_la==BaserowFormula.MINUS or _la==BaserowFormula.PLUS):
+                    if not(((((_la - 59)) & ~0x3f) == 0 and ((1 << (_la - 59)) & ((1 << (BaserowFormula.MINUS - 59)) | (1 << (BaserowFormula.PLUS - 59)) | (1 << (BaserowFormula.SLASH - 59)))) != 0)):
                         localctx.op = self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
-                    self.state = 44
+                    self.state = 48
                     self.expr(5) 
-                self.state = 49
+                self.state = 53
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,3,self._ctx)
 
@@ -600,7 +643,7 @@ class BaserowFormula ( Parser ):
         self.enterRule(localctx, 4, self.RULE_func_name)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 50
+            self.state = 54
             self.identifier()
         except RecognitionException as re:
             localctx.exception = re
@@ -650,7 +693,7 @@ class BaserowFormula ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 52
+            self.state = 56
             _la = self._input.LA(1)
             if not(_la==BaserowFormula.SINGLEQ_STRING_LITERAL or _la==BaserowFormula.DOUBLEQ_STRING_LITERAL):
                 self._errHandler.recoverInline(self)
@@ -705,7 +748,7 @@ class BaserowFormula ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 54
+            self.state = 58
             _la = self._input.LA(1)
             if not(_la==BaserowFormula.IDENTIFIER or _la==BaserowFormula.IDENTIFIER_UNICODE):
                 self._errHandler.recoverInline(self)
