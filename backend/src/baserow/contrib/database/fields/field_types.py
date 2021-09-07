@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Type
 
 import pytz
 from dateutil import parser
@@ -1721,12 +1721,32 @@ class PhoneNumberFieldType(CharFieldMatchingRegexFieldType):
 
 
 class FormulaFieldType(FieldType):
+    MAX_DIGITS = NumberFieldType.MAX_DIGITS
     type = "formula"
     model_class = FormulaField
     allowed_fields = [
         "formula",
+        "field_type",
+        "number_type",
+        "number_decimal_places",
+        "number_negative",
+        "date_format",
+        "date_include_time",
+        "date_time_format",
+        "text_default",
     ]
-    serializer_field_names = ["formula", "error"]
+    serializer_field_names = [
+        "formula",
+        "field_type",
+        "error",
+        "number_type",
+        "number_decimal_places",
+        "number_negative",
+        "date_format",
+        "date_include_time",
+        "date_time_format",
+        "text_default",
+    ]
     serializer_field_overrides = {
         "error": serializers.CharField(
             required=False, allow_blank=True, allow_null=True
@@ -1745,21 +1765,23 @@ class FormulaFieldType(FieldType):
     read_only = True
 
     def get_serializer_field(self, instance, **kwargs):
-        required = kwargs.get("required", False)
-        return serializers.CharField(
-            **{
-                "required": required,
-                "allow_null": not required,
-                "allow_blank": not required,
-                **kwargs,
-            }
-        )
+        field_type_type = self._get_field_type(instance)
+        return field_type_type.get_serializer_field(self, instance, **kwargs)
 
     def get_model_field(self, instance, **kwargs):
+        expression_type = kwargs.pop("expression_type", None)
+        ast = kwargs.pop("ast")
+        field_types = kwargs.pop("field_types")
+        model_type = self._get_field_type(instance).get_model_field(
+            self, instance, **kwargs
+        )
         return ExpressionField(
             null=True,
             blank=True,
             error=instance.error,
+            ast=ast,
+            model_type=model_type,
+            field_types=field_types,
             **kwargs,
         )
 
@@ -1776,6 +1798,11 @@ class FormulaFieldType(FieldType):
             f"Field of type {self.type} is read only and should not be set manually."
         )
 
+    def get_export_value(self, value, field_object):
+        instance = field_object["field"]
+        field_type_type = self._get_field_type(instance)
+        return field_type_type.get_export_value(self, value, field_object)
+
     def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
         # We don't want to export the per row formula values as they can all and
         # should be derived from the formula itself.
@@ -1788,8 +1815,20 @@ class FormulaFieldType(FieldType):
         # should be derived from the formula itself.
         pass
 
-    def contains_query(self, *args):
-        return contains_filter(*args)
+    def _get_field_type(self, field) -> Type[FieldType]:
+        field_type = field.field_type
+        if field_type == "text":
+            return TextFieldType
+        elif field_type == "numeric":
+            return NumberFieldType
+        else:
+            return DateFieldType
+
+    def contains_query(self, field_name, value, model_field, field):
+        field_type_type = self._get_field_type(field)
+        return field_type_type.contains_query(
+            self, field_name, value, model_field, field
+        )
 
     def after_create(self, field, model, user, connection, before):
         """
@@ -1834,3 +1873,19 @@ class FormulaFieldType(FieldType):
             f = model._meta.get_field(field.db_column)
             expr = tree_to_django_expression(f.ast, f.field_types, None, True)
             model.objects.all().update(**{f"{field.db_column}": expr})
+
+    def get_alter_column_prepare_new_value(self, connection, from_field, to_field):
+        field_type_type = self._get_field_type(to_field)
+        return field_type_type.get_alter_column_prepare_new_value(
+            self, connection, from_field, to_field
+        )
+
+    def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
+        field_type_type = self._get_field_type(from_field)
+        return field_type_type.get_alter_column_prepare_old_value(
+            self, connection, from_field, to_field
+        )
+
+    def force_same_type_alter_column(self, from_field, to_field):
+        field_type_type = self._get_field_type(to_field)
+        return field_type_type.force_same_type_alter_column(self, from_field, to_field)

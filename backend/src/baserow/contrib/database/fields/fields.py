@@ -52,7 +52,7 @@ class ExpressionField(models.Field):
     def __init__(
         self,
         ast: BaserowExpression,
-        expression_type: TypeResult,
+        model_type: TypeResult,
         field_types,
         error: Optional[str],
         *args,
@@ -63,7 +63,7 @@ class ExpressionField(models.Field):
         """
 
         self.ast = ast
-        self.expression_type = expression_type
+        self.model_type = model_type
         self.field_types = field_types
         self.error = error
         super().__init__(*args, **kwargs)
@@ -71,19 +71,17 @@ class ExpressionField(models.Field):
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
         kwargs["ast"] = self.ast
-        kwargs["expression_type"] = self.expression_type
+        kwargs["model_type"] = self.model_type
         kwargs["error"] = self.error
         kwargs["field_types"] = self.field_types
         return name, path, args, kwargs
-
-    def get_internal_type(self):
-        return self.expression_type
 
     def db_type(self, connection):
         if self.error:
             return "TEXT"
         else:
-            return self.expression_type.resulting_field_type.db_type(connection)
+            db_type = self.model_type.db_type(connection)
+            return db_type
 
     def pre_save(self, model_instance, add):
         # Force the instance to use the expression to calculate its value.

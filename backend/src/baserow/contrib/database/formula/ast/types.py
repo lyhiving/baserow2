@@ -23,6 +23,12 @@ from baserow.contrib.database.formula.parser.ast_mapper import (
 )
 from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 
+MAPPING_TYPES = {
+    "TextField": "text",
+    "DecimalField": "numeric",
+    "DateTimeField": "datetime",
+}
+
 FIELD_TYPE_LOOKUP = {}
 
 
@@ -167,6 +173,8 @@ class Typer:
                 specific_formula_field.error = field_type.error
             else:
                 specific_formula_field.error = None
+                formula_type = field_type.resulting_field_type.__class__.__name__
+                specific_formula_field.field_type = MAPPING_TYPES[formula_type]
 
             if not specific_formula_field.trashed and (
                 previous_error != str(specific_formula_field.error)
@@ -207,9 +215,8 @@ class Typer:
             if new_field_type.is_invalid():
                 raise InvalidFieldType(new_field_type.error)
             else:
-                field.formula_type = (
-                    new_field_type.resulting_field_type.__class__.__name__
-                )
+                formula_type = new_field_type.resulting_field_type.__class__.__name__
+                field.field_type = MAPPING_TYPES[formula_type]
 
     def calculate_all_parent_field_ids(self, field_id):
         initial_parents = self.field_parents.get(field_id, [])

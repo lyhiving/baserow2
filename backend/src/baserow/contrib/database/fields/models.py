@@ -1,4 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
+from django.core import validators
 from django.db import models
 
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
@@ -239,6 +240,42 @@ class PhoneNumberField(Field):
     pass
 
 
-class FormulaField(Field):
+class FormulaField(Field, BaseDateMixin):
     formula = models.TextField()
     error = models.TextField(null=True, blank=True)
+    field_type = models.TextField(
+        choices=[("text", "text"), ("numeric", "numeric"), ("datetime", "datetime")],
+        default="text",
+    )
+    number_type = models.CharField(
+        max_length=32, choices=NUMBER_TYPE_CHOICES, default=NUMBER_TYPE_INTEGER
+    )
+    number_decimal_places = models.IntegerField(
+        choices=NUMBER_DECIMAL_PLACES_CHOICES,
+        default=1,
+        help_text="The amount of digits allowed after the point.",
+    )
+    number_negative = models.BooleanField(
+        default=True, help_text="Indicates if negative values are allowed."
+    )
+    text_default = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="If set, this value is going to be added every time a new row "
+        "created.",
+    )
+
+    def save(self, *args, **kwargs):
+        """Check if the number_type and number_decimal_places has a valid choice."""
+
+        if self.field_type == "numeric":
+            # TODO: dedupe somehow
+            if not any(self.number_type in _tuple for _tuple in NUMBER_TYPE_CHOICES):
+                raise ValueError(f"{self.number_type} is not a valid choice.")
+            if not any(
+                self.number_decimal_places in _tuple
+                for _tuple in NUMBER_DECIMAL_PLACES_CHOICES
+            ):
+                raise ValueError(f"{self.number_decimal_places} is not a valid choice.")
+        super().save(*args, **kwargs)

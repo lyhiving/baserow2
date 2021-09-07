@@ -352,7 +352,15 @@
 
     &.active {
       background-color: $white;
+
+      &.cell-error {
+        background-color: $color-error-200;
+      }
     }
+  }
+
+  &.cell-error {
+    background-color: $color-error-200;
   }
 
   .grid-view__column--matches-search & {

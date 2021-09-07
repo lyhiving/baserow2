@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Type, List
 
 from django.db.models import (
@@ -9,8 +10,12 @@ from django.db.models import (
     DecimalField,
     FloatField,
     Value,
+    Transform,
+    Case,
+    When,
+    BooleanField,
 )
-from django.db.models.functions import Upper, Lower, Concat, NullIf, Coalesce
+from django.db.models.functions import Upper, Lower, Concat
 
 from baserow.contrib.database.formula.ast.function import (
     BaserowFunctionDefinition,
@@ -161,6 +166,12 @@ class BaserowMinus(BaserowFunctionDefinition):
         return args[0] - args[1]
 
 
+class EqualsExpr(Transform):
+    template = "%(expressions)s"
+    arg_joiner = "="
+    arity = 2
+
+
 class BaserowDivide(BaserowFunctionDefinition):
     type = "divide"
 
@@ -174,4 +185,10 @@ class BaserowDivide(BaserowFunctionDefinition):
     def to_django_expression(self, args: List[Expression]) -> Expression:
         # Prevent divide by zero's by swapping 0 for NaN causing the entire expression
         # to evaluate to NaN.
-        return args[0] / Coalesce(NullIf(args[1], 0), Value(float("NaN")))
+        return args[0] / Case(
+            When(
+                condition=(EqualsExpr(args[1], 0, output_field=BooleanField())),
+                then=Value(Decimal("NaN")),
+            ),
+            default=args[1],
+        )

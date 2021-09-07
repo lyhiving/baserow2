@@ -883,3 +883,88 @@ def test_changing_type_of_reference_field_to_valid_one_for_formula(
     assert response_json["count"] == 2
     assert response_json["results"][0][f"field_{formula_field_id}"] == "1test"
     assert response_json["results"][1][f"field_{formula_field_id}"] == "test"
+
+
+@pytest.mark.django_db
+def test_can_set_number_of_decimal_places(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table, fields, rows = data_fixture.build_table(
+        columns=[("number", "number")], rows=[["1"], ["2"]], user=user
+    )
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {
+            "name": "Formula",
+            "type": "formula",
+            "formula": "1/4",
+            "number_type": "DECIMAL",
+            "number_decimal_places": 5,
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    formula_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 2
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "0.25000"
+    assert response_json["results"][1][f"field_{formula_field_id}"] == "0.25000"
+
+    response = api_client.patch(
+        reverse("api:database:fields:item", kwargs={"field_id": formula_field_id}),
+        {
+            "name": "Formula",
+            "type": "formula",
+            "formula": "1/4",
+            "number_type": "DECIMAL",
+            "number_decimal_places": 2,
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 2
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "0.25"
+    assert response_json["results"][1][f"field_{formula_field_id}"] == "0.25"
+
+    response = api_client.patch(
+        reverse("api:database:fields:item", kwargs={"field_id": formula_field_id}),
+        {
+            "name": "Formula",
+            "type": "text",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 2
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "0.25"
+    assert response_json["results"][1][f"field_{formula_field_id}"] == "0.25"
