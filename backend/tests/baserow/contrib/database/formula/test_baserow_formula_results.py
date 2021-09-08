@@ -31,8 +31,8 @@ VALID_FORMULA_TESTS = [
     ("CONCAT('\ntest', '\n')", "\ntest\n"),
     ("1+1", "2"),
     ("1/0", "NaN"),
-    ("10/3", "3"),
-    ("(10+2)/3", "4"),
+    ("10/3", "3.33333"),
+    ("(10+2)/3", "4.00000"),
     ("CONCAT(1,2)", "12"),
     ("CONCAT('a',2)", "a2"),
 ]
@@ -968,3 +968,63 @@ def test_can_set_number_of_decimal_places(api_client, data_fixture):
     assert response_json["count"] == 2
     assert response_json["results"][0][f"field_{formula_field_id}"] == "0.25"
     assert response_json["results"][1][f"field_{formula_field_id}"] == "0.25"
+
+
+@pytest.mark.django_db
+def test_altering_type_of_underlying_causes_type_update(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table, fields, rows = data_fixture.build_table(
+        columns=[("text", "text")], rows=[["1"], [None]], user=user
+    )
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {
+            "name": "Formula",
+            "type": "formula",
+            "formula": "field('text')",
+            "text_default": "default",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    formula_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 2
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "1"
+    assert response_json["results"][1][f"field_{formula_field_id}"] == "default"
+
+    response = api_client.patch(
+        reverse("api:database:fields:item", kwargs={"field_id": fields[0].id}),
+        {
+            "name": "text",
+            "type": "number",
+            "number_type": "DECIMAL",
+            "number_decimal_places": 2,
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 2
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "1.00"
+    assert response_json["results"][1][f"field_{formula_field_id}"] == "0.00"

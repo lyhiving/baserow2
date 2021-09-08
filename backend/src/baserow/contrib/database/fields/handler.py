@@ -210,9 +210,8 @@ class FieldHandler:
         )
 
         for updated_field in updated_fields:
-            specific = updated_field.specific
-            updated_field_type = field_type_registry.get_by_model(specific)
-            updated_field_type.related_field_changed(specific, to_model)
+            updated_field_type = field_type_registry.get_by_model(updated_field)
+            updated_field_type.related_field_changed(updated_field, to_model)
 
         return instance, updated_fields
 
@@ -401,9 +400,8 @@ class FieldHandler:
             before,
         )
         for updated_field in updated_fields_and_parents:
-            specific = updated_field.specific
-            updated_field_type = field_type_registry.get_by_model(specific)
-            updated_field_type.related_field_changed(specific, to_model)
+            updated_field_type = field_type_registry.get_by_model(updated_field)
+            updated_field_type.related_field_changed(updated_field, to_model)
 
         field_updated.send(self, field=field, related_fields=updated_fields, user=user)
 

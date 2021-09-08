@@ -132,8 +132,8 @@ class BaserowAdd(BaserowFunctionDefinition):
         return args[0] + args[1]
 
 
-def check_types_for_decimal(arg_types):
-    resulting_type = check_types(arg_types, [DecimalField], IntegerField())
+def check_types_for_decimal(arg_types, forced_decimal_places=None):
+    resulting_type = check_types(arg_types, [DecimalField], DecimalField())
     if resulting_type.is_invalid():
         return resulting_type
     else:
@@ -147,7 +147,9 @@ def check_types_for_decimal(arg_types):
                 null=True,
                 blank=True,
                 max_digits=max_max_digits,
-                decimal_places=max_decimal_places,
+                decimal_places=forced_decimal_places
+                if forced_decimal_places is not None
+                else max_decimal_places,
             )
         )
 
@@ -172,6 +174,10 @@ class EqualsExpr(Transform):
     arity = 2
 
 
+class LessThanZeroExpr(Transform):
+    template = "%(expressions)s < 0"
+
+
 class BaserowDivide(BaserowFunctionDefinition):
     type = "divide"
 
@@ -180,7 +186,7 @@ class BaserowDivide(BaserowFunctionDefinition):
         return FixedNumOfArgs(2)
 
     def to_django_field_type(self, arg_types: List[Field]) -> TypeResult:
-        return check_types_for_decimal(arg_types)
+        return check_types_for_decimal(arg_types, forced_decimal_places=5)
 
     def to_django_expression(self, args: List[Expression]) -> Expression:
         # Prevent divide by zero's by swapping 0 for NaN causing the entire expression

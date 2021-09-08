@@ -660,7 +660,7 @@ class FieldType(
 
         return []
 
-    def related_field_changed(self, field, model):
+    def related_field_changed(self, field, to_model):
         pass
 
 

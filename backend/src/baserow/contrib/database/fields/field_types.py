@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from copy import deepcopy
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint
@@ -11,7 +12,7 @@ from dateutil.parser import ParserError
 from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
-from django.db import models, OperationalError
+from django.db import models, OperationalError, connection
 from django.db.models import Case, When, Q, F, Func, Value, CharField
 from django.db.models.expressions import RawSQL
 from django.db.models.functions import Coalesce
@@ -45,6 +46,7 @@ from .exceptions import (
     LinkRowTableNotProvided,
     IncompatiblePrimaryFieldTypeError,
 )
+from .field_converters import RecreateFieldConverter, FormulaFieldConverter
 from .field_filters import contains_filter, AnnotatedQ, filename_contains_filter
 from .fields import SingleSelectForeignKey, ExpressionField
 from .handler import FieldHandler
@@ -68,11 +70,19 @@ from .models import (
     FormulaField,
 )
 from .registries import FieldType, field_type_registry
-from ..formula.expression_generator.errors import (
+from baserow.contrib.database.formula.ast.function_defs import (
+    EqualsExpr,
+    LessThanZeroExpr,
+)
+from baserow.contrib.database.formula.expression_generator.errors import (
     ExpressionGeneratorException,
 )
-from ..formula.expression_generator.generator import tree_to_django_expression
-from ..formula.parser.ast_mapper import translate_formula_for_backend
+from baserow.contrib.database.formula.expression_generator.generator import (
+    tree_to_django_expression,
+)
+from baserow.contrib.database.formula.parser.ast_mapper import (
+    translate_formula_for_backend,
+)
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -190,12 +200,16 @@ class TextFieldType(FieldType):
 
     def get_serializer_field(self, instance, **kwargs):
         required = kwargs.get("required", False)
+        if kwargs.pop("ignore_default", False) or not instance.text_default:
+            default = None
+        else:
+            default = instance.text_default
         return serializers.CharField(
             **{
                 "required": required,
                 "allow_null": not required,
                 "allow_blank": not required,
-                "default": instance.text_default or None,
+                "default": default,
                 **kwargs,
             }
         )
@@ -1766,15 +1780,19 @@ class FormulaFieldType(FieldType):
 
     def get_serializer_field(self, instance, **kwargs):
         field_type_type = self._get_field_type(instance)
+        if field_type_type == TextFieldType:
+            kwargs["ignore_default"] = True
         return field_type_type.get_serializer_field(self, instance, **kwargs)
 
     def get_model_field(self, instance, **kwargs):
         expression_type = kwargs.pop("expression_type", None)
         ast = kwargs.pop("ast")
         field_types = kwargs.pop("field_types")
-        model_type = self._get_field_type(instance).get_model_field(
-            self, instance, **kwargs
-        )
+        field_type = self._get_field_type(instance)
+        model_type = field_type.get_model_field(self, instance, **kwargs)
+        model_type.default = None
+        wrapper = self._get_formatting_wrapper(field_type, instance)
+
         return ExpressionField(
             null=True,
             blank=True,
@@ -1782,8 +1800,47 @@ class FormulaFieldType(FieldType):
             ast=ast,
             model_type=model_type,
             field_types=field_types,
+            trashed=instance.trashed,
+            wrapper=wrapper,
             **kwargs,
         )
+
+    def _get_formatting_wrapper(self, field_type, instance):
+        if field_type == TextFieldType:
+            value = Value(instance.text_default, output_field=models.TextField())
+
+            def wrapper(x):
+                return Case(
+                    When(
+                        EqualsExpr(
+                            Coalesce(x, Value("")),
+                            Value(""),
+                            output_field=models.BooleanField(),
+                        ),
+                        then=value,
+                    ),
+                    default=x,
+                )
+
+        elif field_type == NumberFieldType and not instance.number_negative:
+
+            def wrapper(x):
+                return Case(
+                    When(
+                        condition=LessThanZeroExpr(
+                            x, output_field=models.BooleanField()
+                        ),
+                        then=Value(Decimal(0)),
+                    ),
+                    default=x,
+                )
+
+        else:
+
+            def wrapper(x):
+                return x
+
+        return wrapper
 
     def prepare_value_for_db(self, instance, value):
         """
@@ -1836,9 +1893,7 @@ class FormulaFieldType(FieldType):
         with the formula
         """
 
-        f = model._meta.get_field(field.db_column)
-        expr = tree_to_django_expression(f.ast, f.field_types, None, True)
-        model.objects.all().update(**{f"{field.db_column}": expr})
+        self._do_bulk_update(field, model)
 
     def after_update(
         self,
@@ -1855,9 +1910,26 @@ class FormulaFieldType(FieldType):
         If the field type has changed, we need to update the values from the from
         the source_field_name column.
         """
+        self._do_bulk_update(to_field, to_model)
+
+    def _do_bulk_update(self, to_field, to_model):
         f = to_model._meta.get_field(to_field.db_column)
         expr = tree_to_django_expression(f.ast, f.field_types, None, True)
-        to_model.objects.all().update(**{f"{to_field.db_column}": expr})
+        if hasattr(to_field, "oldfield"):
+            from_model = deepcopy(to_model)
+            from_field = to_field.oldfield
+            FormulaFieldConverter().alter_field(
+                from_field,
+                to_field,
+                from_model,
+                to_model,
+                from_model._meta.get_field(from_field.db_column),
+                to_model._meta.get_field(to_field.db_column),
+                None,
+                connection,
+            )
+        wrapper = self._get_formatting_wrapper(self._get_field_type(to_field), to_field)
+        to_model.objects.all().update(**{f"{to_field.db_column}": wrapper(expr)})
 
     def before_create(self, table, primary, values, order, user):
         values["formula"] = translate_formula_for_backend(values["formula"], table)
@@ -1868,11 +1940,9 @@ class FormulaFieldType(FieldType):
                 values["formula"], old_field.table
             )
 
-    def related_field_changed(self, field, model):
+    def related_field_changed(self, field, to_model):
         if not field.error:
-            f = model._meta.get_field(field.db_column)
-            expr = tree_to_django_expression(f.ast, f.field_types, None, True)
-            model.objects.all().update(**{f"{field.db_column}": expr})
+            self._do_bulk_update(field, to_model)
 
     def get_alter_column_prepare_new_value(self, connection, from_field, to_field):
         field_type_type = self._get_field_type(to_field)

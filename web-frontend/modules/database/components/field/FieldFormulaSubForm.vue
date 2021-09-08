@@ -33,6 +33,26 @@
             {{ values.error }}
           </template>
         </div>
+        <div v-if="!values.error">
+          <FieldNumberSubForm
+            v-if="values.field_type === 'numeric'"
+            :default-values="defaultValues"
+            :table="table"
+          >
+          </FieldNumberSubForm>
+          <FieldTextSubForm
+            v-else-if="values.field_type === 'text'"
+            :default-values="defaultValues"
+            :table="table"
+          >
+          </FieldTextSubForm>
+          <FieldDateSubForm
+            v-else-if="values.field_type === 'datetime'"
+            :default-values="defaultValues"
+            :table="table"
+          >
+          </FieldDateSubForm>
+        </div>
       </div>
     </div>
   </div>
@@ -48,9 +68,13 @@ import parseBaserowFormula, {
   replaceFieldByIdWithFieldRef,
   replaceFieldWithFieldById,
 } from '@/modules/database/formula/parser/parser'
+import FieldNumberSubForm from '@/modules/database/components/field/FieldNumberSubForm'
+import FieldTextSubForm from '@/modules/database/components/field/FieldTextSubForm'
+import FieldDateSubForm from '@/modules/database/components/field/FieldDateSubForm'
 
 export default {
   name: 'FieldFormulaSubForm',
+  components: { FieldDateSubForm, FieldTextSubForm, FieldNumberSubForm },
   mixins: [form, fieldSubForm],
   props: {
     table: {
@@ -60,7 +84,7 @@ export default {
   },
   data() {
     return {
-      allowedValues: ['formula', 'error'],
+      allowedValues: ['formula', 'error', 'field_type'],
       values: {
         formula: '',
       },
@@ -95,6 +119,16 @@ export default {
         this.error = ''
       } catch (e) {
         this.error = e
+      }
+    },
+    'default-values'(newValue, oldValue) {
+      if (!this.error) {
+        try {
+          this.updateFormulaData(newValue.formula)
+          this.error = ''
+        } catch (e) {
+          this.error = e
+        }
       }
     },
     'values.formula'(newValue, oldValue) {

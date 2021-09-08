@@ -1,6 +1,14 @@
 from typing import Dict, Type
 
-from django.db.models import Expression, Value, ExpressionWrapper, F, Field
+from django.db import models
+from django.db.models import (
+    Expression,
+    Value,
+    ExpressionWrapper,
+    F,
+    Field,
+    DecimalField,
+)
 
 from baserow.contrib.database.formula.ast.errors import UnknownFieldReference
 from baserow.contrib.database.formula.ast.tree import (
@@ -66,7 +74,10 @@ class BaserowFormulaToDjangoExpressionGenerator(BaserowFormulaASTVisitor[Express
         return function_call.function_def.to_django_expression(args)
 
     def visit_string_literal(self, string_literal: BaserowStringLiteral) -> Expression:
-        return Value(string_literal.literal)
+        return Value(string_literal.literal, output_field=models.TextField())
 
     def visit_int_literal(self, int_literal: BaserowIntegerLiteral):
-        return Value(int_literal.literal)
+        return Value(
+            int_literal.literal,
+            output_field=DecimalField(max_digits=50, decimal_places=0),
+        )

@@ -7,6 +7,14 @@
   user-select: none;
 }
 
+.grid-field-text-selectable {
+  @extend %ellipsis;
+
+  @include fixed-height(32px, 13px);
+
+  padding: 0 10px;
+}
+
 .grid-field-text__input {
   @include fixed-height(32px, 13px);
 

@@ -55,6 +55,8 @@ class ExpressionField(models.Field):
         model_type: TypeResult,
         field_types,
         error: Optional[str],
+        wrapper,
+        trashed,
         *args,
         **kwargs,
     ):
@@ -66,6 +68,8 @@ class ExpressionField(models.Field):
         self.model_type = model_type
         self.field_types = field_types
         self.error = error
+        self.wrapper = wrapper
+        self.trashed = trashed
         super().__init__(*args, **kwargs)
 
     def deconstruct(self):
@@ -74,6 +78,7 @@ class ExpressionField(models.Field):
         kwargs["model_type"] = self.model_type
         kwargs["error"] = self.error
         kwargs["field_types"] = self.field_types
+        kwargs["trashed"] = self.trashed
         return name, path, args, kwargs
 
     def db_type(self, connection):
@@ -85,9 +90,11 @@ class ExpressionField(models.Field):
 
     def pre_save(self, model_instance, add):
         # Force the instance to use the expression to calculate its value.
-        if self.error:
+        if self.error or self.trashed:
             return super().pre_save(model_instance, add)
         else:
-            return tree_to_django_expression(
-                self.ast, self.field_types, model_instance, False
+            return self.wrapper(
+                tree_to_django_expression(
+                    self.ast, self.field_types, model_instance, False
+                )
             )

@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import List, Optional
 
 from django.db.models import TextField, DecimalField, Field
@@ -157,10 +158,7 @@ class Typer:
             if formula_field.trashed:
                 continue
             specific_formula_field = self.field_id_to_field[formula_field_id].specific
-            previous_error = str(specific_formula_field.error)
-            print("FOR ", formula_field_id)
-            print("IT WAS ", previous_error)
-            previous_formula = str(specific_formula_field.formula)
+            old_field = deepcopy(specific_formula_field)
 
             if formula_field_id in self.field_ids_requiring_fix:
                 specific_formula_field.formula = fix_formula(
@@ -177,33 +175,32 @@ class Typer:
                 specific_formula_field.field_type = MAPPING_TYPES[formula_type]
 
             if not specific_formula_field.trashed and (
-                previous_error != str(specific_formula_field.error)
-                or previous_formula != str(specific_formula_field.formula)
+                old_field.error != str(specific_formula_field.error)
+                or old_field.formula != str(specific_formula_field.formula)
+                or old_field.field_type != str(specific_formula_field.field_type)
             ):
-                print(
-                    "Saving ",
-                    specific_formula_field.name,
-                    " with ",
-                    specific_formula_field.error,
-                    " and ",
-                    specific_formula_field.formula,
-                )
-                specific_formula_field.save()
                 if to_filter is None or specific_formula_field.id != to_filter.id:
+                    if old_field.field_type != specific_formula_field.field_type:
+                        specific_formula_field.oldfield = old_field
+                        if (
+                            specific_formula_field.field_type == "numeric"
+                            and not specific_formula_field.error
+                        ):
+                            resulting_field_type = field_type.resulting_field_type
+                            specific_formula_field.number_type = (
+                                "DECIMAL"
+                                if resulting_field_type.decimal_places > 0
+                                else "INTEGER"
+                            )
+                            specific_formula_field.number_decimal_places = (
+                                resulting_field_type.decimal_places
+                            )
+                            specific_formula_field.number_negative = True
                     updated_fields.add(specific_formula_field)
-            else:
-                print(
-                    "Not Saving ",
-                    specific_formula_field.name,
-                    " with ",
-                    specific_formula_field.error,
-                    " and ",
-                    specific_formula_field.formula,
-                    " as was previously ",
-                    previous_error,
-                    " and ",
-                    previous_formula,
-                )
+                specific_formula_field.save()
+            formula_field.error = specific_formula_field.error
+            formula_field.formula = specific_formula_field.formula
+            formula_field.field_type = specific_formula_field.field_type
         return updated_fields
 
     def get_type(self, field):
@@ -215,8 +212,19 @@ class Typer:
             if new_field_type.is_invalid():
                 raise InvalidFieldType(new_field_type.error)
             else:
-                formula_type = new_field_type.resulting_field_type.__class__.__name__
-                field.field_type = MAPPING_TYPES[formula_type]
+                resulting_field_type = new_field_type.resulting_field_type
+                formula_type = resulting_field_type.__class__.__name__
+                new_mapped_type = MAPPING_TYPES[formula_type]
+                if new_mapped_type != field.field_type and new_mapped_type == "numeric":
+                    field.number_type = (
+                        "DECIMAL"
+                        if resulting_field_type.decimal_places > 0
+                        else "INTEGER"
+                    )
+                    field.number_decimal_places = resulting_field_type.decimal_places
+                    field.number_negative = True
+
+                field.field_type = new_mapped_type
 
     def calculate_all_parent_field_ids(self, field_id):
         initial_parents = self.field_parents.get(field_id, [])
@@ -233,7 +241,7 @@ class Typer:
     def calculate_all_parent_valid_fields(self, field):
         related_field_ids = self.calculate_all_parent_field_ids(field.id)
         return [
-            self.field_id_to_field[i]
+            self.field_id_to_field[i].specific
             for i in related_field_ids
             if self.field_types.get(i, TypeResult.invalid_type("")).is_valid()
         ]

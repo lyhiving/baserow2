@@ -98,9 +98,8 @@ class FieldTrashableItemType(TrashableItemType):
         for updated_field in updated_fields:
             specific = updated_field.specific
             updated_field_type = field_type_registry.get_by_model(specific)
-            updated_field_type.related_field_changed(
-                specific, trashed_item.table.get_model()
-            )
+            model = trashed_item.table.get_model()
+            updated_field_type.related_field_changed(specific, model)
 
     def permanently_delete_item(
         self,

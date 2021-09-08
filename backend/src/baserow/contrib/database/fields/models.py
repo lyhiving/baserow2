@@ -147,7 +147,7 @@ class NumberField(Field):
 
         if not any(self.number_type in _tuple for _tuple in NUMBER_TYPE_CHOICES):
             raise ValueError(f"{self.number_type} is not a valid choice.")
-        if not any(
+        if self.number_type == NUMBER_TYPE_DECIMAL and not any(
             self.number_decimal_places in _tuple
             for _tuple in NUMBER_DECIMAL_PLACES_CHOICES
         ):
@@ -251,7 +251,14 @@ class FormulaField(Field, BaseDateMixin):
         max_length=32, choices=NUMBER_TYPE_CHOICES, default=NUMBER_TYPE_INTEGER
     )
     number_decimal_places = models.IntegerField(
-        choices=NUMBER_DECIMAL_PLACES_CHOICES,
+        choices=(
+            (0, "1"),
+            (1, "1.0"),
+            (2, "1.00"),
+            (3, "1.000"),
+            (4, "1.0000"),
+            (5, "1.00000"),
+        ),
         default=1,
         help_text="The amount of digits allowed after the point.",
     )
@@ -273,7 +280,7 @@ class FormulaField(Field, BaseDateMixin):
             # TODO: dedupe somehow
             if not any(self.number_type in _tuple for _tuple in NUMBER_TYPE_CHOICES):
                 raise ValueError(f"{self.number_type} is not a valid choice.")
-            if not any(
+            if self.number_type == NUMBER_TYPE_DECIMAL and not any(
                 self.number_decimal_places in _tuple
                 for _tuple in NUMBER_DECIMAL_PLACES_CHOICES
             ):

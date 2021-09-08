@@ -1,5 +1,10 @@
 <template functional>
   <div
+    v-tooltip="
+      props.field.field_type === 'numeric' && props.value === 'NaN'
+        ? 'Divide by zero error'
+        : false
+    "
     class="grid-view__cell"
     :class="{
       'cell-error':
