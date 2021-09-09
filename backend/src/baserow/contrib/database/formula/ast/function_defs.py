@@ -15,7 +15,7 @@ from django.db.models import (
     When,
     BooleanField,
 )
-from django.db.models.functions import Upper, Lower, Concat
+from django.db.models.functions import Upper, Lower, Concat, Cast
 
 from baserow.contrib.database.formula.ast.function import (
     BaserowFunctionDefinition,
@@ -62,6 +62,8 @@ def register_functions(registry):
     registry.register(BaserowAdd())
     registry.register(BaserowMinus())
     registry.register(BaserowDivide())
+    registry.register(BaserowEqual())
+    registry.register(BaserowIf())
 
 
 class BaserowUpper(BaserowFunctionDefinition):
@@ -137,21 +139,25 @@ def check_types_for_decimal(arg_types, forced_decimal_places=None):
     if resulting_type.is_invalid():
         return resulting_type
     else:
-        max_max_digits = 0
-        max_decimal_places = 0
-        for a in arg_types:
-            max_max_digits = max(max_max_digits, a.max_digits)
-            max_decimal_places = max(max_decimal_places, a.decimal_places)
-        return TypeResult.valid_type(
-            DecimalField(
-                null=True,
-                blank=True,
-                max_digits=max_max_digits,
-                decimal_places=forced_decimal_places
-                if forced_decimal_places is not None
-                else max_decimal_places,
-            )
+        return calculate_decimal_type(arg_types, forced_decimal_places)
+
+
+def calculate_decimal_type(arg_types, forced_decimal_places=None):
+    max_max_digits = 0
+    max_decimal_places = 0
+    for a in arg_types:
+        max_max_digits = max(max_max_digits, a.max_digits)
+        max_decimal_places = max(max_decimal_places, a.decimal_places)
+    return TypeResult.valid_type(
+        DecimalField(
+            null=True,
+            blank=True,
+            max_digits=max_max_digits,
+            decimal_places=forced_decimal_places
+            if forced_decimal_places is not None
+            else max_decimal_places,
         )
+    )
 
 
 class BaserowMinus(BaserowFunctionDefinition):
@@ -197,4 +203,61 @@ class BaserowDivide(BaserowFunctionDefinition):
                 then=Value(Decimal("NaN")),
             ),
             default=args[1],
+        )
+
+
+class BaserowEqual(BaserowFunctionDefinition):
+    type = "equal"
+
+    @property
+    def num_args(self) -> ArgCountSpecifier:
+        return FixedNumOfArgs(2)
+
+    def to_django_field_type(self, arg_types: List[Field]) -> TypeResult:
+        return TypeResult.valid_type(BooleanField())
+
+    def to_django_expression(self, args: List[Expression]) -> Expression:
+        return EqualsExpr(
+            Cast(args[0], output_field=TextField()),
+            Cast(args[1], output_field=TextField()),
+            output_field=BooleanField(),
+        )
+
+
+class BaserowIf(BaserowFunctionDefinition):
+    type = "if"
+
+    @property
+    def num_args(self) -> ArgCountSpecifier:
+        return FixedNumOfArgs(3)
+
+    def to_django_field_type(self, arg_types: List[Field]) -> TypeResult:
+        when = check_type(arg_types[0], [BooleanField], BooleanField())
+        if when.is_invalid():
+            return when
+        if arg_types[1] != arg_types[2]:
+            return TypeResult.valid_type(TextField())
+        elif arg_types[1] == DecimalField:
+            return calculate_decimal_type(arg_types[1:2])
+        else:
+            return TypeResult.valid_type(arg_types[1])
+
+    def to_django_expression(self, args: List[Expression]) -> Expression:
+        then_output_field = args[1].output_field
+        else_output_field = args[2].output_field
+        if type(then_output_field) != type(else_output_field):
+            output_field = TextField()
+            args[1] = Cast(args[1], output_field=output_field)
+            args[2] = Cast(args[2], output_field=output_field)
+        elif isinstance(then_output_field, DecimalField):
+            output_field = calculate_decimal_type(
+                [then_output_field, else_output_field]
+            ).resulting_field_type
+        else:
+            output_field = then_output_field
+
+        return Case(
+            When(condition=args[0], then=args[1]),
+            default=args[2],
+            output_field=output_field,
         )

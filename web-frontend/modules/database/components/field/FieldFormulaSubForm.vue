@@ -121,7 +121,7 @@ export default {
         this.error = e
       }
     },
-    'default-values'(newValue, oldValue) {
+    defaultValues(newValue, oldValue) {
       if (!this.error) {
         try {
           this.updateFormulaData(newValue.formula)

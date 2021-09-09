@@ -8,7 +8,7 @@ var grammarFileName = "BaserowFormula.g4";
 
 
 var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
-    "\u0003S?\u0004\u0002\t\u0002\u0004\u0003\t\u0003\u0004\u0004\t\u0004",
+    "\u0003R?\u0004\u0002\t\u0002\u0004\u0003\t\u0003\u0004\u0004\t\u0004",
     "\u0004\u0005\t\u0005\u0004\u0006\t\u0006\u0003\u0002\u0003\u0002\u0003",
     "\u0002\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003",
     "\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003\u0003",
@@ -18,35 +18,35 @@ var serializedATN = ["\u0003\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964",
     "\u0003\u0003\u0003\u0005\u0003/\n\u0003\u0003\u0003\u0003\u0003\u0003",
     "\u0003\u0007\u00034\n\u0003\f\u0003\u000e\u00037\u000b\u0003\u0003\u0004",
     "\u0003\u0004\u0003\u0005\u0003\u0005\u0003\u0006\u0003\u0006\u0003\u0006",
-    "\u0002\u0003\u0004\u0007\u0002\u0004\u0006\b\n\u0002\u0005\u0005\u0002",
-    "==CCII\u0003\u0002\u0019\u001a\u0003\u0002\u001b\u001c\u0002B\u0002",
+    "\u0002\u0003\u0004\u0007\u0002\u0004\u0006\b\n\u0002\u0005\u0006\u0002",
+    "&&<<BBHH\u0003\u0002\u0018\u0019\u0003\u0002\u001a\u001b\u0002B\u0002",
     "\f\u0003\u0002\u0002\u0002\u0004.\u0003\u0002\u0002\u0002\u00068\u0003",
     "\u0002\u0002\u0002\b:\u0003\u0002\u0002\u0002\n<\u0003\u0002\u0002\u0002",
     "\f\r\u0005\u0004\u0003\u0002\r\u000e\u0007\u0002\u0002\u0003\u000e\u0003",
     "\u0003\u0002\u0002\u0002\u000f\u0010\b\u0003\u0001\u0002\u0010/\u0007",
-    "\u0019\u0002\u0002\u0011/\u0007\u001a\u0002\u0002\u0012/\u0007\u0016",
-    "\u0002\u0002\u0013\u0014\u0007\u000f\u0002\u0002\u0014\u0015\u0005\u0004",
-    "\u0003\u0002\u0015\u0016\u0007\u0010\u0002\u0002\u0016/\u0003\u0002",
-    "\u0002\u0002\u0017\u0018\u0007\u0007\u0002\u0002\u0018\u0019\u0007\u000f",
-    "\u0002\u0002\u0019\u001a\u0005\b\u0005\u0002\u001a\u001b\u0007\u0010",
-    "\u0002\u0002\u001b/\u0003\u0002\u0002\u0002\u001c\u001d\u0007\b\u0002",
-    "\u0002\u001d\u001e\u0007\u000f\u0002\u0002\u001e\u001f\u0007\u0016\u0002",
-    "\u0002\u001f/\u0007\u0010\u0002\u0002 !\u0005\u0006\u0004\u0002!*\u0007",
-    "\u000f\u0002\u0002\"\'\u0005\u0004\u0003\u0002#$\u0007\t\u0002\u0002",
-    "$&\u0005\u0004\u0003\u0002%#\u0003\u0002\u0002\u0002&)\u0003\u0002\u0002",
-    "\u0002\'%\u0003\u0002\u0002\u0002\'(\u0003\u0002\u0002\u0002(+\u0003",
-    "\u0002\u0002\u0002)\'\u0003\u0002\u0002\u0002*\"\u0003\u0002\u0002\u0002",
-    "*+\u0003\u0002\u0002\u0002+,\u0003\u0002\u0002\u0002,-\u0007\u0010\u0002",
-    "\u0002-/\u0003\u0002\u0002\u0002.\u000f\u0003\u0002\u0002\u0002.\u0011",
-    "\u0003\u0002\u0002\u0002.\u0012\u0003\u0002\u0002\u0002.\u0013\u0003",
-    "\u0002\u0002\u0002.\u0017\u0003\u0002\u0002\u0002.\u001c\u0003\u0002",
-    "\u0002\u0002. \u0003\u0002\u0002\u0002/5\u0003\u0002\u0002\u000201\f",
-    "\u0006\u0002\u000212\t\u0002\u0002\u000224\u0005\u0004\u0003\u00073",
-    "0\u0003\u0002\u0002\u000247\u0003\u0002\u0002\u000253\u0003\u0002\u0002",
-    "\u000256\u0003\u0002\u0002\u00026\u0005\u0003\u0002\u0002\u000275\u0003",
-    "\u0002\u0002\u000289\u0005\n\u0006\u00029\u0007\u0003\u0002\u0002\u0002",
-    ":;\t\u0003\u0002\u0002;\t\u0003\u0002\u0002\u0002<=\t\u0004\u0002\u0002",
-    "=\u000b\u0003\u0002\u0002\u0002\u0006\'*.5"].join("");
+    "\u0018\u0002\u0002\u0011/\u0007\u0019\u0002\u0002\u0012/\u0007\u0015",
+    "\u0002\u0002\u0013\u0014\u0007\u000e\u0002\u0002\u0014\u0015\u0005\u0004",
+    "\u0003\u0002\u0015\u0016\u0007\u000f\u0002\u0002\u0016/\u0003\u0002",
+    "\u0002\u0002\u0017\u0018\u0007\u0006\u0002\u0002\u0018\u0019\u0007\u000e",
+    "\u0002\u0002\u0019\u001a\u0005\b\u0005\u0002\u001a\u001b\u0007\u000f",
+    "\u0002\u0002\u001b/\u0003\u0002\u0002\u0002\u001c\u001d\u0007\u0007",
+    "\u0002\u0002\u001d\u001e\u0007\u000e\u0002\u0002\u001e\u001f\u0007\u0015",
+    "\u0002\u0002\u001f/\u0007\u000f\u0002\u0002 !\u0005\u0006\u0004\u0002",
+    "!*\u0007\u000e\u0002\u0002\"\'\u0005\u0004\u0003\u0002#$\u0007\b\u0002",
+    "\u0002$&\u0005\u0004\u0003\u0002%#\u0003\u0002\u0002\u0002&)\u0003\u0002",
+    "\u0002\u0002\'%\u0003\u0002\u0002\u0002\'(\u0003\u0002\u0002\u0002(",
+    "+\u0003\u0002\u0002\u0002)\'\u0003\u0002\u0002\u0002*\"\u0003\u0002",
+    "\u0002\u0002*+\u0003\u0002\u0002\u0002+,\u0003\u0002\u0002\u0002,-\u0007",
+    "\u000f\u0002\u0002-/\u0003\u0002\u0002\u0002.\u000f\u0003\u0002\u0002",
+    "\u0002.\u0011\u0003\u0002\u0002\u0002.\u0012\u0003\u0002\u0002\u0002",
+    ".\u0013\u0003\u0002\u0002\u0002.\u0017\u0003\u0002\u0002\u0002.\u001c",
+    "\u0003\u0002\u0002\u0002. \u0003\u0002\u0002\u0002/5\u0003\u0002\u0002",
+    "\u000201\f\u0006\u0002\u000212\t\u0002\u0002\u000224\u0005\u0004\u0003",
+    "\u000730\u0003\u0002\u0002\u000247\u0003\u0002\u0002\u000253\u0003\u0002",
+    "\u0002\u000256\u0003\u0002\u0002\u00026\u0005\u0003\u0002\u0002\u0002",
+    "75\u0003\u0002\u0002\u000289\u0005\n\u0006\u00029\u0007\u0003\u0002",
+    "\u0002\u0002:;\t\u0003\u0002\u0002;\t\u0003\u0002\u0002\u0002<=\t\u0004",
+    "\u0002\u0002=\u000b\u0003\u0002\u0002\u0002\u0006\'*.5"].join("");
 
 
 var atn = new antlr4.atn.ATNDeserializer().deserialize(serializedATN);
@@ -55,21 +55,20 @@ var decisionsToDFA = atn.decisionToState.map( function(ds, index) { return new a
 
 var sharedContextCache = new antlr4.PredictionContextCache();
 
-var literalNames = [ null, null, null, null, null, null, null, "','", "':'", 
-                     "'::'", "'$'", "'$$'", "'*'", "'('", "')'", "'['", 
-                     "']'", null, null, null, null, null, "'.'", null, null, 
-                     null, null, "'&'", "'&&'", "'&<'", "'@@'", "'@>'", 
-                     "'@'", "'!'", "'!!'", "'!='", "'^'", "'='", "'=>'", 
-                     "'>'", "'>='", "'>>'", "'#'", "'#='", "'#>'", "'#>>'", 
-                     "'##'", "'->'", "'->>'", "'-|-'", "'<'", "'<='", "'<@'", 
-                     "'<^'", "'<>'", "'<->'", "'<<'", "'<<='", "'<?>'", 
-                     "'-'", "'%'", "'|'", "'||'", "'||/'", "'|/'", "'+'", 
-                     "'?'", "'?&'", "'?#'", "'?-'", "'?|'", "'/'", "'~'", 
-                     "'~='", "'~>=~'", "'~>~'", "'~<=~'", "'~<~'", "'~*'", 
-                     "'~~'", "';'" ];
+var literalNames = [ null, null, null, null, null, null, "','", "':'", "'::'", 
+                     "'$'", "'$$'", "'*'", "'('", "')'", "'['", "']'", null, 
+                     null, null, null, null, "'.'", null, null, null, null, 
+                     "'&'", "'&&'", "'&<'", "'@@'", "'@>'", "'@'", "'!'", 
+                     "'!!'", "'!='", "'^'", "'='", "'=>'", "'>'", "'>='", 
+                     "'>>'", "'#'", "'#='", "'#>'", "'#>>'", "'##'", "'->'", 
+                     "'->>'", "'-|-'", "'<'", "'<='", "'<@'", "'<^'", "'<>'", 
+                     "'<->'", "'<<'", "'<<='", "'<?>'", "'-'", "'%'", "'|'", 
+                     "'||'", "'||/'", "'|/'", "'+'", "'?'", "'?&'", "'?#'", 
+                     "'?-'", "'?|'", "'/'", "'~'", "'~='", "'~>=~'", "'~>~'", 
+                     "'~<=~'", "'~<~'", "'~*'", "'~~'", "';'" ];
 
 var symbolicNames = [ null, "WHITESPACE", "BLOCK_COMMENT", "LINE_COMMENT", 
-                      "IF", "FIELD", "FIELDBYID", "COMMA", "COLON", "COLON_COLON", 
+                      "FIELD", "FIELDBYID", "COMMA", "COLON", "COLON_COLON", 
                       "DOLLAR", "DOLLAR_DOLLAR", "STAR", "OPEN_PAREN", "CLOSE_PAREN", 
                       "OPEN_BRACKET", "CLOSE_BRACKET", "BIT_STRING", "REGEX_STRING", 
                       "NUMERIC_LITERAL", "INTEGER_LITERAL", "HEX_INTEGER_LITERAL", 
@@ -111,84 +110,83 @@ BaserowFormula.EOF = antlr4.Token.EOF;
 BaserowFormula.WHITESPACE = 1;
 BaserowFormula.BLOCK_COMMENT = 2;
 BaserowFormula.LINE_COMMENT = 3;
-BaserowFormula.IF = 4;
-BaserowFormula.FIELD = 5;
-BaserowFormula.FIELDBYID = 6;
-BaserowFormula.COMMA = 7;
-BaserowFormula.COLON = 8;
-BaserowFormula.COLON_COLON = 9;
-BaserowFormula.DOLLAR = 10;
-BaserowFormula.DOLLAR_DOLLAR = 11;
-BaserowFormula.STAR = 12;
-BaserowFormula.OPEN_PAREN = 13;
-BaserowFormula.CLOSE_PAREN = 14;
-BaserowFormula.OPEN_BRACKET = 15;
-BaserowFormula.CLOSE_BRACKET = 16;
-BaserowFormula.BIT_STRING = 17;
-BaserowFormula.REGEX_STRING = 18;
-BaserowFormula.NUMERIC_LITERAL = 19;
-BaserowFormula.INTEGER_LITERAL = 20;
-BaserowFormula.HEX_INTEGER_LITERAL = 21;
-BaserowFormula.DOT = 22;
-BaserowFormula.SINGLEQ_STRING_LITERAL = 23;
-BaserowFormula.DOUBLEQ_STRING_LITERAL = 24;
-BaserowFormula.IDENTIFIER = 25;
-BaserowFormula.IDENTIFIER_UNICODE = 26;
-BaserowFormula.AMP = 27;
-BaserowFormula.AMP_AMP = 28;
-BaserowFormula.AMP_LT = 29;
-BaserowFormula.AT_AT = 30;
-BaserowFormula.AT_GT = 31;
-BaserowFormula.AT_SIGN = 32;
-BaserowFormula.BANG = 33;
-BaserowFormula.BANG_BANG = 34;
-BaserowFormula.BANG_EQUAL = 35;
-BaserowFormula.CARET = 36;
-BaserowFormula.EQUAL = 37;
-BaserowFormula.EQUAL_GT = 38;
-BaserowFormula.GT = 39;
-BaserowFormula.GTE = 40;
-BaserowFormula.GT_GT = 41;
-BaserowFormula.HASH = 42;
-BaserowFormula.HASH_EQ = 43;
-BaserowFormula.HASH_GT = 44;
-BaserowFormula.HASH_GT_GT = 45;
-BaserowFormula.HASH_HASH = 46;
-BaserowFormula.HYPHEN_GT = 47;
-BaserowFormula.HYPHEN_GT_GT = 48;
-BaserowFormula.HYPHEN_PIPE_HYPHEN = 49;
-BaserowFormula.LT = 50;
-BaserowFormula.LTE = 51;
-BaserowFormula.LT_AT = 52;
-BaserowFormula.LT_CARET = 53;
-BaserowFormula.LT_GT = 54;
-BaserowFormula.LT_HYPHEN_GT = 55;
-BaserowFormula.LT_LT = 56;
-BaserowFormula.LT_LT_EQ = 57;
-BaserowFormula.LT_QMARK_GT = 58;
-BaserowFormula.MINUS = 59;
-BaserowFormula.PERCENT = 60;
-BaserowFormula.PIPE = 61;
-BaserowFormula.PIPE_PIPE = 62;
-BaserowFormula.PIPE_PIPE_SLASH = 63;
-BaserowFormula.PIPE_SLASH = 64;
-BaserowFormula.PLUS = 65;
-BaserowFormula.QMARK = 66;
-BaserowFormula.QMARK_AMP = 67;
-BaserowFormula.QMARK_HASH = 68;
-BaserowFormula.QMARK_HYPHEN = 69;
-BaserowFormula.QMARK_PIPE = 70;
-BaserowFormula.SLASH = 71;
-BaserowFormula.TIL = 72;
-BaserowFormula.TIL_EQ = 73;
-BaserowFormula.TIL_GTE_TIL = 74;
-BaserowFormula.TIL_GT_TIL = 75;
-BaserowFormula.TIL_LTE_TIL = 76;
-BaserowFormula.TIL_LT_TIL = 77;
-BaserowFormula.TIL_STAR = 78;
-BaserowFormula.TIL_TIL = 79;
-BaserowFormula.SEMI = 80;
-BaserowFormula.ErrorCharacter = 81;
+BaserowFormula.FIELD = 4;
+BaserowFormula.FIELDBYID = 5;
+BaserowFormula.COMMA = 6;
+BaserowFormula.COLON = 7;
+BaserowFormula.COLON_COLON = 8;
+BaserowFormula.DOLLAR = 9;
+BaserowFormula.DOLLAR_DOLLAR = 10;
+BaserowFormula.STAR = 11;
+BaserowFormula.OPEN_PAREN = 12;
+BaserowFormula.CLOSE_PAREN = 13;
+BaserowFormula.OPEN_BRACKET = 14;
+BaserowFormula.CLOSE_BRACKET = 15;
+BaserowFormula.BIT_STRING = 16;
+BaserowFormula.REGEX_STRING = 17;
+BaserowFormula.NUMERIC_LITERAL = 18;
+BaserowFormula.INTEGER_LITERAL = 19;
+BaserowFormula.HEX_INTEGER_LITERAL = 20;
+BaserowFormula.DOT = 21;
+BaserowFormula.SINGLEQ_STRING_LITERAL = 22;
+BaserowFormula.DOUBLEQ_STRING_LITERAL = 23;
+BaserowFormula.IDENTIFIER = 24;
+BaserowFormula.IDENTIFIER_UNICODE = 25;
+BaserowFormula.AMP = 26;
+BaserowFormula.AMP_AMP = 27;
+BaserowFormula.AMP_LT = 28;
+BaserowFormula.AT_AT = 29;
+BaserowFormula.AT_GT = 30;
+BaserowFormula.AT_SIGN = 31;
+BaserowFormula.BANG = 32;
+BaserowFormula.BANG_BANG = 33;
+BaserowFormula.BANG_EQUAL = 34;
+BaserowFormula.CARET = 35;
+BaserowFormula.EQUAL = 36;
+BaserowFormula.EQUAL_GT = 37;
+BaserowFormula.GT = 38;
+BaserowFormula.GTE = 39;
+BaserowFormula.GT_GT = 40;
+BaserowFormula.HASH = 41;
+BaserowFormula.HASH_EQ = 42;
+BaserowFormula.HASH_GT = 43;
+BaserowFormula.HASH_GT_GT = 44;
+BaserowFormula.HASH_HASH = 45;
+BaserowFormula.HYPHEN_GT = 46;
+BaserowFormula.HYPHEN_GT_GT = 47;
+BaserowFormula.HYPHEN_PIPE_HYPHEN = 48;
+BaserowFormula.LT = 49;
+BaserowFormula.LTE = 50;
+BaserowFormula.LT_AT = 51;
+BaserowFormula.LT_CARET = 52;
+BaserowFormula.LT_GT = 53;
+BaserowFormula.LT_HYPHEN_GT = 54;
+BaserowFormula.LT_LT = 55;
+BaserowFormula.LT_LT_EQ = 56;
+BaserowFormula.LT_QMARK_GT = 57;
+BaserowFormula.MINUS = 58;
+BaserowFormula.PERCENT = 59;
+BaserowFormula.PIPE = 60;
+BaserowFormula.PIPE_PIPE = 61;
+BaserowFormula.PIPE_PIPE_SLASH = 62;
+BaserowFormula.PIPE_SLASH = 63;
+BaserowFormula.PLUS = 64;
+BaserowFormula.QMARK = 65;
+BaserowFormula.QMARK_AMP = 66;
+BaserowFormula.QMARK_HASH = 67;
+BaserowFormula.QMARK_HYPHEN = 68;
+BaserowFormula.QMARK_PIPE = 69;
+BaserowFormula.SLASH = 70;
+BaserowFormula.TIL = 71;
+BaserowFormula.TIL_EQ = 72;
+BaserowFormula.TIL_GTE_TIL = 73;
+BaserowFormula.TIL_GT_TIL = 74;
+BaserowFormula.TIL_LTE_TIL = 75;
+BaserowFormula.TIL_LT_TIL = 76;
+BaserowFormula.TIL_STAR = 77;
+BaserowFormula.TIL_TIL = 78;
+BaserowFormula.SEMI = 79;
+BaserowFormula.ErrorCharacter = 80;
 
 BaserowFormula.RULE_root = 0;
 BaserowFormula.RULE_expr = 1;
@@ -604,6 +602,10 @@ BinaryOpContext.prototype.MINUS = function() {
 BinaryOpContext.prototype.SLASH = function() {
     return this.getToken(BaserowFormula.SLASH, 0);
 };
+
+BinaryOpContext.prototype.EQUAL = function() {
+    return this.getToken(BaserowFormula.EQUAL, 0);
+};
 BinaryOpContext.prototype.enterRule = function(listener) {
     if(listener instanceof BaserowFormulaListener ) {
         listener.enterBinaryOp(this);
@@ -755,7 +757,7 @@ BaserowFormula.prototype.expr = function(_p) {
                 this.state = 47;
                 localctx.op = this._input.LT(1);
                 _la = this._input.LA(1);
-                if(!(((((_la - 59)) & ~0x1f) == 0 && ((1 << (_la - 59)) & ((1 << (BaserowFormula.MINUS - 59)) | (1 << (BaserowFormula.PLUS - 59)) | (1 << (BaserowFormula.SLASH - 59)))) !== 0))) {
+                if(!(((((_la - 36)) & ~0x1f) == 0 && ((1 << (_la - 36)) & ((1 << (BaserowFormula.EQUAL - 36)) | (1 << (BaserowFormula.MINUS - 36)) | (1 << (BaserowFormula.PLUS - 36)))) !== 0) || _la===BaserowFormula.SLASH)) {
                     localctx.op = this._errHandler.recoverInline(this);
                 }
                 else {

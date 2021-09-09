@@ -11,24 +11,24 @@ else:
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3S")
+        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3R")
         buf.write("?\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\3\2\3\2\3\2")
         buf.write("\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3")
         buf.write("\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\7\3&\n\3\f\3\16\3)")
         buf.write("\13\3\5\3+\n\3\3\3\3\3\5\3/\n\3\3\3\3\3\3\3\7\3\64\n\3")
         buf.write("\f\3\16\3\67\13\3\3\4\3\4\3\5\3\5\3\6\3\6\3\6\2\3\4\7")
-        buf.write("\2\4\6\b\n\2\5\5\2==CCII\3\2\31\32\3\2\33\34\2B\2\f\3")
-        buf.write("\2\2\2\4.\3\2\2\2\68\3\2\2\2\b:\3\2\2\2\n<\3\2\2\2\f\r")
-        buf.write("\5\4\3\2\r\16\7\2\2\3\16\3\3\2\2\2\17\20\b\3\1\2\20/\7")
-        buf.write("\31\2\2\21/\7\32\2\2\22/\7\26\2\2\23\24\7\17\2\2\24\25")
-        buf.write("\5\4\3\2\25\26\7\20\2\2\26/\3\2\2\2\27\30\7\7\2\2\30\31")
-        buf.write("\7\17\2\2\31\32\5\b\5\2\32\33\7\20\2\2\33/\3\2\2\2\34")
-        buf.write("\35\7\b\2\2\35\36\7\17\2\2\36\37\7\26\2\2\37/\7\20\2\2")
-        buf.write(" !\5\6\4\2!*\7\17\2\2\"\'\5\4\3\2#$\7\t\2\2$&\5\4\3\2")
-        buf.write("%#\3\2\2\2&)\3\2\2\2\'%\3\2\2\2\'(\3\2\2\2(+\3\2\2\2)")
-        buf.write("\'\3\2\2\2*\"\3\2\2\2*+\3\2\2\2+,\3\2\2\2,-\7\20\2\2-")
-        buf.write("/\3\2\2\2.\17\3\2\2\2.\21\3\2\2\2.\22\3\2\2\2.\23\3\2")
-        buf.write("\2\2.\27\3\2\2\2.\34\3\2\2\2. \3\2\2\2/\65\3\2\2\2\60")
+        buf.write("\2\4\6\b\n\2\5\6\2&&<<BBHH\3\2\30\31\3\2\32\33\2B\2\f")
+        buf.write("\3\2\2\2\4.\3\2\2\2\68\3\2\2\2\b:\3\2\2\2\n<\3\2\2\2\f")
+        buf.write("\r\5\4\3\2\r\16\7\2\2\3\16\3\3\2\2\2\17\20\b\3\1\2\20")
+        buf.write("/\7\30\2\2\21/\7\31\2\2\22/\7\25\2\2\23\24\7\16\2\2\24")
+        buf.write("\25\5\4\3\2\25\26\7\17\2\2\26/\3\2\2\2\27\30\7\6\2\2\30")
+        buf.write("\31\7\16\2\2\31\32\5\b\5\2\32\33\7\17\2\2\33/\3\2\2\2")
+        buf.write("\34\35\7\7\2\2\35\36\7\16\2\2\36\37\7\25\2\2\37/\7\17")
+        buf.write("\2\2 !\5\6\4\2!*\7\16\2\2\"\'\5\4\3\2#$\7\b\2\2$&\5\4")
+        buf.write("\3\2%#\3\2\2\2&)\3\2\2\2\'%\3\2\2\2\'(\3\2\2\2(+\3\2\2")
+        buf.write("\2)\'\3\2\2\2*\"\3\2\2\2*+\3\2\2\2+,\3\2\2\2,-\7\17\2")
+        buf.write("\2-/\3\2\2\2.\17\3\2\2\2.\21\3\2\2\2.\22\3\2\2\2.\23\3")
+        buf.write("\2\2\2.\27\3\2\2\2.\34\3\2\2\2. \3\2\2\2/\65\3\2\2\2\60")
         buf.write("\61\f\6\2\2\61\62\t\2\2\2\62\64\5\4\3\7\63\60\3\2\2\2")
         buf.write("\64\67\3\2\2\2\65\63\3\2\2\2\65\66\3\2\2\2\66\5\3\2\2")
         buf.write("\2\67\65\3\2\2\289\5\n\6\29\7\3\2\2\2:;\t\3\2\2;\t\3\2")
@@ -47,22 +47,21 @@ class BaserowFormula ( Parser ):
     sharedContextCache = PredictionContextCache()
 
     literalNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "<INVALID>", "<INVALID>", "<INVALID>", "','", "':'", 
-                     "'::'", "'$'", "'$$'", "'*'", "'('", "')'", "'['", 
-                     "']'", "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "<INVALID>", "'.'", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "<INVALID>", "'&'", "'&&'", "'&<'", "'@@'", "'@>'", 
-                     "'@'", "'!'", "'!!'", "'!='", "'^'", "'='", "'=>'", 
-                     "'>'", "'>='", "'>>'", "'#'", "'#='", "'#>'", "'#>>'", 
-                     "'##'", "'->'", "'->>'", "'-|-'", "'<'", "'<='", "'<@'", 
-                     "'<^'", "'<>'", "'<->'", "'<<'", "'<<='", "'<?>'", 
-                     "'-'", "'%'", "'|'", "'||'", "'||/'", "'|/'", "'+'", 
-                     "'?'", "'?&'", "'?#'", "'?-'", "'?|'", "'/'", "'~'", 
-                     "'~='", "'~>=~'", "'~>~'", "'~<=~'", "'~<~'", "'~*'", 
-                     "'~~'", "';'" ]
+                     "<INVALID>", "<INVALID>", "','", "':'", "'::'", "'$'", 
+                     "'$$'", "'*'", "'('", "')'", "'['", "']'", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "'.'", "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "'&'", "'&&'", "'&<'", "'@@'", "'@>'", "'@'", "'!'", 
+                     "'!!'", "'!='", "'^'", "'='", "'=>'", "'>'", "'>='", 
+                     "'>>'", "'#'", "'#='", "'#>'", "'#>>'", "'##'", "'->'", 
+                     "'->>'", "'-|-'", "'<'", "'<='", "'<@'", "'<^'", "'<>'", 
+                     "'<->'", "'<<'", "'<<='", "'<?>'", "'-'", "'%'", "'|'", 
+                     "'||'", "'||/'", "'|/'", "'+'", "'?'", "'?&'", "'?#'", 
+                     "'?-'", "'?|'", "'/'", "'~'", "'~='", "'~>=~'", "'~>~'", 
+                     "'~<=~'", "'~<~'", "'~*'", "'~~'", "';'" ]
 
     symbolicNames = [ "<INVALID>", "WHITESPACE", "BLOCK_COMMENT", "LINE_COMMENT", 
-                      "IF", "FIELD", "FIELDBYID", "COMMA", "COLON", "COLON_COLON", 
+                      "FIELD", "FIELDBYID", "COMMA", "COLON", "COLON_COLON", 
                       "DOLLAR", "DOLLAR_DOLLAR", "STAR", "OPEN_PAREN", "CLOSE_PAREN", 
                       "OPEN_BRACKET", "CLOSE_BRACKET", "BIT_STRING", "REGEX_STRING", 
                       "NUMERIC_LITERAL", "INTEGER_LITERAL", "HEX_INTEGER_LITERAL", 
@@ -92,84 +91,83 @@ class BaserowFormula ( Parser ):
     WHITESPACE=1
     BLOCK_COMMENT=2
     LINE_COMMENT=3
-    IF=4
-    FIELD=5
-    FIELDBYID=6
-    COMMA=7
-    COLON=8
-    COLON_COLON=9
-    DOLLAR=10
-    DOLLAR_DOLLAR=11
-    STAR=12
-    OPEN_PAREN=13
-    CLOSE_PAREN=14
-    OPEN_BRACKET=15
-    CLOSE_BRACKET=16
-    BIT_STRING=17
-    REGEX_STRING=18
-    NUMERIC_LITERAL=19
-    INTEGER_LITERAL=20
-    HEX_INTEGER_LITERAL=21
-    DOT=22
-    SINGLEQ_STRING_LITERAL=23
-    DOUBLEQ_STRING_LITERAL=24
-    IDENTIFIER=25
-    IDENTIFIER_UNICODE=26
-    AMP=27
-    AMP_AMP=28
-    AMP_LT=29
-    AT_AT=30
-    AT_GT=31
-    AT_SIGN=32
-    BANG=33
-    BANG_BANG=34
-    BANG_EQUAL=35
-    CARET=36
-    EQUAL=37
-    EQUAL_GT=38
-    GT=39
-    GTE=40
-    GT_GT=41
-    HASH=42
-    HASH_EQ=43
-    HASH_GT=44
-    HASH_GT_GT=45
-    HASH_HASH=46
-    HYPHEN_GT=47
-    HYPHEN_GT_GT=48
-    HYPHEN_PIPE_HYPHEN=49
-    LT=50
-    LTE=51
-    LT_AT=52
-    LT_CARET=53
-    LT_GT=54
-    LT_HYPHEN_GT=55
-    LT_LT=56
-    LT_LT_EQ=57
-    LT_QMARK_GT=58
-    MINUS=59
-    PERCENT=60
-    PIPE=61
-    PIPE_PIPE=62
-    PIPE_PIPE_SLASH=63
-    PIPE_SLASH=64
-    PLUS=65
-    QMARK=66
-    QMARK_AMP=67
-    QMARK_HASH=68
-    QMARK_HYPHEN=69
-    QMARK_PIPE=70
-    SLASH=71
-    TIL=72
-    TIL_EQ=73
-    TIL_GTE_TIL=74
-    TIL_GT_TIL=75
-    TIL_LTE_TIL=76
-    TIL_LT_TIL=77
-    TIL_STAR=78
-    TIL_TIL=79
-    SEMI=80
-    ErrorCharacter=81
+    FIELD=4
+    FIELDBYID=5
+    COMMA=6
+    COLON=7
+    COLON_COLON=8
+    DOLLAR=9
+    DOLLAR_DOLLAR=10
+    STAR=11
+    OPEN_PAREN=12
+    CLOSE_PAREN=13
+    OPEN_BRACKET=14
+    CLOSE_BRACKET=15
+    BIT_STRING=16
+    REGEX_STRING=17
+    NUMERIC_LITERAL=18
+    INTEGER_LITERAL=19
+    HEX_INTEGER_LITERAL=20
+    DOT=21
+    SINGLEQ_STRING_LITERAL=22
+    DOUBLEQ_STRING_LITERAL=23
+    IDENTIFIER=24
+    IDENTIFIER_UNICODE=25
+    AMP=26
+    AMP_AMP=27
+    AMP_LT=28
+    AT_AT=29
+    AT_GT=30
+    AT_SIGN=31
+    BANG=32
+    BANG_BANG=33
+    BANG_EQUAL=34
+    CARET=35
+    EQUAL=36
+    EQUAL_GT=37
+    GT=38
+    GTE=39
+    GT_GT=40
+    HASH=41
+    HASH_EQ=42
+    HASH_GT=43
+    HASH_GT_GT=44
+    HASH_HASH=45
+    HYPHEN_GT=46
+    HYPHEN_GT_GT=47
+    HYPHEN_PIPE_HYPHEN=48
+    LT=49
+    LTE=50
+    LT_AT=51
+    LT_CARET=52
+    LT_GT=53
+    LT_HYPHEN_GT=54
+    LT_LT=55
+    LT_LT_EQ=56
+    LT_QMARK_GT=57
+    MINUS=58
+    PERCENT=59
+    PIPE=60
+    PIPE_PIPE=61
+    PIPE_PIPE_SLASH=62
+    PIPE_SLASH=63
+    PLUS=64
+    QMARK=65
+    QMARK_AMP=66
+    QMARK_HASH=67
+    QMARK_HYPHEN=68
+    QMARK_PIPE=69
+    SLASH=70
+    TIL=71
+    TIL_EQ=72
+    TIL_GTE_TIL=73
+    TIL_GT_TIL=74
+    TIL_LTE_TIL=75
+    TIL_LT_TIL=76
+    TIL_STAR=77
+    TIL_TIL=78
+    SEMI=79
+    ErrorCharacter=80
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -446,6 +444,8 @@ class BaserowFormula ( Parser ):
             return self.getToken(BaserowFormula.MINUS, 0)
         def SLASH(self):
             return self.getToken(BaserowFormula.SLASH, 0)
+        def EQUAL(self):
+            return self.getToken(BaserowFormula.EQUAL, 0)
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterBinaryOp" ):
@@ -587,7 +587,7 @@ class BaserowFormula ( Parser ):
                     self.state = 47
                     localctx.op = self._input.LT(1)
                     _la = self._input.LA(1)
-                    if not(((((_la - 59)) & ~0x3f) == 0 and ((1 << (_la - 59)) & ((1 << (BaserowFormula.MINUS - 59)) | (1 << (BaserowFormula.PLUS - 59)) | (1 << (BaserowFormula.SLASH - 59)))) != 0)):
+                    if not(((((_la - 36)) & ~0x3f) == 0 and ((1 << (_la - 36)) & ((1 << (BaserowFormula.EQUAL - 36)) | (1 << (BaserowFormula.MINUS - 36)) | (1 << (BaserowFormula.PLUS - 36)) | (1 << (BaserowFormula.SLASH - 36)))) != 0)):
                         localctx.op = self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)

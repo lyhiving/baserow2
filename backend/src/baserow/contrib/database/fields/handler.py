@@ -187,6 +187,7 @@ class FieldHandler:
             new_field_names_to_id={instance.name: instance.pk},
         )
         typer.set_field_type_or_raise(field_type, instance)
+        instance.save()
         updated_fields = typer.update_fields(instance)
 
         # Add the field to the table schema.

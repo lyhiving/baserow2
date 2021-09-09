@@ -28,6 +28,8 @@ MAPPING_TYPES = {
     "TextField": "text",
     "DecimalField": "numeric",
     "DateTimeField": "datetime",
+    "DateField": "datetime",
+    "BooleanField": "boolean",
 }
 
 FIELD_TYPE_LOOKUP = {}
@@ -175,9 +177,9 @@ class Typer:
                 specific_formula_field.field_type = MAPPING_TYPES[formula_type]
 
             if not specific_formula_field.trashed and (
-                old_field.error != str(specific_formula_field.error)
-                or old_field.formula != str(specific_formula_field.formula)
-                or old_field.field_type != str(specific_formula_field.field_type)
+                str(old_field.error) != str(specific_formula_field.error)
+                or str(old_field.formula) != str(specific_formula_field.formula)
+                or str(old_field.field_type) != str(specific_formula_field.field_type)
             ):
                 if to_filter is None or specific_formula_field.id != to_filter.id:
                     if old_field.field_type != specific_formula_field.field_type:

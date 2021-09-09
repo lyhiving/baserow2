@@ -310,6 +310,8 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
             op = "minus"
         elif ctx.SLASH():
             op = "divide"
+        elif ctx.EQUAL():
+            op = "equal"
         else:
             raise UnknownBinaryOperator(ctx.getText())
 

@@ -1878,8 +1878,12 @@ class FormulaFieldType(FieldType):
             return TextFieldType
         elif field_type == "numeric":
             return NumberFieldType
-        else:
+        elif field_type == "datetime":
             return DateFieldType
+        elif field_type == "boolean":
+            return BooleanFieldType
+        else:
+            raise Exception(f"Unknown field type {field_type}")
 
     def contains_query(self, field_name, value, model_field, field):
         field_type_type = self._get_field_type(field)
