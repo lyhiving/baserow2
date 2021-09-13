@@ -1,4 +1,4 @@
-from typing import Dict, Type
+from typing import Dict
 
 from django.db import models
 from django.db.models import (
@@ -20,32 +20,33 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFieldByIdReference,
     BaserowFieldReference,
 )
-from baserow.contrib.database.formula.ast.types import TypeResult
+from baserow.contrib.database.formula.ast.type_types import Typed, InvalidType
 from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 
 
 def tree_to_django_expression(
-    formula_tree: BaserowExpression, field_types, field_values, for_update
+    formula_tree: BaserowExpression[Typed], model_instance, for_update
 ) -> Expression:
     try:
-        return formula_tree.accept(
-            BaserowFormulaToDjangoExpressionGenerator(
-                field_types, field_values, for_update
+        if isinstance(formula_tree.expression_type, InvalidType):
+            return Value(None)
+        else:
+            return formula_tree.accept(
+                BaserowExpressionToDjangoExpressionGenerator(model_instance, for_update)
             )
-        )
     except RecursionError:
         raise MaximumFormulaSizeError()
 
 
-class BaserowFormulaToDjangoExpressionGenerator(BaserowFormulaASTVisitor[Expression]):
+class BaserowExpressionToDjangoExpressionGenerator(
+    BaserowFormulaASTVisitor[Field, Expression]
+):
     def __init__(
         self,
-        field_types: Dict[int, TypeResult],
         model_instance,
         for_update: bool,
     ):
         self.model_instance = model_instance
-        self.field_types = field_types
         self.for_update = for_update
 
     def visit_field_reference(self, field_reference: BaserowFieldReference):
@@ -57,21 +58,17 @@ class BaserowFormulaToDjangoExpressionGenerator(BaserowFormulaASTVisitor[Express
         field_id = field_by_id_reference.referenced_field_id
         db_field_name = f"field_{field_id}"
         if self.for_update:
-            return ExpressionWrapper(
-                F(db_field_name),
-                output_field=self.field_types[field_id].resulting_field_type,
-            )
+            return F(db_field_name)
         elif not hasattr(self.model_instance, db_field_name):
             raise UnknownFieldReference(field_id)
         else:
             return Value(
                 getattr(self.model_instance, db_field_name),
-                output_field=self.field_types[field_id].resulting_field_type,
             )
 
     def visit_function_call(self, function_call: BaserowFunctionCall) -> Expression:
         args = [expr.accept(self) for expr in function_call.args]
-        return function_call.function_def.to_django_expression(args)
+        return function_call.to_django_expression_given_args(args)
 
     def visit_string_literal(self, string_literal: BaserowStringLiteral) -> Expression:
         return Value(string_literal.literal, output_field=models.TextField())

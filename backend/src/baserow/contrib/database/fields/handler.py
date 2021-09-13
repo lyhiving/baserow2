@@ -186,19 +186,21 @@ class FieldHandler:
             new_field=instance,
             new_field_names_to_id={instance.name: instance.pk},
         )
-        typer.set_field_type_or_raise(field_type, instance)
-        instance.save()
         updated_fields = typer.update_fields(instance)
 
         # Add the field to the table schema.
         with connection.schema_editor() as schema_editor:
             to_model = table.get_model(
-                field_ids=[], fields=[instance] + list(updated_fields), typer=typer
+                field_ids=[], fields=[instance] + updated_fields, typer=typer
             )
             model_field = to_model._meta.get_field(instance.db_column)
 
             if do_schema_change:
                 schema_editor.add_field(to_model, model_field)
+
+        for updated_field in updated_fields:
+            updated_field_type = field_type_registry.get_by_model(updated_field)
+            updated_field_type.related_field_changed(updated_field, to_model)
 
         field_type.after_create(instance, to_model, user, connection, before)
 
@@ -209,10 +211,6 @@ class FieldHandler:
             related_fields=updated_fields,
             type_name=type_name,
         )
-
-        for updated_field in updated_fields:
-            updated_field_type = field_type_registry.get_by_model(updated_field)
-            updated_field_type.related_field_changed(updated_field, to_model)
 
         return instance, updated_fields
 
@@ -286,25 +284,13 @@ class FieldHandler:
             field_override=field,
             new_field_names_to_id={field.name: field.id},
         )
-        typer.set_field_type_or_raise(field_type, field)
-        field.save()
-        # Set the errors on any fields which now have an error because of this fields
-        # update.
         updated_fields = typer.update_fields(field)
-        # Because this fields type has changed we need trigger a recalculation for any
-        # valid fields which depend on this field (parent fields). We don't want to
-        # bother updating invalid fields as by definition they are invalid and can't be
-        # calculated.
-        parent_fields = typer.calculate_all_parent_valid_fields(field)
-        updated_fields_and_parents = list(updated_fields.union(set(parent_fields)))
-        extra_fields = (
-            [field] + parent_fields + typer.calculate_all_child_fields(parent_fields)
-        )
-
         # If no converter is found we are going to convert to field using the
         # lenient schema editor which will alter the field's type and set the data
         # value to null if it can't be converted.
-        to_model = field.table.get_model(field_ids=[], fields=extra_fields, typer=typer)
+        to_model = field.table.get_model(
+            field_ids=[], fields=([field] + updated_fields), typer=typer
+        )
         from_model_field = from_model._meta.get_field(field.db_column)
         to_model_field = to_model._meta.get_field(field.db_column)
 
@@ -400,7 +386,7 @@ class FieldHandler:
             altered_column,
             before,
         )
-        for updated_field in updated_fields_and_parents:
+        for updated_field in updated_fields:
             updated_field_type = field_type_registry.get_by_model(updated_field)
             updated_field_type.related_field_changed(updated_field, to_model)
 
@@ -433,10 +419,10 @@ class FieldHandler:
             )
 
         field = field.specific
-        typer = Typer(field.table, deleted_field_id_names={field.id: field.name})
         TrashHandler.trash(user, group, field.table.database, field)
+        typer = Typer(field.table, deleted_field_id_names={field.id: field.name})
         field_id = field.id
-        updated_fields = typer.update_fields(field)
+        updated_fields = typer.update_fields()
         field_deleted.send(
             self,
             field_id=field_id,

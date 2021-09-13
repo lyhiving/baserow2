@@ -43,3 +43,8 @@ class TooLargeStringLiteralProvided(BaserowFormulaASTException):
             f"an embedded string in the formula over the "
             f"maximum length of {settings.MAX_FORMULA_STRING_LENGTH} "
         )
+
+
+class UnknownFormulaType(BaserowFormulaASTException):
+    def __init__(self, formula_type):
+        super().__init__(f"Received an unknown formula type {formula_type}")

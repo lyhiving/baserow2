@@ -1,10 +1,9 @@
-from typing import Optional
-
 from django.db import models
+from django.db.models import Field
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
 
 from baserow.contrib.database.formula.ast.tree import BaserowExpression
-from baserow.contrib.database.formula.ast.types import TypeResult
+from baserow.contrib.database.formula.ast.type_types import InvalidType
 from baserow.contrib.database.formula.expression_generator.generator import (
     tree_to_django_expression,
 )
@@ -51,12 +50,8 @@ class ExpressionField(models.Field):
 
     def __init__(
         self,
-        ast: BaserowExpression,
-        model_type: TypeResult,
-        field_types,
-        error: Optional[str],
-        wrapper,
-        trashed,
+        expression: BaserowExpression,
+        expression_field_type: Field,
         *args,
         **kwargs,
     ):
@@ -64,37 +59,22 @@ class ExpressionField(models.Field):
         :param expression: The Django expression used to calculate this fields value.
         """
 
-        self.ast = ast
-        self.model_type = model_type
-        self.field_types = field_types
-        self.error = error
-        self.wrapper = wrapper
-        self.trashed = trashed
+        self.expression = expression
+        self.expression_field_type = expression_field_type
         super().__init__(*args, **kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
-        kwargs["ast"] = self.ast
-        kwargs["model_type"] = self.model_type
-        kwargs["error"] = self.error
-        kwargs["field_types"] = self.field_types
-        kwargs["trashed"] = self.trashed
+        kwargs["expression"] = self.expression
+        kwargs["expression_field_type"] = self.expression_field_type
         return name, path, args, kwargs
 
     def db_type(self, connection):
-        if self.error:
+        if isinstance(self.expression_field_type, InvalidType):
             return "TEXT"
         else:
-            db_type = self.model_type.db_type(connection)
+            db_type = self.expression_field_type.db_type(connection)
             return db_type
 
     def pre_save(self, model_instance, add):
-        # Force the instance to use the expression to calculate its value.
-        if self.error or self.trashed:
-            return super().pre_save(model_instance, add)
-        else:
-            return self.wrapper(
-                tree_to_django_expression(
-                    self.ast, self.field_types, model_instance, False
-                )
-            )
+        return tree_to_django_expression(self.expression, model_instance, False)

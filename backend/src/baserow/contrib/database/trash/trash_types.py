@@ -86,20 +86,16 @@ class FieldTrashableItemType(TrashableItemType):
             new_field_names_to_id={trashed_item.name: trashed_item.id},
         )
         updated_fields = typer.update_fields(trashed_item)
-        print("error is")
-        print(getattr(trashed_item, "error", "no error"))
-        # TODO attach related fields
         field_restored.send(
             self,
             field=trashed_item,
             related_fields=updated_fields,
             user=None,
         )
+        model = trashed_item.table.get_model()
         for updated_field in updated_fields:
-            specific = updated_field.specific
-            updated_field_type = field_type_registry.get_by_model(specific)
-            model = trashed_item.table.get_model()
-            updated_field_type.related_field_changed(specific, model)
+            updated_field_type = field_type_registry.get_by_model(updated_field)
+            updated_field_type.related_field_changed(updated_field, model)
 
     def permanently_delete_item(
         self,

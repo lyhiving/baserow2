@@ -1,7 +1,7 @@
 from django.contrib.contenttypes.models import ContentType
-from django.core import validators
 from django.db import models
 
+from baserow.contrib.database.fields.mixins import BaseDateMixin, TimezoneMixin
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
 from baserow.core.mixins import (
     OrderableMixin,
@@ -9,7 +9,6 @@ from baserow.core.mixins import (
     CreatedAndUpdatedOnMixin,
     TrashableModelMixin,
 )
-from baserow.contrib.database.fields.mixins import BaseDateMixin, TimezoneMixin
 from baserow.core.utils import to_snake_case, remove_special_characters
 
 NUMBER_TYPE_INTEGER = "INTEGER"
@@ -19,13 +18,18 @@ NUMBER_TYPE_CHOICES = (
     ("DECIMAL", "Decimal"),
 )
 
-NUMBER_DECIMAL_PLACES_CHOICES = (
+NUMBER_MAX_DECIMAL_PLACES = 5
+
+NUMBER_DECIMAL_PLACES_CHOICES = [
     (1, "1.0"),
     (2, "1.00"),
     (3, "1.000"),
     (4, "1.0000"),
-    (5, "1.00000"),
-)
+    (NUMBER_MAX_DECIMAL_PLACES, "1.00000"),
+]
+
+# Allow the underlying database fields to store int's without a decimal place.
+NUMBER_DECIMAL_PLACES_INTERNAL_CHOICES = [(0, "1")] + NUMBER_DECIMAL_PLACES_CHOICES
 
 
 def get_default_field_content_type():
@@ -134,7 +138,7 @@ class NumberField(Field):
         max_length=32, choices=NUMBER_TYPE_CHOICES, default=NUMBER_TYPE_INTEGER
     )
     number_decimal_places = models.IntegerField(
-        choices=NUMBER_DECIMAL_PLACES_CHOICES,
+        choices=NUMBER_DECIMAL_PLACES_INTERNAL_CHOICES,
         default=1,
         help_text="The amount of digits allowed after the point.",
     )
@@ -244,34 +248,48 @@ class FormulaField(Field, BaseDateMixin):
     formula = models.TextField()
     error = models.TextField(null=True, blank=True)
     field_type = models.TextField(
-        choices=[("text", "text"), ("numeric", "numeric"), ("datetime", "datetime")],
-        default="text",
+        choices=[
+            ("TextField", "TextField"),
+            ("NumberField", "NumberField"),
+            ("DateField", "DateField"),
+        ],
+        default="TextField",
+        null=True,
     )
     number_type = models.CharField(
-        max_length=32, choices=NUMBER_TYPE_CHOICES, default=NUMBER_TYPE_INTEGER
+        max_length=32, choices=NUMBER_TYPE_CHOICES, default=None, null=True
     )
     number_decimal_places = models.IntegerField(
-        choices=(
-            (0, "1"),
-            (1, "1.0"),
-            (2, "1.00"),
-            (3, "1.000"),
-            (4, "1.0000"),
-            (5, "1.00000"),
-        ),
-        default=1,
+        choices=NUMBER_DECIMAL_PLACES_INTERNAL_CHOICES,
+        default=None,
+        null=True,
         help_text="The amount of digits allowed after the point.",
     )
     number_negative = models.BooleanField(
-        default=True, help_text="Indicates if negative values are allowed."
+        default=None,
+        help_text="Indicates if negative values are allowed.",
+        null=True,
     )
     text_default = models.CharField(
         max_length=255,
         blank=True,
-        default="",
+        null=True,
+        default=None,
         help_text="If set, this value is going to be added every time a new row "
         "created.",
     )
+
+    def compare(self, other):
+        # TODO Why do we need to use str
+        return (
+            str(self.formula) == str(other.formula)
+            and str(self.error) == str(other.error)
+            and str(self.field_type) == str(other.field_type)
+            and str(self.number_type) == str(other.number_type)
+            and str(self.number_decimal_places) == str(other.number_decimal_places)
+            and str(self.number_negative) == str(other.number_negative)
+            and str(self.text_default) == str(other.text_default)
+        )
 
     def save(self, *args, **kwargs):
         """Check if the number_type and number_decimal_places has a valid choice."""

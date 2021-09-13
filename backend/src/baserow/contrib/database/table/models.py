@@ -2,7 +2,7 @@ import re
 from typing import Dict, Any
 
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Value
 
 from baserow.contrib.database.fields.exceptions import (
     OrderByFieldNotFound,
@@ -373,10 +373,11 @@ class Table(
         # table.
         fields = list(fields) + [field for field in fields_query]
 
-        # TODO: Given a subset of fields, calculate the ones that must be generated
-        # on the model for any formula fields in that subset to work
-        typer = typer or Typer(self)
-        extra_fields = typer.calculate_all_child_fields(fields)
+        typer = Typer(self) if typer is None else typer
+        if typer:
+            extra_fields = typer.calculate_all_child_fields(fields)
+        else:
+            extra_fields = []
         # If there are duplicate field names we have to store them in a list so we know
         # later which ones are duplicate.
         duplicate_field_names = []
@@ -423,9 +424,9 @@ class Table(
             # method are going to be passed along to the model field.
             extra_kwargs = {}
             if field_type.type == "formula":
-                extra_kwargs["ast"] = typer.formula_asts[field.id]
-                extra_kwargs["expression_type"] = typer.field_types[field.id]
-                extra_kwargs["field_types"] = typer.field_types
+                extra_kwargs["expression"] = (
+                    typer.typed_field_expressions[field.id] if typer else Value(None)
+                )
             attrs[field_name] = field_type.get_model_field(
                 field,
                 db_column=field.db_column,

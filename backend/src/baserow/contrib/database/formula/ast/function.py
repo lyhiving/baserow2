@@ -1,37 +1,16 @@
 import abc
-from typing import List, Type
+from typing import List
 
-from django.db.models import Expression, Field
+from django.db.models import Expression
 
-from baserow.contrib.database.formula.ast.types import TypeResult
-from baserow.core.registry import Instance
-
-
-class ArgCountSpecifier(abc.ABC):
-    def __init__(self, count):
-        self.count = count
-
-    @abc.abstractmethod
-    def test(self, num_args: int):
-        """
-        Should return if the provided num_args matches this ArgCountSpecifier.
-        For example if you were extending this class to create a ArgCountSpecifier that
-        required the num_args to be less than a fixed number, then here you would check
-        return num_args < fixed_number.
-        :param num_args: The number of args being provided.
-        :return: Whether or not the number of args meets this specification.
-        """
-
-        pass
-
-    @abc.abstractmethod
-    def __str__(self):
-        """
-        Should be implemented to explain how to meet this specification in a human
-        readable string format.
-        """
-
-        pass
+from baserow.contrib.database.formula.ast.tree import (
+    BaserowFunctionCall,
+    BaserowExpression,
+    UnTyped,
+    BaserowFunctionDefinition,
+    ArgCountSpecifier,
+)
+from baserow.contrib.database.formula.ast.type_types import ValidType, Typed
 
 
 class FixedNumOfArgs(ArgCountSpecifier):
@@ -50,26 +29,58 @@ class NumOfArgsGreaterThan(ArgCountSpecifier):
         return self.count < num_args
 
 
-class BaserowFunctionDefinition(Instance, abc.ABC):
-    """
-    A registrable instance which defines a function for use in the Baserow Formula
-    language.
-    """
-
+class OneArgumentBaserowFunction(BaserowFunctionDefinition):
     @property
-    @abc.abstractmethod
-    def type(self) -> str:
-        pass
-
-    @abc.abstractmethod
-    def to_django_expression(self, args: List[Expression]) -> Expression:
-        pass
-
-    @property
-    @abc.abstractmethod
     def num_args(self) -> ArgCountSpecifier:
-        pass
+        return FixedNumOfArgs(1)
+
+    def type_function_given_valid_args(
+        self,
+        args: List[BaserowExpression[ValidType]],
+        func_call: BaserowFunctionCall[UnTyped],
+    ) -> BaserowExpression[Typed]:
+        return self.type_function(func_call, args[0])
 
     @abc.abstractmethod
-    def to_django_field_type(self, arg_types: List[Field]) -> TypeResult:
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[ValidType],
+    ) -> BaserowExpression[Typed]:
+        pass
+
+    def to_django_expression_given_args(self, args: List[Expression]) -> Expression:
+        return self.to_django_expression(args[0])
+
+    @abc.abstractmethod
+    def to_django_expression(self, arg: Expression) -> Expression:
+        pass
+
+
+class TwoArgumentBaserowFunction(BaserowFunctionDefinition):
+    @property
+    def num_args(self) -> ArgCountSpecifier:
+        return FixedNumOfArgs(2)
+
+    def type_function_given_valid_args(
+        self,
+        args: List[BaserowExpression[ValidType]],
+        func_call: BaserowFunctionCall[UnTyped],
+    ) -> BaserowExpression[Typed]:
+        return self.type_function(func_call, args[0], args[1])
+
+    @abc.abstractmethod
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[ValidType],
+        arg2: BaserowExpression[ValidType],
+    ) -> BaserowExpression[Typed]:
+        pass
+
+    def to_django_expression_given_args(self, args: List[Expression]) -> Expression:
+        return self.to_django_expression(args[0], args[1])
+
+    @abc.abstractmethod
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
         pass

@@ -12,6 +12,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowIntegerLiteral,
     BaserowFieldByIdReference,
     BaserowFieldReference,
+    UnTyped,
 )
 from baserow.contrib.database.formula.parser.errors import (
     InvalidNumberOfArguments,
@@ -41,9 +42,9 @@ class BaserowFormulaErrorListener(ErrorListener):
         raise BaserowFormulaSyntaxError(message)
 
 
-def raw_formula_to_tree(
+def raw_formula_to_untyped_expression(
     formula: str, field_id_to_field, new_field_name_to_id
-) -> BaserowExpression:
+) -> BaserowExpression[UnTyped]:
     try:
         lexer = BaserowFormulaLexer(InputStream(formula))
         stream = CommonTokenStream(lexer)
@@ -69,7 +70,9 @@ def translate_formula_for_backend(formula: str, table) -> str:
         raise MaximumFormulaSizeError()
 
 
-def fix_formula(formula: str, trash_ids_to_names, new_names_to_id) -> str:
+def replace_field_refs_according_to_new_or_deleted_fields(
+    formula: str, trash_ids_to_names, new_names_to_id
+) -> str:
     try:
         lexer = BaserowFormulaLexer(InputStream(formula))
         stream = BufferedTokenStream(lexer)
@@ -278,7 +281,7 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
 
     def visitStringLiteral(self, ctx: BaserowFormula.StringLiteralContext):
         literal = self.process_string(ctx)
-        return BaserowStringLiteral(literal)
+        return BaserowStringLiteral[UnTyped](literal, None)
 
     def visitBrackets(self, ctx: BaserowFormula.BracketsContext):
         return ctx.expr().accept(self)
@@ -301,7 +304,7 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
         function_def = self._get_function_def(function_name)
         self._check_function_call_valid(function_argument_expressions, function_def)
         args = [expr.accept(self) for expr in function_argument_expressions]
-        return BaserowFunctionCall(function_def, args)
+        return BaserowFunctionCall[UnTyped](function_def, args, None)
 
     def visitBinaryOp(self, ctx: BaserowFormula.BinaryOpContext):
         if ctx.PLUS():
@@ -338,7 +341,7 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
         return ctx.getText()
 
     def visitIntegerLiteral(self, ctx: BaserowFormula.IntegerLiteralContext):
-        return BaserowIntegerLiteral(int(ctx.getText()))
+        return BaserowIntegerLiteral[UnTyped](int(ctx.getText()), None)
 
     def visitFieldReference(self, ctx: BaserowFormula.FieldReferenceContext):
         reference = ctx.field_reference()
@@ -346,12 +349,14 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
             reference.getText(), reference.SINGLEQ_STRING_LITERAL()
         )
         if reference in self.new_field_name_to_id:
-            return BaserowFieldByIdReference(self.new_field_name_to_id[reference])
+            return BaserowFieldByIdReference[UnTyped](
+                self.new_field_name_to_id[reference], None
+            )
         else:
-            return BaserowFieldReference(reference)
+            return BaserowFieldReference[UnTyped](reference, None)
 
     def visitFieldByIdReference(self, ctx: BaserowFormula.FieldByIdReferenceContext):
         field_id = int(str(ctx.INTEGER_LITERAL()))
         if field_id not in self.field_ids_to_fields:
             raise UnknownFieldReference(f"Field with id {field_id} is unknown")
-        return BaserowFieldByIdReference(field_id)
+        return BaserowFieldByIdReference[UnTyped](field_id, None)
