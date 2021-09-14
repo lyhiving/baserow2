@@ -12,20 +12,19 @@ from django.db.models import (
 
 from baserow.contrib.database.formula.ast.errors import UnknownFieldReference
 from baserow.contrib.database.formula.ast.tree import (
-    BaserowFormulaASTVisitor,
     BaserowStringLiteral,
     BaserowFunctionCall,
-    BaserowExpression,
     BaserowIntegerLiteral,
     BaserowFieldByIdReference,
-    BaserowFieldReference,
+    BaserowFieldReference, BaserowExpression,
 )
+from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
 from baserow.contrib.database.formula.ast.type_types import Typed, InvalidType
 from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 
 
 def tree_to_django_expression(
-    formula_tree: BaserowExpression[Typed], model_instance, for_update
+    formula_tree: BaserowExpression[BaserowFormulaType], model_instance, for_update
 ) -> Expression:
     try:
         if isinstance(formula_tree.expression_type, InvalidType):

@@ -4,17 +4,23 @@ from typing import List, TypeVar, Generic
 from django.conf import settings
 from django.db.models import Expression
 
-from baserow.contrib.database.fields.models import Field
+from baserow.contrib.database.formula.ast import visitors
 from baserow.contrib.database.formula.ast.errors import (
     InvalidStringLiteralProvided,
     TooLargeStringLiteralProvided,
     InvalidIntLiteralProvided,
 )
-from baserow.contrib.database.formula.ast.type_types import ValidType, Typed, UnTyped
+from baserow.contrib.database.formula.ast.type_defs import (
+    BaserowFormulaInvalidType,
+    BaserowFormulaValidType,
+    UnTyped,
+    BaserowFormulaType,
+)
 from baserow.core.registry import Instance
 
 A = TypeVar("A")
 T = TypeVar("T")
+R = TypeVar("R")
 
 
 class BaserowExpression(abc.ABC, Generic[A]):
@@ -22,17 +28,25 @@ class BaserowExpression(abc.ABC, Generic[A]):
         self.expression_type: A = expression_type
 
     @abc.abstractmethod
-    def accept(self, visitor: "BaserowFormulaASTVisitor[A, T]") -> T:
+    def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
+        pass
+
+    @abc.abstractmethod
+    def reduce(self, reduction: R, )
         pass
 
     # noinspection Mypy
-    def with_valid_type(self, expression_type: Field) -> "BaserowExpression[ValidType]":
+    def with_valid_type(
+        self, expression_type: "BaserowFormulaValidType"
+    ) -> "BaserowExpression[BaserowFormulaValidType]":
         self.expression_type = expression_type
         return self
 
     # noinspection Mypy
-    def with_invalid_type(self, error: str) -> "BaserowExpression[InvalidType]":
-        self.expression_type = error
+    def with_invalid_type(
+        self, error: str
+    ) -> "BaserowExpression[BaserowFormulaInvalidType]":
+        self.expression_type = BaserowFormulaInvalidType(error)
         return self
 
 
@@ -46,7 +60,7 @@ class BaserowStringLiteral(BaserowExpression[A]):
             raise TooLargeStringLiteralProvided()
         self.literal = literal
 
-    def accept(self, visitor: "BaserowFormulaASTVisitor[A, T]") -> T:
+    def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
         return visitor.visit_string_literal(self)
 
     def __str__(self):
@@ -61,7 +75,7 @@ class BaserowIntegerLiteral(BaserowExpression[A]):
             raise InvalidIntLiteralProvided()
         self.literal = literal
 
-    def accept(self, visitor: "BaserowFormulaASTVisitor[A, T]") -> T:
+    def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
         return visitor.visit_int_literal(self)
 
     def __str__(self):
@@ -73,7 +87,7 @@ class BaserowFieldByIdReference(BaserowExpression[A]):
         super().__init__(expression_type)
         self.referenced_field_id = referenced_field_id
 
-    def accept(self, visitor: "BaserowFormulaASTVisitor[A, T]") -> T:
+    def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
         return visitor.visit_field_by_id_reference(self)
 
     def __str__(self):
@@ -85,7 +99,7 @@ class BaserowFieldReference(BaserowExpression[A]):
         super().__init__(expression_type)
         self.referenced_field_name = referenced_field_name
 
-    def accept(self, visitor: "BaserowFormulaASTVisitor[A, T]") -> T:
+    def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
         return visitor.visit_field_reference(self)
 
     def __str__(self):
@@ -138,9 +152,9 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
     @abc.abstractmethod
     def type_function_given_valid_args(
         self,
-        args: List[BaserowExpression[ValidType]],
+        args: "List[BaserowExpression[BaserowFormulaValidType]]",
         expression: "BaserowFunctionCall[UnTyped]",
-    ) -> BaserowExpression[Typed]:
+    ) -> "BaserowExpression[BaserowFormulaType]":
         pass
 
     @abc.abstractmethod
@@ -163,13 +177,13 @@ class BaserowFunctionCall(BaserowExpression[A]):
         self.function_def = function_def
         self.args = args
 
-    def accept(self, visitor: "BaserowFormulaASTVisitor[A, T]") -> T:
+    def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
         return visitor.visit_function_call(self)
 
     def type_function_given_valid_args(
         self,
-        args: List[BaserowExpression[ValidType]],
-    ) -> BaserowExpression[Typed]:
+        args: "List[BaserowExpression[BaserowFormulaValidType]]",
+    ) -> "BaserowExpression[BaserowFormulaType]":
         return self.function_def.type_function_given_valid_args(args, self)
 
     def to_django_expression_given_args(
@@ -180,31 +194,3 @@ class BaserowFunctionCall(BaserowExpression[A]):
 
     def __str__(self):
         return f"{self.function_def.type}({','.join([str(a) for a in self.args])})"
-
-
-Y = TypeVar("Y")
-X = TypeVar("X")
-
-
-class BaserowFormulaASTVisitor(abc.ABC, Generic[Y, X]):
-    @abc.abstractmethod
-    def visit_string_literal(self, string_literal: BaserowStringLiteral[Y]) -> X:
-        pass
-
-    @abc.abstractmethod
-    def visit_function_call(self, function_call: BaserowFunctionCall[Y]) -> X:
-        pass
-
-    @abc.abstractmethod
-    def visit_int_literal(self, int_literal: BaserowIntegerLiteral[Y]) -> X:
-        pass
-
-    @abc.abstractmethod
-    def visit_field_by_id_reference(
-        self, field_by_id_reference: BaserowFieldByIdReference[Y]
-    ) -> X:
-        pass
-
-    @abc.abstractmethod
-    def visit_field_reference(self, field_reference: BaserowFieldReference[Y]) -> X:
-        pass

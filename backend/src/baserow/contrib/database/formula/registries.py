@@ -11,5 +11,5 @@ class BaserowFormulaTypeHandlerRegistry(ModelRegistryMixin, Registry):
     does_not_exist_exception_class = UnknownFormulaType
 
 
-formula_function_registry: Registry = BaserowFormulaFunctionRegistry()
-formula_type_handler_registry: Registry = BaserowFormulaTypeHandlerRegistry()
+formula_function_registry = BaserowFormulaFunctionRegistry()
+formula_type_handler_registry = BaserowFormulaTypeHandlerRegistry()

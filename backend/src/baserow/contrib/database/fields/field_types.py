@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from copy import deepcopy
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint
-from typing import Any, Callable, Dict, List, Type
+from typing import Any, Callable, Dict, List
 
 import pytz
 from dateutil import parser
@@ -12,7 +11,7 @@ from dateutil.parser import ParserError
 from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
-from django.db import models, OperationalError, connection
+from django.db import models, OperationalError
 from django.db.models import Case, When, Q, F, Func, Value, CharField
 from django.db.models.expressions import RawSQL
 from django.db.models.functions import Coalesce
@@ -36,6 +35,15 @@ from baserow.contrib.database.api.fields.serializers import (
     FileFieldResponseSerializer,
 )
 from baserow.contrib.database.formula.ast.errors import BaserowFormulaASTException
+from baserow.contrib.database.formula.expression_generator.errors import (
+    ExpressionGeneratorException,
+)
+from baserow.contrib.database.formula.expression_generator.generator import (
+    tree_to_django_expression,
+)
+from baserow.contrib.database.formula.parser.ast_mapper import (
+    translate_formula_for_backend,
+)
 from baserow.contrib.database.formula.parser.errors import BaserowFormulaParserError
 from baserow.contrib.database.validators import UnicodeRegexValidator
 from baserow.core.models import UserFile
@@ -46,7 +54,6 @@ from .exceptions import (
     LinkRowTableNotProvided,
     IncompatiblePrimaryFieldTypeError,
 )
-from .field_converters import RecreateFieldConverter, FormulaFieldConverter
 from .field_filters import contains_filter, AnnotatedQ, filename_contains_filter
 from .fields import SingleSelectForeignKey, ExpressionField
 from .handler import FieldHandler
@@ -70,17 +77,15 @@ from .models import (
     FormulaField,
 )
 from .registries import FieldType, field_type_registry
-from baserow.contrib.database.formula.expression_generator.errors import (
-    ExpressionGeneratorException,
+from baserow.contrib.database.formula.ast.type_defs import (
+    BaserowFormulaType,
+    BaserowFormulaTextType,
+    BaserowFormulaNumberType,
+    BaserowFormulaBooleanType,
+    BaserowFormulaDateType,
 )
-from baserow.contrib.database.formula.expression_generator.generator import (
-    tree_to_django_expression,
-)
-from baserow.contrib.database.formula.parser.ast_mapper import (
-    translate_formula_for_backend,
-)
-from ..formula.ast.type_types import BaserowFormulaTypeHandler
-from ..formula.registries import formula_type_handler_registry
+from baserow.contrib.database.formula.registries import formula_type_handler_registry
+from ..formula.ast.type_handler import BaserowFormulaTypeHandler
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -154,6 +159,9 @@ class TextFieldMatchingRegexFieldType(FieldType, ABC):
     def contains_query(self, *args):
         return contains_filter(*args)
 
+    def to_baserow_formula_type(self, field) -> BaserowFormulaType:
+        return BaserowFormulaTextType()
+
 
 class CharFieldMatchingRegexFieldType(TextFieldMatchingRegexFieldType):
     """
@@ -219,6 +227,9 @@ class TextFieldType(FieldType):
     def contains_query(self, *args):
         return contains_filter(*args)
 
+    def to_baserow_formula_type(self, field) -> BaserowFormulaType:
+        return BaserowFormulaTextType()
+
 
 class LongTextFieldType(FieldType):
     type = "long_text"
@@ -243,6 +254,9 @@ class LongTextFieldType(FieldType):
 
     def contains_query(self, *args):
         return contains_filter(*args)
+
+    def to_baserow_formula_type(self, field) -> BaserowFormulaType:
+        return BaserowFormulaTextType()
 
 
 class URLFieldType(TextFieldMatchingRegexFieldType):
@@ -369,6 +383,11 @@ class NumberFieldType(FieldType):
         value = getattr(row, field_name)
         return value if value is None else str(value)
 
+    def to_baserow_formula_type(self, field: NumberField) -> BaserowFormulaType:
+        return BaserowFormulaNumberType(
+            number_decimal_places=field.number_decimal_places
+        )
+
 
 class BooleanFieldType(FieldType):
     type = "boolean"
@@ -392,6 +411,9 @@ class BooleanFieldType(FieldType):
         self, row, field_name, value, id_mapping, files_zip, storage
     ):
         setattr(row, field_name, value == "true")
+
+    def to_baserow_formula_type(self, field: NumberField) -> BaserowFormulaType:
+        return BaserowFormulaBooleanType()
 
 
 class DateFieldType(FieldType):
@@ -565,6 +587,11 @@ class DateFieldType(FieldType):
             return value
 
         setattr(row, field_name, datetime.fromisoformat(value))
+
+    def to_baserow_formula_type(self, field: DateField) -> BaserowFormulaType:
+        return BaserowFormulaDateType(
+            field.date_format, field.date_include_time, field.date_time_format
+        )
 
 
 class CreatedOnLastModifiedBaseFieldType(DateFieldType):
@@ -1729,7 +1756,6 @@ class PhoneNumberFieldType(CharFieldMatchingRegexFieldType):
 
 
 class FormulaFieldType(FieldType):
-    MAX_DIGITS = NumberFieldType.MAX_DIGITS
     type = "formula"
     model_class = FormulaField
     allowed_fields = [
@@ -1768,18 +1794,24 @@ class FormulaFieldType(FieldType):
     }
     read_only = True
 
-    def get_serializer_field(self, instance, **kwargs):
+    @staticmethod
+    def _get_formula_type_from_formula_field(
+        instance: FormulaField,
+    ) -> BaserowFormulaType:
         formula_type_handler: BaserowFormulaTypeHandler = (
             formula_type_handler_registry.get(instance.formula_type)
         )
-        formula_type = formula_type_handler.construct_type_from_formula_field(instance)
+        return formula_type_handler.construct_type_from_formula_field(instance)
+
+    def get_serializer_field(self, instance, **kwargs):
+        formula_type = self._get_formula_type_from_formula_field(instance)
         return formula_type.get_serializer_field(**kwargs)
 
     def get_model_field(self, instance, **kwargs):
         expression = kwargs.pop("expression")
-        field_type = self._get_field_type(instance)
-        expression_field_type = field_type.get_model_field(self, instance, **kwargs)
-        expression_field_type.default = None
+
+        formula_type = self._get_formula_type_from_formula_field(instance)
+        expression_field_type = formula_type.get_model_field(**kwargs)
 
         return ExpressionField(
             null=True,
@@ -1804,8 +1836,8 @@ class FormulaFieldType(FieldType):
 
     def get_export_value(self, value, field_object):
         instance = field_object["field"]
-        field_type_type = self._get_field_type(instance)
-        return field_type_type.get_export_value(self, value, field_object)
+        formula_type = self._get_formula_type_from_formula_field(instance)
+        return formula_type.get_export_value(value)
 
     def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
         # We don't want to export the per row formula values as they can all and
@@ -1819,25 +1851,9 @@ class FormulaFieldType(FieldType):
         # should be derived from the formula itself.
         pass
 
-    @staticmethod
-    def _get_field_type(field) -> Type[FieldType]:
-        field_type = field.formula_type
-        if field_type == "TextField":
-            return TextFieldType
-        elif field_type == "NumberField":
-            return NumberFieldType
-        elif field_type == "DateField":
-            return DateFieldType
-        elif field_type == "BooleanField":
-            return BooleanFieldType
-        else:
-            raise Exception(f"Unknown field type {field_type}")
-
     def contains_query(self, field_name, value, model_field, field):
-        field_type_type = self._get_field_type(field)
-        return field_type_type.contains_query(
-            self, field_name, value, model_field, field
-        )
+        formula_type = self._get_formula_type_from_formula_field(field)
+        return formula_type.contains_query(field_name, value)
 
     def after_create(self, field, model, user, connection, before):
         """
@@ -1884,7 +1900,10 @@ class FormulaFieldType(FieldType):
             self._do_bulk_update(field, to_model)
 
     def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
-        field_type_type = self._get_field_type(from_field)
-        return field_type_type.get_alter_column_prepare_old_value(
-            self, connection, from_field, to_field
-        )
+        formula_type = self._get_formula_type_from_formula_field(from_field)
+        return formula_type.get_alter_column_prepare_old_value()
+
+    @classmethod
+    def copy_allowed_fields(cls, field_to_copy_from, field_to_copy_to):
+        for attr in cls.allowed_fields:
+            setattr(field_to_copy_to, attr, getattr(field_to_copy_from, attr))

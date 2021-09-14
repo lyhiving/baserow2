@@ -16,6 +16,7 @@ from baserow.core.registry import (
 )
 from .exceptions import FieldTypeAlreadyRegistered, FieldTypeDoesNotExist
 from .models import SelectOption
+from ..formula.ast.type_defs import BaserowFormulaType, BaserowFormulaInvalidType
 
 
 class FieldType(
@@ -619,6 +620,8 @@ class FieldType(
         :type value: Object
         :param field_object: The field object for the field to extract
         :type field_object: FieldObject
+        :return: A value suitable to be serialized and stored in a file format for
+            users.
         """
 
         return value
@@ -661,7 +664,14 @@ class FieldType(
         return []
 
     def related_field_changed(self, field, to_model):
+        # TODO: Document
         pass
+
+    def to_baserow_formula_type(self, field) -> BaserowFormulaType:
+        # TODO: Document
+        return BaserowFormulaInvalidType(
+            f"A field of type {self.type} cannot be referenced in a Baserow formula."
+        )
 
 
 class FieldTypeRegistry(

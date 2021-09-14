@@ -160,7 +160,7 @@ class FieldHandler:
         # field type.
         field_type = field_type_registry.get(type_name)
         model_class = field_type.model_class
-        allowed_fields = ["name"] + field_type.allowed_fields
+        allowed_fields = ["name"] + field_type.internal_fields
         field_values = extract_allowed(kwargs, allowed_fields)
         last_order = model_class.get_last_order(table)
 
@@ -265,7 +265,7 @@ class FieldHandler:
             # like filters or sortings need to be changed.
             ViewHandler().field_type_changed(field)
 
-        allowed_fields = ["name"] + field_type.allowed_fields
+        allowed_fields = ["name"] + field_type.internal_fields
         field_values = extract_allowed(kwargs, allowed_fields)
 
         _validate_field_name(

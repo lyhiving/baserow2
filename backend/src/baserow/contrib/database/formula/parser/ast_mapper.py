@@ -8,11 +8,10 @@ from antlr4.error.ErrorListener import ErrorListener
 from baserow.contrib.database.formula.ast.tree import (
     BaserowStringLiteral,
     BaserowFunctionCall,
-    BaserowExpression,
     BaserowIntegerLiteral,
     BaserowFieldByIdReference,
     BaserowFieldReference,
-    UnTyped,
+    UnTyped, BaserowExpression,
 )
 from baserow.contrib.database.formula.parser.errors import (
     InvalidNumberOfArguments,
