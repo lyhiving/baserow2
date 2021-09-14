@@ -182,8 +182,8 @@ class Typer:
         return typed_expr
 
     def _required_drop_recreate(self, old_formula_field, new_formula_field):
-        old_formula_field_type = old_formula_field.field_type
-        new_formula_field_type = new_formula_field.field_type
+        old_formula_field_type = old_formula_field.formula_type
+        new_formula_field_type = new_formula_field.formula_type
         if new_formula_field_type != old_formula_field_type:
             return True
         if new_formula_field == "NumberField":
@@ -332,7 +332,7 @@ class Typer:
 
     def _copy_attributes_over(self, specific_formula_field, field):
         field.error = specific_formula_field.error
-        field.field_type = specific_formula_field.field_type
+        field.formula_type = specific_formula_field.formula_type
         field.text_default = specific_formula_field.text_default
         field.number_type = specific_formula_field.number_type
         field.number_negative = specific_formula_field.number_negative
@@ -345,7 +345,7 @@ class Typer:
         if isinstance(formula_type, ValidType):
             specific_formula_field.error = None
             formula_type_name = formula_type.__class__.__name__
-            specific_formula_field.field_type = formula_type_name
+            specific_formula_field.formula_type = formula_type_name
             if isinstance(formula_type, TextField):
                 specific_formula_field.text_default = formula_type.text_default
             elif isinstance(formula_type, NumberField):

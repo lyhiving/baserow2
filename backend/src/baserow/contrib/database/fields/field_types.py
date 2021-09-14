@@ -79,6 +79,8 @@ from baserow.contrib.database.formula.expression_generator.generator import (
 from baserow.contrib.database.formula.parser.ast_mapper import (
     translate_formula_for_backend,
 )
+from ..formula.ast.type_types import BaserowFormulaTypeHandler
+from ..formula.registries import formula_type_handler_registry
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -196,16 +198,12 @@ class TextFieldType(FieldType):
 
     def get_serializer_field(self, instance, **kwargs):
         required = kwargs.get("required", False)
-        if kwargs.pop("ignore_default", False) or not instance.text_default:
-            default = None
-        else:
-            default = instance.text_default
         return serializers.CharField(
             **{
                 "required": required,
                 "allow_null": not required,
                 "allow_blank": not required,
-                "default": default,
+                "default": instance.text_default,
                 **kwargs,
             }
         )
@@ -1739,11 +1737,9 @@ class FormulaFieldType(FieldType):
         "field_type",
         "number_type",
         "number_decimal_places",
-        "number_negative",
         "date_format",
         "date_include_time",
         "date_time_format",
-        "text_default",
     ]
     serializer_field_names = [
         "formula",
@@ -1751,11 +1747,9 @@ class FormulaFieldType(FieldType):
         "error",
         "number_type",
         "number_decimal_places",
-        "number_negative",
         "date_format",
         "date_include_time",
         "date_time_format",
-        "text_default",
     ]
     serializer_field_overrides = {
         "error": serializers.CharField(
@@ -1775,10 +1769,11 @@ class FormulaFieldType(FieldType):
     read_only = True
 
     def get_serializer_field(self, instance, **kwargs):
-        field_type_type = self._get_field_type(instance)
-        if field_type_type == TextFieldType:
-            kwargs["ignore_default"] = True
-        return field_type_type.get_serializer_field(self, instance, **kwargs)
+        formula_type_handler: BaserowFormulaTypeHandler = (
+            formula_type_handler_registry.get(instance.formula_type)
+        )
+        formula_type = formula_type_handler.construct_type_from_formula_field(instance)
+        return formula_type.get_serializer_field(**kwargs)
 
     def get_model_field(self, instance, **kwargs):
         expression = kwargs.pop("expression")
@@ -1789,9 +1784,7 @@ class FormulaFieldType(FieldType):
         return ExpressionField(
             null=True,
             blank=True,
-            expression=Value(None)
-            if instance.error or instance.trashed
-            else expression,
+            expression=None if instance.error or instance.trashed else expression,
             expression_field_type=expression_field_type,
             **kwargs,
         )
@@ -1828,7 +1821,7 @@ class FormulaFieldType(FieldType):
 
     @staticmethod
     def _get_field_type(field) -> Type[FieldType]:
-        field_type = field.field_type
+        field_type = field.formula_type
         if field_type == "TextField":
             return TextFieldType
         elif field_type == "NumberField":
@@ -1890,18 +1883,8 @@ class FormulaFieldType(FieldType):
         if not field.error:
             self._do_bulk_update(field, to_model)
 
-    def get_alter_column_prepare_new_value(self, connection, from_field, to_field):
-        field_type_type = self._get_field_type(to_field)
-        return field_type_type.get_alter_column_prepare_new_value(
-            self, connection, from_field, to_field
-        )
-
     def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
         field_type_type = self._get_field_type(from_field)
         return field_type_type.get_alter_column_prepare_old_value(
             self, connection, from_field, to_field
         )
-
-    def force_same_type_alter_column(self, from_field, to_field):
-        field_type_type = self._get_field_type(to_field)
-        return field_type_type.force_same_type_alter_column(self, from_field, to_field)

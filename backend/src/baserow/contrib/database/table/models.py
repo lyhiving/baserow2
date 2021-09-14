@@ -15,6 +15,7 @@ from baserow.contrib.database.fields.field_filters import (
     FILTER_TYPE_OR,
 )
 from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.contrib.database.formula.ast.tree import BaserowStringLiteral
 from baserow.contrib.database.formula.ast.types import Typer
 from baserow.contrib.database.views.exceptions import ViewFilterTypeNotAllowedForField
 from baserow.contrib.database.views.registries import view_filter_type_registry
@@ -425,7 +426,7 @@ class Table(
             extra_kwargs = {}
             if field_type.type == "formula":
                 extra_kwargs["expression"] = (
-                    typer.typed_field_expressions[field.id] if typer else Value(None)
+                    typer.typed_field_expressions[field.id] if typer else None
                 )
             attrs[field_name] = field_type.get_model_field(
                 field,

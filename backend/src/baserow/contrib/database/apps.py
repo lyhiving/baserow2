@@ -51,7 +51,10 @@ class DatabaseConfig(AppConfig):
         from .views.registries import view_type_registry, view_filter_type_registry
         from .fields.registries import field_type_registry, field_converter_registry
         from .export.registries import table_exporter_registry
-        from .formula.registries import formula_function_registry
+        from .formula.registries import (
+            formula_function_registry,
+            formula_type_handler_registry,
+        )
 
         from .plugins import DatabasePlugin
 
@@ -172,9 +175,13 @@ class DatabaseConfig(AppConfig):
         trash_item_type_registry.register(FieldTrashableItemType())
         trash_item_type_registry.register(RowTrashableItemType())
 
-        from .formula.ast.function_defs import register_functions
+        from .formula.ast.function_defs import register_formula_functions
 
-        register_functions(formula_function_registry)
+        register_formula_functions(formula_function_registry)
+
+        from .formula.ast.type_defs import register_formula_types
+
+        register_formula_types(formula_type_handler_registry)
 
         # The signals must always be imported last because they use the registries
         # which need to be filled first.

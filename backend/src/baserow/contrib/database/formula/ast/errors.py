@@ -46,5 +46,4 @@ class TooLargeStringLiteralProvided(BaserowFormulaASTException):
 
 
 class UnknownFormulaType(BaserowFormulaASTException):
-    def __init__(self, formula_type):
-        super().__init__(f"Received an unknown formula type {formula_type}")
+    pass

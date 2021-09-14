@@ -35,19 +35,19 @@
         </div>
         <div v-if="!values.error">
           <FieldNumberSubForm
-            v-if="values.field_type === 'numeric'"
+            v-if="values.field_type === 'NumericField'"
             :default-values="defaultValues"
             :table="table"
           >
           </FieldNumberSubForm>
           <FieldTextSubForm
-            v-else-if="values.field_type === 'text'"
+            v-else-if="values.field_type === 'TextField'"
             :default-values="defaultValues"
             :table="table"
           >
           </FieldTextSubForm>
           <FieldDateSubForm
-            v-else-if="values.field_type === 'datetime'"
+            v-else-if="values.field_type === 'DateField'"
             :default-values="defaultValues"
             :table="table"
           >

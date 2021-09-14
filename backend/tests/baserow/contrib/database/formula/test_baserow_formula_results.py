@@ -1033,3 +1033,44 @@ def test_altering_type_of_underlying_causes_type_update(api_client, data_fixture
     assert response_json["count"] == 2
     assert response_json["results"][0][f"field_{formula_field_id}"] == "1.00"
     assert response_json["results"][1][f"field_{formula_field_id}"] == "0.00"
+
+
+@pytest.mark.django_db
+def test_can_compare_date_and_text(api_client, data_fixture, django_assert_num_queries):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table = data_fixture.create_database_table(user=user)
+    date_field = data_fixture.create_date_field(
+        table=table,
+        date_include_time=True,
+        date_format="US",
+        name="Date",
+    )
+    text_field = data_fixture.create_text_field(table=table, name="Text")
+    model = table.get_model(attribute_names=True)
+    model.objects.create(date="2020-01-01 12:00", text="01/01/2020 12:00")
+
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {
+            "name": "Formula",
+            "type": "formula",
+            "formula": "field('Date')=field('Text')",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    formula_field_id = response_json["id"]
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"]

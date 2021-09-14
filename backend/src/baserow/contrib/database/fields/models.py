@@ -1,7 +1,16 @@
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.utils.functional import lazy
 
-from baserow.contrib.database.fields.mixins import BaseDateMixin, TimezoneMixin
+from baserow.contrib.database.fields.mixins import (
+    BaseDateMixin,
+    TimezoneMixin,
+    DATE_FORMAT_CHOICES,
+    DATE_TIME_FORMAT_CHOICES,
+    DATE_FORMAT,
+    DATE_TIME_FORMAT,
+)
+from baserow.contrib.database.formula.registries import formula_type_handler_registry
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
 from baserow.core.mixins import (
     OrderableMixin,
@@ -244,17 +253,13 @@ class PhoneNumberField(Field):
     pass
 
 
-class FormulaField(Field, BaseDateMixin):
+class FormulaField(Field):
     formula = models.TextField()
     error = models.TextField(null=True, blank=True)
-    field_type = models.TextField(
-        choices=[
-            ("TextField", "TextField"),
-            ("NumberField", "NumberField"),
-            ("DateField", "DateField"),
-        ],
-        default="TextField",
-        null=True,
+
+    formula_type = models.TextField(
+        choices=lazy(formula_type_handler_registry.get_types_as_tuples, list)(),
+        default="invalid",
     )
     number_type = models.CharField(
         max_length=32, choices=NUMBER_TYPE_CHOICES, default=None, null=True
@@ -265,36 +270,59 @@ class FormulaField(Field, BaseDateMixin):
         null=True,
         help_text="The amount of digits allowed after the point.",
     )
-    number_negative = models.BooleanField(
+    date_format = models.CharField(
+        choices=DATE_FORMAT_CHOICES,
         default=None,
-        help_text="Indicates if negative values are allowed.",
+        max_length=32,
+        help_text="EU (20/02/2020), US (02/20/2020) or ISO (2020-02-20)",
         null=True,
     )
-    text_default = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
+    date_include_time = models.BooleanField(
         default=None,
-        help_text="If set, this value is going to be added every time a new row "
-        "created.",
+        help_text="Indicates if the field also includes a time.",
+        null=True,
     )
+    date_time_format = models.CharField(
+        choices=DATE_TIME_FORMAT_CHOICES,
+        default=None,
+        null=True,
+        max_length=32,
+        help_text="24 (14:30) or 12 (02:30 PM)",
+    )
+
+    def get_psql_format(self):
+        """
+        Returns the sql datetime format as a string based on the field's properties.
+        This could for example be 'YYYY-MM-DD HH12:MIAM'.
+
+        :return: The sql datetime format based on the field's properties.
+        :rtype: str
+        """
+
+        return self._get_format("sql")
+
+    def _get_format(self, format_type):
+        date_format = DATE_FORMAT[self.date_format][format_type]
+        time_format = DATE_TIME_FORMAT[self.date_time_format][format_type]
+        if self.date_include_time:
+            return f"{date_format} {time_format}"
+        else:
+            return date_format
 
     def compare(self, other):
         # TODO Why do we need to use str
         return (
             str(self.formula) == str(other.formula)
             and str(self.error) == str(other.error)
-            and str(self.field_type) == str(other.field_type)
+            and str(self.formula_type) == str(other.formula_type)
             and str(self.number_type) == str(other.number_type)
             and str(self.number_decimal_places) == str(other.number_decimal_places)
-            and str(self.number_negative) == str(other.number_negative)
-            and str(self.text_default) == str(other.text_default)
         )
 
     def save(self, *args, **kwargs):
         """Check if the number_type and number_decimal_places has a valid choice."""
 
-        if self.field_type == "numeric":
+        if self.formula_type == "numeric":
             # TODO: dedupe somehow
             if not any(self.number_type in _tuple for _tuple in NUMBER_TYPE_CHOICES):
                 raise ValueError(f"{self.number_type} is not a valid choice.")

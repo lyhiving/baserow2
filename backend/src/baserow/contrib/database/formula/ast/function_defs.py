@@ -8,7 +8,7 @@ from django.db.models import (
     Case,
     When,
     fields,
-    Max,
+    Func,
 )
 from django.db.models.functions import Upper, Lower, Concat, Coalesce, Cast, Greatest
 
@@ -34,6 +34,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
     BaserowFunctionCall,
     UnTyped,
+    BaserowStringLiteral,
 )
 from baserow.contrib.database.formula.ast.type_types import (
     ValidType,
@@ -88,7 +89,7 @@ def check_types(
         return func_being_typed.with_valid_type(resulting_func_type_if_valid)
 
 
-def register_functions(registry):
+def register_formula_functions(registry):
     registry.register(BaserowUpper())
     registry.register(BaserowLower())
     registry.register(BaserowConcat())
@@ -97,6 +98,8 @@ def register_functions(registry):
     registry.register(BaserowDivide())
     registry.register(BaserowEqual())
     registry.register(BaserowIf())
+    registry.register(BaserowToText())
+    registry.register(BaserowToChar())
 
 
 class BaserowUpper(OneArgumentBaserowFunction):
@@ -131,6 +134,71 @@ class BaserowLower(OneArgumentBaserowFunction):
 
     def to_django_expression(self, arg: Expression) -> Expression:
         return Lower(arg)
+
+
+class BaserowToChar(TwoArgumentBaserowFunction):
+    type = "to_char"
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[ValidType],
+        arg2: BaserowExpression[ValidType],
+    ) -> BaserowExpression[Typed]:
+        checked_arg1 = check_arg_type(
+            func_being_typed=func_call,
+            arg_to_type_check=arg1,
+            valid_arg_types=[DateField],
+            resulting_func_type_if_valid=arg1.expression_type,
+        )
+        if isinstance(checked_arg1.expression_type, InvalidType):
+            return func_call.with_invalid_type(checked_arg1.expression_type)
+        else:
+            checked_arg2 = check_arg_type(
+                func_being_typed=func_call,
+                arg_to_type_check=arg1,
+                valid_arg_types=[TextField],
+                resulting_func_type_if_valid=arg1.expression_type,
+            )
+            if isinstance(checked_arg2.expression_type, InvalidType):
+                return func_call.with_invalid_type(checked_arg2.expression_type)
+            else:
+                func_call.with_valid_type(TextField())
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return Coalesce(
+            Func(
+                arg1,
+                arg2,
+                function="to_char",
+                output_field=TextField(),
+            ),
+            Value(""),
+        )
+
+
+class BaserowToText(OneArgumentBaserowFunction):
+    type = "totext"
+
+    def type_function(
+        self, func_call: BaserowFunctionCall[UnTyped], arg: BaserowExpression[ValidType]
+    ) -> BaserowExpression[Typed]:
+        if isinstance(arg.expression_type, DateField):
+            return BaserowFunctionCall[ValidType](
+                BaserowToChar(),
+                [
+                    arg,
+                    BaserowStringLiteral(
+                        arg.expression_type.get_psql_format(), TextField()
+                    ),
+                ],
+                TextField(),
+            )
+        else:
+            return func_call.with_valid_type(TextField())
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Cast(arg, output_field=fields.TextField())
 
 
 class BaserowConcat(BaserowFunctionDefinition):
@@ -308,7 +376,7 @@ class BaserowEqual(TwoArgumentBaserowFunction):
     type = "equal"
 
     ALLOWED_TYPE_COMPARISONS: Dict[Type[ValidType], List[Type[ValidType]]] = {
-        BooleanField: [BooleanField],
+        BooleanField: [BooleanField, TextField],
         NumberField: [TextField, NumberField],
         TextField: [TextField, BooleanField, NumberField, DateField],
         DateField: [TextField, DateField],
@@ -320,13 +388,31 @@ class BaserowEqual(TwoArgumentBaserowFunction):
         arg1: BaserowExpression[ValidType],
         arg2: BaserowExpression[ValidType],
     ) -> BaserowExpression[Typed]:
-        # TODO Handle type casting
-        return check_types(
-            func_being_typed=func_call,
-            args_to_type_check=[arg1, arg2],
-            valid_arg_types=self.ALLOWED_TYPE_COMPARISONS[type(arg1.expression_type)],
-            resulting_func_type_if_valid=BooleanField(),
+        arg1_type = arg1.expression_type
+        arg2_type = arg2.expression_type
+        can_compare = check_arg_type(
+            func_call,
+            arg2,
+            self.ALLOWED_TYPE_COMPARISONS[type(arg1_type)],
+            BooleanField(),
         )
+        if isinstance(can_compare.expression_type, InvalidType):
+            return can_compare
+        else:
+            if not (type(arg1_type) is type(arg2_type)):
+                args = [
+                    BaserowFunctionCall[UnTyped](
+                        BaserowToText(), [arg1], None
+                    ).type_function_given_valid_args([arg1]),
+                    BaserowFunctionCall[UnTyped](
+                        BaserowToText(), [arg2], None
+                    ).type_function_given_valid_args([arg2]),
+                ]
+                return BaserowFunctionCall(
+                    BaserowEqual(), args, None
+                ).type_function_given_valid_args(args)
+            else:
+                return func_call.with_valid_type(BooleanField())
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
         return EqualsExpr(
@@ -387,7 +473,15 @@ class BaserowIf(BaserowFunctionDefinition):
         arg2_type = args[2].expression_type
         if not (type(arg1_type) is type(arg2_type)):
             # TODO Casting logic
-            valid_type = TextField()
+            return BaserowFunctionCall(
+                BaserowIf(),
+                [
+                    args[0],
+                    BaserowFunctionCall(BaserowToText(), [args[1]], TextField()),
+                    BaserowFunctionCall(BaserowToText(), [args[2]], TextField()),
+                ],
+                TextField(),
+            )
         elif isinstance(arg1_type, NumberField) and isinstance(arg2_type, NumberField):
             valid_type = _calculate_number_type([arg1_type, arg2_type])
         else:

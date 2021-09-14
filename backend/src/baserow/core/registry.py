@@ -254,6 +254,16 @@ class Registry(object):
 
         return list(self.registry.keys())
 
+    def get_types_as_tuples(self):
+        """
+        Returns a list of available type names.
+
+        :return: The list of available types.
+        :rtype: List[Tuple[str,str]]
+        """
+
+        return [(k, k) for k in self.registry.keys()]
+
     def register(self, instance):
         """
         Registers a new instance in the registry.

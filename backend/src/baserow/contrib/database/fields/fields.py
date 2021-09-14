@@ -1,5 +1,7 @@
+from typing import Optional
+
 from django.db import models
-from django.db.models import Field
+from django.db.models import Field, Value
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
 
 from baserow.contrib.database.formula.ast.tree import BaserowExpression
@@ -50,7 +52,7 @@ class ExpressionField(models.Field):
 
     def __init__(
         self,
-        expression: BaserowExpression,
+        expression: Optional[BaserowExpression],
         expression_field_type: Field,
         *args,
         **kwargs,
@@ -77,4 +79,9 @@ class ExpressionField(models.Field):
             return db_type
 
     def pre_save(self, model_instance, add):
-        return tree_to_django_expression(self.expression, model_instance, False)
+        print(self.expression)
+        return (
+            tree_to_django_expression(self.expression, model_instance, False)
+            if self.expression is not None
+            else Value(None)
+        )

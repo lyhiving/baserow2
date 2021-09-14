@@ -1,8 +1,15 @@
-from baserow.core.registry import Registry
+from baserow.contrib.database.formula.ast.errors import UnknownFormulaType
+from baserow.core.registry import Registry, ModelRegistryMixin
 
 
-class FormulaFunctionRegistry(Registry):
+class BaserowFormulaFunctionRegistry(Registry):
     name = "formula_function"
 
 
-formula_function_registry: Registry = FormulaFunctionRegistry()
+class BaserowFormulaTypeHandlerRegistry(ModelRegistryMixin, Registry):
+    name = "formula_type_handler"
+    does_not_exist_exception_class = UnknownFormulaType
+
+
+formula_function_registry: Registry = BaserowFormulaFunctionRegistry()
+formula_type_handler_registry: Registry = BaserowFormulaTypeHandlerRegistry()
