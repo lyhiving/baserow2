@@ -24,14 +24,14 @@ def test_last_modified_field_type(data_fixture):
 
     data_fixture.create_text_field(table=table, name="text_field", primary=True)
 
-    last_modified_field_date = field_handler.create_field(
+    last_modified_field_date, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="last_modified",
         name="Last Date",
         timezone=timezone_to_test,
     )
-    last_modified_field_datetime = field_handler.create_field(
+    last_modified_field_datetime, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="last_modified",
@@ -183,7 +183,7 @@ def test_import_export_last_modified_field(data_fixture):
     database = data_fixture.create_database_application(user=user, name="Placeholder")
     table = data_fixture.create_database_table(name="Example", database=database)
     field_handler = FieldHandler()
-    last_modified_field = field_handler.create_field(
+    last_modified_field, _ = field_handler.create_field(
         user=user,
         table=table,
         name="Last modified",

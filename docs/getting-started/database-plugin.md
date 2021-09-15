@@ -89,8 +89,8 @@ User = get_user_model()
 user = User.objects.get(pk=1)
 table = Table.objects.get(pk=10)
 
-name = FieldHandler().create_field(user, table, 'text', name='Name')
-price = FieldHandler().create_field(user, table, 'number', name='Price')
+name, _ = FieldHandler().create_field(user, table, 'text', name='Name')
+price, _ = FieldHandler().create_field(user, table, 'number', name='Price')
 row = RowHandler().create_row(user, table, {
     f'field_{name.id}': 'Smartphone',
     f'field_{price.id}': 300

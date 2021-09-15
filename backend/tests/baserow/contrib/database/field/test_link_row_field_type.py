@@ -58,7 +58,7 @@ def test_link_row_field_type(data_fixture):
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field = field_handler.create_field(
+    customers_primary_field, _ = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
     customers_row_1 = row_handler.create_row(
@@ -73,7 +73,7 @@ def test_link_row_field_type(data_fixture):
     )
 
     # Create a primary field and some example data for the cars table.
-    cars_primary_field = field_handler.create_field(
+    cars_primary_field, _ = field_handler.create_field(
         user=user, table=cars_table, type_name="text", name="Name", primary=True
     )
     row_handler.create_row(
@@ -97,14 +97,14 @@ def test_link_row_field_type(data_fixture):
             link_row_table=unrelated_table_1,
         )
 
-    link_field_1 = field_handler.create_field(
+    link_field_1, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",
         name="Customer",
         link_row_table=customers_table,
     )
-    link_field_2 = field_handler.create_field(
+    link_field_2, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",
@@ -154,7 +154,7 @@ def test_link_row_field_type(data_fixture):
 
     # Going to change only the name of the field. This should not result in any errors
     # of schema changes.
-    link_field_1 = field_handler.update_field(
+    link_field_1, _ = field_handler.update_field(
         user, link_field_1, name="Customer Renamed"
     )
 
@@ -166,7 +166,7 @@ def test_link_row_field_type(data_fixture):
 
     # Change the table, this should destroy all relations.
     old_link_field_1_relation_id = link_field_1.link_row_relation_id
-    link_field_1 = field_handler.update_field(
+    link_field_1, _ = field_handler.update_field(
         user, link_field_1, link_row_table=cars_table
     )
 
@@ -182,7 +182,9 @@ def test_link_row_field_type(data_fixture):
     assert getattr(table_row_2, f"field_{link_field_1.id}").all().count() == 0
     assert getattr(table_row_2, f"field_{link_field_2.id}").all().count() == 0
 
-    link_field_2 = field_handler.update_field(user, link_field_2, new_type_name="text")
+    link_field_2, _ = field_handler.update_field(
+        user, link_field_2, new_type_name="text"
+    )
     assert isinstance(link_field_2, TextField)
 
     model = table.get_model()
@@ -199,7 +201,7 @@ def test_link_row_field_type(data_fixture):
     field_handler.delete_field(user, link_field_1)
 
     # Change a the text field back into a link row field.
-    link_field_2 = field_handler.update_field(
+    link_field_2, _ = field_handler.update_field(
         user,
         link_field_2,
         new_type_name="link_row",
@@ -242,7 +244,7 @@ def test_link_row_field_type_rows(data_fixture):
     field_handler = FieldHandler()
     row_handler = RowHandler()
 
-    link_row_field = field_handler.create_field(
+    link_row_field, _ = field_handler.create_field(
         user=user,
         table=example_table,
         name="Link Row",
@@ -340,7 +342,7 @@ def test_link_row_field_type_rows(data_fixture):
 
     # When changing the link row table table all the existing relations should be
     # deleted.
-    link_row_field = field_handler.update_field(
+    link_row_field, _ = field_handler.update_field(
         user=user,
         field=link_row_field,
         type_name="link_row",
@@ -378,7 +380,7 @@ def test_link_row_enhance_queryset(data_fixture, django_assert_num_queries):
     field_handler = FieldHandler()
     row_handler = RowHandler()
 
-    link_row_field = field_handler.create_field(
+    link_row_field, _ = field_handler.create_field(
         user=user,
         table=example_table,
         name="Link Row",
@@ -586,7 +588,7 @@ def test_link_row_field_type_api_views(api_client, data_fixture):
 
     url = reverse("api:database:fields:item", kwargs={"field_id": field_id})
     response = api_client.delete(url, HTTP_AUTHORIZATION=f"JWT {token}")
-    assert response.status_code == HTTP_204_NO_CONTENT
+    assert response.status_code == HTTP_200_OK
     assert LinkRowField.objects.all().count() == 0
 
 
@@ -610,7 +612,7 @@ def test_link_row_field_type_api_row_views(api_client, data_fixture):
     field_handler = FieldHandler()
     row_handler = RowHandler()
 
-    link_row_field = field_handler.create_field(
+    link_row_field, _ = field_handler.create_field(
         user=user,
         table=example_table,
         name="Link Row",
@@ -756,7 +758,7 @@ def test_import_export_link_row_field(data_fixture):
     )
     field_handler = FieldHandler()
     core_handler = CoreHandler()
-    link_row_field = field_handler.create_field(
+    link_row_field, _ = field_handler.create_field(
         user=user,
         table=table,
         name="Link Row",
@@ -833,7 +835,7 @@ def test_creating_a_linked_row_pointing_at_trashed_row_works_but_does_not_displa
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field = field_handler.create_field(
+    customers_primary_field, _ = field_handler.create_field(
         user=user,
         table=table_with_trashed_row,
         type_name="text",
@@ -846,7 +848,7 @@ def test_creating_a_linked_row_pointing_at_trashed_row_works_but_does_not_displa
         values={f"field_{customers_primary_field.id}": "John"},
     )
 
-    link_field_1 = field_handler.create_field(
+    link_field_1, _ = field_handler.create_field(
         user=user,
         table=table_linking_to_trashed_row,
         type_name="link_row",
@@ -929,7 +931,7 @@ def test_change_type_to_link_row_field_when_field_with_same_related_name_already
     field = data_fixture.create_text_field(table=table, order=1, name="Text")
 
     handler = FieldHandler()
-    existing_link_row = handler.create_field(
+    existing_link_row, _ = handler.create_field(
         user, other_table, "link_row", link_row_table=table, name="Table"
     )
 
@@ -938,7 +940,7 @@ def test_change_type_to_link_row_field_when_field_with_same_related_name_already
     model.objects.create(**{f"field_{field.id}": "100"})
 
     # Change the field type to a number and test if the values have been changed.
-    new_link_row_field = handler.update_field(
+    new_link_row_field, _ = handler.update_field(
         user=user,
         field=field,
         new_type_name="link_row",
@@ -969,7 +971,7 @@ def test_change_link_row_related_table_when_field_with_related_name_exists(
     data_fixture.create_text_field(table=second_related_table, order=1, name="Table")
 
     handler = FieldHandler()
-    link_row = handler.create_field(
+    link_row, _ = handler.create_field(
         user, table, "link_row", link_row_table=first_related_table, name="Link"
     )
 

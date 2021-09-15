@@ -715,7 +715,7 @@ def setup_testing_table(data_fixture):
     other_table_primary_text_field = data_fixture.create_text_field(
         table=table_2, name="text_field", primary=True
     )
-    link_field = FieldHandler().create_field(
+    link_field, _ = FieldHandler().create_field(
         user=user,
         table=table,
         type_name="link_row",

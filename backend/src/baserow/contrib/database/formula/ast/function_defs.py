@@ -38,7 +38,7 @@ from baserow.contrib.database.formula.types.type_types import (
     UnTyped,
     BaserowArgumentTypeChecker,
 )
-from baserow.contrib.database.formula.expression_generator.custom_django_expressions import (
+from baserow.contrib.database.formula.expression_generator.django_expressions import (
     EqualsExpr,
 )
 

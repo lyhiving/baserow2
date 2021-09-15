@@ -59,15 +59,19 @@ def raw_formula_to_untyped_expression(
         raise MaximumFormulaSizeError()
 
 
-def translate_formula_for_backend(formula: str, table) -> str:
+def translate_formula_for_backend_given_table(formula: str, table) -> str:
     try:
         fields = table.field_set.all()
         field_name_to_id = {f.name: f.id for f in fields}
-        lexer = BaserowFormulaLexer(InputStream(formula))
-        stream = BufferedTokenStream(lexer)
-        return translate_field_to_field_by_id(stream, field_name_to_id)
+        return translate_formula_for_backend(formula, field_name_to_id)
     except RecursionError:
         raise MaximumFormulaSizeError()
+
+
+def translate_formula_for_backend(formula, field_name_to_id):
+    lexer = BaserowFormulaLexer(InputStream(formula))
+    stream = BufferedTokenStream(lexer)
+    return _translate_field_to_field_by_id(stream, field_name_to_id)
 
 
 def replace_field_refs_according_to_new_or_deleted_fields(
@@ -76,14 +80,14 @@ def replace_field_refs_according_to_new_or_deleted_fields(
     try:
         lexer = BaserowFormulaLexer(InputStream(formula))
         stream = BufferedTokenStream(lexer)
-        return translate_trashed_or_deleted_field_by_ids_to_fields(
+        return _translate_trashed_or_deleted_field_by_ids_to_fields(
             stream, trash_ids_to_names, new_names_to_id
         )
     except RecursionError:
         raise MaximumFormulaSizeError()
 
 
-def translate_trashed_or_deleted_field_by_ids_to_fields(
+def _translate_trashed_or_deleted_field_by_ids_to_fields(
     stream, trashed_ids_to_names, new_names_to_ids
 ):
     """
@@ -152,12 +156,12 @@ def translate_trashed_or_deleted_field_by_ids_to_fields(
                         searching_for_field_reference_literal = True
 
             if t.type == BaserowFormulaLexer.FIELDBYID:
-                looked_ahead_id = lookahead_to_id(i + 1, stop + 1, stream)
+                looked_ahead_id = _lookahead_to_id(i + 1, stop + 1, stream)
                 if looked_ahead_id and looked_ahead_id in trashed_ids_to_names:
                     out = "field"
                     field_by_id_reference_started = True
             if t.type == BaserowFormulaLexer.FIELD:
-                looked_ahead_name = lookahead_to_name(i + 1, stop + 1, stream)
+                looked_ahead_name = _lookahead_to_name(i + 1, stop + 1, stream)
                 if looked_ahead_name and looked_ahead_name in new_names_to_ids:
                     out = "field_by_id"
                     field_reference_started = True
@@ -167,7 +171,7 @@ def translate_trashed_or_deleted_field_by_ids_to_fields(
         return buf.getvalue()
 
 
-def lookahead_to_id(start, stop, stream):
+def _lookahead_to_id(start, stop, stream):
     search_for_field_id = False
     for i in range(start, stop + 1):
         t = stream.tokens[i]
@@ -183,7 +187,7 @@ def lookahead_to_id(start, stop, stream):
             return None
 
 
-def lookahead_to_name(start, stop, stream):
+def _lookahead_to_name(start, stop, stream):
     search_for_field_name = False
     for i in range(start, stop + 1):
         t = stream.tokens[i]
@@ -201,7 +205,7 @@ def lookahead_to_name(start, stop, stream):
             return None
 
 
-def translate_field_to_field_by_id(stream, field_name_to_id):
+def _translate_field_to_field_by_id(stream, field_name_to_id):
     """
     Takes a raw token stream of a Baserow formula and translates any field('..')
     references to field_by_id(..) references. Needs to operate over the raw tokens as
@@ -248,7 +252,7 @@ def translate_field_to_field_by_id(stream, field_name_to_id):
                         searching_for_field_ref_literal = True
 
             if t.type == BaserowFormulaLexer.FIELD:
-                name = lookahead_to_name(i + 1, stop, stream)
+                name = _lookahead_to_name(i + 1, stop, stream)
                 if name is None:
                     raise UnknownFieldReference()
                 elif name in field_name_to_id:

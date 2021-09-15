@@ -218,19 +218,17 @@ class Typer:
         self.typed_field_expressions[field.id] = typed_expr
         self.field_references[field.id] = []
 
-    def calculate_all_child_fields(self, fields):
-        fields_to_check = fields.copy()
+    def calculate_all_child_fields(self, field, field_ids_to_ignore):
+        fields_to_check = [field]
         extra_fields = []
-        extra_field_ids = set()
-        current_field_ids = {f.id for f in fields}
         while len(fields_to_check) > 0:
             field = fields_to_check.pop(0)
             references = self.field_references[field.id]
             for ref in references:
-                if ref not in current_field_ids and ref not in extra_field_ids:
+                if ref not in field_ids_to_ignore:
                     new_field = self.field_id_to_field[ref]
                     extra_fields.append(new_field)
-                    extra_field_ids.add(ref)
+                    field_ids_to_ignore.add(ref)
                     fields_to_check.append(new_field)
         return extra_fields
 

@@ -10,7 +10,9 @@ from baserow.contrib.database.formula.parser.ast_mapper import (
 @pytest.mark.django_db
 def test_creating_a_model_with_formula_field_immediately_populates_it(data_fixture):
     table = data_fixture.create_database_table()
-    formula_field = data_fixture.create_formula_field(table=table, formula="'test'")
+    formula_field = data_fixture.create_formula_field(
+        table=table, formula="'test'", formula_type="text"
+    )
     formula_field_name = f"field_{formula_field.id}"
     model = table.get_model()
     row = model.objects.create()
@@ -26,7 +28,7 @@ def test_adding_a_formula_field_to_an_existing_table_populates_it_for_all_rows(
     table = data_fixture.create_database_table(user=user)
     before_model = table.get_model()
     existing_row = before_model.objects.create()
-    formula_field = FieldHandler().create_field(
+    formula_field, _ = FieldHandler().create_field(
         user, table, "formula", name="formula", formula="'test'"
     )
     formula_field_name = f"field_{formula_field.id}"
@@ -40,7 +42,9 @@ def test_adding_a_formula_field_to_an_existing_table_populates_it_for_all_rows(
 @pytest.mark.django_db
 def test_cant_change_the_value_of_a_formula_field_directly(data_fixture):
     table = data_fixture.create_database_table()
-    data_fixture.create_formula_field(name="formula", table=table, formula="'test'")
+    data_fixture.create_formula_field(
+        name="formula", table=table, formula="'test'", formula_type="text"
+    )
     data_fixture.create_text_field(name="text", table=table)
     model = table.get_model(attribute_names=True)
 
@@ -59,7 +63,9 @@ def test_cant_change_the_value_of_a_formula_field_directly(data_fixture):
 @pytest.mark.django_db
 def test_get_set_export_serialized_value_formula_field(data_fixture):
     table = data_fixture.create_database_table()
-    formula_field = data_fixture.create_formula_field(table=table, formula="'test'")
+    formula_field = data_fixture.create_formula_field(
+        table=table, formula="'test'", formula_type="text"
+    )
     formula_field_name = f"field_{formula_field.id}"
     formula_field_type = field_type_registry.get_by_model(formula_field)
 
@@ -106,10 +112,6 @@ def test_get_set_export_serialized_value_formula_field(data_fixture):
 
 @pytest.mark.django_db
 def test_sub(data_fixture):
-    # assert (
-    #     sub_formula('field("My Field Name")', {"My Field Name": "sub"})
-    #     == 'field("sub")'
-    # )
     assert (
         translate_formula_for_backend(
             'field\n(\n"My Field Name")', {"My Field Name": 1}
@@ -119,7 +121,7 @@ def test_sub(data_fixture):
     assert (
         translate_formula_for_backend(
             """concat(\n"field('My Field Name')", 'test')""",
-            {"My Field " "Name": "sub"},
+            {"My Field Name": "sub"},
         )
         == """concat(\n"field('My Field Name')", 'test')"""
     )

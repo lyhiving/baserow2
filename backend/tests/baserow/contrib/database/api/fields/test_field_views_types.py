@@ -6,7 +6,7 @@ from django.shortcuts import reverse
 from faker import Faker
 from freezegun import freeze_time
 from pytz import timezone
-from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 
 from baserow.contrib.database.fields.models import (
     CreatedOnField,
@@ -127,7 +127,7 @@ def test_long_text_field_type(api_client, data_fixture):
 
     url = reverse("api:database:fields:item", kwargs={"field_id": field_id})
     response = api_client.delete(url, HTTP_AUTHORIZATION=f"JWT {token}")
-    assert response.status_code == HTTP_204_NO_CONTENT
+    assert response.status_code == HTTP_200_OK
     assert LongTextField.objects.all().count() == 0
 
 
@@ -213,7 +213,7 @@ def test_url_field_type(api_client, data_fixture):
 
     url = reverse("api:database:fields:item", kwargs={"field_id": field_id})
     response = api_client.delete(url, HTTP_AUTHORIZATION=f"JWT {token}")
-    assert response.status_code == HTTP_204_NO_CONTENT
+    assert response.status_code == HTTP_200_OK
     assert URLField.objects.all().count() == 0
 
 
@@ -286,7 +286,7 @@ def test_date_field_type(api_client, data_fixture):
 
     url = reverse("api:database:fields:item", kwargs={"field_id": date_time_field_id})
     response = api_client.delete(url, HTTP_AUTHORIZATION=f"JWT {token}")
-    assert response.status_code == HTTP_204_NO_CONTENT
+    assert response.status_code == HTTP_200_OK
     assert DateField.objects.all().count() == 1
 
 
@@ -372,7 +372,7 @@ def test_email_field_type(api_client, data_fixture):
 
     email = reverse("api:database:fields:item", kwargs={"field_id": field_id})
     response = api_client.delete(email, HTTP_AUTHORIZATION=f"JWT {token}")
-    assert response.status_code == HTTP_204_NO_CONTENT
+    assert response.status_code == HTTP_200_OK
     assert EmailField.objects.all().count() == 0
 
 
@@ -887,7 +887,7 @@ def test_phone_number_field_type(api_client, data_fixture):
 
     email = reverse("api:database:fields:item", kwargs={"field_id": field_id})
     response = api_client.delete(email, HTTP_AUTHORIZATION=f"JWT {token}")
-    assert response.status_code == HTTP_204_NO_CONTENT
+    assert response.status_code == HTTP_200_OK
     assert PhoneNumberField.objects.all().count() == 0
 
 

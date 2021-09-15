@@ -42,7 +42,7 @@ from baserow.contrib.database.formula.expression_generator.generator import (
     tree_to_django_expression,
 )
 from baserow.contrib.database.formula.parser.ast_mapper import (
-    translate_formula_for_backend,
+    translate_formula_for_backend_given_table,
 )
 from baserow.contrib.database.formula.parser.errors import BaserowFormulaParserError
 from baserow.contrib.database.validators import UnicodeRegexValidator
@@ -214,7 +214,7 @@ class TextFieldType(FieldType):
                 "required": required,
                 "allow_null": not required,
                 "allow_blank": not required,
-                "default": instance.text_default,
+                "default": instance.text_default or None,
                 **kwargs,
             }
         )
@@ -1123,7 +1123,7 @@ class LinkRowFieldType(FieldType):
             to_field, self.model_class
         ):
             related_field_name = self.find_next_unused_related_field_name(to_field)
-            to_field.link_row_related_field = FieldHandler().create_field(
+            to_field.link_row_related_field, _ = FieldHandler().create_field(
                 user=user,
                 table=to_field.link_row_table,
                 type_name=self.type,
@@ -1827,7 +1827,7 @@ class FormulaFieldType(FieldType):
             f"Field of type {self.type} is read only and should not be set manually."
         )
 
-    def get_export_value(self, value, field_object):
+    def get_export_value(self, value, field_object) -> BaserowFormulaType:
         instance = field_object["field"]
         formula_type = self._get_formula_type_from_formula_field(instance)
         return formula_type.get_export_value(value)
@@ -1846,7 +1846,7 @@ class FormulaFieldType(FieldType):
 
     def contains_query(self, field_name, value, model_field, field):
         formula_type = self._get_formula_type_from_formula_field(field)
-        return formula_type.contains_query(field_name, value)
+        return formula_type.contains_query(field_name, value, model_field, field)
 
     def after_create(self, field, model, user, connection, before):
         """
@@ -1880,11 +1880,13 @@ class FormulaFieldType(FieldType):
         to_model.objects.all().update(**{f"{to_field.db_column}": expr})
 
     def before_create(self, table, primary, values, order, user):
-        values["formula"] = translate_formula_for_backend(values["formula"], table)
+        values["formula"] = translate_formula_for_backend_given_table(
+            values["formula"], table
+        )
 
     def before_update(self, old_field, values, user):
         if "formula" in values:
-            values["formula"] = translate_formula_for_backend(
+            values["formula"] = translate_formula_for_backend_given_table(
                 values["formula"], old_field.table
             )
 

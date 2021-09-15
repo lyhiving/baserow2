@@ -186,7 +186,7 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
         sql_type = self.get_psql_type()
         return f"""p_in = TO_CHAR(p_in::{sql_type}, '{sql_format}');"""
 
-    def contains_query(self, field_name, value):
+    def contains_query(self, field_name, value, model_field, field):
         value = value.strip()
         # If an empty value has been provided we do not want to filter at all.
         if value == "":

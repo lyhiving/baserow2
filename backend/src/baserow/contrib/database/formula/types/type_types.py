@@ -3,6 +3,7 @@ from typing import Optional, Any, List, Type, Union, Callable
 
 from django.db import models
 from django.db.models import Q
+from rest_framework import serializers
 from rest_framework.fields import Field
 
 from baserow.contrib.database.formula.ast import tree
@@ -59,7 +60,7 @@ class BaserowFormulaType(abc.ABC):
 
         return value
 
-    def contains_query(self, field_name, value):
+    def contains_query(self, field_name, value, model_field, field):
         """
         Returns a Q or AnnotatedQ filter which performs a contains filter over the a
         formula field for this specific type of formula.
@@ -68,6 +69,10 @@ class BaserowFormulaType(abc.ABC):
         :type field_name: str
         :param value: The value to check if this formula field contains or not.
         :type value: str
+        :param model_field: The field's actual django field model instance.
+        :type model_field: models.Field
+        :param field: The related field's instance.
+        :type field: Field
         :return: A Q or AnnotatedQ filter.
             given value.
         :rtype: OptionallyAnnotatedQ
@@ -116,7 +121,16 @@ class BaserowFormulaInvalidType(BaserowFormulaType):
         )
 
     def get_serializer_field(self, **kwargs) -> Optional[Field]:
-        return None
+        required = kwargs.get("required", False)
+        return serializers.CharField(
+            **{
+                "required": required,
+                "allow_null": not required,
+                "allow_blank": not required,
+                "default": None,
+                **kwargs,
+            }
+        )
 
     def __str__(self) -> str:
         return "invalid"

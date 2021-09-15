@@ -5,3 +5,4 @@ exclude =
     .git,
     __pycache__,
     src/baserow/contrib/database/formula/parser/generated
+    src/baserow/contrib/database/migrations/

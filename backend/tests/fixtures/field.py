@@ -288,7 +288,10 @@ class FieldFixtures:
             kwargs["order"] = 0
 
         if "formula" not in kwargs:
-            kwargs["formula"] = "test"
+            kwargs["formula"] = "'test'"
+
+        if "formula_type" not in kwargs:
+            kwargs["formula_type"] = "text"
 
         field = FormulaField.objects.create(**kwargs)
 

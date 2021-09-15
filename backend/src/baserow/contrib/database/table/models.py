@@ -373,22 +373,33 @@ class Table(
         # table.
         fields = list(fields) + [field for field in fields_query]
 
-        typer = Typer(self) if typer is None else typer
-        if typer:
-            extra_fields = typer.calculate_all_child_fields(fields)
-        else:
-            extra_fields = []
         # If there are duplicate field names we have to store them in a list so we know
         # later which ones are duplicate.
         duplicate_field_names = []
 
+        already_included_field_ids = set([f.id for f in fields])
+
         # We will have to add each field to with the correct field name and model field
         # to the attribute list in order for the model to work.
-        for field in fields + extra_fields:
+        while len(fields) > 0:
+            field = fields.pop(0)
             trashed = field.trashed
             field = field.specific
             field_type = field_type_registry.get_by_model(field)
             field_name = field.db_column
+
+            if field_type.type == "formula":
+                # If we are building a model with some formula fields we need to
+                # establish the types fields and whether they depend on any other
+                # child fields to be calculated. These child fields then need to be
+                # included in the django model otherwise we cannot reference them.
+                if typer is None:
+                    typer = Typer(self)
+                # Allow passing in typer=False to disable any type checking.
+                if typer:
+                    fields += typer.calculate_all_child_fields(
+                        field, already_included_field_ids
+                    )
 
             # If attribute_names is True we will not use 'field_{id}' as attribute name,
             # but we will rather use a name the user provided.

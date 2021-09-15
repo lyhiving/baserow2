@@ -48,7 +48,7 @@ def test_long_text_field_type(data_fixture):
     handler.create_field(
         user=user, table=table, type_name="long_text", name="description"
     )
-    field = handler.update_field(user=user, field=field, new_type_name="long_text")
+    field, _ = handler.update_field(user=user, field=field, new_type_name="long_text")
 
     assert len(LongTextField.objects.all()) == 2
 
@@ -243,10 +243,10 @@ def test_email_field_type(data_fixture):
     field_handler = FieldHandler()
     row_handler = RowHandler()
 
-    field_2 = field_handler.create_field(
+    field_2, _ = field_handler.create_field(
         user=user, table=table, type_name="email", name="email"
     )
-    number = field_handler.create_field(
+    number, _ = field_handler.create_field(
         user=user, table=table, type_name="number", name="number"
     )
 
@@ -342,13 +342,13 @@ def test_phone_number_field_type(data_fixture):
     field_handler = FieldHandler()
     row_handler = RowHandler()
 
-    text_field = field_handler.create_field(
+    text_field, _ = field_handler.create_field(
         user=user, table=table, order=1, type_name="text", name="name"
     )
-    phone_number_field = field_handler.create_field(
+    phone_number_field, _ = field_handler.create_field(
         user=user, table=table, type_name="phone_number", name="phonenumber"
     )
-    email_field = field_handler.create_field(
+    email_field, _ = field_handler.create_field(
         user=user, table=table, type_name="email", name="email"
     )
     number_field = data_fixture.create_number_field(

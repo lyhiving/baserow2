@@ -11,7 +11,7 @@ def test_alter_boolean_field_column_type(data_fixture):
     field = data_fixture.create_text_field(table=table, order=1)
 
     handler = FieldHandler()
-    field = handler.update_field(user=user, field=field, name="Text field")
+    field, _ = handler.update_field(user=user, field=field, name="Text field")
 
     model = table.get_model()
     mapping = {
@@ -33,7 +33,7 @@ def test_alter_boolean_field_column_type(data_fixture):
         model.objects.create(**{f"field_{field.id}": value})
 
     # Change the field type to a number and test if the values have been changed.
-    field = handler.update_field(user=user, field=field, new_type_name="boolean")
+    field, _ = handler.update_field(user=user, field=field, new_type_name="boolean")
 
     model = table.get_model()
     rows = model.objects.all()

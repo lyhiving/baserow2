@@ -23,14 +23,14 @@ def test_created_on_field_type(data_fixture):
     time_to_freeze = "2021-08-10 12:00"
 
     data_fixture.create_text_field(table=table, name="text_field", primary=True)
-    created_on_field_date = field_handler.create_field(
+    created_on_field_date, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="created_on",
         name="Create Date",
         timezone=timezone_to_test,
     )
-    created_on_field_datetime = field_handler.create_field(
+    created_on_field_datetime, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="created_on",
@@ -179,7 +179,7 @@ def test_import_export_last_modified_field(data_fixture):
     database = data_fixture.create_database_application(user=user, name="Placeholder")
     table = data_fixture.create_database_table(name="Example", database=database)
     field_handler = FieldHandler()
-    created_on_field = field_handler.create_field(
+    created_on_field, _ = field_handler.create_field(
         user=user,
         table=table,
         name="Created On",

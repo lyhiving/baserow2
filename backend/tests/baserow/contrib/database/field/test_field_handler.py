@@ -102,7 +102,7 @@ def test_can_convert_between_all_fields(data_fixture):
                     copy.pop("name", None)
                     field_type = field_type_registry.get(field_type_name)
                     new_name = f"{name}_to_{inner_field_type_name}_{i}"
-                    from_field = handler.create_field(
+                    from_field, _ = handler.create_field(
                         user=user,
                         table=table,
                         type_name=field_type_name,
@@ -168,7 +168,7 @@ def test_create_field(send_mock, data_fixture):
     table = data_fixture.create_database_table(user=user)
 
     handler = FieldHandler()
-    field = handler.create_field(
+    field, _ = handler.create_field(
         user=user,
         table=table,
         type_name="text",
@@ -301,7 +301,7 @@ def test_create_primary_field(data_fixture):
         )
 
     handler = FieldHandler()
-    field = handler.create_field(
+    field, _ = handler.create_field(
         user=user, table=table_2, type_name="text", primary=True, name="primary"
     )
 
@@ -348,7 +348,7 @@ def test_update_field(send_mock, data_fixture):
     field.save()
 
     # Change some values of the text field and test if they have been changed.
-    field = handler.update_field(
+    field, _ = handler.update_field(
         user=user, field=field, name="Text field", text_default="Default value"
     )
 
@@ -367,7 +367,7 @@ def test_update_field(send_mock, data_fixture):
     model.objects.create(**{f"field_{field.id}": "10"})
 
     # Change the field type to a number and test if the values have been changed.
-    field = handler.update_field(
+    field, _ = handler.update_field(
         user=user,
         field=field,
         new_type_name="number",
@@ -388,7 +388,7 @@ def test_update_field(send_mock, data_fixture):
     assert getattr(rows[2], f"field_{field.id}") == 10
 
     # Change the field type to a decimal and test if the values have been changed.
-    field = handler.update_field(
+    field, _ = handler.update_field(
         user=user,
         field=field,
         new_type_name="number",
@@ -410,7 +410,7 @@ def test_update_field(send_mock, data_fixture):
     assert getattr(rows[2], f"field_{field.id}") == Decimal("10.00")
 
     # Change the field type to a boolean and test if the values have been changed.
-    field = handler.update_field(
+    field, _ = handler.update_field(
         user=user, field=field, new_type_name="boolean", name="Active"
     )
 

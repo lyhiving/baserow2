@@ -30,7 +30,7 @@ def test_single_select_field_type(data_fixture):
 
     field_handler = FieldHandler()
 
-    field = field_handler.create_field(
+    field, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="single_select",
@@ -48,7 +48,7 @@ def test_single_select_field_type(data_fixture):
     assert select_options[0].value == "Option 1"
     assert select_options[0].color == "blue"
 
-    field = field_handler.update_field(
+    field, _ = field_handler.update_field(
         user=user,
         table=table,
         field=field,
@@ -74,7 +74,7 @@ def test_single_select_field_type(data_fixture):
     field_handler.delete_field(user=user, field=field)
     assert SelectOption.objects.all().count() == 0
 
-    field = field_handler.create_field(
+    field, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="single_select",
@@ -94,7 +94,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     field_handler = FieldHandler()
     row_handler = RowHandler()
 
-    field = field_handler.create_field(
+    field, _ = field_handler.create_field(
         user=user,
         table=table,
         name="name",
@@ -125,7 +125,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     assert getattr(row, f"field_{field.id}").color == select_options[0].color
     assert getattr(row, f"field_{field.id}_id") == select_options[0].id
 
-    field = field_handler.update_field(
+    field, _ = field_handler.update_field(
         user=user,
         field=field,
         select_options=[
@@ -169,7 +169,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     assert getattr(row, f"field_{field.id}") is None
     assert getattr(row, f"field_{field.id}_id") is None
 
-    field = field_handler.update_field(user=user, field=field, new_type_name="text")
+    field, _ = field_handler.update_field(user=user, field=field, new_type_name="text")
     assert field.select_options.all().count() == 0
     model = table.get_model()
     rows = model.objects.all().enhance_by_fields()
@@ -178,7 +178,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     assert getattr(rows[2], f"field_{field.id}") == "Option 4"
     assert getattr(rows[3], f"field_{field.id}") == "Option 3"
 
-    field = field_handler.update_field(
+    field, _ = field_handler.update_field(
         user=user,
         field=field,
         new_type_name="single_select",
@@ -202,7 +202,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     assert getattr(row_4, f"field_{field.id}") is None
     assert getattr(row_4, f"field_{field.id}_id") is None
 
-    field = field_handler.update_field(user=user, field=field, new_type_name="text")
+    field, _ = field_handler.update_field(user=user, field=field, new_type_name="text")
     assert field.select_options.all().count() == 0
     model = table.get_model()
     rows = model.objects.all().enhance_by_fields()
@@ -211,7 +211,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     assert getattr(rows[2], f"field_{field.id}") is None
     assert getattr(rows[3], f"field_{field.id}") is None
 
-    field = field_handler.update_field(
+    field, _ = field_handler.update_field(
         user=user, field=field, new_type_name="single_select"
     )
     assert field.select_options.all().count() == 0
@@ -341,7 +341,7 @@ def test_single_select_field_type_api_views(api_client, data_fixture):
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
     )
-    assert response.status_code == HTTP_204_NO_CONTENT
+    assert response.status_code == HTTP_200_OK
     assert SingleSelectField.objects.all().count() == 1
     assert SelectOption.objects.all().count() == 0
 
@@ -355,7 +355,7 @@ def test_single_select_field_type_api_row_views(api_client, data_fixture):
 
     field_handler = FieldHandler()
 
-    field = field_handler.create_field(
+    field, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="single_select",
@@ -534,7 +534,7 @@ def test_primary_single_select_field_with_link_row_field(
     row_handler = RowHandler()
 
     data_fixture.create_text_field(name="Name", table=example_table, primary=True)
-    customers_primary = field_handler.create_field(
+    customers_primary, _ = field_handler.create_field(
         user=user,
         table=customers_table,
         name="Single Select",
@@ -546,7 +546,7 @@ def test_primary_single_select_field_with_link_row_field(
         ],
         primary=True,
     )
-    link_row_field = field_handler.create_field(
+    link_row_field, _ = field_handler.create_field(
         user=user,
         table=example_table,
         name="Link row",
@@ -635,7 +635,7 @@ def test_single_select_field_type_random_value(data_fixture):
     cache = {}
     fake = Faker()
 
-    field = field_handler.create_field(
+    field, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="single_select",
@@ -652,7 +652,7 @@ def test_single_select_field_type_random_value(data_fixture):
     random_choice = SingleSelectFieldType().random_value(field, fake, cache)
     assert random_choice in select_options
 
-    email_field = field_handler.create_field(
+    email_field, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="email",
@@ -667,7 +667,7 @@ def test_import_export_single_select_field(data_fixture):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
     field_handler = FieldHandler()
-    field = field_handler.create_field(
+    field, _ = field_handler.create_field(
         user=user,
         table=table,
         type_name="single_select",

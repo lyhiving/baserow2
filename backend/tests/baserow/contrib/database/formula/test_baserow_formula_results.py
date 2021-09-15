@@ -395,7 +395,7 @@ def test_changing_type_of_reference_field_to_invalid_one_for_formula(
     )
     response_json = response.json()
     assert response_json["count"] == 1
-    assert response_json["results"][0][f"field_{formula_field_id}"] == 2
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
 
     response = api_client.get(
         reverse("api:database:fields:list", kwargs={"table_id": table.id}),
@@ -441,7 +441,6 @@ def test_changing_name_of_referenced_field_by_formula(api_client, data_fixture):
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
     )
-    response_json = response.json()
     assert response.status_code == HTTP_200_OK
 
     response = api_client.get(
@@ -516,7 +515,6 @@ def test_perm_deleting_child_field(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_200_OK, response_json
-    number_field_id = fields[0].id
     formula_field_id = response_json["id"]
 
     response = api_client.get(
@@ -1040,13 +1038,13 @@ def test_can_compare_date_and_text(api_client, data_fixture, django_assert_num_q
         email="test@test.nl", password="password", first_name="Test1"
     )
     table = data_fixture.create_database_table(user=user)
-    date_field = data_fixture.create_date_field(
+    data_fixture.create_date_field(
         table=table,
         date_include_time=True,
         date_format="US",
         name="Date",
     )
-    text_field = data_fixture.create_text_field(table=table, name="Text")
+    data_fixture.create_text_field(table=table, name="Text")
     model = table.get_model(attribute_names=True)
     model.objects.create(date="2020-01-01 12:00", text="01/01/2020 12:00")
 
