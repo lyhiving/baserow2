@@ -11,8 +11,9 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowIntegerLiteral,
     BaserowFieldByIdReference,
     BaserowFieldReference,
-    UnTyped, BaserowExpression,
+    BaserowExpression,
 )
+from baserow.contrib.database.formula.ast.type_types import UnTyped
 from baserow.contrib.database.formula.parser.errors import (
     InvalidNumberOfArguments,
     BaserowFormulaSyntaxError,

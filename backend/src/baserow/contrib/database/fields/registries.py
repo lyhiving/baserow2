@@ -16,7 +16,7 @@ from baserow.core.registry import (
 )
 from .exceptions import FieldTypeAlreadyRegistered, FieldTypeDoesNotExist
 from .models import SelectOption
-from ..formula.ast.type_defs import BaserowFormulaType, BaserowFormulaInvalidType
+from ..formula.ast.type_types import BaserowFormulaType, BaserowFormulaInvalidType
 
 
 class FieldType(

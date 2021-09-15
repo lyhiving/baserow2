@@ -78,12 +78,12 @@ from .models import (
 )
 from .registries import FieldType, field_type_registry
 from baserow.contrib.database.formula.ast.type_defs import (
-    BaserowFormulaType,
     BaserowFormulaTextType,
     BaserowFormulaNumberType,
     BaserowFormulaBooleanType,
     BaserowFormulaDateType,
 )
+from ..formula.ast.type_types import BaserowFormulaType
 from baserow.contrib.database.formula.registries import formula_type_handler_registry
 from ..formula.ast.type_handler import BaserowFormulaTypeHandler
 

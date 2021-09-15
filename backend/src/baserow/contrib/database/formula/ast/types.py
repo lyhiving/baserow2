@@ -24,12 +24,14 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
 )
 from baserow.contrib.database.formula.ast.type_defs import (
-    BaserowFormulaType,
-    UnTyped,
-    BaserowFormulaValidType,
-    BaserowFormulaInvalidType,
     BaserowFormulaNumberType,
     BaserowFormulaTextType,
+)
+from baserow.contrib.database.formula.ast.type_types import (
+    BaserowFormulaType,
+    BaserowFormulaInvalidType,
+    BaserowFormulaValidType,
+    UnTyped,
 )
 from baserow.contrib.database.formula.ast.type_handler import BaserowFormulaTypeHandler
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
@@ -424,29 +426,9 @@ class TypeAnnotatingASTVisitor(
         self, function_call: BaserowFunctionCall[UnTyped]
     ) -> BaserowExpression[BaserowFormulaType]:
         typed_args: List[BaserowExpression[BaserowFormulaValidType]] = []
-        invalid_results: List[Tuple[int, BaserowFormulaInvalidType]] = []
-        reduction = []
-        for i, expr in enumerate(function_call.args):
-            typed_arg = expr.accept(self)
-            arg_type = typed_arg.expression_type
-            reduction = arg_type.reduce(reduction, (i, typed_arg))
-            if isinstance(arg_type, BaserowFormulaInvalidType):
-                invalid_results.append((i, arg_type))
-            else:
-                typed_args.append(typed_arg)
-        if len(invalid_results) > 0:
-            message = ", ".join(
-                [
-                    f"argument {i} invalid because {msg.error}"
-                    for i, msg in invalid_results
-                ]
-            )
-            return function_call.with_invalid_type(
-                f"Failed to type arguments for call "
-                f"{function_call.function_def} because {message}"
-            )
-        else:
-            return function_call.type_function_given_valid_args(typed_args)
+        for expr in function_call.args:
+            typed_args.append(expr.accept(self))
+        return function_call.type_function_given_typed_args(typed_args)
 
     def visit_int_literal(
         self, int_literal: BaserowIntegerLiteral[UnTyped]

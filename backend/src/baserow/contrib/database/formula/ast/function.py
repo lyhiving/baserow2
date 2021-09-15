@@ -1,19 +1,20 @@
 import abc
-from typing import List, TypeVar, Type, Union, Callable, Any
+from typing import List, Type, Union, Callable, Any
 
 from django.db.models import Expression
 
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
-    UnTyped,
     BaserowFunctionDefinition,
     ArgCountSpecifier,
     BaserowExpression,
+    BaserowArgumentTypeChecker,
+    BaserowSingleArgumentTypeChecker,
 )
-from baserow.contrib.database.formula.ast.type_defs import (
-    BaserowFormulaValidType,
+from baserow.contrib.database.formula.ast.type_types import (
     BaserowFormulaType,
+    BaserowFormulaValidType,
     UnTyped,
 )
 
@@ -35,6 +36,14 @@ class NumOfArgsGreaterThan(ArgCountSpecifier):
 
 
 class OneArgumentBaserowFunction(BaserowFunctionDefinition):
+    @property
+    def arg_types(self) -> BaserowArgumentTypeChecker:
+        return [self.arg_type]
+
+    @property
+    def arg_type(self) -> BaserowSingleArgumentTypeChecker:
+        return [BaserowFormulaValidType]
+
     @property
     def num_args(self) -> ArgCountSpecifier:
         return FixedNumOfArgs(1)
@@ -61,62 +70,25 @@ class OneArgumentBaserowFunction(BaserowFunctionDefinition):
     def to_django_expression(self, arg: Expression) -> Expression:
         pass
 
-
-T = TypeVar("T")
-
-
-class TypedOneArgumentBaserowFunction(BaserowFunctionDefinition):
-    @property
-    def num_args(self) -> ArgCountSpecifier:
-        return FixedNumOfArgs(1)
-
-    @property
-    @abc.abstractmethod
-    def arg1_type(self) -> Type[T]:
-        pass
-
-    def type_function_given_valid_args(
-        self,
-        args: List[BaserowExpression[BaserowFormulaValidType]],
-        func_call: BaserowFunctionCall[UnTyped],
-    ) -> BaserowExpression[BaserowFormulaType]:
-        arg1 = args[0]
-
-        arg1.expression_type.maptype(
-            [self.arg1_type],
-        )
-
-        checked_arg1 = check_arg_type(
-            expr_being_typed=arg1,
-            arg_to_type_check=arg1,
-            valid_arg_types=[self.arg1_type],
-            resulting_type_if_valid=arg1.expression_type,
-        )
-        arg1_typed_expression = checked_arg1.expression_type
-        if arg1_typed_expression.is_invalid():
-            return func_call.with_invalid_type(
-                f"argument 1 {arg1_typed_expression.error}"
-            )
-        else:
-            return self.type_function(func_call, arg1)
-
-    @abc.abstractmethod
-    def type_function(
-        self,
-        func_call: BaserowFunctionCall[UnTyped],
-        arg: BaserowExpression[T],
-    ) -> BaserowExpression[BaserowFormulaType]:
-        pass
-
-    def to_django_expression_given_args(self, args: List[Expression]) -> Expression:
-        return self.to_django_expression(args[0])
-
-    @abc.abstractmethod
-    def to_django_expression(self, arg: Expression) -> Expression:
-        pass
+    def call_and_type_with(
+        self, arg: BaserowExpression[BaserowFormulaType]
+    ) -> BaserowFunctionCall[BaserowFormulaType]:
+        return self.call_and_type_with_valid_args([arg])
 
 
 class TwoArgumentBaserowFunction(BaserowFunctionDefinition):
+    @property
+    def arg_types(self) -> BaserowArgumentTypeChecker:
+        return [self.arg1_type, self.arg2_type]
+
+    @property
+    def arg1_type(self) -> BaserowSingleArgumentTypeChecker:
+        return [BaserowFormulaValidType]
+
+    @property
+    def arg2_type(self) -> BaserowSingleArgumentTypeChecker:
+        return [BaserowFormulaValidType]
+
     @property
     def num_args(self) -> ArgCountSpecifier:
         return FixedNumOfArgs(2)
@@ -142,6 +114,64 @@ class TwoArgumentBaserowFunction(BaserowFunctionDefinition):
 
     @abc.abstractmethod
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        pass
+
+    def call_and_type_with(
+        self,
+        arg1: BaserowExpression[BaserowFormulaType],
+        arg2: BaserowExpression[BaserowFormulaType],
+    ) -> BaserowFunctionCall[BaserowFormulaType]:
+        return self.call_and_type_with_valid_args([arg1, arg2])
+
+
+class ThreeArgumentBaserowFunction(BaserowFunctionDefinition):
+    @property
+    def arg_types(self) -> List[List[Type[BaserowFormulaValidType]]]:
+        return [self.arg1_type, self.arg2_type, self.arg3_type]
+
+    @abc.abstractmethod
+    @property
+    def arg1_type(self) -> List[Type[BaserowFormulaValidType]]:
+        pass
+
+    @abc.abstractmethod
+    @property
+    def arg2_type(self) -> List[Type[BaserowFormulaValidType]]:
+        pass
+
+    @abc.abstractmethod
+    @property
+    def arg3_type(self) -> List[Type[BaserowFormulaValidType]]:
+        pass
+
+    @property
+    def num_args(self) -> ArgCountSpecifier:
+        return FixedNumOfArgs(3)
+
+    def type_function_given_valid_args(
+        self,
+        args: List[BaserowExpression[BaserowFormulaValidType]],
+        func_call: BaserowFunctionCall[UnTyped],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return self.type_function(func_call, args[0], args[1], args[2])
+
+    @abc.abstractmethod
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[BaserowFormulaValidType],
+        arg2: BaserowExpression[BaserowFormulaValidType],
+        arg3: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        pass
+
+    def to_django_expression_given_args(self, args: List[Expression]) -> Expression:
+        return self.to_django_expression(args[0], args[1], args[2])
+
+    @abc.abstractmethod
+    def to_django_expression(
+        self, arg1: Expression, arg2: Expression, arg3: Expression
+    ) -> Expression:
         pass
 
 
