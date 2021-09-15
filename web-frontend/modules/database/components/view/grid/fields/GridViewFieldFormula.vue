@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="field.field_type === 'numeric' && value === 'NaN'"
+    v-if="field.formula_type === 'number' && value === 'NaN'"
     ref="cell"
     v-tooltip="'Divide by zero error'"
     class="grid-view__cell active cell-error"
@@ -16,10 +16,10 @@
 
 <script>
 import gridField from '@baserow/modules/database/mixins/gridField'
-import GridViewFieldDate from '@baserow/modules/database/components/view/grid/fields/GridViewFieldDate'
-import GridViewFieldNumber from '@baserow/modules/database/components/view/grid/fields/GridViewFieldNumber'
-import GridViewFieldBoolean from '@baserow/modules/database/components/view/grid/fields/GridViewFieldBoolean'
-import GridViewFieldText from '@baserow/modules/database/components/view/grid/fields/GridViewFieldText'
+import FunctionalGridViewFieldDate from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldDate'
+import FunctionalGridViewFieldText from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldText'
+import FunctionalGridViewFieldBoolean from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldBoolean'
+import FunctionalGridViewFieldNumber from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldNumber'
 
 export default {
   name: 'GridViewFormulaField',
@@ -27,11 +27,11 @@ export default {
   methods: {
     getComponent(field) {
       return {
-        DateField: GridViewFieldDate,
-        TextField: GridViewFieldText,
-        BooleanField: GridViewFieldBoolean,
-        NumberField: GridViewFieldNumber,
-      }[field.field_type]
+        date: FunctionalGridViewFieldDate,
+        text: FunctionalGridViewFieldText,
+        boolean: FunctionalGridViewFieldBoolean,
+        number: FunctionalGridViewFieldNumber,
+      }[field.formula_type]
     },
   },
 }

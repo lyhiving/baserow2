@@ -34,20 +34,14 @@
           </template>
         </div>
         <div v-if="!values.error">
-          <FieldNumberSubForm
-            v-if="values.field_type === 'NumericField'"
+          <FieldFormulaNumberSubForm
+            v-if="values.formula_type === 'number'"
             :default-values="defaultValues"
             :table="table"
           >
-          </FieldNumberSubForm>
-          <FieldTextSubForm
-            v-else-if="values.field_type === 'TextField'"
-            :default-values="defaultValues"
-            :table="table"
-          >
-          </FieldTextSubForm>
+          </FieldFormulaNumberSubForm>
           <FieldDateSubForm
-            v-else-if="values.field_type === 'DateField'"
+            v-else-if="values.formula_type === 'date'"
             :default-values="defaultValues"
             :table="table"
           >
@@ -67,14 +61,13 @@ import { mapGetters } from 'vuex'
 import parseBaserowFormula, {
   replaceFieldByIdWithFieldRef,
   replaceFieldWithFieldById,
-} from '@/modules/database/formula/parser/parser'
-import FieldNumberSubForm from '@/modules/database/components/field/FieldNumberSubForm'
-import FieldTextSubForm from '@/modules/database/components/field/FieldTextSubForm'
-import FieldDateSubForm from '@/modules/database/components/field/FieldDateSubForm'
+} from '@baserow/modules/database/formula/parser/parser'
+import FieldFormulaNumberSubForm from '@baserow/modules/database/components/field/FieldFormulaNumberSubForm'
+import FieldDateSubForm from '@baserow/modules/database/components/field/FieldDateSubForm'
 
 export default {
   name: 'FieldFormulaSubForm',
-  components: { FieldDateSubForm, FieldTextSubForm, FieldNumberSubForm },
+  components: { FieldDateSubForm, FieldFormulaNumberSubForm },
   mixins: [form, fieldSubForm],
   props: {
     table: {
@@ -84,7 +77,7 @@ export default {
   },
   data() {
     return {
-      allowedValues: ['formula', 'error', 'field_type'],
+      allowedValues: ['formula', 'error', 'formula_type'],
       values: {
         formula: '',
       },
