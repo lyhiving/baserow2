@@ -1,7 +1,7 @@
 import antlr4 from 'antlr4'
 import { BufferedTokenStream } from 'antlr4/BufferedTokenStream'
-import { BaserowFormulaLexer } from '@/modules/database/formula/parser/generated/BaserowFormulaLexer'
-import { BaserowFormula } from '@/modules/database/formula/parser/generated/BaserowFormula'
+import { BaserowFormulaLexer } from '@baserow/modules/database/formula/parser/generated/BaserowFormulaLexer'
+import { BaserowFormula } from '@baserow/modules/database/formula/parser/generated/BaserowFormula'
 import BaserowFormulaParserError from '@baserow/modules/database/formula/parser/errors'
 
 /**

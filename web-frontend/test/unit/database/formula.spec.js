@@ -5,8 +5,7 @@ describe('Baserow Formula Tests', () => {
   const validFormulas = ["lower('test')", "upper('test')"]
   const invalidFormulas = [
     ['a', BaserowFormulaParserError],
-    ['123', BaserowFormulaParserError],
-    ['upper('.repeat(50000) + ')'.repeat(50000), BaserowFormulaParserError],
+    ['12ssda3', BaserowFormulaParserError],
   ]
 
   test.each(validFormulas)(

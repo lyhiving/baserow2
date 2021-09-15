@@ -43,7 +43,7 @@
 import context from '@baserow/modules/core/mixins/context'
 import UpdateFieldContext from '@baserow/modules/database/components/field/UpdateFieldContext'
 import { notifyIf } from '@baserow/modules/core/utils/error'
-import { clone } from '@/modules/core/utils/object'
+import { clone } from '@baserow/modules/core/utils/object'
 
 export default {
   name: 'FieldContext',
