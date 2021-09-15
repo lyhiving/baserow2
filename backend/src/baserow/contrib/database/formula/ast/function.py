@@ -1,9 +1,8 @@
 import abc
-from typing import List, Type, Union, Callable, Any
+from typing import List
 
 from django.db.models import Expression
 
-from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
     BaserowFunctionDefinition,
