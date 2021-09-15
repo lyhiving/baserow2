@@ -179,7 +179,9 @@ class DatabaseConfig(AppConfig):
 
         register_formula_functions(formula_function_registry)
 
-        from .formula.ast.type_defs import register_formula_types
+        from baserow.contrib.database.formula.types.type_defs import (
+            register_formula_types,
+        )
 
         register_formula_types(formula_type_handler_registry)
 

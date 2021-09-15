@@ -11,6 +11,7 @@ from baserow.contrib.database.db.schema import lenient_schema_editor
 from baserow.contrib.database.views.handler import ViewHandler
 from baserow.core.trash.handler import TrashHandler
 from baserow.core.utils import extract_allowed, set_allowed_attrs
+from .constants import RESERVED_BASEROW_FIELD_NAMES
 from .exceptions import (
     PrimaryFieldAlreadyExists,
     CannotDeletePrimaryField,
@@ -25,14 +26,10 @@ from .exceptions import (
 from .models import Field, SelectOption
 from .registries import field_type_registry, field_converter_registry
 from .signals import field_created, field_updated, field_deleted
-from baserow.contrib.database.formula.ast.types import Typer
+from baserow.contrib.database.formula.types.typer import Typer
 from baserow.contrib.database.table.models import Table
 
 logger = logging.getLogger(__name__)
-
-# Please keep in sync with the web-frontend version of this constant found in
-# web-frontend/modules/database/utils/constants.js
-RESERVED_BASEROW_FIELD_NAMES = {"id", "order"}
 
 
 def _validate_field_name(
@@ -160,7 +157,7 @@ class FieldHandler:
         # field type.
         field_type = field_type_registry.get(type_name)
         model_class = field_type.model_class
-        allowed_fields = ["name"] + field_type.internal_fields
+        allowed_fields = ["name"] + field_type.allowed_fields
         field_values = extract_allowed(kwargs, allowed_fields)
         last_order = model_class.get_last_order(table)
 
@@ -265,7 +262,7 @@ class FieldHandler:
             # like filters or sortings need to be changed.
             ViewHandler().field_type_changed(field)
 
-        allowed_fields = ["name"] + field_type.internal_fields
+        allowed_fields = ["name"] + field_type.allowed_fields
         field_values = extract_allowed(kwargs, allowed_fields)
 
         _validate_field_name(

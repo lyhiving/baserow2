@@ -109,7 +109,7 @@ class ViewHandler:
             "name",
             "filter_type",
             "filters_disabled",
-        ] + view_type.internal_fields
+        ] + view_type.allowed_fields
         view_values = extract_allowed(kwargs, allowed_fields)
         last_order = model_class.get_last_order(table)
 
@@ -147,7 +147,7 @@ class ViewHandler:
             "name",
             "filter_type",
             "filters_disabled",
-        ] + view_type.internal_fields
+        ] + view_type.allowed_fields
         view = set_allowed_attrs(kwargs, allowed_fields, view)
         view.save()
 

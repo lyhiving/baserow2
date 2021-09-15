@@ -6,7 +6,7 @@ from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.fields.signals import field_restored
-from baserow.contrib.database.formula.ast.types import Typer
+from baserow.contrib.database.formula.types.typer import Typer
 from baserow.contrib.database.rows.signals import row_created
 from baserow.contrib.database.table.models import Table, GeneratedTableModel
 from baserow.contrib.database.table.signals import table_created

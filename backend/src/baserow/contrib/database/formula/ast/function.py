@@ -9,13 +9,13 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionDefinition,
     ArgCountSpecifier,
     BaserowExpression,
-    BaserowArgumentTypeChecker,
-    BaserowSingleArgumentTypeChecker,
 )
-from baserow.contrib.database.formula.ast.type_types import (
+from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
     BaserowFormulaValidType,
     UnTyped,
+    BaserowSingleArgumentTypeChecker,
+    BaserowArgumentTypeChecker,
 )
 
 
@@ -73,7 +73,7 @@ class OneArgumentBaserowFunction(BaserowFunctionDefinition):
     def call_and_type_with(
         self, arg: BaserowExpression[BaserowFormulaType]
     ) -> BaserowFunctionCall[BaserowFormulaType]:
-        return self.call_and_type_with_valid_args([arg])
+        return self.call_and_type_with_args([arg])
 
 
 class TwoArgumentBaserowFunction(BaserowFunctionDefinition):
@@ -121,28 +121,25 @@ class TwoArgumentBaserowFunction(BaserowFunctionDefinition):
         arg1: BaserowExpression[BaserowFormulaType],
         arg2: BaserowExpression[BaserowFormulaType],
     ) -> BaserowFunctionCall[BaserowFormulaType]:
-        return self.call_and_type_with_valid_args([arg1, arg2])
+        return self.call_and_type_with_args([arg1, arg2])
 
 
 class ThreeArgumentBaserowFunction(BaserowFunctionDefinition):
     @property
-    def arg_types(self) -> List[List[Type[BaserowFormulaValidType]]]:
+    def arg_types(self) -> BaserowArgumentTypeChecker:
         return [self.arg1_type, self.arg2_type, self.arg3_type]
 
-    @abc.abstractmethod
     @property
-    def arg1_type(self) -> List[Type[BaserowFormulaValidType]]:
-        pass
+    def arg1_type(self) -> BaserowSingleArgumentTypeChecker:
+        return [BaserowFormulaValidType]
 
-    @abc.abstractmethod
     @property
-    def arg2_type(self) -> List[Type[BaserowFormulaValidType]]:
-        pass
+    def arg2_type(self) -> BaserowSingleArgumentTypeChecker:
+        return [BaserowFormulaValidType]
 
-    @abc.abstractmethod
     @property
-    def arg3_type(self) -> List[Type[BaserowFormulaValidType]]:
-        pass
+    def arg3_type(self) -> BaserowSingleArgumentTypeChecker:
+        return [BaserowFormulaValidType]
 
     @property
     def num_args(self) -> ArgCountSpecifier:
@@ -173,6 +170,14 @@ class ThreeArgumentBaserowFunction(BaserowFunctionDefinition):
         self, arg1: Expression, arg2: Expression, arg3: Expression
     ) -> Expression:
         pass
+
+    def call_and_type_with(
+        self,
+        arg1: BaserowExpression[BaserowFormulaType],
+        arg2: BaserowExpression[BaserowFormulaType],
+        arg3: BaserowExpression[BaserowFormulaType],
+    ) -> BaserowFunctionCall[BaserowFormulaType]:
+        return self.call_and_type_with_args([arg1, arg2, arg3])
 
 
 def check_arg_type(

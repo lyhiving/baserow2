@@ -77,15 +77,18 @@ from .models import (
     FormulaField,
 )
 from .registries import FieldType, field_type_registry
-from baserow.contrib.database.formula.ast.type_defs import (
+from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaTextType,
     BaserowFormulaNumberType,
     BaserowFormulaBooleanType,
     BaserowFormulaDateType,
+    BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
 )
-from ..formula.ast.type_types import BaserowFormulaType
+from baserow.contrib.database.formula.types.type_types import BaserowFormulaType
 from baserow.contrib.database.formula.registries import formula_type_handler_registry
-from ..formula.ast.type_handler import BaserowFormulaTypeHandler
+from baserow.contrib.database.formula.types.type_handler import (
+    BaserowFormulaTypeHandler,
+)
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -384,9 +387,11 @@ class NumberFieldType(FieldType):
         return value if value is None else str(value)
 
     def to_baserow_formula_type(self, field: NumberField) -> BaserowFormulaType:
-        return BaserowFormulaNumberType(
-            number_decimal_places=field.number_decimal_places
-        )
+        if field.number_type == NUMBER_TYPE_INTEGER:
+            number_decimal_places = 0
+        else:
+            number_decimal_places = field.number_decimal_places
+        return BaserowFormulaNumberType(number_decimal_places=number_decimal_places)
 
 
 class BooleanFieldType(FieldType):
@@ -1044,7 +1049,7 @@ class LinkRowFieldType(FieldType):
             return
 
         related_field_name = self.find_next_unused_related_field_name(field)
-        field.link_row_related_field = FieldHandler().create_field(
+        field.link_row_related_field, _ = FieldHandler().create_field(
             user=user,
             table=field.link_row_table,
             type_name=self.type,
@@ -1758,25 +1763,13 @@ class PhoneNumberFieldType(CharFieldMatchingRegexFieldType):
 class FormulaFieldType(FieldType):
     type = "formula"
     model_class = FormulaField
-    allowed_fields = [
+
+    CORE_FORMULA_FIELDS = [
         "formula",
-        "field_type",
-        "number_type",
-        "number_decimal_places",
-        "date_format",
-        "date_include_time",
-        "date_time_format",
+        "formula_type",
     ]
-    serializer_field_names = [
-        "formula",
-        "field_type",
-        "error",
-        "number_type",
-        "number_decimal_places",
-        "date_format",
-        "date_include_time",
-        "date_time_format",
-    ]
+    allowed_fields = BASEROW_FORMULA_TYPE_ALLOWED_FIELDS + CORE_FORMULA_FIELDS
+    serializer_field_names = BASEROW_FORMULA_TYPE_ALLOWED_FIELDS + CORE_FORMULA_FIELDS
     serializer_field_overrides = {
         "error": serializers.CharField(
             required=False, allow_blank=True, allow_null=True
@@ -1902,8 +1895,3 @@ class FormulaFieldType(FieldType):
     def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
         formula_type = self._get_formula_type_from_formula_field(from_field)
         return formula_type.get_alter_column_prepare_old_value()
-
-    @classmethod
-    def copy_allowed_fields(cls, field_to_copy_from, field_to_copy_to):
-        for attr in cls.allowed_fields:
-            setattr(field_to_copy_to, attr, getattr(field_to_copy_from, attr))

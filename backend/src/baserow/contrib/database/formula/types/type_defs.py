@@ -14,8 +14,10 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
     BaserowStringLiteral,
 )
-from baserow.contrib.database.formula.ast.type_handler import BaserowFormulaTypeHandler
-from baserow.contrib.database.formula.ast.type_types import (
+from baserow.contrib.database.formula.types.type_handler import (
+    BaserowFormulaTypeHandler,
+)
+from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaInvalidType,
     BaserowFormulaValidType,
     UnTyped,
@@ -65,9 +67,15 @@ class BaserowFormulaTextType(BaserowFormulaValidType):
             }
         )
 
+    def __str__(self) -> str:
+        return "text"
+
 
 class BaserowFormulaNumberType(BaserowFormulaValidType):
     MAX_DIGITS = 50
+
+    def __init__(self, number_decimal_places: int):
+        self.number_decimal_places = number_decimal_places
 
     @property
     def comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
@@ -95,7 +103,8 @@ class BaserowFormulaNumberType(BaserowFormulaValidType):
 
     def get_model_field(self, **kwargs) -> models.Field:
         return models.DecimalField(
-            max_digits=self.MAX_DIGITS + kwargs["decimal_places"],
+            max_digits=self.MAX_DIGITS + self.number_decimal_places,
+            decimal_places=self.number_decimal_places,
             null=True,
             blank=True,
             **kwargs,
@@ -106,15 +115,16 @@ class BaserowFormulaNumberType(BaserowFormulaValidType):
 
         return serializers.DecimalField(
             **{
-                "max_digits": self.MAX_DIGITS + kwargs["decimal_places"],
+                "max_digits": self.MAX_DIGITS + self.number_decimal_places,
+                "decimal_places": self.number_decimal_places,
                 "required": required,
                 "allow_null": not required,
                 **kwargs,
             }
         )
 
-    def __init__(self, number_decimal_places: int):
-        self.number_decimal_places = number_decimal_places
+    def __str__(self) -> str:
+        return f"number({self.number_decimal_places})"
 
 
 class BaserowFormulaBooleanType(BaserowFormulaValidType):
@@ -133,8 +143,18 @@ class BaserowFormulaBooleanType(BaserowFormulaValidType):
             **{"required": False, "default": False, **kwargs}
         )
 
+    def __str__(self) -> str:
+        return "bool"
+
 
 class BaserowFormulaDateType(BaserowFormulaValidType):
+    def __init__(
+        self, date_format: str, date_include_time: bool, date_time_format: str
+    ):
+        self.date_format = date_format
+        self.date_include_time = date_include_time
+        self.date_time_format = date_time_format
+
     @property
     def comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
         return [
@@ -253,12 +273,12 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
                 **{"required": required, "allow_null": not required, **kwargs}
             )
 
-    def __init__(
-        self, date_format: str, date_include_time: bool, date_time_format: str
-    ):
-        self.date_format = date_format
-        self.date_include_time = date_include_time
-        self.date_time_format = date_time_format
+    def __str__(self) -> str:
+        date_or_datetime = "datetime" if self.date_include_time else "date"
+        optional_time_format = (
+            f", {self.date_time_format}" if self.date_include_time else ""
+        )
+        return f"{date_or_datetime}({self.date_format}{optional_time_format})"
 
 
 class BaserowFormulaInvalidTypeHandler(
@@ -295,7 +315,7 @@ class BaserowDateFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
 
 class BaserowNumericFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
     type = "number"
-    user_overridable_formatting_option_fields = ["number_type", "number_decimal_places"]
+    user_overridable_formatting_option_fields = ["number_decimal_places"]
     model_class = BaserowFormulaNumberType
 
 
@@ -305,6 +325,10 @@ BASEROW_FORMULA_TYPE_HANDLER = [
     BaserowBooleanFormulaTypeHandler(),
     BaserowDateFormulaTypeHandler(),
     BaserowNumericFormulaTypeHandler(),
+]
+
+BASEROW_FORMULA_TYPE_ALLOWED_FIELDS = [
+    name for h in BASEROW_FORMULA_TYPE_HANDLER for name in h.all_fields()
 ]
 
 

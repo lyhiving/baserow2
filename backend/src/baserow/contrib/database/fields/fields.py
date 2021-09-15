@@ -5,7 +5,7 @@ from django.db.models import Field, Value
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
 
 from baserow.contrib.database.formula.ast.tree import BaserowExpression
-from baserow.contrib.database.formula.ast.type_types import InvalidType
+from baserow.contrib.database.formula.types.type_types import InvalidType
 from baserow.contrib.database.formula.expression_generator.generator import (
     tree_to_django_expression,
 )

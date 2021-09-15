@@ -7,8 +7,6 @@ from baserow.contrib.database.fields.mixins import (
     TimezoneMixin,
     DATE_FORMAT_CHOICES,
     DATE_TIME_FORMAT_CHOICES,
-    DATE_FORMAT,
-    DATE_TIME_FORMAT,
 )
 from baserow.contrib.database.formula.registries import formula_type_handler_registry
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
@@ -36,9 +34,6 @@ NUMBER_DECIMAL_PLACES_CHOICES = [
     (4, "1.0000"),
     (NUMBER_MAX_DECIMAL_PLACES, "1.00000"),
 ]
-
-# Allow the underlying database fields to store int's without a decimal place.
-NUMBER_DECIMAL_PLACES_INTERNAL_CHOICES = [(0, "1")] + NUMBER_DECIMAL_PLACES_CHOICES
 
 
 def get_default_field_content_type():
@@ -147,7 +142,7 @@ class NumberField(Field):
         max_length=32, choices=NUMBER_TYPE_CHOICES, default=NUMBER_TYPE_INTEGER
     )
     number_decimal_places = models.IntegerField(
-        choices=NUMBER_DECIMAL_PLACES_INTERNAL_CHOICES,
+        choices=NUMBER_DECIMAL_PLACES_CHOICES,
         default=1,
         help_text="The amount of digits allowed after the point.",
     )
@@ -160,7 +155,7 @@ class NumberField(Field):
 
         if not any(self.number_type in _tuple for _tuple in NUMBER_TYPE_CHOICES):
             raise ValueError(f"{self.number_type} is not a valid choice.")
-        if self.number_type == NUMBER_TYPE_DECIMAL and not any(
+        if not any(
             self.number_decimal_places in _tuple
             for _tuple in NUMBER_DECIMAL_PLACES_CHOICES
         ):
@@ -261,11 +256,8 @@ class FormulaField(Field):
         choices=lazy(formula_type_handler_registry.get_types_as_tuples, list)(),
         default="invalid",
     )
-    number_type = models.CharField(
-        max_length=32, choices=NUMBER_TYPE_CHOICES, default=None, null=True
-    )
     number_decimal_places = models.IntegerField(
-        choices=NUMBER_DECIMAL_PLACES_INTERNAL_CHOICES,
+        choices=[(0, "1")] + NUMBER_DECIMAL_PLACES_CHOICES,
         default=None,
         null=True,
         help_text="The amount of digits allowed after the point.",
@@ -290,45 +282,23 @@ class FormulaField(Field):
         help_text="24 (14:30) or 12 (02:30 PM)",
     )
 
-    def get_psql_format(self):
-        """
-        Returns the sql datetime format as a string based on the field's properties.
-        This could for example be 'YYYY-MM-DD HH12:MIAM'.
-
-        :return: The sql datetime format based on the field's properties.
-        :rtype: str
-        """
-
-        return self._get_format("sql")
-
-    def _get_format(self, format_type):
-        date_format = DATE_FORMAT[self.date_format][format_type]
-        time_format = DATE_TIME_FORMAT[self.date_time_format][format_type]
-        if self.date_include_time:
-            return f"{date_format} {time_format}"
-        else:
-            return date_format
-
     def compare(self, other):
         # TODO Why do we need to use str
         return (
             str(self.formula) == str(other.formula)
             and str(self.error) == str(other.error)
             and str(self.formula_type) == str(other.formula_type)
-            and str(self.number_type) == str(other.number_type)
             and str(self.number_decimal_places) == str(other.number_decimal_places)
+            and str(self.date_format) == str(other.date_format)
+            and str(self.date_time_format) == str(other.date_time_format)
+            and str(self.date_include_time) == str(other.date_include_time)
         )
 
-    def save(self, *args, **kwargs):
-        """Check if the number_type and number_decimal_places has a valid choice."""
-
-        if self.formula_type == "numeric":
-            # TODO: dedupe somehow
-            if not any(self.number_type in _tuple for _tuple in NUMBER_TYPE_CHOICES):
-                raise ValueError(f"{self.number_type} is not a valid choice.")
-            if self.number_type == NUMBER_TYPE_DECIMAL and not any(
-                self.number_decimal_places in _tuple
-                for _tuple in NUMBER_DECIMAL_PLACES_CHOICES
-            ):
-                raise ValueError(f"{self.number_decimal_places} is not a valid choice.")
-        super().save(*args, **kwargs)
+    def __str__(self):
+        return (
+            "FormulaField(\n"
+            + f"formula={self.formula},\n"
+            + f"formula_type={self.formula_type},\n"
+            + f"error={self.error},\n"
+            + ")"
+        )

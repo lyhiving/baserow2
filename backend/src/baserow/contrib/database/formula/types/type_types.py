@@ -1,14 +1,19 @@
 import abc
-from typing import Optional, Any, List, Type
+from typing import Optional, Any, List, Type, Union, Callable
 
 from django.db import models
 from django.db.models import Q
 from rest_framework.fields import Field
 
-from baserow.contrib.database.formula.ast import tree, type_defs
+from baserow.contrib.database.formula.ast import tree
 
 
 class BaserowFormulaType(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        pass
+
     @property
     @abc.abstractmethod
     def is_valid(self) -> bool:
@@ -87,9 +92,14 @@ class BaserowFormulaType(abc.ABC):
 
         return None
 
+    @abc.abstractmethod
+    def __str__(self) -> str:
+        pass
+
 
 class BaserowFormulaInvalidType(BaserowFormulaType):
     is_valid = False
+    comparable_types = []
 
     def get_export_value(self, value) -> Any:
         return None
@@ -108,14 +118,12 @@ class BaserowFormulaInvalidType(BaserowFormulaType):
     def get_serializer_field(self, **kwargs) -> Optional[Field]:
         return None
 
+    def __str__(self) -> str:
+        return "invalid"
+
 
 class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):
     is_valid = True
-
-    @property
-    @abc.abstractmethod
-    def comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
-        pass
 
     def cast_to_text(
         self,
@@ -125,10 +133,23 @@ class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):
         # We default to not having to do any extra expression wrapping to convert to
         # the text type by just returning the existing to_text func call which by
         # default just does a Cast(arg, output_field=fields.TextField()).
-        return func_call.with_valid_type(type_defs.BaserowFormulaTextType())
+        from baserow.contrib.database.formula.types.type_defs import (
+            BaserowFormulaTextType,
+        )
+
+        return func_call.with_valid_type(BaserowFormulaTextType())
 
 
 UnTyped = type(None)
 InvalidType = BaserowFormulaInvalidType
 ValidType = BaserowFormulaValidType
 Typed = BaserowFormulaType
+BaserowListOfValidTypes = List[Type[BaserowFormulaValidType]]
+BaserowSingleArgumentTypeChecker = Union[
+    Callable[[BaserowFormulaValidType], BaserowListOfValidTypes],
+    BaserowListOfValidTypes,
+]
+BaserowArgumentTypeChecker = Union[
+    Callable[[int, List[BaserowFormulaType]], BaserowListOfValidTypes],
+    List[BaserowSingleArgumentTypeChecker],
+]

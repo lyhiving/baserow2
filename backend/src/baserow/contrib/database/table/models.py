@@ -2,7 +2,7 @@ import re
 from typing import Dict, Any
 
 from django.db import models
-from django.db.models import Q, Value
+from django.db.models import Q
 
 from baserow.contrib.database.fields.exceptions import (
     OrderByFieldNotFound,
@@ -15,8 +15,7 @@ from baserow.contrib.database.fields.field_filters import (
     FILTER_TYPE_OR,
 )
 from baserow.contrib.database.fields.registries import field_type_registry
-from baserow.contrib.database.formula.ast.tree import BaserowStringLiteral
-from baserow.contrib.database.formula.ast.types import Typer
+from baserow.contrib.database.formula.types.typer import Typer
 from baserow.contrib.database.views.exceptions import ViewFilterTypeNotAllowedForField
 from baserow.contrib.database.views.registries import view_filter_type_registry
 from baserow.core.mixins import (

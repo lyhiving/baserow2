@@ -395,7 +395,7 @@ def test_changing_type_of_reference_field_to_invalid_one_for_formula(
     )
     response_json = response.json()
     assert response_json["count"] == 1
-    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+    assert response_json["results"][0][f"field_{formula_field_id}"] == 2
 
     response = api_client.get(
         reverse("api:database:fields:list", kwargs={"table_id": table.id}),
@@ -989,7 +989,6 @@ def test_altering_type_of_underlying_causes_type_update(api_client, data_fixture
             "name": "Formula",
             "type": "formula",
             "formula": "field('text')",
-            "text_default": "default",
         },
         format="json",
         HTTP_AUTHORIZATION=f"JWT {token}",
@@ -1007,7 +1006,7 @@ def test_altering_type_of_underlying_causes_type_update(api_client, data_fixture
     response_json = response.json()
     assert response_json["count"] == 2
     assert response_json["results"][0][f"field_{formula_field_id}"] == "1"
-    assert response_json["results"][1][f"field_{formula_field_id}"] == "default"
+    assert response_json["results"][1][f"field_{formula_field_id}"] is None
 
     response = api_client.patch(
         reverse("api:database:fields:item", kwargs={"field_id": fields[0].id}),

@@ -1,10 +1,7 @@
-from typing import Dict
-
 from django.db import models
 from django.db.models import (
     Expression,
     Value,
-    ExpressionWrapper,
     F,
     Field,
     DecimalField,
@@ -16,10 +13,14 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
     BaserowIntegerLiteral,
     BaserowFieldByIdReference,
-    BaserowFieldReference, BaserowExpression,
+    BaserowFieldReference,
+    BaserowExpression,
 )
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
-from baserow.contrib.database.formula.ast.type_types import Typed, InvalidType
+from baserow.contrib.database.formula.types.type_types import (
+    InvalidType,
+    BaserowFormulaType,
+)
 from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 
 
