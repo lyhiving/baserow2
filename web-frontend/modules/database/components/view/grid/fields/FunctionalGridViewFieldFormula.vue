@@ -10,6 +10,10 @@
     :field="props.field"
     :value="props.value"
   ></component>
+  <div
+    v-else-if="props.field.formula_type === 'invalid'"
+    class="grid-view__cell"
+  ></div>
   <div v-else class="grid-view__cell cell-error">Unknown Field Type</div>
 </template>
 <script>

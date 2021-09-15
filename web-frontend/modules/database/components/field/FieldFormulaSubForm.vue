@@ -18,7 +18,10 @@
           "
           class="error formula-error"
         >
-          <template v-if="!$v.values.formula.required">
+          <template v-if="values.error">
+            {{ values.error }}
+          </template>
+          <template v-else-if="!$v.values.formula.required">
             This field is required.
           </template>
           <template v-else-if="!$v.values.formula.parseFormula">
@@ -28,9 +31,6 @@
             >
             <br />
             {{ toHumanReadableErrorMessage(error) }}
-          </template>
-          <template v-else-if="values.error">
-            {{ values.error }}
           </template>
         </div>
         <div v-if="!values.error">

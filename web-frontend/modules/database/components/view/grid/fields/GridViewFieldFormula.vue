@@ -11,6 +11,10 @@
     v-else-if="getComponent(field)"
     v-bind="$props"
   ></component>
+  <div
+    v-else-if="field.formula_type === 'invalid'"
+    class="grid-view__cell"
+  ></div>
   <div v-else ref="cell" class="grid-view__cell active">Unknown field type</div>
 </template>
 
