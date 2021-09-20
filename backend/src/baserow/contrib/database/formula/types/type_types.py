@@ -101,6 +101,9 @@ class BaserowFormulaType(abc.ABC):
     def __str__(self) -> str:
         pass
 
+    def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
+        return not isinstance(self, type(old_type))
+
 
 class BaserowFormulaInvalidType(BaserowFormulaType):
     is_valid = False
@@ -131,6 +134,9 @@ class BaserowFormulaInvalidType(BaserowFormulaType):
                 **kwargs,
             }
         )
+
+    def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
+        return False
 
     def __str__(self) -> str:
         return "invalid"

@@ -123,6 +123,12 @@ class BaserowFormulaNumberType(BaserowFormulaValidType):
             }
         )
 
+    def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
+        if isinstance(old_type, BaserowFormulaNumberType):
+            return self.number_decimal_places != old_type.number_decimal_places
+        else:
+            return True
+
     def __str__(self) -> str:
         return f"number({self.number_decimal_places})"
 
@@ -161,6 +167,12 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
             type(self),
             BaserowFormulaTextType,
         ]
+
+    def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
+        if isinstance(old_type, BaserowFormulaDateType):
+            return self.date_include_time != old_type.date_include_time
+        else:
+            return True
 
     def cast_to_text(
         self,

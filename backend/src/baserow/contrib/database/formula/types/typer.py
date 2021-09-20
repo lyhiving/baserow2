@@ -137,23 +137,15 @@ class Typer:
             typed_expr.expression_type, formula_field
         )
 
-    def _required_drop_recreate(self, old_formula_field, new_formula_field):
-        # TODO
+    def _check_if_formula_type_change_requires_drop_recreate(
+        self, old_formula_field: FormulaField, new_type: BaserowFormulaType
+    ):
         old_formula_field_type = old_formula_field.formula_type
-        new_formula_field_type = new_formula_field.formula_type
-        if new_formula_field_type != old_formula_field_type:
-            return True
-        if new_formula_field == "number":
-            return (
-                new_formula_field.number_decimal_places
-                != old_formula_field.number_decimal_places
-            )
-        elif new_formula_field == "date":
-            return (
-                new_formula_field.date_include_time
-                != old_formula_field.date_include_time
-            )
-        return False
+        old_handler: BaserowFormulaTypeHandler = formula_type_handler_registry.get(
+            old_formula_field_type
+        )
+        old_type = old_handler.construct_type_from_formula_field(old_formula_field)
+        return new_type.should_recreate_when_old_type_was(old_type)
 
     def _fix_formulas_referencing_new_or_deleted_fields(self, formula_field):
         formula_field_id = formula_field.id
@@ -258,7 +250,9 @@ class Typer:
                 ):
                     specific_formula_field.save()
                     updated_fields.add(specific_formula_field)
-                    self._recreate_field_if_required(old_field, specific_formula_field)
+                    self._recreate_field_if_required(
+                        old_field, formula_field_type, specific_formula_field
+                    )
 
         if field_which_changed is not None:
             parent_fields = self.calculate_all_parent_valid_fields(field_which_changed)
@@ -266,16 +260,23 @@ class Typer:
         else:
             return list(updated_fields)
 
-    def _recreate_field_if_required(self, old_field, specific_formula_field):
-        if self._required_drop_recreate(old_field, specific_formula_field):
-            model = self.table.get_model(fields=[specific_formula_field], typer=False)
+    def _recreate_field_if_required(
+        self,
+        old_field: FormulaField,
+        new_type: BaserowFormulaType,
+        new_formula_field: FormulaField,
+    ):
+        if self._check_if_formula_type_change_requires_drop_recreate(
+            old_field, new_type
+        ):
+            model = self.table.get_model(fields=[new_formula_field], typer=False)
             FormulaFieldConverter().alter_field(
                 old_field,
-                specific_formula_field,
+                new_formula_field,
                 model,
                 model,
                 model._meta.get_field(old_field.db_column),
-                model._meta.get_field(specific_formula_field.db_column),
+                model._meta.get_field(new_formula_field.db_column),
                 None,
                 connection,
             )
