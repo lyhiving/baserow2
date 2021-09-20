@@ -1,7 +1,7 @@
 <template functional>
   <div
     v-if="props.field.formula_type === 'number' && props.value === 'NaN'"
-    v-tooltip="'Divide by zero error'"
+    v-tooltip="'Invalid number'"
     class="grid-view__cell cell-error"
   ></div>
   <component

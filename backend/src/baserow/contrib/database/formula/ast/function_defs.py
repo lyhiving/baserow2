@@ -54,6 +54,7 @@ def register_formula_functions(registry):
     registry.register(BaserowIf())
     registry.register(BaserowToText())
     registry.register(BaserowToChar())
+    registry.register(BaserowToNumber())
 
 
 class BaserowUpper(OneArgumentBaserowFunction):
@@ -327,3 +328,24 @@ class BaserowIf(ThreeArgumentBaserowFunction):
         self, arg1: Expression, arg2: Expression, arg3: Expression
     ) -> Expression:
         return Case(When(condition=arg1, then=arg2), default=arg3)
+
+
+class BaserowToNumber(OneArgumentBaserowFunction):
+    type = "to_number"
+    arg1_type = [BaserowFormulaTextType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(
+            BaserowFormulaNumberType(number_decimal_places=5)
+        )
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Func(
+            arg,
+            function="try_cast_to_numeric",
+            output_field=fields.DecimalField(),
+        )

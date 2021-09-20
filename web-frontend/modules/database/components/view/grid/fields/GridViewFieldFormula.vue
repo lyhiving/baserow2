@@ -2,7 +2,7 @@
   <div
     v-if="field.formula_type === 'number' && value === 'NaN'"
     ref="cell"
-    v-tooltip="'Divide by zero error'"
+    v-tooltip="'Invalid number'"
     class="grid-view__cell active cell-error"
   ></div>
   <div v-else-if="field.error" ref="cell" class="grid-view__cell active"></div>

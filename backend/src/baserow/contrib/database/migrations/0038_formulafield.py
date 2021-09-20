@@ -94,4 +94,26 @@ class Migration(migrations.Migration):
             },
             bases=("database.field",),
         ),
+        migrations.RunSQL(
+            (
+                """
+create or replace function try_cast_to_numeric(
+    p_in text
+)
+    returns numeric(55, 5)
+as
+$$
+begin
+    begin
+        return p_in::numeric(55, 5);
+    exception when others then
+        return 'NaN';
+    end;
+end;
+$$
+    language plpgsql;
+"""
+            ),
+            ("DROP FUNCTION IF EXISTS try_cast_to_numeric(text);"),
+        ),
     ]
