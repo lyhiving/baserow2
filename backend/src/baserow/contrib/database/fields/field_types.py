@@ -1794,3 +1794,27 @@ class FormulaFieldType(FieldType):
         model.objects.all().update(
             **{f"{field.db_column}": model._meta.get_field(field.db_column).expression}
         )
+
+    def after_update(
+        self,
+        from_field,
+        to_field,
+        from_model,
+        to_model,
+        user,
+        connection,
+        altered_column,
+        before,
+    ):
+        """
+        Immediately after the field has been updated, we need to populate the values
+        with the formula as it might have changed.
+        """
+
+        to_model.objects.all().update(
+            **{
+                f"{to_field.db_column}": to_model._meta.get_field(
+                    to_field.db_column
+                ).expression
+            }
+        )

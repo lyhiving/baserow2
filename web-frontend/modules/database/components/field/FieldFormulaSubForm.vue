@@ -87,6 +87,7 @@ export default {
       }
       try {
         parseBaserowFormula(value)
+        return true
       } catch (e) {
         this.error = e
         return false
