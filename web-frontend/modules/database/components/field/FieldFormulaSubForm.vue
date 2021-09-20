@@ -38,7 +38,7 @@ import form from '@baserow/modules/core/mixins/form'
 import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
 import { required } from 'vuelidate/lib/validators'
 import { mapGetters } from 'vuex'
-import parseBaserowFormula from '@/modules/database/formula/parser/parser'
+import parseBaserowFormula from '@baserow/modules/database/formula/parser/parser'
 
 export default {
   name: 'FieldFormulaSubForm',
