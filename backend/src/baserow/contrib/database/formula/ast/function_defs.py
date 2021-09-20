@@ -332,7 +332,7 @@ class BaserowIf(ThreeArgumentBaserowFunction):
 
 class BaserowToNumber(OneArgumentBaserowFunction):
     type = "to_number"
-    arg1_type = [BaserowFormulaTextType]
+    arg_type = [BaserowFormulaTextType]
 
     def type_function(
         self,

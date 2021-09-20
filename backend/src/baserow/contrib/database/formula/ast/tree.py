@@ -10,6 +10,7 @@ from baserow.contrib.database.formula.ast.errors import (
     TooLargeStringLiteralProvided,
     InvalidIntLiteralProvided,
 )
+from baserow.contrib.database.formula.registries import formula_type_handler_registry
 from baserow.contrib.database.formula.types import type_types
 from baserow.core.registry import Instance
 
@@ -160,7 +161,7 @@ class BaserowFunctionCall(BaserowExpression[A]):
     def check_arg_type_valid(
         self,
         i: int,
-        typed_arg: "BaserowExpression[" "type_types.BaserowFormulaValidType]",
+        typed_arg: "BaserowExpression[" "type_types.BaserowFormulaType]",
         all_typed_args: "List[BaserowExpression[type_types.BaserowFormulaType]]",
     ) -> "BaserowExpression[type_types.BaserowFormulaType]":
         return self.function_def.check_arg_type_valid(i, typed_arg, all_typed_args)
@@ -234,16 +235,13 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
                 ):
                     invalid_results.append((i, checked_typed_arg.expression_type))
                 else:
-                    valid_args.append(typed_arg)
+                    valid_args.append(checked_typed_arg)
         if len(invalid_results) > 0:
             message = ", ".join(
-                [
-                    f"argument {i} invalid because {msg.error}"
-                    for i, msg in invalid_results
-                ]
+                [f"argument {i+1} {msg.error}" for i, msg in invalid_results]
             )
             return expression.with_invalid_type(
-                f"Failed to type arguments for call {self.type} because {message}"
+                f"The arguments given to the function call '{self.type}' were invalid because: {message}"
             )
         else:
             return self.type_function_given_valid_args(valid_args, expression)
@@ -258,7 +256,7 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
     def check_arg_type_valid(
         self,
         i,
-        typed_arg: "BaserowExpression[type_types.BaserowFormulaValidType]",
+        typed_arg: "BaserowExpression[type_types.BaserowFormulaType]",
         all_typed_args: "List[BaserowExpression[type_types.BaserowFormulaType]]",
     ) -> "BaserowExpression[type_types.BaserowFormulaType]":
 
@@ -269,11 +267,20 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         else:
             arg_types_for_this_arg = self.arg_types[i]
 
+        expression_type = typed_arg.expression_type
         for valid_arg_type in arg_types_for_this_arg:
-            if isinstance(typed_arg.expression_type, valid_arg_type):
+            if isinstance(expression_type, valid_arg_type):
                 return typed_arg
-        valid_type_names = ",".join([str(t) for t in arg_types_for_this_arg])
+        valid_type_names = ",".join(
+            [
+                formula_type_handler_registry.get_by_model(t).type
+                for t in arg_types_for_this_arg
+            ]
+        )
+        expression_type_name = formula_type_handler_registry.get_by_model(
+            expression_type
+        ).type
         return typed_arg.with_invalid_type(
-            f"must of one of the following types {valid_type_names} but was "
-            f"instead of type {typed_arg.expression_type}"
+            f"must be one of the following types '{valid_type_names}' but was "
+            f"instead a '{expression_type_name}'"
         )
