@@ -407,7 +407,7 @@ def test_changing_type_of_reference_field_to_invalid_one_for_formula(
     )
     response_json = response.json()
     assert response.status_code == HTTP_200_OK, response_json
-    assert "argument 0 invalid" in response_json[1]["error"]
+    assert "argument 1 must be" in response_json[1]["error"]
 
 
 @pytest.mark.django_db

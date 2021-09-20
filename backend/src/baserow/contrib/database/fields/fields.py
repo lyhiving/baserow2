@@ -7,7 +7,7 @@ from django.db.models.fields.related_descriptors import ForwardManyToOneDescript
 from baserow.contrib.database.formula.ast.tree import BaserowExpression
 from baserow.contrib.database.formula.types.type_types import InvalidType
 from baserow.contrib.database.formula.expression_generator.generator import (
-    tree_to_django_expression,
+    baserow_expression_to_django_expression,
 )
 
 
@@ -39,9 +39,9 @@ class SingleSelectForeignKey(models.ForeignKey):
     forward_related_accessor_class = SingleSelectForwardManyToOneDescriptor
 
 
-class ExpressionField(models.Field):
+class BaserowExpressionField(models.Field):
     """
-    A Custom Django field which is always set to the value of the provided Django
+    A Custom Django field which is always set to the value of the provided Baserow
     Expression.
     """
 
@@ -53,35 +53,36 @@ class ExpressionField(models.Field):
     def __init__(
         self,
         expression: Optional[BaserowExpression],
-        expression_field_type: Field,
+        expression_field: Field,
         *args,
         **kwargs,
     ):
         """
-        :param expression: The Django expression used to calculate this fields value.
+        :param expression: The Baserow expression used to calculate this fields value.
+        :param expression_field: An instance of a Django field that should be used to
+            store the result of the expression in the database.
         """
 
         self.expression = expression
-        self.expression_field_type = expression_field_type
+        self.expression_field = expression_field
         super().__init__(*args, **kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
         kwargs["expression"] = self.expression
-        kwargs["expression_field_type"] = self.expression_field_type
+        kwargs["expression_field"] = self.expression_field
         return name, path, args, kwargs
 
     def db_type(self, connection):
-        if isinstance(self.expression_field_type, InvalidType):
+        if isinstance(self.expression_field, InvalidType):
             return "TEXT"
         else:
-            db_type = self.expression_field_type.db_type(connection)
-            return db_type
+            return self.expression_field.db_type(connection)
 
     def pre_save(self, model_instance, add):
-        print(self.expression)
-        return (
-            tree_to_django_expression(self.expression, model_instance, False)
-            if self.expression is not None
-            else Value(None)
-        )
+        if self.expression is None:
+            return Value(None)
+        else:
+            return baserow_expression_to_django_expression(
+                self.expression, model_instance
+            )

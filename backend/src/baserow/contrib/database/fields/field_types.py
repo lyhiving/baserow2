@@ -39,7 +39,7 @@ from baserow.contrib.database.formula.expression_generator.errors import (
     ExpressionGeneratorException,
 )
 from baserow.contrib.database.formula.expression_generator.generator import (
-    tree_to_django_expression,
+    baserow_expression_to_django_expression,
 )
 from baserow.contrib.database.formula.parser.ast_mapper import (
     translate_formula_for_backend_given_table,
@@ -55,7 +55,7 @@ from .exceptions import (
     IncompatiblePrimaryFieldTypeError,
 )
 from .field_filters import contains_filter, AnnotatedQ, filename_contains_filter
-from .fields import SingleSelectForeignKey, ExpressionField
+from .fields import SingleSelectForeignKey, BaserowExpressionField
 from .handler import FieldHandler
 from .models import (
     NUMBER_TYPE_INTEGER,
@@ -1763,6 +1763,9 @@ class PhoneNumberFieldType(CharFieldMatchingRegexFieldType):
 class FormulaFieldType(FieldType):
     type = "formula"
     model_class = FormulaField
+    read_only = True
+    can_be_primary_field = False
+    can_be_in_form_view = False
 
     CORE_FORMULA_FIELDS = [
         "formula",
@@ -1775,26 +1778,40 @@ class FormulaFieldType(FieldType):
             required=False, allow_blank=True, allow_null=True
         ),
     }
-    can_be_primary_field = False
-    can_be_in_form_view = False
+
+    @staticmethod
+    def _stack_error_mapper(e):
+        return (
+            ERROR_TOO_DEEPLY_NESTED_FORMULA
+            if "stack depth limit exceeded" in str(e)
+            else None
+        )
+
     api_exceptions_map = {
         BaserowFormulaParserError: ERROR_PARSING_FORMULA,
         ExpressionGeneratorException: ERROR_COMPILING_FORMULA,
         BaserowFormulaASTException: ERROR_MAPPING_FORMULA,
-        OperationalError: lambda e: ERROR_TOO_DEEPLY_NESTED_FORMULA
-        if "stack depth limit exceeded" in str(e)
-        else None,
+        OperationalError: _stack_error_mapper,
     }
-    read_only = True
 
     @staticmethod
     def _get_formula_type_from_formula_field(
-        instance: FormulaField,
+        formula_field_instance: FormulaField,
     ) -> BaserowFormulaType:
+        """
+        Gets the BaserowFormulaType the provided formula field currently has. This will
+        vary depending on the formula of the field.
+
+        :param formula_field_instance: An instance of a formula field.
+        :return: The BaserowFormulaType of the formula field instance.
+        """
+
         formula_type_handler: BaserowFormulaTypeHandler = (
-            formula_type_handler_registry.get(instance.formula_type)
+            formula_type_handler_registry.get(formula_field_instance.formula_type)
         )
-        return formula_type_handler.construct_type_from_formula_field(instance)
+        return formula_type_handler.construct_type_from_formula_field(
+            formula_field_instance
+        )
 
     def get_serializer_field(self, instance, **kwargs):
         formula_type = self._get_formula_type_from_formula_field(instance)
@@ -1806,11 +1823,12 @@ class FormulaFieldType(FieldType):
         formula_type = self._get_formula_type_from_formula_field(instance)
         expression_field_type = formula_type.get_model_field(**kwargs)
 
-        return ExpressionField(
+        expression_to_use = None if instance.error or instance.trashed else expression
+        return BaserowExpressionField(
             null=True,
             blank=True,
-            expression=None if instance.error or instance.trashed else expression,
-            expression_field_type=expression_field_type,
+            expression=expression_to_use,
+            expression_field=expression_field_type,
             **kwargs,
         )
 
@@ -1876,7 +1894,7 @@ class FormulaFieldType(FieldType):
 
     def _do_bulk_update(self, to_field, to_model):
         f = to_model._meta.get_field(to_field.db_column)
-        expr = tree_to_django_expression(f.expression, None, True)
+        expr = baserow_expression_to_django_expression(f.expression, None)
         to_model.objects.all().update(**{f"{to_field.db_column}": expr})
 
     def before_create(self, table, primary, values, order, user):

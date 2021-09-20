@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.db import models
 from django.db.models import (
     Expression,
@@ -22,17 +24,39 @@ from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
 )
 from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
+from baserow.contrib.database.table.models import GeneratedTableModel
 
 
-def tree_to_django_expression(
-    formula_tree: BaserowExpression[BaserowFormulaType], model_instance, for_update
+def baserow_expression_to_django_expression(
+    baserow_expression: BaserowExpression[BaserowFormulaType],
+    model_instance: Optional[GeneratedTableModel],
 ) -> Expression:
+    """
+    Takes a BaserowExpression and converts it to a Django Expression which calculates
+    the result of the expression when run on the provided model_instance or for the
+    entire table when a model_instance is not provided.
+
+    More specifically, when a model_instance is provided all field() references will
+    be replaced by the values of those fields on the model_instance. If a model_instance
+    is not provided instead these field references will be replaced by F() column
+    references. When doing an create operation you will need to provide a model_instance
+    as you cannot reference a column for a row that does not yet exist. Instead the
+    initial defaults will be found and substituted in.
+
+    :param baserow_expression: The BaserowExpression to convert.
+    :param model_instance: If provided the expression will calculate the result for
+        this single instance. If not provided then the expression will use F() column
+        references and will calculate the result for every row in the table.
+    :return: A Django Expression which can be used in a create operation when a
+        model_instance is provided or an update operation when one is not provided.
+    """
+
     try:
-        if isinstance(formula_tree.expression_type, InvalidType):
+        if isinstance(baserow_expression.expression_type, InvalidType):
             return Value(None)
         else:
-            return formula_tree.accept(
-                BaserowExpressionToDjangoExpressionGenerator(model_instance, for_update)
+            return baserow_expression.accept(
+                BaserowExpressionToDjangoExpressionGenerator(model_instance)
             )
     except RecursionError:
         raise MaximumFormulaSizeError()
@@ -41,15 +65,24 @@ def tree_to_django_expression(
 class BaserowExpressionToDjangoExpressionGenerator(
     BaserowFormulaASTVisitor[Field, Expression]
 ):
+    """
+    Visits a BaserowExpression replacing it with the equivalent Django Expression.
+
+    If a model_instance is provided then any field references will be replaced with
+    direct Value() expressions of those fields on that model_instance. If one is not
+    provided then instead a F() expression will be used to reference that field.
+    """
+
     def __init__(
         self,
-        model_instance,
-        for_update: bool,
+        model_instance: Optional[GeneratedTableModel],
     ):
         self.model_instance = model_instance
-        self.for_update = for_update
 
     def visit_field_reference(self, field_reference: BaserowFieldReference):
+        # If a field() reference still exists it must not have been able to find a
+        # field with that name and replace it with a field_by_id. This means we cannot
+        # proceed as we do not know what field should be referenced here.
         raise UnknownFieldReference(field_reference.referenced_field_name)
 
     def visit_field_by_id_reference(
@@ -57,7 +90,8 @@ class BaserowExpressionToDjangoExpressionGenerator(
     ):
         field_id = field_by_id_reference.referenced_field_id
         db_field_name = f"field_{field_id}"
-        if self.for_update:
+
+        if self.model_instance is None:
             return F(db_field_name)
         elif not hasattr(self.model_instance, db_field_name):
             raise UnknownFieldReference(field_id)
