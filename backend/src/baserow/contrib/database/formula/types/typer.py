@@ -173,7 +173,6 @@ class Typer:
                 self.deleted_field_id_names,
                 self.new_field_names_to_id,
             )
-            print(f"Fixed {specific_formula_field.formula} to {new_formula}")
             specific_formula_field.formula = new_formula
 
     def _generate_formula_expression_and_references(self, field):

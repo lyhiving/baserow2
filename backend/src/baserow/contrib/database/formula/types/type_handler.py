@@ -45,7 +45,6 @@ class BaserowFormulaTypeHandler(ModelInstanceMixin, Instance, abc.ABC, Generic[T
     def overwrite_type_options_with_user_defined_ones(
         self, instance: T, formula_field: FormulaField
     ):
-        formula_field.formula_type = self.type
         for field_name in self.user_overridable_formatting_option_fields:
             if getattr(formula_field, field_name) is not None:
                 setattr(instance, field_name, getattr(formula_field, field_name))
