@@ -26,38 +26,9 @@ export default function parseBaserowFormula(rawBaserowFormulaString) {
   return parser.root()
 }
 
-function lookaheadToFindName(start, stop, stream) {
-  let searchingForFieldByIdReferenceLiteral = false
-  for (let i = start; i < stop; i++) {
-    const token = stream.tokens[i]
-    const output = token.text
-    const isNormalToken = token.channel === 0
-    if (isNormalToken) {
-      if (searchingForFieldByIdReferenceLiteral) {
-        if (token.type === BaserowFormulaLexer.SINGLEQ_STRING_LITERAL) {
-          return output.replace("\\'", "'").slice(1, -1)
-        } else if (token.type === BaserowFormulaLexer.DOUBLEQ_STRING_LITERAL) {
-          return output.replace('\\"', '"').slice(1, -1)
-        } else {
-          return false
-        }
-      }
-    }
-    if (token.type === BaserowFormulaLexer.OPEN_PAREN) {
-      searchingForFieldByIdReferenceLiteral = true
-    } else {
-      return false
-    }
-    if (token.type === BaserowFormulaLexer.EOF) {
-      return false
-    }
-  }
-  return false
-}
-
-export function replaceFieldWithFieldById(
+export function updateFieldNames(
   rawBaserowFormulaString,
-  fieldNameToId
+  oldFieldNameToNewFieldName
 ) {
   const errors = []
   const chars = new antlr4.InputStream(rawBaserowFormulaString)
@@ -68,52 +39,42 @@ export function replaceFieldWithFieldById(
   const start = 0
   const stop = stream.tokens.length
   if (start < 0 || stop < 0 || stop < start) {
-    return ''
+    return false
   }
-  let fieldByIdReferenceStarted = false
-  let searchingForFieldByIdReferenceLiteral = false
+  let fieldReferenceStarted = false
+  let searchedForFieldReferenceStart = false
   let newFormula = ''
   for (let i = start; i < stop; i++) {
     const token = stream.tokens[i]
     let output = token.text
     const isNormalToken = token.channel === 0
     if (isNormalToken) {
-      if (searchingForFieldByIdReferenceLiteral) {
-        fieldByIdReferenceStarted = false
+      if (searchedForFieldReferenceStart) {
+        fieldReferenceStarted = false
         if (token.type === BaserowFormulaLexer.SINGLEQ_STRING_LITERAL) {
           const replaced = output.replace("\\'", "'").slice(1, -1)
-          if (fieldNameToId[replaced] === undefined) {
-            throw new Error('Unknown field ' + replaced)
+          if (oldFieldNameToNewFieldName[replaced] !== undefined) {
+            output = oldFieldNameToNewFieldName[replaced]
           }
-          output = fieldNameToId[replaced]
         } else if (token.type === BaserowFormulaLexer.DOUBLEQ_STRING_LITERAL) {
           const replaced = output.replace('\\"', '"').slice(1, -1)
-          if (fieldNameToId[replaced] === undefined) {
-            throw new Error('Unknown field ' + replaced)
+          if (oldFieldNameToNewFieldName[replaced] !== undefined) {
+            output = oldFieldNameToNewFieldName[replaced]
           }
-          output = fieldNameToId[replaced]
         } else {
           return false
         }
-      } else if (fieldByIdReferenceStarted) {
-        fieldByIdReferenceStarted = false
+      } else if (fieldReferenceStarted) {
+        fieldReferenceStarted = false
         if (token.type === BaserowFormulaLexer.OPEN_PAREN) {
-          searchingForFieldByIdReferenceLiteral = true
+          searchedForFieldReferenceStart = true
         } else {
           return false
         }
       }
     }
     if (token.type === BaserowFormulaLexer.FIELD) {
-      const name = lookaheadToFindName(i + 1, stop, stream)
-      if (name === false) {
-        return false
-      } else if (fieldNameToId[name] !== undefined) {
-        fieldByIdReferenceStarted = true
-        output = 'field_by_id'
-      } else {
-        errors.push(`Unknown field ${name}`)
-      }
+      fieldReferenceStarted = true
     }
     if (token.type === BaserowFormulaLexer.EOF) {
       break
@@ -127,6 +88,7 @@ export function replaceFieldByIdWithFieldRef(
   rawBaserowFormulaString,
   fieldIdToName
 ) {
+  const errors = []
   const chars = new antlr4.InputStream(rawBaserowFormulaString)
   const lexer = new BaserowFormulaLexer(chars)
   const stream = new BufferedTokenStream(lexer)
@@ -135,7 +97,7 @@ export function replaceFieldByIdWithFieldRef(
   const start = 0
   const stop = stream.tokens.length
   if (start < 0 || stop < 0 || stop < start) {
-    return ''
+    return false
   }
   let fieldByIdReferenceStarted = false
   let searchingForFieldByIdReferenceLiteral = false
@@ -145,18 +107,22 @@ export function replaceFieldByIdWithFieldRef(
     let output = token.text
     const isNormalToken = token.channel === 0
     if (searchingForFieldByIdReferenceLiteral && isNormalToken) {
-      fieldByIdReferenceStarted = false
+      searchingForFieldByIdReferenceLiteral = false
       if (token.type === BaserowFormulaLexer.INTEGER_LITERAL) {
         if (fieldIdToName[output] === undefined) {
-          throw new Error('Unknown field id ' + output)
+          errors.push('Unknown field with id ' + output)
         }
         output = `'${fieldIdToName[output]}'`
+      } else {
+        return false
       }
     }
     if (fieldByIdReferenceStarted && isNormalToken) {
       fieldByIdReferenceStarted = false
       if (token.type === BaserowFormulaLexer.OPEN_PAREN) {
         searchingForFieldByIdReferenceLiteral = true
+      } else {
+        return false
       }
     }
     if (token.type === BaserowFormulaLexer.FIELDBYID) {
@@ -168,5 +134,5 @@ export function replaceFieldByIdWithFieldRef(
     }
     newFormula += output
   }
-  return newFormula
+  return { newFormula, errors }
 }

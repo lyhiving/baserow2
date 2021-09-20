@@ -60,7 +60,7 @@ import { required } from 'vuelidate/lib/validators'
 import { mapGetters } from 'vuex'
 import parseBaserowFormula, {
   replaceFieldByIdWithFieldRef,
-  replaceFieldWithFieldById,
+  updateFieldNames,
 } from '@baserow/modules/database/formula/parser/parser'
 import FieldFormulaNumberSubForm from '@baserow/modules/database/components/field/FieldFormulaNumberSubForm'
 import FieldDateSubForm from '@baserow/modules/database/components/field/FieldDateSubForm'
@@ -81,7 +81,6 @@ export default {
       values: {
         formula: '',
       },
-      internalFormulaValue: '',
       error: '',
     }
   },
@@ -103,50 +102,59 @@ export default {
     },
   },
   watch: {
-    fieldIdToNameMap(newMap) {
-      // A field name has changed so the current this.values.formula might now have
-      // an invalid field('old name') reference. Instead lets re-update it from our
-      // internal format where all references are in the form field_by_id(..)
-      try {
-        this.updateFormulaData(this.internalFormulaValue)
-        this.error = ''
-      } catch (e) {
-        this.error = e
+    fieldIdToNameMap(idToNewNames, idToOldNames) {
+      const oldToNewNameMapBuilder = function (map, key) {
+        map[idToOldNames[key]] = idToNewNames[key]
+        return map
       }
+      const oldKnownFieldIds = Object.keys(idToOldNames)
+      const oldFieldNameToNewFieldName = oldKnownFieldIds.reduce(
+        oldToNewNameMapBuilder,
+        {}
+      )
+      this.fieldNameChanged(oldFieldNameToNewFieldName)
     },
     defaultValues(newValue, oldValue) {
       if (!this.error) {
-        try {
-          this.updateFormulaData(newValue.formula)
-          this.error = ''
-        } catch (e) {
-          this.error = e
-        }
+        this.convertServerSideFormulaToClient(newValue.formula)
       }
     },
     'values.formula'(newValue, oldValue) {
       if (!this.error) {
-        try {
-          this.updateFormulaData(newValue)
-          this.error = ''
-        } catch (e) {
-          this.error = e
-        }
+        this.convertServerSideFormulaToClient(newValue)
       }
     },
   },
   methods: {
-    updateFormulaData(formula) {
-      const result = replaceFieldWithFieldById(formula, this.fieldNameToIdMap)
+    convertServerSideFormulaToClient(formula) {
+      const result = replaceFieldByIdWithFieldRef(
+        formula,
+        this.fieldIdToNameMap
+      )
       if (result !== false) {
         const { newFormula, errors } = result
-        this.internalFormulaValue = newFormula
-        this.values.formula = replaceFieldByIdWithFieldRef(
-          this.internalFormulaValue,
-          this.fieldIdToNameMap
-        )
+        this.values.formula = newFormula
         if (errors.length > 0) {
-          throw new Error(errors.join(', '))
+          this.error = errors.join(', ')
+        } else {
+          return true
+        }
+      }
+      return false
+    },
+    fieldNameChanged(oldNameToNewNameMap) {
+      const formula = this.values.formula
+      if (this.convertServerSideFormulaToClient(formula)) {
+        const result = updateFieldNames(
+          this.values.formula,
+          oldNameToNewNameMap
+        )
+        if (result !== false) {
+          const { newFormula, errors } = result
+          this.values.formula = newFormula
+          if (errors.length > 0) {
+            this.error = errors.join(', ')
+          }
         }
       }
     },
@@ -173,9 +181,7 @@ export default {
       }
       try {
         parseBaserowFormula(value)
-        this.updateFormulaData(value)
-        this.error = ''
-        return true
+        return this.convertServerSideFormulaToClient(value)
       } catch (e) {
         this.error = e
         return false

@@ -238,10 +238,11 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
                     valid_args.append(checked_typed_arg)
         if len(invalid_results) > 0:
             message = ", ".join(
-                [f"argument {i+1} {msg.error}" for i, msg in invalid_results]
+                [f"argument {i + 1} {msg.error}" for i, msg in invalid_results]
             )
             return expression.with_invalid_type(
-                f"The arguments given to the function call '{self.type}' were invalid because: {message}"
+                f"The arguments given to the function call '{self.type}' were invalid because: "
+                f"{message}"
             )
         else:
             return self.type_function_given_valid_args(valid_args, expression)

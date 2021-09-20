@@ -137,8 +137,20 @@ export const actions = {
         values: data,
       })
     }
+    const fieldType = this.$registry.get('field', type)
+    const anyRelatedFieldsNeedRefresh = data.related_fields.some((f) => {
+      const relatedFieldType = this.$registry.get('field', f.type)
+      return relatedFieldType.shouldRefreshWhenAdded()
+    })
 
-    return forceCreate ? await forceCreateCallback() : forceCreateCallback
+    const refreshNeeded =
+      fieldType.shouldRefreshWhenAdded() || anyRelatedFieldsNeedRefresh
+    return {
+      forceCreateCallback: forceCreate
+        ? await forceCreateCallback()
+        : forceCreateCallback,
+      refreshNeeded,
+    }
   },
   /**
    * Restores a field into the field store and notifies the selected view that the
@@ -208,11 +220,7 @@ export const actions = {
         data,
       })
       for (const f of data.related_fields) {
-        console.log(f.id)
-        console.log(JSON.stringify(getters.getAllWithPrimary))
         const field = getters.get(f.id)
-        console.log('UPDATE??')
-        console.log(field)
         const oldField = clone(field)
         await dispatch('forceUpdate', {
           field,
@@ -259,15 +267,9 @@ export const actions = {
    */
   async delete({ commit, dispatch }, field) {
     try {
-      console.log('start???')
       const { data } = await dispatch('deleteCall', field)
-      console.log('after???')
       await dispatch('forceDelete', field)
-      console.log('del')
-      console.log(data)
       for (const f of data.related_fields) {
-        console.log('DELETE')
-        console.log(f)
         const field = getters.get(f.id)
         const oldField = clone(field)
         await dispatch('forceUpdate', {
@@ -277,7 +279,6 @@ export const actions = {
         })
       }
     } catch (error) {
-      console.log(error)
       // If the field to delete wasn't found we can just delete it from the
       // state.
       if (error.response && error.response.status === 404) {

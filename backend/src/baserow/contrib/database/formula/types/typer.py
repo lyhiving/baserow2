@@ -239,10 +239,13 @@ class Typer:
         updated_fields = set()
         for formula_field_id in self.formula_field_ids:
             typed_formula_expression = self.typed_field_expressions[formula_field_id]
-            specific_formula_field = self.field_id_to_field[formula_field_id]
+            # noinspection PyTypeChecker
+            specific_formula_field: FormulaField = self.field_id_to_field[
+                formula_field_id
+            ]
             if specific_formula_field.trashed:
                 continue
-            old_field = deepcopy(specific_formula_field)
+            old_field: FormulaField = deepcopy(specific_formula_field)
 
             formula_field_type = typed_formula_expression.expression_type
             self._update_field(formula_field_type, specific_formula_field)
@@ -254,15 +257,9 @@ class Typer:
                     field_which_changed is None
                     or specific_formula_field.id != field_which_changed.id
                 ):
-                    print(f"Updating {specific_formula_field} from {old_field}")
                     specific_formula_field.save()
                     updated_fields.add(specific_formula_field)
                     self._recreate_field_if_required(old_field, specific_formula_field)
-            else:
-                print(
-                    f"Ignoring as no change of {specific_formula_field} "
-                    f"from {old_field}"
-                )
 
         if field_which_changed is not None:
             parent_fields = self.calculate_all_parent_valid_fields(field_which_changed)

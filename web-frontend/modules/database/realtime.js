@@ -54,6 +54,10 @@ export const registerRealtimeEvents = (realtime) => {
         })
         .filter((f) => f.field !== undefined)
         .map((f) => (f.oldField = clone(f)))
+      const anyRelatedFieldsNeedRefresh = data.related_fields.some((f) => {
+        const relatedFieldType = app.$registry.get('field', f.type)
+        return relatedFieldType.shouldRefreshWhenAdded()
+      })
       const callback = async () => {
         await store.dispatch('field/forceCreate', {
           table,
@@ -63,7 +67,7 @@ export const registerRealtimeEvents = (realtime) => {
           await store.dispatch('field/forceUpdate', f)
         }
       }
-      if (!fieldType.shouldRefreshWhenAdded()) {
+      if (!fieldType.shouldRefreshWhenAdded() && !anyRelatedFieldsNeedRefresh) {
         callback()
       } else {
         app.$bus.$emit('table-refresh', {
@@ -86,9 +90,7 @@ export const registerRealtimeEvents = (realtime) => {
         })
         .filter((f) => f.field !== undefined)
         .map((f) => (f.oldField = clone(f)))
-      console.log('RESTORED', data)
       for (const f of oldRelatedFields) {
-        console.log(JSON.stringify(f))
         await store.dispatch('field/forceUpdate', f)
       }
       app.$bus.$emit('table-refresh', {
