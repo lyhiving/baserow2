@@ -241,8 +241,8 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
                 [f"argument {i + 1} {msg.error}" for i, msg in invalid_results]
             )
             return expression.with_invalid_type(
-                f"The arguments given to the function call '{self.type}' were invalid because: "
-                f"{message}"
+                f"The arguments given to the function call '{self.type}' were invalid "
+                f"because: {message}"
             )
         else:
             return self.type_function_given_valid_args(valid_args, expression)
