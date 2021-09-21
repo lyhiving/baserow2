@@ -3,7 +3,7 @@ import pytest
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.formula.parser.ast_mapper import (
-    translate_formula_for_backend,
+    replace_field_refs_according_to_new_or_deleted_fields,
 )
 
 
@@ -113,15 +113,16 @@ def test_get_set_export_serialized_value_formula_field(data_fixture):
 @pytest.mark.django_db
 def test_sub(data_fixture):
     assert (
-        translate_formula_for_backend(
-            'field\n(\n"My Field Name")', {"My Field Name": 1}
+        replace_field_refs_according_to_new_or_deleted_fields(
+            'field\n(\n"My Field Name")', {}, {"My Field Name": 1}
         )
         == "field_by_id\n(\n1)"
     )
     assert (
-        translate_formula_for_backend(
-            """concat(\n"field('My Field Name')", 'test')""",
-            {"My Field Name": "sub"},
+        replace_field_refs_according_to_new_or_deleted_fields(
+            """concat(\nfield_by_id(2), 'test')""",
+            {2: "Deleted Field"},
+            {"My Field Name": 3},
         )
-        == """concat(\n"field('My Field Name')", 'test')"""
+        == """concat(\nfield('Deleted Field'), 'test')"""
     )

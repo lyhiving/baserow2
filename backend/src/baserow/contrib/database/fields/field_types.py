@@ -36,9 +36,6 @@ from ..formula.errors import BaserowFormulaException
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
-from baserow.contrib.database.formula.parser.ast_mapper import (
-    translate_formula_for_backend_given_table,
-)
 from baserow.contrib.database.validators import UnicodeRegexValidator
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
@@ -1888,17 +1885,6 @@ class FormulaFieldType(FieldType):
         f = to_model._meta.get_field(to_field.db_column)
         expr = baserow_expression_to_django_expression(f.expression, None)
         to_model.objects.all().update(**{f"{to_field.db_column}": expr})
-
-    def before_create(self, table, primary, values, order, user):
-        values["formula"] = translate_formula_for_backend_given_table(
-            values["formula"], table
-        )
-
-    def before_update(self, old_field, values, user):
-        if "formula" in values:
-            values["formula"] = translate_formula_for_backend_given_table(
-                values["formula"], old_field.table
-            )
 
     def related_field_changed(self, field, to_model):
         if not field.error:

@@ -13,7 +13,6 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFieldReference,
     BaserowExpression,
 )
-from baserow.contrib.database.formula.types.type_types import UnTyped
 from baserow.contrib.database.formula.parser.errors import (
     InvalidNumberOfArguments,
     BaserowFormulaSyntaxError,
@@ -31,6 +30,7 @@ from baserow.contrib.database.formula.parser.generated.BaserowFormulaVisitor imp
     BaserowFormulaVisitor,
 )
 from baserow.contrib.database.formula.registries import formula_function_registry
+from baserow.contrib.database.formula.types.type_types import UnTyped
 from baserow.core.exceptions import InstanceTypeDoesNotExist
 
 
@@ -42,9 +42,7 @@ class BaserowFormulaErrorListener(ErrorListener):
         raise BaserowFormulaSyntaxError(message)
 
 
-def raw_formula_to_untyped_expression(
-    formula: str, field_id_to_field, new_field_name_to_id, deleted_field_ids
-) -> BaserowExpression[UnTyped]:
+def raw_formula_to_untyped_expression(formula: str) -> BaserowExpression[UnTyped]:
     try:
         lexer = BaserowFormulaLexer(InputStream(formula))
         stream = CommonTokenStream(lexer)
@@ -52,26 +50,9 @@ def raw_formula_to_untyped_expression(
         parser.removeErrorListeners()
         parser.addErrorListener(BaserowFormulaErrorListener())
         tree = parser.root()
-        return BaserowFormulaToBaserowASTMapper(
-            field_id_to_field, new_field_name_to_id, deleted_field_ids
-        ).visit(tree)
+        return BaserowFormulaToBaserowASTMapper().visit(tree)
     except RecursionError:
         raise MaximumFormulaSizeError()
-
-
-def translate_formula_for_backend_given_table(formula: str, table) -> str:
-    try:
-        fields = table.field_set.all()
-        field_name_to_id = {f.name: f.id for f in fields}
-        return translate_formula_for_backend(formula, field_name_to_id)
-    except RecursionError:
-        raise MaximumFormulaSizeError()
-
-
-def translate_formula_for_backend(formula, field_name_to_id):
-    lexer = BaserowFormulaLexer(InputStream(formula))
-    stream = BufferedTokenStream(lexer)
-    return _translate_field_to_field_by_id(stream, field_name_to_id)
 
 
 def replace_field_refs_according_to_new_or_deleted_fields(
@@ -141,7 +122,9 @@ def _translate_trashed_or_deleted_field_by_ids_to_fields(
                     is_singleq = t.type == BaserowFormulaLexer.SINGLEQ_STRING_LITERAL
                     is_doubleq = t.type == BaserowFormulaLexer.DOUBLEQ_STRING_LITERAL
                     if is_singleq or is_doubleq:
-                        raw_field_name = process_string(t.text, is_singleq)
+                        raw_field_name = _convert_string_literal_token_to_string(
+                            t.text, is_singleq
+                        )
                         if raw_field_name not in new_names_to_ids:
                             raise UnknownFieldReference()
                         field_id = new_names_to_ids[raw_field_name]
@@ -198,7 +181,7 @@ def _lookahead_to_name(start, stop, stream):
             if t.type == BaserowFormulaLexer.OPEN_PAREN and not search_for_field_name:
                 search_for_field_name = True
             elif (is_singleq or is_doubleq) and search_for_field_name:
-                return process_string(t.text, is_singleq)
+                return _convert_string_literal_token_to_string(t.text, is_singleq)
             else:
                 return None
         if t.type == Token.EOF:
@@ -235,7 +218,9 @@ def _translate_field_to_field_by_id(stream, field_name_to_id):
                     is_singleq = t.type == BaserowFormulaLexer.SINGLEQ_STRING_LITERAL
                     is_doubleq = t.type == BaserowFormulaLexer.DOUBLEQ_STRING_LITERAL
                     if is_singleq or is_doubleq:
-                        raw_field_name = process_string(t.text, is_singleq)
+                        raw_field_name = _convert_string_literal_token_to_string(
+                            t.text, is_singleq
+                        )
                         if raw_field_name not in field_name_to_id:
                             raise UnknownFieldReference()
                         field_id = field_name_to_id[raw_field_name]
@@ -266,7 +251,7 @@ def _translate_field_to_field_by_id(stream, field_name_to_id):
         return buf.getvalue()
 
 
-def process_string(text, is_single_q):
+def _convert_string_literal_token_to_string(text, is_single_q):
     literal_without_outer_quotes = text[1:-1]
     if is_single_q:
         literal = literal_without_outer_quotes.replace("\\'", "'")
@@ -276,11 +261,6 @@ def process_string(text, is_single_q):
 
 
 class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
-    def __init__(self, field_ids_to_fields, new_field_name_to_id, deleted_field_ids):
-        self.field_ids_to_fields = field_ids_to_fields
-        self.deleted_field_ids = deleted_field_ids
-        self.new_field_name_to_id = new_field_name_to_id
-
     def visitRoot(self, ctx: BaserowFormula.RootContext):
         return ctx.expr().accept(self)
 
@@ -350,21 +330,11 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
 
     def visitFieldReference(self, ctx: BaserowFormula.FieldReferenceContext):
         reference = ctx.field_reference()
-        reference = process_string(
+        field_name = _convert_string_literal_token_to_string(
             reference.getText(), reference.SINGLEQ_STRING_LITERAL()
         )
-        if reference in self.new_field_name_to_id:
-            return BaserowFieldByIdReference[UnTyped](
-                self.new_field_name_to_id[reference], None
-            )
-        else:
-            return BaserowFieldReference[UnTyped](reference, None)
+        return BaserowFieldReference[UnTyped](field_name, None)
 
     def visitFieldByIdReference(self, ctx: BaserowFormula.FieldByIdReferenceContext):
         field_id = int(str(ctx.INTEGER_LITERAL()))
-        if (
-            field_id not in self.field_ids_to_fields
-            and field_id not in self.deleted_field_ids
-        ):
-            raise UnknownFieldReference(f"Field with id {field_id} is unknown")
         return BaserowFieldByIdReference[UnTyped](field_id, None)

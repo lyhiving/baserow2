@@ -500,7 +500,7 @@ def test_trashing_child_field(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_200_OK, response_json
-    assert "Field number is deleted" in response_json[0]["error"]
+    assert "references the deleted field number" in response_json[0]["error"]
 
 
 @pytest.mark.django_db
@@ -585,7 +585,7 @@ def test_trashing_restoring_child_field(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_200_OK, response_json
-    assert "Field number is deleted" in response_json[0]["error"]
+    assert "references the deleted field number" in response_json[0]["error"]
     assert response_json[0]["formula"] == "field('number')+1"
 
     response = api_client.patch(
@@ -662,7 +662,7 @@ def test_trashing_renaming_child_field(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_200_OK, response_json
-    assert "Field number is deleted" in response_json[1]["error"]
+    assert "references the deleted field number" in response_json[1]["error"]
     assert response_json[1]["formula"] == "field('number')+1"
 
     # We rename the other field to fit into the formula slot
@@ -737,7 +737,7 @@ def test_trashing_creating_child_field(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_200_OK, response_json
-    assert "Field number is deleted" in response_json[0]["error"]
+    assert "references the deleted field number" in response_json[0]["error"]
     assert response_json[0]["formula"] == "field('number')+1"
 
     # We create the another field to fit into the formula slot

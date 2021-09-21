@@ -9,19 +9,21 @@ from baserow.contrib.database.fields.models import (
     FormulaField,
 )
 from baserow.contrib.database.fields.registries import field_type_registry, FieldType
-from baserow.contrib.database.formula.types.errors import (
-    InvalidFormulaType,
-    NoCircularReferencesError,
-    NoSelfReferencesError,
-)
 from baserow.contrib.database.formula.ast.tree import (
     BaserowStringLiteral,
     BaserowFieldByIdReference,
     BaserowFieldReference,
     BaserowExpression,
 )
-from baserow.contrib.database.formula.types.type_defs import (
-    BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
+from baserow.contrib.database.formula.parser.ast_mapper import (
+    raw_formula_to_untyped_expression,
+    replace_field_refs_according_to_new_or_deleted_fields,
+)
+from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
+from baserow.contrib.database.formula.registries import formula_type_handler_registry
+from baserow.contrib.database.formula.types.errors import (
+    NoCircularReferencesError,
+    NoSelfReferencesError,
 )
 from baserow.contrib.database.formula.types.type_handler import (
     BaserowFormulaTypeHandler,
@@ -37,12 +39,6 @@ from baserow.contrib.database.formula.types.visitors import (
     TypeAnnotatingASTVisitor,
     SubstituteFieldByIdWithThatFieldsExpressionVisitor,
 )
-from baserow.contrib.database.formula.parser.ast_mapper import (
-    raw_formula_to_untyped_expression,
-    replace_field_refs_according_to_new_or_deleted_fields,
-)
-from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
-from baserow.contrib.database.formula.registries import formula_type_handler_registry
 from baserow.contrib.database.table import models
 
 
@@ -54,8 +50,7 @@ class Typer:
         return Typer(
             table,
             changed_field=changed_field,
-            new_field_names_to_id={changed_field.name: changed_field.pk},
-            deleted_field_names_to_id={},
+            deleted_field_id_to_name={},
             do_update=True,
         )
 
@@ -66,8 +61,7 @@ class Typer:
         return Typer(
             table,
             changed_field=None,
-            new_field_names_to_id={},
-            deleted_field_names_to_id={deleted_field_id: deleted_field_name},
+            deleted_field_id_to_name={deleted_field_id: deleted_field_name},
             do_update=True,
         )
 
@@ -76,8 +70,7 @@ class Typer:
         return Typer(
             table,
             changed_field=None,
-            new_field_names_to_id={},
-            deleted_field_names_to_id={},
+            deleted_field_id_to_name={},
             do_update=False,
         )
 
@@ -85,14 +78,13 @@ class Typer:
         self,
         table: "models.Table",
         changed_field: Optional[Field],
-        deleted_field_names_to_id: Dict[int, str],
-        new_field_names_to_id: Dict[str, int],
+        deleted_field_id_to_name: Dict[int, str],
         do_update=False,
     ):
         self.changed_field = changed_field
-        self.deleted_field_id_to_name = deleted_field_names_to_id
-        self.new_field_names_to_id = new_field_names_to_id
-        self.all_fields = self._construct_all_fields(changed_field, table)
+        self.table = table
+        self.deleted_field_id_to_name = deleted_field_id_to_name
+        self._construct_all_fields()
         self.formula_field_ids: List[int] = []
         self.typed_field_expressions: Dict[
             int, BaserowExpression[BaserowFormulaType]
@@ -100,10 +92,7 @@ class Typer:
         self.field_references: Dict[int, List[int]] = {}
         self.field_parents: Dict[int, Set[int]] = {}
         self.untyped_formula_expressions: Dict[int, BaserowExpression[UnTyped]] = {}
-        self.field_id_to_field: Dict[int, Field] = {
-            f.id: f.specific for f in self.all_fields
-        }
-        self.table = table
+        self.fixed_formula_strings = {}
 
         self._run_type_table()
         if do_update:
@@ -113,22 +102,21 @@ class Typer:
 
     def get_model(self):
         return self.table.get_model(
-            field_ids=[], fields=[self.changed_field] + self.updated_fields, typer=self
+            field_ids=[],
+            fields=[self.field_id_to_field[self.changed_field.id]]
+            + self.updated_fields,
+            typer=self,
         )
 
-    @staticmethod
-    def _construct_all_fields(changed_field, table):
-        all_fields = []
-        changed_field_added = False
-        for field in table.field_set(manager="objects_and_trash").all():
-            if changed_field is not None and field.id == changed_field.id:
-                all_fields.append(changed_field)
-                changed_field_added = True
-            else:
-                all_fields.append(field)
-        if not changed_field_added and changed_field is not None:
-            all_fields.append(changed_field)
-        return all_fields
+    def _construct_all_fields(self):
+        self.all_fields = []
+        self.field_id_to_field = {}
+        self.field_name_to_id = {}
+        for field in self.table.field_set.all():
+            field = field.specific
+            self.all_fields.append(field)
+            self.field_id_to_field[field.id] = field
+            self.field_name_to_id[field.name] = field.id
 
     def _run_type_table(self):
         try:
@@ -146,11 +134,11 @@ class Typer:
                 self._calculate_formula_field_type_resolution_order()
             )
             for formula_field_id in formula_field_ids_ordered_by_typing_order:
-                self._fix_and_type_and_substitute_formula_field(formula_field_id)
+                self._type_and_substitute_formula_field(formula_field_id)
         except RecursionError:
             raise MaximumFormulaSizeError()
 
-    def _fix_and_type_and_substitute_formula_field(self, formula_field_id):
+    def _type_and_substitute_formula_field(self, formula_field_id):
         typed_expr = self._type_formula_fields_expression(formula_field_id)
         self._apply_user_formatting_type_overrides(formula_field_id, typed_expr)
         typed_expr_with_substituted_field_by_id_references = typed_expr.accept(
@@ -167,9 +155,7 @@ class Typer:
     ) -> BaserowExpression[BaserowFormulaType]:
         untyped_expr = self.untyped_formula_expressions[formula_field_id]
         return untyped_expr.accept(
-            TypeAnnotatingASTVisitor(
-                self.typed_field_expressions, self.deleted_field_id_to_name
-            )
+            TypeAnnotatingASTVisitor(self.typed_field_expressions)
         )
 
     def _apply_user_formatting_type_overrides(self, formula_field_id, typed_expr):
@@ -191,40 +177,13 @@ class Typer:
         old_type = old_handler.construct_type_from_formula_field(old_formula_field)
         return new_type.should_recreate_when_old_type_was(old_type)
 
-    def _fix_formulas_referencing_new_or_deleted_fields(self, formula_field):
-        formula_field_id = formula_field.id
-        reference_fields_set = set(self.field_references[formula_field_id])
-        deleted_fields_set = set(self.deleted_field_id_to_name.keys())
-        new_fields_set = set(self.new_field_names_to_id.values())
-        formula_field_references_deleted_field = (
-            len(reference_fields_set.intersection(deleted_fields_set)) > 0
-        )
-        formula_field_references_new_field = (
-            len(reference_fields_set.intersection(new_fields_set))
-        ) > 0
-        if formula_field_references_deleted_field or formula_field_references_new_field:
-            specific_formula_field = self.field_id_to_field[formula_field_id]
-            new_formula = replace_field_refs_according_to_new_or_deleted_fields(
-                specific_formula_field.formula,
-                self.deleted_field_id_to_name,
-                self.new_field_names_to_id,
-            )
-            specific_formula_field.formula = new_formula
-
     def _generate_formula_expression_and_references(self, field):
         self.formula_field_ids.append(field.id)
-        if field.trashed or field.id in self.deleted_field_id_to_name:
-            untyped_expression = BaserowFieldReference[UnTyped](
-                BaserowStringLiteral(field.name, None), None
-            )
-            self.deleted_field_id_to_name[field.id] = field.name
-        else:
-            untyped_expression = raw_formula_to_untyped_expression(
-                field.specific.formula,
-                self.field_id_to_field,
-                self.new_field_names_to_id,
-                self.deleted_field_id_to_name.keys(),
-            )
+        fixed_formula = replace_field_refs_according_to_new_or_deleted_fields(
+            field.formula, self.deleted_field_id_to_name, self.field_name_to_id
+        )
+        untyped_expression = raw_formula_to_untyped_expression(fixed_formula)
+        self.fixed_formula_strings[field.id] = fixed_formula
         children = untyped_expression.accept(FieldReferenceResolvingVisitor())
         self.field_references[field.id] = children
         for child in children:
@@ -233,24 +192,11 @@ class Typer:
         self.untyped_formula_expressions[field.id] = untyped_expression
 
     def _calculate_non_formula_field_type(self, field):
-        if field.trashed:
-            typed_expr = BaserowFieldReference(
-                field.name,
-                BaserowFormulaInvalidType(f"Field {field.name} is deleted"),
-            )
-            self.deleted_field_id_to_name[field.id] = field.name
-        elif field.id in self.deleted_field_id_to_name:
-            name = self.deleted_field_id_to_name[field.id]
-            typed_expr = BaserowFieldReference(
-                name, BaserowFormulaInvalidType(f"Field {name} is deleted")
-            )
-        else:
-            specific_field = field.specific
-            field_type: FieldType = field_type_registry.get_by_model(specific_field)
-            formula_type = field_type.to_baserow_formula_type(specific_field)
-            typed_expr = BaserowFieldByIdReference[BaserowFormulaValidType](
-                field.id, formula_type
-            )
+        field_type: FieldType = field_type_registry.get_by_model(field)
+        formula_type = field_type.to_baserow_formula_type(field)
+        typed_expr = BaserowFieldByIdReference[BaserowFormulaValidType](
+            field.id, formula_type
+        )
         self.typed_field_expressions[field.id] = typed_expr
         self.field_references[field.id] = []
 
@@ -277,10 +223,10 @@ class Typer:
                 formula_field_id
             ]
 
-            if specific_formula_field.trashed:
-                continue
-
             old_field: FormulaField = deepcopy(specific_formula_field)
+            specific_formula_field.formula = self.fixed_formula_strings[
+                specific_formula_field.id
+            ]
             formula_field_type = typed_formula_expression.expression_type
             self._fix_field_formula_and_persist_new_type_info(
                 formula_field_type, specific_formula_field
@@ -302,6 +248,9 @@ class Typer:
                     )
 
         if field_which_changed is not None:
+            # All fields that depend on the field_which_changed need to have their
+            # values recalculated as a result, even if their formula or type did not
+            # change as a result.
             parent_fields = self.calculate_all_parent_valid_fields(field_which_changed)
             return list(other_changed_fields.union(parent_fields))
         else:
@@ -331,7 +280,6 @@ class Typer:
     def _fix_field_formula_and_persist_new_type_info(
         self, formula_type, specific_formula_field
     ):
-        self._fix_formulas_referencing_new_or_deleted_fields(specific_formula_field)
         formula_type_handler: BaserowFormulaTypeHandler = (
             formula_type_handler_registry.get_by_model(formula_type)
         )
@@ -341,21 +289,6 @@ class Typer:
 
     def get_type(self, field: Field) -> BaserowFormulaType:
         return self.typed_field_expressions[field.id].expression_type
-
-    def _update_field_type(self, field: Field):
-        specific_formula_field = field.specific
-        # TODO Get rid of this isinstance somehow
-        if isinstance(specific_formula_field, FormulaField):
-            typed_formula_expression = self.get_type(field)
-            formula_type = typed_formula_expression
-            # TODO Get rid of this isinstance somehow
-            if isinstance(formula_type, BaserowFormulaInvalidType):
-                raise InvalidFormulaType(formula_type.error)
-            self._fix_field_formula_and_persist_new_type_info(
-                formula_type, specific_formula_field
-            )
-            for attr in BASEROW_FORMULA_TYPE_ALLOWED_FIELDS:
-                setattr(field, attr, getattr(specific_formula_field, attr))
 
     def _calculate_all_parent_field_ids(self, field_id):
         initial_parents = self.field_parents.get(field_id, [])

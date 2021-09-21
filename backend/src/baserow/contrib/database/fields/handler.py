@@ -406,7 +406,7 @@ class FieldHandler:
         field = field.specific
         TrashHandler.trash(user, group, field.table.database, field)
         typer = Typer.type_table_and_update_fields_given_deleted_field(
-            field.table, deleted_field_id=field, deleted_field_name=field.name
+            field.table, deleted_field_id=field.id, deleted_field_name=field.name
         )
         field_deleted.send(
             self,

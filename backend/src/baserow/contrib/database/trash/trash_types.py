@@ -80,6 +80,7 @@ class FieldTrashableItemType(TrashableItemType):
         # serializer switches to serializing the specific instance it picks up and uses
         # the new name set here rather than the name currently in the DB.
         trashed_item.specific.name = trashed_item.name
+        trashed_item.specific.trashed = False
         trashed_item.save()
         typer = Typer.type_table_and_update_fields_given_changed_field(
             trashed_item.table, trashed_item
