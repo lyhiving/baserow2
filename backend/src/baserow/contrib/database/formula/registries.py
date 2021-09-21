@@ -1,4 +1,4 @@
-from baserow.contrib.database.formula.ast.errors import UnknownFormulaType
+from baserow.contrib.database.formula.types.errors import UnknownFormulaType
 from baserow.core.registry import Registry, ModelRegistryMixin
 
 

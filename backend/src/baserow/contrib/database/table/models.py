@@ -394,7 +394,7 @@ class Table(
                 # child fields to be calculated. These child fields then need to be
                 # included in the django model otherwise we cannot reference them.
                 if typer is None:
-                    typer = Typer(self)
+                    typer = Typer.type_table(self)
                 # Allow passing in typer=False to disable any type checking.
                 if typer:
                     fields += typer.calculate_all_child_fields(

@@ -81,19 +81,17 @@ class FieldTrashableItemType(TrashableItemType):
         # the new name set here rather than the name currently in the DB.
         trashed_item.specific.name = trashed_item.name
         trashed_item.save()
-        typer = Typer(
-            trashed_item.table,
-            new_field_names_to_id={trashed_item.name: trashed_item.id},
+        typer = Typer.type_table_and_update_fields_given_changed_field(
+            trashed_item.table, trashed_item
         )
-        updated_fields = typer.update_fields(trashed_item)
         field_restored.send(
             self,
             field=trashed_item,
-            related_fields=updated_fields,
+            related_fields=typer.updated_fields,
             user=None,
         )
         model = trashed_item.table.get_model()
-        for updated_field in updated_fields:
+        for updated_field in typer.updated_fields:
             updated_field_type = field_type_registry.get_by_model(updated_field)
             updated_field_type.related_field_changed(updated_field, model)
 
@@ -125,9 +123,10 @@ class FieldTrashableItemType(TrashableItemType):
         table = field.table
         field_id = field.id
         field_name = field.name
-        typer = Typer(table, deleted_field_id_names={field_id: field_name})
         field.delete()
-        typer.update_fields()
+        Typer.type_table_and_update_fields_given_deleted_field(
+            table, field_id, field_name
+        )
 
         # After the field is deleted we are going to to call the after_delete method of
         # the field type because some instance cleanup might need to happen.

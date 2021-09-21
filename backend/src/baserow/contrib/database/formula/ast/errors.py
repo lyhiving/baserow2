@@ -1,49 +1,24 @@
-from typing import List
-
 from django.conf import settings
 
+from baserow.contrib.database.formula.errors import BaserowFormulaException
 
-class BaserowFormulaASTException(Exception):
+
+class InvalidStringLiteralProvided(BaserowFormulaException):
     pass
 
 
-class InvalidStringLiteralProvided(BaserowFormulaASTException):
+class InvalidIntLiteralProvided(BaserowFormulaException):
     pass
 
 
-class InvalidIntLiteralProvided(BaserowFormulaASTException):
-    pass
-
-
-class NoSelfReferencesError(BaserowFormulaASTException):
-    def __init__(self):
-        super().__init__("a formula field cannot reference itself")
-
-
-class NoCircularReferencesError(BaserowFormulaASTException):
-    def __init__(self, visited_fields: List[str]):
-        super().__init__(
-            "a formula field cannot result in a circular reference, detected a "
-            f"circular reference chain of {'->'.join(visited_fields)}"
-        )
-
-
-class InvalidFieldType(BaserowFormulaASTException):
-    pass
-
-
-class UnknownFieldReference(BaserowFormulaASTException):
+class UnknownFieldReference(BaserowFormulaException):
     def __init__(self, referenced_field):
         super().__init__(f"An unknown field called: {referenced_field} was referenced")
 
 
-class TooLargeStringLiteralProvided(BaserowFormulaASTException):
+class TooLargeStringLiteralProvided(BaserowFormulaException):
     def __init__(self):
         super().__init__(
             f"an embedded string in the formula over the "
             f"maximum length of {settings.MAX_FORMULA_STRING_LENGTH} "
         )
-
-
-class UnknownFormulaType(BaserowFormulaASTException):
-    pass

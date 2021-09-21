@@ -23,9 +23,7 @@ from baserow.contrib.database.api.fields.errors import (
     ERROR_LINK_ROW_TABLE_NOT_IN_SAME_DATABASE,
     ERROR_LINK_ROW_TABLE_NOT_PROVIDED,
     ERROR_INCOMPATIBLE_PRIMARY_FIELD_TYPE,
-    ERROR_PARSING_FORMULA,
-    ERROR_COMPILING_FORMULA,
-    ERROR_MAPPING_FORMULA,
+    ERROR_WITH_FORMULA,
     ERROR_TOO_DEEPLY_NESTED_FORMULA,
 )
 from baserow.contrib.database.api.fields.serializers import (
@@ -34,17 +32,13 @@ from baserow.contrib.database.api.fields.serializers import (
     SelectOptionSerializer,
     FileFieldResponseSerializer,
 )
-from baserow.contrib.database.formula.ast.errors import BaserowFormulaASTException
-from baserow.contrib.database.formula.expression_generator.errors import (
-    ExpressionGeneratorException,
-)
+from ..formula.errors import BaserowFormulaException
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
 from baserow.contrib.database.formula.parser.ast_mapper import (
     translate_formula_for_backend_given_table,
 )
-from baserow.contrib.database.formula.parser.errors import BaserowFormulaParserError
 from baserow.contrib.database.validators import UnicodeRegexValidator
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
@@ -1788,9 +1782,7 @@ class FormulaFieldType(FieldType):
         )
 
     api_exceptions_map = {
-        BaserowFormulaParserError: ERROR_PARSING_FORMULA,
-        ExpressionGeneratorException: ERROR_COMPILING_FORMULA,
-        BaserowFormulaASTException: ERROR_MAPPING_FORMULA,
+        BaserowFormulaException: ERROR_WITH_FORMULA,
         OperationalError: _stack_error_mapper,
     }
 

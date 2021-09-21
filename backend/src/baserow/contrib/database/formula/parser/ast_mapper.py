@@ -43,7 +43,7 @@ class BaserowFormulaErrorListener(ErrorListener):
 
 
 def raw_formula_to_untyped_expression(
-    formula: str, field_id_to_field, new_field_name_to_id
+    formula: str, field_id_to_field, new_field_name_to_id, deleted_field_ids
 ) -> BaserowExpression[UnTyped]:
     try:
         lexer = BaserowFormulaLexer(InputStream(formula))
@@ -53,7 +53,7 @@ def raw_formula_to_untyped_expression(
         parser.addErrorListener(BaserowFormulaErrorListener())
         tree = parser.root()
         return BaserowFormulaToBaserowASTMapper(
-            field_id_to_field, new_field_name_to_id
+            field_id_to_field, new_field_name_to_id, deleted_field_ids
         ).visit(tree)
     except RecursionError:
         raise MaximumFormulaSizeError()
@@ -276,8 +276,9 @@ def process_string(text, is_single_q):
 
 
 class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
-    def __init__(self, field_ids_to_fields, new_field_name_to_id):
+    def __init__(self, field_ids_to_fields, new_field_name_to_id, deleted_field_ids):
         self.field_ids_to_fields = field_ids_to_fields
+        self.deleted_field_ids = deleted_field_ids
         self.new_field_name_to_id = new_field_name_to_id
 
     def visitRoot(self, ctx: BaserowFormula.RootContext):
@@ -361,6 +362,9 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
 
     def visitFieldByIdReference(self, ctx: BaserowFormula.FieldByIdReferenceContext):
         field_id = int(str(ctx.INTEGER_LITERAL()))
-        if field_id not in self.field_ids_to_fields:
+        if (
+            field_id not in self.field_ids_to_fields
+            and field_id not in self.deleted_field_ids
+        ):
             raise UnknownFieldReference(f"Field with id {field_id} is unknown")
         return BaserowFieldByIdReference[UnTyped](field_id, None)

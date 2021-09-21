@@ -49,10 +49,11 @@ class FieldReferenceResolvingVisitor(BaserowFormulaASTVisitor[Any, List[str]]):
 class TypeAnnotatingASTVisitor(
     BaserowFormulaASTVisitor[UnTyped, BaserowExpression[BaserowFormulaType]]
 ):
-    def __init__(self, field_id_to_type):
+    def __init__(self, field_id_to_type, deleted_field_id_to_name):
         self.field_id_to_type: Dict[
             int, BaserowExpression[BaserowFormulaType]
         ] = field_id_to_type
+        self.deleted_field_id_to_name = deleted_field_id_to_name
 
     def visit_field_reference(
         self, field_reference: BaserowFieldReference[UnTyped]
@@ -86,11 +87,17 @@ class TypeAnnotatingASTVisitor(
     def visit_field_by_id_reference(
         self, field_by_id_reference: BaserowFieldByIdReference[UnTyped]
     ) -> BaserowExpression[BaserowFormulaType]:
-        if field_by_id_reference.referenced_field_id in self.field_id_to_type:
+        field_id = field_by_id_reference.referenced_field_id
+        if field_id in self.field_id_to_type:
             return self.field_id_to_type[field_by_id_reference.referenced_field_id]
+        elif field_id in self.deleted_field_id_to_name:
+            return field_by_id_reference.with_invalid_type(
+                "references the deleted field "
+                f"{self.deleted_field_id_to_name[field_id]}"
+            )
         else:
             return field_by_id_reference.with_invalid_type(
-                f"Unknown or deleted field referenced: "
+                f"references an unknown field with id "
                 f"{field_by_id_reference.referenced_field_id}"
             )
 

@@ -84,12 +84,13 @@ COMPLEX_VALID_TESTS = [
         ),
     ),
 ]
+
 INVALID_FORMULA_TESTS = [
     (
         "test",
-        "ERROR_PARSING_FORMULA",
+        "ERROR_WITH_FORMULA",
         (
-            "The formula failed to parse due to: Invalid syntax at line 1, col 4: "
+            "The formula is invalid because: Invalid syntax at line 1, col 4: "
             "mismatched input 'the end of the formula' expecting '('."
         ),
     ),
@@ -97,78 +98,78 @@ INVALID_FORMULA_TESTS = [
         "UPPER(" * (sys.getrecursionlimit())
         + "'test'"
         + ")" * (sys.getrecursionlimit()),
-        "ERROR_PARSING_FORMULA",
-        "The formula failed to parse due to: it exceeded the maximum formula size.",
+        "ERROR_WITH_FORMULA",
+        "The formula is invalid because: it exceeded the maximum formula size.",
     ),
     (
         "CONCAT(" + ",".join(["'test'"] * 5000) + ")",
-        "ERROR_PARSING_FORMULA",
-        "The formula failed to parse due to: it exceeded the maximum formula size.",
+        "ERROR_WITH_FORMULA",
+        "The formula is invalid because: it exceeded the maximum formula size.",
     ),
     (
         "UPPER('" + "t" * (settings.MAX_FORMULA_STRING_LENGTH + 1) + "')",
-        "ERROR_MAPPING_FORMULA",
-        "The formula is invalid because an embedded "
+        "ERROR_WITH_FORMULA",
+        "The formula is invalid because: an embedded "
         f"string in the formula over the maximum length of "
         f"{settings.MAX_FORMULA_STRING_LENGTH} .",
     ),
     (
         "CONCAT()",
-        "ERROR_PARSING_FORMULA",
-        "The formula failed to parse due to: An invalid number of arguments were "
+        "ERROR_WITH_FORMULA",
+        "The formula is invalid because: An invalid number of arguments were "
         "provided to the function concat. It excepts more than 1 arguments but "
         "instead 0 were given.",
     ),
     (
         "CONCAT('a')",
-        "ERROR_PARSING_FORMULA",
-        "The formula failed to parse due to: An invalid number of arguments were "
+        "ERROR_WITH_FORMULA",
+        "The formula is invalid because: An invalid number of arguments were "
         "provided to the function concat. It excepts more than 1 arguments but "
         "instead 1 were given.",
     ),
     (
         "UPPER()",
-        "ERROR_PARSING_FORMULA",
-        "The formula failed to parse due to: An invalid number of arguments were "
+        "ERROR_WITH_FORMULA",
+        "The formula is invalid because: An invalid number of arguments were "
         "provided to the function upper. It excepts exactly 1 arguments but "
         "instead 0 were given.",
     ),
     (
         "LOWER()",
-        "ERROR_PARSING_FORMULA",
-        "The formula failed to parse due to: An invalid number of arguments were "
+        "ERROR_WITH_FORMULA",
+        "The formula is invalid because: An invalid number of arguments were "
         "provided to the function lower. It excepts exactly 1 arguments but "
         "instead 0 were given.",
     ),
     (
         "UPPER('a','a')",
-        "ERROR_PARSING_FORMULA",
-        "The formula failed to parse due to: An invalid number of arguments were "
+        "ERROR_WITH_FORMULA",
+        "The formula is invalid because: An invalid number of arguments were "
         "provided to the function upper. It excepts exactly 1 arguments but "
         "instead 2 were given.",
     ),
     (
         "LOWER('a','a')",
-        "ERROR_PARSING_FORMULA",
-        "The formula failed to parse due to: An invalid number of arguments were "
+        "ERROR_WITH_FORMULA",
+        "The formula is invalid because: An invalid number of arguments were "
         "provided to the function lower. It excepts exactly 1 arguments but "
         "instead 2 were given.",
     ),
     (
         "LOWER('a', CONCAT())",
-        "ERROR_PARSING_FORMULA",
-        "The formula failed to parse due to: An invalid number of arguments were "
+        "ERROR_WITH_FORMULA",
+        "The formula is invalid because: An invalid number of arguments were "
         "provided to the function lower. It excepts exactly 1 arguments but "
         "instead 2 were given.",
     ),
-    ("'a' + 2", "ERROR_MAPPING_FORMULA", None),
-    ("UPPER(1,2)", "ERROR_PARSING_FORMULA", None),
-    ("UPPER(1)", "ERROR_MAPPING_FORMULA", None),
-    ("LOWER(1,2)", "ERROR_PARSING_FORMULA", None),
-    ("LOWER(1)", "ERROR_MAPPING_FORMULA", None),
-    ("10/LOWER(1)", "ERROR_MAPPING_FORMULA", None),
-    ("'t'/1", "ERROR_MAPPING_FORMULA", None),
-    ("1/'t'", "ERROR_MAPPING_FORMULA", None),
+    ("'a' + 2", "ERROR_WITH_FORMULA", None),
+    ("UPPER(1,2)", "ERROR_WITH_FORMULA", None),
+    ("UPPER(1)", "ERROR_WITH_FORMULA", None),
+    ("LOWER(1,2)", "ERROR_WITH_FORMULA", None),
+    ("LOWER(1)", "ERROR_WITH_FORMULA", None),
+    ("10/LOWER(1)", "ERROR_WITH_FORMULA", None),
+    ("'t'/1", "ERROR_WITH_FORMULA", None),
+    ("1/'t'", "ERROR_WITH_FORMULA", None),
 ]
 
 
@@ -539,7 +540,7 @@ def test_perm_deleting_child_field(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_200_OK, response_json
-    assert "Field number is deleted" in response_json[0]["error"]
+    assert "references the deleted field number" in response_json[0]["error"]
 
 
 @pytest.mark.django_db
@@ -786,9 +787,9 @@ def test_cant_make_self_reference(api_client, data_fixture):
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert response_json == {
-        "detail": "The formula is invalid because a formula field cannot reference "
+        "detail": "The formula is invalid because: a formula field cannot reference "
         "itself.",
-        "error": "ERROR_MAPPING_FORMULA",
+        "error": "ERROR_WITH_FORMULA",
     }
 
 
@@ -827,10 +828,10 @@ def test_cant_make_circular_reference(api_client, data_fixture):
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert response_json == {
-        "detail": "The formula is invalid because a formula field cannot result in a "
+        "detail": "The formula is invalid because: a formula field cannot result in a "
         "circular reference, detected a circular reference chain of "
         "Formula->Formula2->Formula.",
-        "error": "ERROR_MAPPING_FORMULA",
+        "error": "ERROR_WITH_FORMULA",
     }
 
 

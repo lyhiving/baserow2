@@ -59,20 +59,10 @@ ERROR_INVALID_BASEROW_FIELD_NAME = (
     HTTP_400_BAD_REQUEST,
     "Fields must not be blank or only consist of whitespace.",
 )
-ERROR_PARSING_FORMULA = (
-    "ERROR_PARSING_FORMULA",
+ERROR_WITH_FORMULA = (
+    "ERROR_WITH_FORMULA",
     HTTP_400_BAD_REQUEST,
-    "The formula failed to parse due to: {e}.",
-)
-ERROR_MAPPING_FORMULA = (
-    "ERROR_MAPPING_FORMULA",
-    HTTP_400_BAD_REQUEST,
-    "The formula is invalid because {e}.",
-)
-ERROR_COMPILING_FORMULA = (
-    "ERROR_COMPILING_FORMULA",
-    HTTP_400_BAD_REQUEST,
-    "The formula failed to compile due to: {e}.",
+    "The formula is invalid because: {e}.",
 )
 ERROR_TOO_DEEPLY_NESTED_FORMULA = (
     "ERROR_TOO_DEEPLY_NESTED_FORMULA",

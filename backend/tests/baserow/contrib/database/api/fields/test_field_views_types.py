@@ -1148,7 +1148,7 @@ def test_formula_field_type(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json["error"] == "ERROR_PARSING_FORMULA"
+    assert response_json["error"] == "ERROR_WITH_FORMULA"
     assert "Invalid syntax" in response_json["detail"]
 
     # You cannot create a field calling an invalid function
@@ -1160,8 +1160,8 @@ def test_formula_field_type(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json["error"] == "ERROR_PARSING_FORMULA"
+    assert response_json["error"] == "ERROR_WITH_FORMULA"
     assert (
         response_json["detail"]
-        == "The formula failed to parse due to: version is not a valid function."
+        == "The formula is invalid because: version is not a valid function."
     )

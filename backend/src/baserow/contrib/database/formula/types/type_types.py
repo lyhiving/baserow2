@@ -7,6 +7,7 @@ from rest_framework import serializers
 from rest_framework.fields import Field
 
 from baserow.contrib.database.formula.ast import tree
+from baserow.contrib.database.formula.types.errors import InvalidFormulaType
 
 
 class BaserowFormulaType(abc.ABC):
@@ -104,10 +105,17 @@ class BaserowFormulaType(abc.ABC):
     def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
         return not isinstance(self, type(old_type))
 
+    @abc.abstractmethod
+    def raise_if_invalid(self):
+        pass
+
 
 class BaserowFormulaInvalidType(BaserowFormulaType):
     is_valid = False
     comparable_types = []
+
+    def raise_if_invalid(self):
+        raise InvalidFormulaType(self.error)
 
     def get_export_value(self, value) -> Any:
         return None
@@ -144,6 +152,9 @@ class BaserowFormulaInvalidType(BaserowFormulaType):
 
 class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):
     is_valid = True
+
+    def raise_if_invalid(self):
+        pass
 
     def cast_to_text(
         self,

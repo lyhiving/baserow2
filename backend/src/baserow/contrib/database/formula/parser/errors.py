@@ -1,8 +1,7 @@
-class BaserowFormulaParserError(Exception):
-    pass
+from baserow.contrib.database.formula.errors import BaserowFormulaException
 
 
-class InvalidNumberOfArguments(BaserowFormulaParserError):
+class InvalidNumberOfArguments(BaserowFormulaException):
     def __init__(self, function_def, num_args):
         super().__init__(
             "An invalid number of arguments were provided to the "
@@ -11,23 +10,23 @@ class InvalidNumberOfArguments(BaserowFormulaParserError):
         )
 
 
-class MaximumFormulaSizeError(BaserowFormulaParserError):
+class MaximumFormulaSizeError(BaserowFormulaException):
     def __init__(self):
         super().__init__("it exceeded the maximum formula size")
 
 
-class UnexpectedFieldReference(BaserowFormulaParserError):
+class UnexpectedFieldReference(BaserowFormulaException):
     pass
 
 
-class UnknownFieldReference(BaserowFormulaParserError):
+class UnknownFieldReference(BaserowFormulaException):
     pass
 
 
-class UnknownBinaryOperator(BaserowFormulaParserError):
+class UnknownBinaryOperator(BaserowFormulaException):
     def __init__(self, operatorText):
         super().__init__(f"unknown binary operator {operatorText}")
 
 
-class BaserowFormulaSyntaxError(BaserowFormulaParserError):
+class BaserowFormulaSyntaxError(BaserowFormulaException):
     pass
