@@ -145,10 +145,11 @@ export const actions = {
 
     const refreshNeeded =
       fieldType.shouldRefreshWhenAdded() || anyRelatedFieldsNeedRefresh
+    const callback = forceCreate
+      ? await forceCreateCallback()
+      : forceCreateCallback
     return {
-      forceCreateCallback: forceCreate
-        ? await forceCreateCallback()
-        : forceCreateCallback,
+      forceCreateCallback: callback,
       refreshNeeded,
     }
   },

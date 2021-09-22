@@ -181,9 +181,12 @@ class FieldHandler:
             table=table, order=last_order, primary=primary, **field_values
         )
         instance.save()
-        typed_updated_table = type_table_and_update_fields_given_changed_field(
+        (
+            typed_updated_table,
+            instance,
+        ) = type_table_and_update_fields_given_changed_field(
             table,
-            changed_field=instance,
+            initial_field=instance,
         )
 
         # Add the field to the table schema.
@@ -271,9 +274,9 @@ class FieldHandler:
 
         field = set_allowed_attrs(field_values, allowed_fields, field)
         field.save()
-        typed_updated_table = type_table_and_update_fields_given_changed_field(
+        typed_updated_table, field = type_table_and_update_fields_given_changed_field(
             field.table,
-            changed_field=field,
+            initial_field=field,
         )
         # If no converter is found we are going to convert to field using the
         # lenient schema editor which will alter the field's type and set the data

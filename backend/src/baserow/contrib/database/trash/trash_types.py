@@ -82,11 +82,15 @@ class FieldTrashableItemType(TrashableItemType):
         # We need to set the specific field's name also so when the field_restored
         # serializer switches to serializing the specific instance it picks up and uses
         # the new name set here rather than the name currently in the DB.
-        trashed_item.specific.name = trashed_item.name
-        trashed_item.specific.trashed = False
+        trashed_item = trashed_item.specific
+        trashed_item.name = trashed_item.name
+        trashed_item.trashed = False
         trashed_item.save()
-        typed_updated_table = type_table_and_update_fields_given_changed_field(
-            trashed_item.table, trashed_item
+        (
+            typed_updated_table,
+            trashed_item,
+        ) = type_table_and_update_fields_given_changed_field(
+            trashed_item.table, initial_field=trashed_item
         )
         field_restored.send(
             self,
@@ -137,11 +141,10 @@ class FieldTrashableItemType(TrashableItemType):
         When trashing a link row field we also want to trash the related link row field.
         """
 
+        trashed_item = trashed_item.specific
         items_to_trash = [trashed_item]
-        field_type = field_type_registry.get_by_model(trashed_item.specific)
-        return items_to_trash + field_type.get_related_items_to_trash(
-            trashed_item.specific
-        )
+        field_type = field_type_registry.get_by_model(trashed_item)
+        return items_to_trash + field_type.get_related_items_to_trash(trashed_item)
 
 
 class RowTrashableItemType(TrashableItemType):

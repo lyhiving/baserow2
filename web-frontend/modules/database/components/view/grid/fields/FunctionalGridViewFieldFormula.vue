@@ -31,7 +31,7 @@ export default {
     FunctionalGridViewFieldNumber,
   },
   methods: {
-    getComponent(field, props) {
+    getComponent(field) {
       return {
         date: FunctionalGridViewFieldDate,
         text: FunctionalGridViewFieldText,

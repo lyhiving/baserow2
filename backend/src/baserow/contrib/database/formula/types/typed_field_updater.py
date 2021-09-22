@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from django.db import connection
 
@@ -103,12 +103,10 @@ class TypedBaserowTableWithUpdatedFields(TypedBaserowTable):
     ):
         super().__init__(typed_fields)
         self.table = table
-        self.initially_updated_field = initially_updated_field
+        self.updated_initial_field = initially_updated_field
         self.updated_fields = updated_fields
-        if self.initially_updated_field is not None:
-            self.all_updated_fields = [
-                self.initially_updated_field
-            ] + self.updated_fields
+        if self.updated_initial_field is not None:
+            self.all_updated_fields = [self.updated_initial_field] + self.updated_fields
         else:
             self.all_updated_fields = self.updated_fields
         self.model = self.table.get_model(
@@ -130,15 +128,23 @@ class TypedBaserowTableWithUpdatedFields(TypedBaserowTable):
 
 
 def type_table_and_update_fields_given_changed_field(
-    table: "models.Table", changed_field: Field
-) -> "TypedBaserowTableWithUpdatedFields":
+    table: "models.Table", initial_field: Field
+) -> Tuple["TypedBaserowTableWithUpdatedFields", Field]:
     typed_fields = type_all_fields_in_table(table)
     updated_fields = _calculate_and_save_updated_fields(
-        table, typed_fields, field_which_changed=changed_field
+        table, typed_fields, field_which_changed=initial_field
     )
-    typed_changed_field = typed_fields[changed_field.id].new_field
-    return TypedBaserowTableWithUpdatedFields(
-        typed_fields, table, typed_changed_field, updated_fields
+
+    if isinstance(initial_field, FormulaField):
+        typed_changed_field = typed_fields[initial_field.id].new_field
+    else:
+        typed_changed_field = initial_field
+
+    return (
+        TypedBaserowTableWithUpdatedFields(
+            typed_fields, table, typed_changed_field, updated_fields
+        ),
+        typed_changed_field,
     )
 
 
