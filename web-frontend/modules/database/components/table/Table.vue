@@ -275,7 +275,6 @@ export default {
       // If could be that the refresh event is for a specific table and in table case
       // we check if the refresh event is related to this table and stop if that is not
       // the case.
-      console.log('GOT REFRESH EVENT', event)
       if (
         typeof event === 'object' &&
         Object.prototype.hasOwnProperty.call(event, 'tableId') &&
