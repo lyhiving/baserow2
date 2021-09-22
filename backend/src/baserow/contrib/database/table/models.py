@@ -388,7 +388,7 @@ class Table(
             field_type = field_type_registry.get_by_model(field)
             field_name = field.db_column
 
-            if typed_table is None:
+            if typed_table is None and field_type.requires_typing:
                 typed_table = type_table(self)
 
             fields += field_type.add_related_fields_to_model(
@@ -428,11 +428,12 @@ class Table(
             # model. All the kwargs that are passed to the `get_model_field`
             # method are going to be passed along to the model field.
             extra_kwargs = {}
-            attrs[field_name] = field_type.get_typed_model_field(
+            if field_type.requires_typing:
+                extra_kwargs["typed_table"] = typed_table
+            attrs[field_name] = field_type.get_model_field(
                 field,
                 db_column=field.db_column,
                 verbose_name=field.name,
-                typed_table=typed_table,
                 **extra_kwargs,
             )
 

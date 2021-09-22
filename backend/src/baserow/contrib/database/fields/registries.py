@@ -73,6 +73,10 @@ class FieldType(
     """Indicates whether the field allows inserting/updating row values or if it is
     read only."""
 
+    requires_typing = False
+    """Indicates whether the field needs extra typing information to calculate its
+    various methods correctly."""
+
     def prepare_value_for_db(self, instance, value):
         """
         When a row is created or updated all the values are going to be prepared for the
@@ -199,23 +203,6 @@ class FieldType(
         """
 
         raise NotImplementedError("Each must have his own get_model_field method.")
-
-    def get_typed_model_field(self, instance, typed_table, **kwargs):
-        """
-        Exactly the same as get_model_field but also provides the typed_table parameter
-        for fields which need to know field formula types to generate their model field.
-
-        :param instance: The field instance for which to get the model field for.
-        :type instance: Field
-        :param typed_table: The typed table the field is part.
-        :type typed_table: TypedBaserowTable
-        :param kwargs: The kwargs that will be passed to the field.
-        :type kwargs: dict
-        :return: The model field that represents the field instance attributes.
-        :rtype: model.Field
-        """
-
-        return self.get_model_field(instance, **kwargs)
 
     def after_model_generation(self, instance, model, field_name, manytomany_models):
         """
@@ -683,12 +670,31 @@ class FieldType(
 
         return []
 
-    def related_field_changed(self, field, to_model):
-        # TODO: Document
-        return {}
+    def expression_to_update_field_after_related_field_changes(self, instance, model):
+        """
+        Should return a Django Expression for use in an update query to update the value
+        of this field after a field this field depends on has changed.
+
+        :param instance: The instance of the field to generate the update expression
+            for.
+        :param model: The model of the table that the field is on.
+        :return: A Django Expression for the instance's column in the table which will
+            be executed to update this fields value given a change in one of this fields
+            related fields.
+        """
+
+        return None
 
     def to_baserow_formula_type(self, field) -> BaserowFormulaType:
-        # TODO: Document
+        """
+        Should return the Baserow Formula Type to use when referencing a field of this
+        type in a formula.
+
+        :param field: The specific instance of the field that a formula type should
+            be generated for.
+        :return: The Baserow Formula Type that represents this field in a formula.
+        """
+
         return BaserowFormulaInvalidType(
             f"A field of type {self.type} cannot be referenced in a Baserow formula."
         )
@@ -696,7 +702,20 @@ class FieldType(
     def add_related_fields_to_model(
         self, typed_table, field, already_included_field_ids
     ):
-        # TODO: Document
+        """
+        Should return any fields related to this field which are not already present
+        in the already_included_field_ids set.
+
+        :param typed_table: A TypedBaserowTable containing the formula types of all
+            fields in the fields table.
+        :param field: The specific instance of the field we want to know the related
+            fields for.
+        :param already_included_field_ids: A set of already included field ids which
+            should not be included in the returned list.
+        :return: A list of field instances which relate to field but are not present in
+            already_included_field_ids.
+        """
+
         return []
 
 

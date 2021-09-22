@@ -120,12 +120,12 @@ class TypedBaserowTableWithUpdatedFields(TypedBaserowTable):
     def update_values_for_all_updated_fields(self):
         all_fields_update_dict = {}
         for updated_field in self.all_updated_fields:
-            updated_field_type = field_type_registry.get_by_model(updated_field)
-            update_dict = updated_field_type.related_field_changed(
+            field_type = field_type_registry.get_by_model(updated_field)
+            expr = field_type.expression_to_update_field_after_related_field_changes(
                 updated_field, self.model
             )
-            for key, value in update_dict.items():
-                all_fields_update_dict[key] = value
+            if expr is not None:
+                all_fields_update_dict[f"field_{updated_field.id}"] = expr
         self.model.objects_and_trash.update(**all_fields_update_dict)
 
 

@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 import pytz
 from dateutil import parser
@@ -80,6 +80,7 @@ from .models import (
     FormulaField,
 )
 from .registries import FieldType, field_type_registry
+from ..formula.types.table_typer import TypedBaserowTable
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1754,6 +1755,7 @@ class PhoneNumberFieldType(CharFieldMatchingRegexFieldType):
 class FormulaFieldType(FieldType):
     type = "formula"
     model_class = FormulaField
+    requires_typing = True
     read_only = True
     can_be_primary_field = False
     can_be_in_form_view = False
@@ -1806,7 +1808,8 @@ class FormulaFieldType(FieldType):
         formula_type = self._get_formula_type_from_formula_field(instance)
         return formula_type.get_serializer_field(**kwargs)
 
-    def get_typed_model_field(self, instance, typed_table, **kwargs):
+    def get_model_field(self, instance, **kwargs):
+        typed_table: Optional[TypedBaserowTable] = kwargs.pop("typed_table", None)
         if typed_table:
             expression = typed_table.get_typed_field_expression(instance)
         else:
@@ -1858,16 +1861,12 @@ class FormulaFieldType(FieldType):
         formula_type = self._get_formula_type_from_formula_field(field)
         return formula_type.contains_query(field_name, value, model_field, field)
 
-    def related_field_changed(self, field, to_model):
+    def expression_to_update_field_after_related_field_changes(self, field, to_model):
         if not field.error:
-            return self._calculate_update_expr(field, to_model)
+            f = to_model._meta.get_field(field.db_column)
+            return baserow_expression_to_django_expression(f.expression, None)
         else:
-            return {}
-
-    def _calculate_update_expr(self, field, to_model):
-        f = to_model._meta.get_field(field.db_column)
-        expr = baserow_expression_to_django_expression(f.expression, None)
-        return {f"{field.db_column}": expr}
+            return None
 
     def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
         formula_type = self._get_formula_type_from_formula_field(from_field)
