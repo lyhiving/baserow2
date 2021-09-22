@@ -15,7 +15,7 @@ from baserow.contrib.database.fields.field_filters import (
     FILTER_TYPE_OR,
 )
 from baserow.contrib.database.fields.registries import field_type_registry
-from baserow.contrib.database.formula.types.typer import Typer
+from baserow.contrib.database.formula.types.table_typer import type_table
 from baserow.contrib.database.views.exceptions import ViewFilterTypeNotAllowedForField
 from baserow.contrib.database.views.registries import view_filter_type_registry
 from baserow.core.mixins import (
@@ -256,7 +256,7 @@ class Table(
         field_names=None,
         attribute_names=False,
         manytomany_models=None,
-        typer=None,
+        typed_table=None,
     ):
         """
         Generates a temporary Django model based on available fields that belong to
@@ -393,11 +393,11 @@ class Table(
                 # establish the types fields and whether they depend on any other
                 # child fields to be calculated. These child fields then need to be
                 # included in the django model otherwise we cannot reference them.
-                if typer is None:
-                    typer = Typer.type_table(self)
+                if typed_table is None:
+                    typed_table = type_table(self)
                 # Allow passing in typer=False to disable any type checking.
-                if typer:
-                    fields += typer.calculate_all_child_fields(
+                if typed_table:
+                    fields += typed_table.calculate_all_child_fields(
                         field, already_included_field_ids
                     )
 
@@ -436,7 +436,9 @@ class Table(
             extra_kwargs = {}
             if field_type.type == "formula":
                 extra_kwargs["expression"] = (
-                    typer.typed_field_expressions[field.id] if typer else None
+                    typed_table.get_typed_field_expression(field)
+                    if typed_table
+                    else None
                 )
             attrs[field_name] = field_type.get_model_field(
                 field,

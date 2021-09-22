@@ -6,7 +6,10 @@ from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.fields.signals import field_restored
-from baserow.contrib.database.formula.types.typer import Typer
+from baserow.contrib.database.formula.types.typed_field_updater import (
+    type_table_and_update_fields_given_changed_field,
+    type_table_and_update_fields_given_deleted_field,
+)
 from baserow.contrib.database.rows.signals import row_created
 from baserow.contrib.database.table.models import Table, GeneratedTableModel
 from baserow.contrib.database.table.signals import table_created
@@ -82,19 +85,16 @@ class FieldTrashableItemType(TrashableItemType):
         trashed_item.specific.name = trashed_item.name
         trashed_item.specific.trashed = False
         trashed_item.save()
-        typer = Typer.type_table_and_update_fields_given_changed_field(
+        typed_updated_table = type_table_and_update_fields_given_changed_field(
             trashed_item.table, trashed_item
         )
         field_restored.send(
             self,
             field=trashed_item,
-            related_fields=typer.updated_fields,
+            related_fields=typed_updated_table.updated_fields,
             user=None,
         )
-        model = trashed_item.table.get_model()
-        for updated_field in typer.updated_fields:
-            updated_field_type = field_type_registry.get_by_model(updated_field)
-            updated_field_type.related_field_changed(updated_field, model)
+        typed_updated_table.trigger_related_field_changed_for_updated_fields()
 
     def permanently_delete_item(
         self,
@@ -125,9 +125,7 @@ class FieldTrashableItemType(TrashableItemType):
         field_id = field.id
         field_name = field.name
         field.delete()
-        Typer.type_table_and_update_fields_given_deleted_field(
-            table, field_id, field_name
-        )
+        type_table_and_update_fields_given_deleted_field(table, field_id, field_name)
 
         # After the field is deleted we are going to to call the after_delete method of
         # the field type because some instance cleanup might need to happen.

@@ -282,7 +282,7 @@ class FormulaField(Field):
         help_text="24 (14:30) or 12 (02:30 PM)",
     )
 
-    def compare(self, other):
+    def same_as(self, other):
         # TODO Why do we need to use str
         return (
             str(self.formula) == str(other.formula)

@@ -27,19 +27,19 @@ class BaserowExpression(abc.ABC, Generic[A]):
     def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
         pass
 
-    # noinspection Mypy
-    def with_valid_type(
-        self, expression_type: "type_types.BaserowFormulaValidType"
-    ) -> "BaserowExpression[type_types.BaserowFormulaValidType]":
+    def with_type(self, expression_type: "R") -> "BaserowExpression[R]":
         self.expression_type = expression_type
         return self
 
-    # noinspection Mypy
+    def with_valid_type(
+        self, expression_type: "type_types.BaserowFormulaValidType"
+    ) -> "BaserowExpression[type_types.BaserowFormulaValidType]":
+        return self.with_type(expression_type)
+
     def with_invalid_type(
         self, error: str
     ) -> "BaserowExpression[type_types.BaserowFormulaInvalidType]":
-        self.expression_type = type_types.BaserowFormulaInvalidType(error)
-        return self
+        return self.with_type(type_types.BaserowFormulaInvalidType(error))
 
 
 class BaserowStringLiteral(BaserowExpression[A]):

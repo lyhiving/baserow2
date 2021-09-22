@@ -1,13 +1,21 @@
 import abc
-from typing import Optional, Any, List, Type, Union, Callable
+from typing import (
+    Optional,
+    Any,
+    List,
+    Type,
+    Union,
+    Callable,
+)
 
 from django.db import models
 from django.db.models import Q
 from rest_framework import serializers
-from rest_framework.fields import Field
 
 from baserow.contrib.database.formula.ast import tree
-from baserow.contrib.database.formula.types.errors import InvalidFormulaType
+from baserow.contrib.database.formula.types.errors import (
+    InvalidFormulaType,
+)
 
 
 class BaserowFormulaType(abc.ABC):
@@ -25,7 +33,7 @@ class BaserowFormulaType(abc.ABC):
         return not self.is_valid
 
     @abc.abstractmethod
-    def get_serializer_field(self, **kwargs) -> Optional[Field]:
+    def get_serializer_field(self, **kwargs) -> Optional[serializers.Field]:
         """
         Should return a serializer field which serializes a single row's value for a
         formula field of this type. If None is returned then nothing we be serialized
@@ -131,7 +139,7 @@ class BaserowFormulaInvalidType(BaserowFormulaType):
             **kwargs,
         )
 
-    def get_serializer_field(self, **kwargs) -> Optional[Field]:
+    def get_serializer_field(self, **kwargs) -> Optional[serializers.Field]:
         required = kwargs.get("required", False)
         return serializers.CharField(
             **{

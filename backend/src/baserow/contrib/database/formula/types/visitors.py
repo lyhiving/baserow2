@@ -18,6 +18,7 @@ from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
     BaserowFormulaValidType,
 )
+from baserow.contrib.database.formula.types import table_typer
 
 
 class FieldReferenceResolvingVisitor(BaserowFormulaASTVisitor[Any, List[str]]):
@@ -49,10 +50,10 @@ class FieldReferenceResolvingVisitor(BaserowFormulaASTVisitor[Any, List[str]]):
 class TypeAnnotatingASTVisitor(
     BaserowFormulaASTVisitor[UnTyped, BaserowExpression[BaserowFormulaType]]
 ):
-    def __init__(self, field_id_to_type):
-        self.field_id_to_type: Dict[
-            int, BaserowExpression[BaserowFormulaType]
-        ] = field_id_to_type
+    def __init__(self, field_id_to_typed_field):
+        self.field_id_to_typed_field: Dict[
+            int, "table_typer.TypedFieldWithReferences"
+        ] = field_id_to_typed_field
 
     def visit_field_reference(
         self, field_reference: BaserowFieldReference[UnTyped]
@@ -87,8 +88,11 @@ class TypeAnnotatingASTVisitor(
         self, field_by_id_reference: BaserowFieldByIdReference[UnTyped]
     ) -> BaserowExpression[BaserowFormulaType]:
         field_id = field_by_id_reference.referenced_field_id
-        if field_id in self.field_id_to_type:
-            return self.field_id_to_type[field_by_id_reference.referenced_field_id]
+        if field_id in self.field_id_to_typed_field:
+            updated_typed_field = self.field_id_to_typed_field[
+                field_by_id_reference.referenced_field_id
+            ]
+            return updated_typed_field.typed_expression
         else:
             return field_by_id_reference.with_invalid_type(
                 f"references an unknown field with id "
@@ -102,8 +106,10 @@ class SubstituteFieldByIdWithThatFieldsExpressionVisitor(
     def visit_field_reference(self, field_reference: BaserowFieldByIdReference):
         return field_reference
 
-    def __init__(self, field_id_to_expression: Dict[int, BaserowExpression]):
-        self.field_id_to_expression = field_id_to_expression
+    def __init__(
+        self, field_id_to_typed_field: Dict[int, "table_typer.TypedFieldWithReferences"]
+    ):
+        self.field_id_to_typed_field = field_id_to_typed_field
 
     def visit_string_literal(
         self, string_literal: BaserowStringLiteral
@@ -124,9 +130,10 @@ class SubstituteFieldByIdWithThatFieldsExpressionVisitor(
     def visit_field_by_id_reference(
         self, field_by_id_reference: BaserowFieldByIdReference
     ) -> BaserowExpression:
-        if field_by_id_reference.referenced_field_id in self.field_id_to_expression:
-            return self.field_id_to_expression[
+        if field_by_id_reference.referenced_field_id in self.field_id_to_typed_field:
+            typed_field = self.field_id_to_typed_field[
                 field_by_id_reference.referenced_field_id
             ]
+            return typed_field.typed_expression
         else:
             return field_by_id_reference
