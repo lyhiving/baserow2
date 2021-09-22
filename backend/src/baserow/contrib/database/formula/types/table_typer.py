@@ -332,7 +332,11 @@ class TypedBaserowTable:
     def __init__(self, typed_fields: Dict[int, TypedFieldWithReferences]):
         self.typed_fields_with_references = typed_fields
 
-    def calculate_all_child_fields(self, field: Field, field_ids_to_ignore: Set[int]):
+    def calculate_all_child_fields(
+        self, field: Field, field_ids_to_ignore: Set[int]
+    ) -> List[Field]:
+        if field.id not in self.typed_fields_with_references:
+            return []
         typed_field = self.typed_fields_with_references[field.id]
         return typed_field.get_all_child_fields_not_already_found_recursively(
             field_ids_to_ignore
@@ -340,7 +344,9 @@ class TypedBaserowTable:
 
     def get_typed_field_expression(
         self, field: Field
-    ) -> BaserowExpression[BaserowFormulaType]:
+    ) -> Optional[BaserowExpression[BaserowFormulaType]]:
+        if field.id not in self.typed_fields_with_references:
+            return None
         return self.typed_fields_with_references[field.id].typed_expression
 
 
