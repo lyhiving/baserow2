@@ -94,7 +94,7 @@ class FieldTrashableItemType(TrashableItemType):
             related_fields=typed_updated_table.updated_fields,
             user=None,
         )
-        typed_updated_table.trigger_related_field_changed_for_updated_fields()
+        typed_updated_table.update_values_for_all_updated_fields()
 
     def permanently_delete_item(
         self,

@@ -115,10 +115,16 @@ class TypedBaserowTableWithUpdatedFields(TypedBaserowTable):
             typed_table=self,
         )
 
-    def trigger_related_field_changed_for_updated_fields(self):
+    def update_values_for_all_updated_fields(self):
+        all_fields_update_dict = {}
         for updated_field in self.updated_fields:
             updated_field_type = field_type_registry.get_by_model(updated_field)
-            updated_field_type.related_field_changed(updated_field, self.model)
+            update_dict = updated_field_type.related_field_changed(
+                updated_field, self.model
+            )
+            for key, value in update_dict.items():
+                all_fields_update_dict[key] = value
+        self.model.objects.update(**all_fields_update_dict)
 
 
 def type_table_and_update_fields_given_changed_field(

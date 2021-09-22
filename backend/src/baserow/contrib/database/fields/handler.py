@@ -194,7 +194,7 @@ class FieldHandler:
             if do_schema_change:
                 schema_editor.add_field(to_model, model_field)
 
-        typed_updated_table.trigger_related_field_changed_for_updated_fields()
+        typed_updated_table.update_values_for_all_updated_fields()
 
         field_type.after_create(instance, to_model, user, connection, before)
 
@@ -374,7 +374,7 @@ class FieldHandler:
             altered_column,
             before,
         )
-        typed_updated_table.trigger_related_field_changed_for_updated_fields()
+        typed_updated_table.update_values_for_all_updated_fields()
 
         field_updated.send(
             self,

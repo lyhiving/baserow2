@@ -32,10 +32,21 @@ from baserow.contrib.database.api.fields.serializers import (
     SelectOptionSerializer,
     FileFieldResponseSerializer,
 )
-from ..formula.errors import BaserowFormulaException
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
+from baserow.contrib.database.formula.registries import formula_type_handler_registry
+from baserow.contrib.database.formula.types.type_defs import (
+    BaserowFormulaTextType,
+    BaserowFormulaNumberType,
+    BaserowFormulaBooleanType,
+    BaserowFormulaDateType,
+    BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
+)
+from baserow.contrib.database.formula.types.type_handler import (
+    BaserowFormulaTypeHandler,
+)
+from baserow.contrib.database.formula.types.type_types import BaserowFormulaType
 from baserow.contrib.database.validators import UnicodeRegexValidator
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
@@ -68,18 +79,7 @@ from .models import (
     FormulaField,
 )
 from .registries import FieldType, field_type_registry
-from baserow.contrib.database.formula.types.type_defs import (
-    BaserowFormulaTextType,
-    BaserowFormulaNumberType,
-    BaserowFormulaBooleanType,
-    BaserowFormulaDateType,
-    BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
-)
-from baserow.contrib.database.formula.types.type_types import BaserowFormulaType
-from baserow.contrib.database.formula.registries import formula_type_handler_registry
-from baserow.contrib.database.formula.types.type_handler import (
-    BaserowFormulaTypeHandler,
-)
+from ..formula.errors import BaserowFormulaException
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1888,7 +1888,11 @@ class FormulaFieldType(FieldType):
 
     def related_field_changed(self, field, to_model):
         if not field.error:
-            self._do_bulk_update(field, to_model)
+            f = to_model._meta.get_field(field.db_column)
+            expr = baserow_expression_to_django_expression(f.expression, None)
+            return {f"{field.db_column}": expr}
+        else:
+            return {}
 
     def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
         formula_type = self._get_formula_type_from_formula_field(from_field)
