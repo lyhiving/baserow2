@@ -685,7 +685,7 @@ class FieldType(
 
     def related_field_changed(self, field, to_model):
         # TODO: Document
-        pass
+        return {}
 
     def to_baserow_formula_type(self, field) -> BaserowFormulaType:
         # TODO: Document

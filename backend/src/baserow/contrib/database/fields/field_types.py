@@ -1858,37 +1858,6 @@ class FormulaFieldType(FieldType):
         formula_type = self._get_formula_type_from_formula_field(field)
         return formula_type.contains_query(field_name, value, model_field, field)
 
-    def after_create(self, field, model, user, connection, before):
-        """
-        Immediately after the field has been created, we need to populate the values
-        with the formula
-        """
-
-        self._do_bulk_update(field, model)
-
-    def after_update(
-        self,
-        from_field,
-        to_field,
-        from_model,
-        to_model,
-        user,
-        connection,
-        altered_column,
-        before,
-    ):
-        """
-        If the field type has changed, we need to update the values from the from
-        the source_field_name column.
-        """
-
-        self._do_bulk_update(to_field, to_model)
-
-    def _do_bulk_update(self, to_field, to_model):
-        to_model.objects_and_trash.all().update(
-            **self._calculate_update_expr(to_field, to_model)
-        )
-
     def related_field_changed(self, field, to_model):
         if not field.error:
             return self._calculate_update_expr(field, to_model)

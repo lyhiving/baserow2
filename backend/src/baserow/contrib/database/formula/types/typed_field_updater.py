@@ -98,26 +98,28 @@ class TypedBaserowTableWithUpdatedFields(TypedBaserowTable):
         self,
         typed_fields: Dict[int, TypedFieldWithReferences],
         table: "models.Table",
-        initially_changed_field: Optional[Field],
+        initially_updated_field: Optional[Field],
         updated_fields: List[Field],
     ):
         super().__init__(typed_fields)
         self.table = table
-        self.initially_changed_field = initially_changed_field
+        self.initially_updated_field = initially_updated_field
         self.updated_fields = updated_fields
-        model_fields = []
-        if self.initially_changed_field is not None:
-            model_fields.append(self.initially_changed_field)
-        model_fields += updated_fields
+        if self.initially_updated_field is not None:
+            self.all_updated_fields = [
+                self.initially_updated_field
+            ] + self.updated_fields
+        else:
+            self.all_updated_fields = self.updated_fields
         self.model = self.table.get_model(
             field_ids=[],
-            fields=model_fields,
+            fields=self.all_updated_fields,
             typed_table=self,
         )
 
     def update_values_for_all_updated_fields(self):
         all_fields_update_dict = {}
-        for updated_field in self.updated_fields:
+        for updated_field in self.all_updated_fields:
             updated_field_type = field_type_registry.get_by_model(updated_field)
             update_dict = updated_field_type.related_field_changed(
                 updated_field, self.model
