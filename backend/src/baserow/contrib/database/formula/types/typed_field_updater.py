@@ -124,7 +124,7 @@ class TypedBaserowTableWithUpdatedFields(TypedBaserowTable):
             )
             for key, value in update_dict.items():
                 all_fields_update_dict[key] = value
-        self.model.objects.update(**all_fields_update_dict)
+        self.model.objects_and_trash.update(**all_fields_update_dict)
 
 
 def type_table_and_update_fields_given_changed_field(

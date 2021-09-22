@@ -1075,3 +1075,82 @@ def test_can_compare_date_and_text(api_client, data_fixture, django_assert_num_q
     response_json = response.json()
     assert response_json["count"] == 1
     assert response_json["results"][0][f"field_{formula_field_id}"]
+
+
+@pytest.mark.django_db
+def test_trashing_row_changing_formula_restoring_row(api_client, data_fixture):
+    user, token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table, fields, rows = data_fixture.build_table(
+        columns=[("number", "number")], rows=[[1], [2]], user=user
+    )
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+    formula_field_id = response_json["id"]
+
+    response = api_client.delete(
+        reverse(
+            "api:database:rows:item",
+            kwargs={"table_id": table.id, "row_id": rows[0].id},
+        ),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_204_NO_CONTENT
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 1
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "3"
+
+    response = api_client.patch(
+        reverse("api:database:fields:item", kwargs={"field_id": formula_field_id}),
+        {
+            "formula": "'a'",
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_200_OK, response_json
+
+    model = table.get_model()
+    formula_values = model.objects_and_trash.values_list(
+        f"field_{formula_field_id}", flat=True
+    )
+    assert list(formula_values) == ["a", "a"]
+
+    response = api_client.patch(
+        reverse("api:trash:restore"),
+        {
+            "trash_item_type": "row",
+            "trash_item_id": rows[0].id,
+            "parent_trash_item_id": table.id,
+        },
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_204_NO_CONTENT
+
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response_json["count"] == 2
+    assert response_json["results"][0][f"field_{formula_field_id}"] == "a"
+    assert response_json["results"][1][f"field_{formula_field_id}"] == "a"

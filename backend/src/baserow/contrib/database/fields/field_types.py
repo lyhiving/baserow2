@@ -1882,17 +1882,20 @@ class FormulaFieldType(FieldType):
         self._do_bulk_update(to_field, to_model)
 
     def _do_bulk_update(self, to_field, to_model):
-        f = to_model._meta.get_field(to_field.db_column)
-        expr = baserow_expression_to_django_expression(f.expression, None)
-        to_model.objects.all().update(**{f"{to_field.db_column}": expr})
+        to_model.objects_and_trash.all().update(
+            **self._calculate_update_expr(to_field, to_model)
+        )
 
     def related_field_changed(self, field, to_model):
         if not field.error:
-            f = to_model._meta.get_field(field.db_column)
-            expr = baserow_expression_to_django_expression(f.expression, None)
-            return {f"{field.db_column}": expr}
+            return self._calculate_update_expr(field, to_model)
         else:
             return {}
+
+    def _calculate_update_expr(self, field, to_model):
+        f = to_model._meta.get_field(field.db_column)
+        expr = baserow_expression_to_django_expression(f.expression, None)
+        return {f"{field.db_column}": expr}
 
     def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
         formula_type = self._get_formula_type_from_formula_field(from_field)

@@ -6,7 +6,7 @@
         <FieldSelectOptions
           ref="selectOptions"
           v-model="values.select_options"
-          table="table"
+          :table="table"
         ></FieldSelectOptions>
       </div>
     </div>
@@ -19,7 +19,7 @@ import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
 import FieldSelectOptions from '@baserow/modules/database/components/field/FieldSelectOptions'
 
 export default {
-  name: 'FieldSelectOptions',
+  name: 'FieldSingleSelectSubForm',
   components: { FieldSelectOptions },
   mixins: [form, fieldSubForm],
   data() {
