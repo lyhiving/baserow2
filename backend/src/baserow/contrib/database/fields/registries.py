@@ -200,6 +200,23 @@ class FieldType(
 
         raise NotImplementedError("Each must have his own get_model_field method.")
 
+    def get_typed_model_field(self, instance, typed_table, **kwargs):
+        """
+        Exactly the same as get_model_field but also provides the typed_table parameter
+        for fields which need to know field formula types to generate their model field.
+
+        :param instance: The field instance for which to get the model field for.
+        :type instance: Field
+        :param typed_table: The typed table the field is part.
+        :type typed_table: TypedBaserowTable
+        :param kwargs: The kwargs that will be passed to the field.
+        :type kwargs: dict
+        :return: The model field that represents the field instance attributes.
+        :rtype: model.Field
+        """
+
+        return self.get_model_field(instance, **kwargs)
+
     def after_model_generation(self, instance, model, field_name, manytomany_models):
         """
         After the model is generated the after_model_generation method of each field
@@ -675,6 +692,12 @@ class FieldType(
         return BaserowFormulaInvalidType(
             f"A field of type {self.type} cannot be referenced in a Baserow formula."
         )
+
+    def add_related_fields_to_model(
+        self, typed_table, field, already_included_field_ids
+    ):
+        # TODO: Document
+        return []
 
 
 class FieldTypeRegistry(

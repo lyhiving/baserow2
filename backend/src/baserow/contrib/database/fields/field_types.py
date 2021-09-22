@@ -32,6 +32,7 @@ from baserow.contrib.database.api.fields.serializers import (
     SelectOptionSerializer,
     FileFieldResponseSerializer,
 )
+from baserow.contrib.database.formula.errors import BaserowFormulaException
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
@@ -79,7 +80,6 @@ from .models import (
     FormulaField,
 )
 from .registries import FieldType, field_type_registry
-from ..formula.errors import BaserowFormulaException
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1806,8 +1806,11 @@ class FormulaFieldType(FieldType):
         formula_type = self._get_formula_type_from_formula_field(instance)
         return formula_type.get_serializer_field(**kwargs)
 
-    def get_model_field(self, instance, **kwargs):
-        expression = kwargs.pop("expression")
+    def get_typed_model_field(self, instance, typed_table, **kwargs):
+        if typed_table:
+            expression = typed_table.get_typed_field_expression(instance)
+        else:
+            expression = None
 
         formula_type = self._get_formula_type_from_formula_field(instance)
         expression_field_type = formula_type.get_model_field(**kwargs)
@@ -1900,3 +1903,18 @@ class FormulaFieldType(FieldType):
     def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
         formula_type = self._get_formula_type_from_formula_field(from_field)
         return formula_type.get_alter_column_prepare_old_value()
+
+    def add_related_fields_to_model(
+        self, typed_table, field, already_included_field_ids
+    ):
+        # If we are building a model with some formula fields we need to
+        # establish the types fields and whether they depend on any other
+        # child fields to be calculated. These child fields then need to be
+        # included in the django model otherwise we cannot reference them.
+        # Allow passing in typer=False to disable any type checking.
+        if typed_table:
+            return typed_table.calculate_all_child_fields(
+                field, already_included_field_ids
+            )
+        else:
+            return []

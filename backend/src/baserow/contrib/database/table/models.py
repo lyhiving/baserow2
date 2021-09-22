@@ -388,18 +388,12 @@ class Table(
             field_type = field_type_registry.get_by_model(field)
             field_name = field.db_column
 
-            if field_type.type == "formula":
-                # If we are building a model with some formula fields we need to
-                # establish the types fields and whether they depend on any other
-                # child fields to be calculated. These child fields then need to be
-                # included in the django model otherwise we cannot reference them.
-                if typed_table is None:
-                    typed_table = type_table(self)
-                # Allow passing in typer=False to disable any type checking.
-                if typed_table:
-                    fields += typed_table.calculate_all_child_fields(
-                        field, already_included_field_ids
-                    )
+            if typed_table is None:
+                typed_table = type_table(self)
+
+            fields += field_type.add_related_fields_to_model(
+                typed_table, field, already_included_field_ids
+            )
 
             # If attribute_names is True we will not use 'field_{id}' as attribute name,
             # but we will rather use a name the user provided.
@@ -434,16 +428,11 @@ class Table(
             # model. All the kwargs that are passed to the `get_model_field`
             # method are going to be passed along to the model field.
             extra_kwargs = {}
-            if field_type.type == "formula":
-                extra_kwargs["expression"] = (
-                    typed_table.get_typed_field_expression(field)
-                    if typed_table
-                    else None
-                )
-            attrs[field_name] = field_type.get_model_field(
+            attrs[field_name] = field_type.get_typed_model_field(
                 field,
                 db_column=field.db_column,
                 verbose_name=field.name,
+                typed_table=typed_table,
                 **extra_kwargs,
             )
 
