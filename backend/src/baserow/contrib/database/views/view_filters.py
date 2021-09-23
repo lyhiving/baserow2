@@ -32,8 +32,14 @@ from baserow.contrib.database.fields.field_types import (
 )
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.core.expressions import Timezone
-
 from .registries import ViewFilterType
+from ..formula.types.type_defs import (
+    BaserowFormulaTextType,
+    BaserowFormulaNumberType,
+    BaserowFormulaCharType,
+    BaserowFormulaDateType,
+    BaserowFormulaBooleanType,
+)
 
 
 class NotViewFilterTypeMixin:
@@ -55,10 +61,13 @@ class EqualViewFilterType(ViewFilterType):
         LongTextFieldType.type,
         URLFieldType.type,
         NumberFieldType.type,
-        BooleanFieldType.type,
         EmailFieldType.type,
         PhoneNumberFieldType.type,
-        FormulaFieldType.type,
+        FormulaFieldType.compatible_with_formula_types(
+            BaserowFormulaTextType.type,
+            BaserowFormulaCharType.type,
+            BaserowFormulaNumberType.type,
+        ),
     ]
 
     def get_filter(self, field_name, value, model_field, field):
@@ -114,7 +123,12 @@ class ContainsViewFilterType(ViewFilterType):
         CreatedOnFieldType.type,
         SingleSelectFieldType.type,
         NumberFieldType.type,
-        FormulaFieldType.type,
+        FormulaFieldType.compatible_with_formula_types(
+            BaserowFormulaTextType.type,
+            BaserowFormulaCharType.type,
+            BaserowFormulaNumberType.type,
+            BaserowFormulaDateType.type,
+        ),
     ]
 
     def get_filter(self, field_name, value, model_field, field) -> OptionallyAnnotatedQ:
@@ -134,7 +148,12 @@ class HigherThanViewFilterType(ViewFilterType):
     """
 
     type = "higher_than"
-    compatible_field_types = [NumberFieldType.type]
+    compatible_field_types = [
+        NumberFieldType.type,
+        FormulaFieldType.compatible_with_formula_types(
+            BaserowFormulaNumberType.type,
+        ),
+    ]
 
     def get_filter(self, field_name, value, model_field, field):
         value = value.strip()
@@ -165,7 +184,12 @@ class LowerThanViewFilterType(ViewFilterType):
     """
 
     type = "lower_than"
-    compatible_field_types = [NumberFieldType.type]
+    compatible_field_types = [
+        NumberFieldType.type,
+        FormulaFieldType.compatible_with_formula_types(
+            BaserowFormulaNumberType.type,
+        ),
+    ]
 
     def get_filter(self, field_name, value, model_field, field):
         value = value.strip()
@@ -200,6 +224,9 @@ class DateEqualViewFilterType(ViewFilterType):
         DateFieldType.type,
         LastModifiedFieldType.type,
         CreatedOnFieldType.type,
+        FormulaFieldType.compatible_with_formula_types(
+            BaserowFormulaDateType.type,
+        ),
     ]
 
     def get_filter(self, field_name, value, model_field, field):
@@ -274,6 +301,9 @@ class BaseDateFieldLookupFilterType(ViewFilterType):
         DateFieldType.type,
         LastModifiedFieldType.type,
         CreatedOnFieldType.type,
+        FormulaFieldType.compatible_with_formula_types(
+            BaserowFormulaDateType.type,
+        ),
     ]
 
     @staticmethod
@@ -339,6 +369,9 @@ class DateBeforeViewFilterType(BaseDateFieldLookupFilterType):
         DateFieldType.type,
         LastModifiedFieldType.type,
         CreatedOnFieldType.type,
+        FormulaFieldType.compatible_with_formula_types(
+            BaserowFormulaDateType.type,
+        ),
     ]
 
 
@@ -363,6 +396,9 @@ class DateEqualsTodayViewFilterType(ViewFilterType):
         DateFieldType.type,
         LastModifiedFieldType.type,
         CreatedOnFieldType.type,
+        FormulaFieldType.compatible_with_formula_types(
+            BaserowFormulaDateType.type,
+        ),
     ]
     query_for = ["year", "month", "day"]
 
@@ -462,7 +498,12 @@ class BooleanViewFilterType(ViewFilterType):
     """
 
     type = "boolean"
-    compatible_field_types = [BooleanFieldType.type]
+    compatible_field_types = [
+        BooleanFieldType.type,
+        FormulaFieldType.compatible_with_formula_types(
+            BaserowFormulaBooleanType.type,
+        ),
+    ]
 
     def get_filter(self, field_name, value, model_field, field):
         value = value.strip().lower()

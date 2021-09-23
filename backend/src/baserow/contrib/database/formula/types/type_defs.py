@@ -5,7 +5,7 @@ from django.db import models
 from django.db.models import Q, Func, F, Value
 from django.db.models.functions import Coalesce
 from rest_framework import serializers
-from rest_framework.fields import Field, CharField
+from rest_framework.fields import Field
 
 from baserow.contrib.database.fields.field_filters import contains_filter, AnnotatedQ
 from baserow.contrib.database.fields.mixins import DATE_FORMAT, DATE_TIME_FORMAT
@@ -13,6 +13,10 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
     BaserowFunctionCall,
     BaserowStringLiteral,
+)
+from baserow.contrib.database.formula.registries import (
+    BaserowFormulaTypeHandlerRegistry,
+    formula_function_registry,
 )
 from baserow.contrib.database.formula.types.type_handler import (
     BaserowFormulaTypeHandler,
@@ -23,13 +27,11 @@ from baserow.contrib.database.formula.types.type_types import (
     UnTyped,
     BaserowFormulaType,
 )
-from baserow.contrib.database.formula.registries import (
-    BaserowFormulaTypeHandlerRegistry,
-    formula_function_registry,
-)
 
 
 class BaserowFormulaTextType(BaserowFormulaValidType):
+    type = "text"
+
     @property
     def comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
         return [
@@ -67,15 +69,9 @@ class BaserowFormulaTextType(BaserowFormulaValidType):
             }
         )
 
-    def __str__(self) -> str:
-        return "text"
-
 
 class BaserowFormulaCharType(BaserowFormulaTextType):
     type = "char"
-
-    def __str__(self) -> str:
-        return "char"
 
     def cast_to_text(
         self,
@@ -87,6 +83,7 @@ class BaserowFormulaCharType(BaserowFormulaTextType):
 
 
 class BaserowFormulaNumberType(BaserowFormulaValidType):
+    type = "number"
     MAX_DIGITS = 50
 
     def __init__(self, number_decimal_places: int):
@@ -149,6 +146,8 @@ class BaserowFormulaNumberType(BaserowFormulaValidType):
 
 
 class BaserowFormulaBooleanType(BaserowFormulaValidType):
+    type = "boolean"
+
     @property
     def comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
         return [
@@ -164,11 +163,10 @@ class BaserowFormulaBooleanType(BaserowFormulaValidType):
             **{"required": False, "default": False, **kwargs}
         )
 
-    def __str__(self) -> str:
-        return "bool"
-
 
 class BaserowFormulaDateType(BaserowFormulaValidType):
+    type = "date"
+
     def __init__(
         self, date_format: str, date_include_time: bool, date_time_format: str
     ):
@@ -225,7 +223,7 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
                         F(field_name),
                         Value(self.get_psql_format()),
                         function="to_char",
-                        output_field=CharField(),
+                        output_field=models.CharField(),
                     ),
                     Value(""),
                 )
@@ -311,7 +309,6 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
 class BaserowFormulaInvalidTypeHandler(
     BaserowFormulaTypeHandler[BaserowFormulaInvalidType]
 ):
-    type = "invalid"
     model_class = BaserowFormulaInvalidType
     internal_fields = ["error"]
 
@@ -321,22 +318,18 @@ class ValidBaserowFormulaTypeHandler(BaserowFormulaTypeHandler, abc.ABC):
 
 
 class BaserowTextFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
-    type = "text"
     model_class = BaserowFormulaTextType
 
 
 class BaserowCharFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
-    type = "char"
     model_class = BaserowFormulaCharType
 
 
 class BaserowBooleanFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
-    type = "boolean"
     model_class = BaserowFormulaBooleanType
 
 
 class BaserowDateFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
-    type = "date"
     user_overridable_formatting_option_fields = [
         "date_format",
         "date_include_time",
@@ -345,8 +338,7 @@ class BaserowDateFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
     model_class = BaserowFormulaDateType
 
 
-class BaserowNumericFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
-    type = "number"
+class BaserowNumberFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
     user_overridable_formatting_option_fields = ["number_decimal_places"]
     model_class = BaserowFormulaNumberType
 
@@ -356,7 +348,7 @@ BASEROW_FORMULA_TYPE_HANDLER = [
     BaserowTextFormulaTypeHandler(),
     BaserowBooleanFormulaTypeHandler(),
     BaserowDateFormulaTypeHandler(),
-    BaserowNumericFormulaTypeHandler(),
+    BaserowNumberFormulaTypeHandler(),
     BaserowCharFormulaTypeHandler(),
 ]
 

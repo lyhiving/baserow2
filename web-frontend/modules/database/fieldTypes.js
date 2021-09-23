@@ -1618,6 +1618,15 @@ export class FormulaFieldType extends FieldType {
     return 'formula'
   }
 
+  static compatibleWithFormulaTypes(...formulaTypeStrings) {
+    return (field) => {
+      return (
+        field.type === this.getType() &&
+        formulaTypeStrings.includes(field.formula_type)
+      )
+    }
+  }
+
   getIconClass() {
     return 'square-root-alt'
   }

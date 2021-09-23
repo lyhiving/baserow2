@@ -282,7 +282,7 @@ class ViewHandler:
         for filter in field.viewfilter_set.all():
             filter_type = view_filter_type_registry.get(filter.type)
 
-            if field_type.type not in filter_type.compatible_field_types:
+            if not filter_type.field_is_compatible(field):
                 filter.delete()
 
     def apply_filters(self, view, queryset):
@@ -414,7 +414,7 @@ class ViewHandler:
         field_type = field_type_registry.get_by_model(field.specific_class)
 
         # Check if the field is allowed for this filter type.
-        if field_type.type not in view_filter_type.compatible_field_types:
+        if not view_filter_type.field_is_compatible(field):
             raise ViewFilterTypeNotAllowedForField(type_name, field_type.type)
 
         # Check if field belongs to the grid views table
@@ -460,7 +460,7 @@ class ViewHandler:
         field_type = field_type_registry.get_by_model(field.specific_class)
 
         # Check if the field is allowed for this filter type.
-        if field_type.type not in view_filter_type.compatible_field_types:
+        if not view_filter_type.field_is_compatible(field):
             raise ViewFilterTypeNotAllowedForField(type_name, field_type.type)
 
         # If the field has changed we need to check if the field belongs to the table.

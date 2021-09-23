@@ -1792,6 +1792,20 @@ class FormulaFieldType(FieldType):
     }
 
     @staticmethod
+    def compatible_with_formula_types(*compatible_formula_types: List[str]):
+        def checker(field):
+            from baserow.contrib.database.fields.registries import field_type_registry
+
+            field_type = field_type_registry.get_by_model(field.specific_class)
+            if field_type.type == "formula":
+                formula_type = FormulaFieldType._get_formula_type_from_formula_field(
+                    field.specific
+                )
+                return formula_type.type in compatible_formula_types
+
+        return checker
+
+    @staticmethod
     def _get_formula_type_from_formula_field(
         formula_field_instance: FormulaField,
     ) -> BaserowFormulaType:

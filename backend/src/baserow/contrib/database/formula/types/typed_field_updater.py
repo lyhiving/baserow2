@@ -18,6 +18,7 @@ from baserow.contrib.database.formula.types.table_typer import (
     TypedBaserowTable,
     type_all_fields_in_table,
 )
+from baserow.contrib.database.views.handler import ViewHandler
 
 
 def _check_if_formula_type_change_requires_drop_recreate(
@@ -76,6 +77,7 @@ def _calculate_and_save_updated_fields(
 
         if not (new_field.same_as(original_formula_field)):
             new_field.save()
+            ViewHandler().field_type_changed(new_field)
             if not checking_field_which_changed:
                 other_changed_fields[new_field.id] = new_field
                 _recreate_field_if_required(

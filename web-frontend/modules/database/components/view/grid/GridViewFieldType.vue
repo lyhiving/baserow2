@@ -156,7 +156,7 @@ export default {
     canFilter() {
       const filters = Object.values(this.$registry.getAll('viewFilter'))
       for (const type in filters) {
-        if (filters[type].compatibleFieldTypes.includes(this.field.type)) {
+        if (filters[type].fieldIsCompatible(this.field)) {
           return true
         }
       }

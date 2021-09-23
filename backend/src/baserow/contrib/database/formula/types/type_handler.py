@@ -9,9 +9,8 @@ T = TypeVar("T")
 
 class BaserowFormulaTypeHandler(ModelInstanceMixin, Instance, abc.ABC, Generic[T]):
     @property
-    @abc.abstractmethod
     def type(self) -> str:
-        pass
+        return self.model_class.type
 
     @property
     @abc.abstractmethod

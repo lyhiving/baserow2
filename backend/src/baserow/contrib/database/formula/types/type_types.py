@@ -21,6 +21,11 @@ from baserow.contrib.database.formula.types.errors import (
 class BaserowFormulaType(abc.ABC):
     @property
     @abc.abstractmethod
+    def type(self) -> str:
+        pass
+
+    @property
+    @abc.abstractmethod
     def comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
         pass
 
@@ -106,9 +111,8 @@ class BaserowFormulaType(abc.ABC):
 
         return None
 
-    @abc.abstractmethod
     def __str__(self) -> str:
-        pass
+        return self.type
 
     def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
         return not isinstance(self, type(old_type))
@@ -121,6 +125,7 @@ class BaserowFormulaType(abc.ABC):
 class BaserowFormulaInvalidType(BaserowFormulaType):
     is_valid = False
     comparable_types = []
+    type = "invalid"
 
     def raise_if_invalid(self):
         raise InvalidFormulaType(self.error)
@@ -153,9 +158,6 @@ class BaserowFormulaInvalidType(BaserowFormulaType):
 
     def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
         return False
-
-    def __str__(self) -> str:
-        return "invalid"
 
 
 class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):

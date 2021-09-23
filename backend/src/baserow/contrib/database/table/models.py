@@ -189,12 +189,13 @@ class TableModelQuerySet(models.QuerySet):
                 raise FilterFieldNotFound(field_id, f"Field {field_id} does not exist.")
 
             field_object = self.model._field_objects[field_id]
+            field_instance = field_object["field"]
             field_name = field_object["name"]
             field_type = field_object["type"].type
             model_field = self.model._meta.get_field(field_name)
             view_filter_type = view_filter_type_registry.get(matches[2])
 
-            if field_type not in view_filter_type.compatible_field_types:
+            if not view_filter_type.field_is_compatible(field_instance):
                 raise ViewFilterTypeNotAllowedForField(
                     matches[2],
                     field_type,

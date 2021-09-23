@@ -65,7 +65,13 @@ class BaserowExpressionField(models.Field):
 
         self.expression = expression
         self.expression_field = expression_field
+        for name, lookup in self.expression_field.get_lookups().items():
+            self.register_lookup(lookup, lookup_name=name)
         super().__init__(*args, **kwargs)
+
+    @property
+    def __class__(self):
+        return self.expression_field.__class__
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
@@ -78,6 +84,9 @@ class BaserowExpressionField(models.Field):
             return "TEXT"
         else:
             return self.expression_field.db_type(connection)
+
+    def get_prep_value(self, value):
+        return self.expression_field.get_prep_value(value)
 
     def pre_save(self, model_instance, add):
         if self.expression is None:
