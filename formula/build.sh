@@ -7,6 +7,21 @@ set -euo pipefail
 # the grammar files mounted into to, then generates the appropriate parsers for Baserow
 # and finally copies the generated code for those parsers to the correct location.
 
+function realpath()
+{
+    f=$@
+    if [ -d "$f" ]; then
+        base=""
+        dir="$f"
+    else
+        base="/$(basename "$f")"
+        dir=$(dirname "$f")
+    fi
+    dir=$(cd "$dir" && /bin/pwd)
+    echo "$dir$base"
+}
+
+
 GREEN=$(tput setaf 2)
 RED=$(tput setaf 1)
 NC=$(tput sgr0) # No Color
@@ -24,7 +39,7 @@ if [ ! -f BaserowFormula.g4 ] || [ ! -f BaserowFormulaLexer.g4 ] || [ ! -d ../ba
 fi
 
 echo "Ensuring output folder is clean..."
-rm out/ -rf
+rm out/ -rf || true
 
 # Build the antlr build image and run it as the current user so the generated files
 # are owned by the user and not root.
@@ -61,8 +76,8 @@ echo "Moving tokens next to grammar files.."
 cp out/backend_parser/*.tokens .
 
 echo "Cleaning up out folder..."
-rm out/backend_parser/* -f
-rm out/frontend_parser/* -f
+rm -f out/backend_parser/*
+rm -f out/frontend_parser/*
 rmdir out/backend_parser
 rmdir out/frontend_parser
 rmdir out
