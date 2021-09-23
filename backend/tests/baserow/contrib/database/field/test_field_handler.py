@@ -348,7 +348,7 @@ def test_update_field(send_mock, data_fixture):
     field.save()
 
     # Change some values of the text field and test if they have been changed.
-    field, _ = handler.update_field(
+    field = handler.update_field(
         user=user, field=field, name="Text field", text_default="Default value"
     )
 
@@ -367,7 +367,7 @@ def test_update_field(send_mock, data_fixture):
     model.objects.create(**{f"field_{field.id}": "10"})
 
     # Change the field type to a number and test if the values have been changed.
-    field, _ = handler.update_field(
+    field = handler.update_field(
         user=user,
         field=field,
         new_type_name="number",
@@ -388,7 +388,7 @@ def test_update_field(send_mock, data_fixture):
     assert getattr(rows[2], f"field_{field.id}") == 10
 
     # Change the field type to a decimal and test if the values have been changed.
-    field, _ = handler.update_field(
+    field = handler.update_field(
         user=user,
         field=field,
         new_type_name="number",
@@ -410,7 +410,7 @@ def test_update_field(send_mock, data_fixture):
     assert getattr(rows[2], f"field_{field.id}") == Decimal("10.00")
 
     # Change the field type to a boolean and test if the values have been changed.
-    field, _ = handler.update_field(
+    field = handler.update_field(
         user=user, field=field, new_type_name="boolean", name="Active"
     )
 

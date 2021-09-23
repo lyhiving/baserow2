@@ -143,6 +143,9 @@ class FieldHandler:
         :param do_schema_change: Indicates whether or not he actual database schema
             change has be made.
         :type do_schema_change: bool
+        :param return_updated_fields: When True any other fields who changed as a
+            result of this field creation are returned with their new field instances.
+        :type return_updated_fields: bool
         :param kwargs: The field values that need to be set upon creation.
         :type kwargs: object
         :raises PrimaryFieldAlreadyExists: When we try to create a primary field,
@@ -221,7 +224,9 @@ class FieldHandler:
         else:
             return instance
 
-    def update_field(self, user, field, new_type_name=None, **kwargs):
+    def update_field(
+        self, user, field, new_type_name=None, return_updated_fields=False, **kwargs
+    ):
         """
         Updates the values of the given field, if provided it is also possible to change
         the type.
@@ -232,6 +237,9 @@ class FieldHandler:
         :type field: Field
         :param new_type_name: If the type needs to be changed it can be provided here.
         :type new_type_name: str
+        :param return_updated_fields: When True any other fields who changed as a
+            result of this field update are returned with their new field instances.
+        :type return_updated_fields: bool
         :param kwargs: The field values that need to be updated
         :type kwargs: object
         :raises ValueError: When the provided field is not an instance of Field.
@@ -396,7 +404,10 @@ class FieldHandler:
             user=user,
         )
 
-        return field, typed_updated_table.updated_fields
+        if return_updated_fields:
+            return field, typed_updated_table.updated_fields
+        else:
+            return field
 
     def delete_field(self, user, field):
         """

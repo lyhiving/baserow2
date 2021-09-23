@@ -48,7 +48,7 @@ def test_long_text_field_type(data_fixture):
     handler.create_field(
         user=user, table=table, type_name="long_text", name="description"
     )
-    field, _ = handler.update_field(user=user, field=field, new_type_name="long_text")
+    field = handler.update_field(user=user, field=field, new_type_name="long_text")
 
     assert len(LongTextField.objects.all()) == 2
 

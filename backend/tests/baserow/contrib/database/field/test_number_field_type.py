@@ -98,7 +98,7 @@ def test_alter_number_field_column_type(expected, field_kwargs, data_fixture):
     field = data_fixture.create_text_field(table=table, order=1)
 
     handler = FieldHandler()
-    field, _ = handler.update_field(user=user, field=field, name="Text field")
+    field = handler.update_field(user=user, field=field, name="Text field")
 
     model = table.get_model()
     model.objects.create(**{f"field_{field.id}": "9223372036854775807"})
@@ -116,7 +116,7 @@ def test_alter_number_field_column_type(expected, field_kwargs, data_fixture):
     model.objects.create(**{f"field_{field.id}": "!@#$%%^^5.2&&^^%$$"})
 
     # Change the field type to a number and test if the values have been changed.
-    field, _ = handler.update_field(
+    field = handler.update_field(
         user=user, field=field, new_type_name="number", **field_kwargs
     )
 
@@ -150,10 +150,10 @@ def test_alter_number_field_column_type_negative(data_fixture):
     )
 
     handler = FieldHandler()
-    number_field, _ = handler.update_field(
+    number_field = handler.update_field(
         user=user, field=number_field, number_negative=False
     )
-    decimal_field, _ = handler.update_field(
+    decimal_field = handler.update_field(
         user=user, field=decimal_field, number_negative=False
     )
 

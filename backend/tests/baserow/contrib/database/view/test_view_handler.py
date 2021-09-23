@@ -574,7 +574,7 @@ def test_field_type_changed(data_fixture):
     data_fixture.create_view_sort(view=grid_view, field=text_field, order="ASC")
 
     field_handler = FieldHandler()
-    long_text_field, _ = field_handler.update_field(
+    long_text_field = field_handler.update_field(
         user=user, field=text_field, new_type_name="long_text"
     )
     assert ViewFilter.objects.all().count() == 1

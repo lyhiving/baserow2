@@ -48,7 +48,7 @@ def test_single_select_field_type(data_fixture):
     assert select_options[0].value == "Option 1"
     assert select_options[0].color == "blue"
 
-    field, _ = field_handler.update_field(
+    field = field_handler.update_field(
         user=user,
         table=table,
         field=field,
@@ -125,7 +125,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     assert getattr(row, f"field_{field.id}").color == select_options[0].color
     assert getattr(row, f"field_{field.id}_id") == select_options[0].id
 
-    field, _ = field_handler.update_field(
+    field = field_handler.update_field(
         user=user,
         field=field,
         select_options=[
@@ -169,7 +169,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     assert getattr(row, f"field_{field.id}") is None
     assert getattr(row, f"field_{field.id}_id") is None
 
-    field, _ = field_handler.update_field(user=user, field=field, new_type_name="text")
+    field = field_handler.update_field(user=user, field=field, new_type_name="text")
     assert field.select_options.all().count() == 0
     model = table.get_model()
     rows = model.objects.all().enhance_by_fields()
@@ -178,7 +178,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     assert getattr(rows[2], f"field_{field.id}") == "Option 4"
     assert getattr(rows[3], f"field_{field.id}") == "Option 3"
 
-    field, _ = field_handler.update_field(
+    field = field_handler.update_field(
         user=user,
         field=field,
         new_type_name="single_select",
@@ -202,7 +202,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     assert getattr(row_4, f"field_{field.id}") is None
     assert getattr(row_4, f"field_{field.id}_id") is None
 
-    field, _ = field_handler.update_field(user=user, field=field, new_type_name="text")
+    field = field_handler.update_field(user=user, field=field, new_type_name="text")
     assert field.select_options.all().count() == 0
     model = table.get_model()
     rows = model.objects.all().enhance_by_fields()
@@ -211,7 +211,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     assert getattr(rows[2], f"field_{field.id}") is None
     assert getattr(rows[3], f"field_{field.id}") is None
 
-    field, _ = field_handler.update_field(
+    field = field_handler.update_field(
         user=user, field=field, new_type_name="single_select"
     )
     assert field.select_options.all().count() == 0

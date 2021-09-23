@@ -319,7 +319,7 @@ class FieldView(APIView):
         # defined in the type.
         with field_type.map_api_exceptions():
             field, related_fields = FieldHandler().update_field(
-                request.user, field, type_name, **data
+                request.user, field, type_name, return_updated_fields=True, **data
             )
 
         return _build_field_response_with_related_fields(field, related_fields)

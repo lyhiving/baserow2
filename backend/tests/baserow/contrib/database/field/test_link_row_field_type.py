@@ -154,7 +154,7 @@ def test_link_row_field_type(data_fixture):
 
     # Going to change only the name of the field. This should not result in any errors
     # of schema changes.
-    link_field_1, _ = field_handler.update_field(
+    link_field_1 = field_handler.update_field(
         user, link_field_1, name="Customer Renamed"
     )
 
@@ -166,7 +166,7 @@ def test_link_row_field_type(data_fixture):
 
     # Change the table, this should destroy all relations.
     old_link_field_1_relation_id = link_field_1.link_row_relation_id
-    link_field_1, _ = field_handler.update_field(
+    link_field_1 = field_handler.update_field(
         user, link_field_1, link_row_table=cars_table
     )
 
@@ -182,9 +182,7 @@ def test_link_row_field_type(data_fixture):
     assert getattr(table_row_2, f"field_{link_field_1.id}").all().count() == 0
     assert getattr(table_row_2, f"field_{link_field_2.id}").all().count() == 0
 
-    link_field_2, _ = field_handler.update_field(
-        user, link_field_2, new_type_name="text"
-    )
+    link_field_2 = field_handler.update_field(user, link_field_2, new_type_name="text")
     assert isinstance(link_field_2, TextField)
 
     model = table.get_model()
@@ -201,7 +199,7 @@ def test_link_row_field_type(data_fixture):
     field_handler.delete_field(user, link_field_1)
 
     # Change a the text field back into a link row field.
-    link_field_2, _ = field_handler.update_field(
+    link_field_2 = field_handler.update_field(
         user,
         link_field_2,
         new_type_name="link_row",
@@ -342,7 +340,7 @@ def test_link_row_field_type_rows(data_fixture):
 
     # When changing the link row table table all the existing relations should be
     # deleted.
-    link_row_field, _ = field_handler.update_field(
+    link_row_field = field_handler.update_field(
         user=user,
         field=link_row_field,
         type_name="link_row",
@@ -940,7 +938,7 @@ def test_change_type_to_link_row_field_when_field_with_same_related_name_already
     model.objects.create(**{f"field_{field.id}": "100"})
 
     # Change the field type to a number and test if the values have been changed.
-    new_link_row_field, _ = handler.update_field(
+    new_link_row_field = handler.update_field(
         user=user,
         field=field,
         new_type_name="link_row",

@@ -111,10 +111,10 @@ def test_date_field_type(data_fixture):
     assert row.date is None
     assert row.datetime == datetime(2020, 4, 1, 10, 30, 30, tzinfo=timezone("UTC"))
 
-    date_field_1, _ = field_handler.update_field(
+    date_field_1 = field_handler.update_field(
         user=user, field=date_field_1, date_include_time=True
     )
-    date_field_2, _ = field_handler.update_field(
+    date_field_2 = field_handler.update_field(
         user=user, field=date_field_2, date_include_time=False
     )
 
@@ -222,16 +222,16 @@ def test_converting_date_field_value(data_fixture):
         },
     )
 
-    date_field_eu, _ = field_handler.update_field(
+    date_field_eu = field_handler.update_field(
         user=user, field=date_field_eu, new_type_name="date", date_format="EU"
     )
-    date_field_us, _ = field_handler.update_field(
+    date_field_us = field_handler.update_field(
         user=user, field=date_field_us, new_type_name="date", date_format="US"
     )
-    date_field_iso, _ = field_handler.update_field(
+    date_field_iso = field_handler.update_field(
         user=user, field=date_field_iso, new_type_name="date", date_format="ISO"
     )
-    date_field_eu_12, _ = field_handler.update_field(
+    date_field_eu_12 = field_handler.update_field(
         user=user,
         field=date_field_eu_12,
         new_type_name="date",
@@ -239,7 +239,7 @@ def test_converting_date_field_value(data_fixture):
         date_include_time=True,
         date_time_format="12",
     )
-    date_field_us_12, _ = field_handler.update_field(
+    date_field_us_12 = field_handler.update_field(
         user=user,
         field=date_field_us_12,
         new_type_name="date",
@@ -247,7 +247,7 @@ def test_converting_date_field_value(data_fixture):
         date_include_time=True,
         date_time_format="12",
     )
-    date_field_iso_12, _ = field_handler.update_field(
+    date_field_iso_12 = field_handler.update_field(
         user=user,
         field=date_field_iso_12,
         new_type_name="date",
@@ -255,7 +255,7 @@ def test_converting_date_field_value(data_fixture):
         date_include_time=True,
         date_time_format="12",
     )
-    date_field_eu_24, _ = field_handler.update_field(
+    date_field_eu_24 = field_handler.update_field(
         user=user,
         field=date_field_eu_24,
         new_type_name="date",
@@ -263,7 +263,7 @@ def test_converting_date_field_value(data_fixture):
         date_include_time=True,
         date_time_format="24",
     )
-    date_field_us_24, _ = field_handler.update_field(
+    date_field_us_24 = field_handler.update_field(
         user=user,
         field=date_field_us_24,
         new_type_name="date",
@@ -271,7 +271,7 @@ def test_converting_date_field_value(data_fixture):
         date_include_time=True,
         date_time_format="24",
     )
-    date_field_iso_24, _ = field_handler.update_field(
+    date_field_iso_24 = field_handler.update_field(
         user=user,
         field=date_field_iso_24,
         new_type_name="date",
@@ -377,31 +377,31 @@ def test_converting_date_field_value(data_fixture):
         datetime(10, 4, 19, 12, 0, tzinfo=utc)
     )
 
-    date_field_eu, _ = field_handler.update_field(
+    date_field_eu = field_handler.update_field(
         user=user, field=date_field_eu, new_type_name="text"
     )
-    date_field_us, _ = field_handler.update_field(
+    date_field_us = field_handler.update_field(
         user=user, field=date_field_us, new_type_name="text"
     )
-    date_field_iso, _ = field_handler.update_field(
+    date_field_iso = field_handler.update_field(
         user=user, field=date_field_iso, new_type_name="text"
     )
-    date_field_eu_12, _ = field_handler.update_field(
+    date_field_eu_12 = field_handler.update_field(
         user=user, field=date_field_eu_12, new_type_name="text"
     )
-    date_field_us_12, _ = field_handler.update_field(
+    date_field_us_12 = field_handler.update_field(
         user=user, field=date_field_us_12, new_type_name="text"
     )
-    date_field_iso_12, _ = field_handler.update_field(
+    date_field_iso_12 = field_handler.update_field(
         user=user, field=date_field_iso_12, new_type_name="text"
     )
-    date_field_eu_24, _ = field_handler.update_field(
+    date_field_eu_24 = field_handler.update_field(
         user=user, field=date_field_eu_24, new_type_name="text"
     )
-    date_field_us_24, _ = field_handler.update_field(
+    date_field_us_24 = field_handler.update_field(
         user=user, field=date_field_us_24, new_type_name="text"
     )
-    date_field_iso_24, _ = field_handler.update_field(
+    date_field_iso_24 = field_handler.update_field(
         user=user, field=date_field_iso_24, new_type_name="text"
     )
 
@@ -484,8 +484,8 @@ def test_negative_date_field_value(data_fixture):
         }
     )
 
-    date_field, _ = FieldHandler().update_field(user, date_field, new_type_name="date")
-    datetime_field, _ = FieldHandler().update_field(
+    date_field = FieldHandler().update_field(user, date_field, new_type_name="date")
+    datetime_field = FieldHandler().update_field(
         user, datetime_field, new_type_name="date", date_include_time=True
     )
 

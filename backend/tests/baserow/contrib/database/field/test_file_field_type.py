@@ -159,7 +159,7 @@ def test_file_field_type(data_fixture):
         model=model,
     )
 
-    file, _ = field_handler.update_field(
+    file = field_handler.update_field(
         user=user, table=table, field=text, new_type_name="file", name="File"
     )
     model = table.get_model(attribute_names=True)
