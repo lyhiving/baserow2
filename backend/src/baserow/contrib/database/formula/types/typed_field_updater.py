@@ -129,6 +129,14 @@ class TypedBaserowTableWithUpdatedFields(TypedBaserowTable):
         self.model.objects_and_trash.update(**all_fields_update_dict)
 
 
+def type_table_and_update_fields(table: "models.Table"):
+    typed_fields = type_all_fields_in_table(table)
+    updated_fields = _calculate_and_save_updated_fields(table, typed_fields)
+    return (
+        TypedBaserowTableWithUpdatedFields(typed_fields, table, None, updated_fields),
+    )
+
+
 def type_table_and_update_fields_given_changed_field(
     table: "models.Table", initial_field: Field
 ) -> Tuple["TypedBaserowTableWithUpdatedFields", Field]:

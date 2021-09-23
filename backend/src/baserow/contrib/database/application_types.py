@@ -6,6 +6,7 @@ from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.views.registries import view_type_registry
 from baserow.core.registries import ApplicationType
 from .api.serializers import DatabaseSerializer
+from .formula.types.typed_field_updater import type_table_and_update_fields
 from .models import Database, Table
 from baserow.core.trash.handler import TrashHandler
 
@@ -149,6 +150,12 @@ class DatabaseApplicationType(ApplicationType):
                     fields=table["_field_objects"], field_ids=[]
                 )
                 schema_editor.create_model(model)
+
+            # Once all the fields have been deserialized and created and the table
+            # itself exists we have to ensure all fields have been typed and their
+            # formulas have correctly been changed from containing field('..') to
+            # field_by_id(..).
+            type_table_and_update_fields(table["_object"])
 
         # Now that everything is in place we can start filling the table with the rows
         # in an efficient matter by using the bulk_create functionality.
