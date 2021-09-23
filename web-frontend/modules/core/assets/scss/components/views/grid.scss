@@ -347,20 +347,21 @@
     }
   }
 
+  &.cell-error {
+    background-color: $color-error-100;
+    color: $color-neutral-500;
+  }
+
   .grid-view__row--selected & {
     background-color: $color-neutral-50;
 
+    &.cell-error {
+      background-color: $color-error-100;
+    }
+
     &.active {
       background-color: $white;
-
-      &.cell-error {
-        background-color: $color-error-200;
-      }
     }
-  }
-
-  &.cell-error {
-    background-color: $color-error-200;
   }
 
   .grid-view__column--matches-search & {

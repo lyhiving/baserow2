@@ -1,10 +1,10 @@
 <template>
   <div
     v-if="field.formula_type === 'number' && value === 'NaN'"
-    ref="cell"
-    v-tooltip="'Invalid number'"
-    class="grid-view__cell active cell-error"
-  ></div>
+    class="grid-view__cell cell-error"
+  >
+    <div class="grid-field-number">Invalid Number</div>
+  </div>
   <div v-else-if="field.error" ref="cell" class="grid-view__cell active"></div>
   <component
     :is="getComponent(field)"

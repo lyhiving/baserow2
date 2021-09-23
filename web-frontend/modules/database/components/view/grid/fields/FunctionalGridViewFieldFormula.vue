@@ -1,9 +1,10 @@
 <template functional>
   <div
     v-if="props.field.formula_type === 'number' && props.value === 'NaN'"
-    v-tooltip="'Invalid number'"
     class="grid-view__cell cell-error"
-  ></div>
+  >
+    <div class="grid-field-number">Invalid Number</div>
+  </div>
   <component
     :is="$options.methods.getComponent(props.field)"
     v-else-if="$options.methods.getComponent(props.field)"
