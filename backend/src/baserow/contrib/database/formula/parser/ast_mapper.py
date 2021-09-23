@@ -35,6 +35,11 @@ from baserow.core.exceptions import InstanceTypeDoesNotExist
 
 
 class BaserowFormulaErrorListener(ErrorListener):
+    """
+    A custom error listener as ANTLR's default error listen does not raise an
+    exception if a syntax error is found in a parse tree.
+    """
+
     # noinspection PyPep8Naming
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         msg = msg.replace("<EOF>", "the end of the formula")
@@ -67,6 +72,28 @@ def raw_formula_to_untyped_expression(formula: str) -> BaserowExpression[UnTyped
 def replace_field_refs_according_to_new_or_deleted_fields(
     formula: str, trash_ids_to_names, new_names_to_id
 ) -> str:
+    """
+    Given a raw formula string lexs it into a token stream and goes through and replaces
+    all field_by_id references to a id in the provided trash_ids_to_names with a field
+    reference of the corresponding name. Does the opposite operation with
+    new_names_to_id and so will replace any field references with field_by_id according
+    to the names and ids in the dict.
+
+    This method has to work off the tokens directly as once ANTLR parses a token stream
+    into a parse tree it will throw away all hidden channels, which for us are comments
+    and whitespace. Because we want to directly mutate the formula string and store the
+    result here we need to preserve whitespace and hence need to go off the raw tokens
+    which do still include the whitespace and comments.
+
+    :param formula: A raw formula string to transform.
+    :param trash_ids_to_names: A dict of id to name to replace field_by_id(id) with
+        field(name) references.
+    :param new_names_to_id: A dict of name to id to replace field(name) with
+        field_by_id(id) references.
+    :return: A transformed formula string with field_by_id/field references substituted
+        according to the input dicts. Any whitespace or comments will be preserved and
+        still present in this returned formula string.
+    """
     try:
         lexer = BaserowFormulaLexer(InputStream(formula))
         stream = BufferedTokenStream(lexer)
@@ -197,69 +224,6 @@ def _lookahead_to_name(start, stop, stream):
             return None
 
 
-def _translate_field_to_field_by_id(stream, field_name_to_id):
-    """
-    Takes a raw token stream of a Baserow formula and translates any field('..')
-    references to field_by_id(..) references. Needs to operate over the raw tokens as
-    we want to preserve any whitespace or comments and persist the translated formula
-    back in a string form to the db.
-    """
-
-    stream.lazyInit()
-    stream.fill()
-    start = 0
-    stop = len(stream.tokens) - 1
-    if start < 0 or stop < 0 or stop < start:
-        return ""
-    field_reference_started = False
-    searching_for_field_ref_literal = False
-    with StringIO() as buf:
-        for i in range(start, stop + 1):
-            t = stream.tokens[i]
-            out = t.text
-
-            # Normal tokens are all tokens other than white space or comments
-            is_normal_token = t.channel == 0
-            if searching_for_field_ref_literal:
-                # Continue searching through whitespace or comments until we encounter
-                # the next normal token
-                if is_normal_token:
-                    is_singleq = t.type == BaserowFormulaLexer.SINGLEQ_STRING_LITERAL
-                    is_doubleq = t.type == BaserowFormulaLexer.DOUBLEQ_STRING_LITERAL
-                    if is_singleq or is_doubleq:
-                        raw_field_name = _convert_string_literal_token_to_string(
-                            t.text, is_singleq
-                        )
-                        if raw_field_name not in field_name_to_id:
-                            raise UnknownFieldReference()
-                        field_id = field_name_to_id[raw_field_name]
-                        out = str(field_id)
-                    else:
-                        searching_for_field_ref_literal = False
-
-            if field_reference_started:
-                # Continue searching through whitespace or comments until we encounter
-                # the next normal token
-                if is_normal_token:
-                    field_reference_started = False
-                    if t.type == BaserowFormulaLexer.OPEN_PAREN:
-                        searching_for_field_ref_literal = True
-
-            if t.type == BaserowFormulaLexer.FIELD:
-                name = _lookahead_to_name(i + 1, stop, stream)
-                if name is None:
-                    raise UnknownFieldReference()
-                elif name in field_name_to_id:
-                    # Only translate field('...') to field_by_id for non trashed
-                    # and known fields. Leave it has a raw field('..') for unknowns.
-                    field_reference_started = True
-                    out = "field_by_id"
-            if t.type == Token.EOF:
-                break
-            buf.write(out)
-        return buf.getvalue()
-
-
 def _convert_string_literal_token_to_string(text, is_single_q):
     literal_without_outer_quotes = text[1:-1]
     if is_single_q:
@@ -270,6 +234,15 @@ def _convert_string_literal_token_to_string(text, is_single_q):
 
 
 class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
+    """
+    A Visitor which transforms an Antlr parse tree into a BaserowExpression AST.
+
+    Raises an UnknownBinaryOperator if the formula contains an unknown binary operator.
+
+    Raises an UnknownFunctionDefintion if the formula has a function call to a function
+    not in the registry.
+    """
+
     def visitRoot(self, ctx: BaserowFormula.RootContext):
         return ctx.expr().accept(self)
 

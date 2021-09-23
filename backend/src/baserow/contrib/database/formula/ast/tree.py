@@ -20,6 +20,78 @@ R = TypeVar("R")
 
 
 class BaserowExpression(abc.ABC, Generic[A]):
+    """
+    The root base class for a BaserowExpression which can be seen as an abstract
+    syntax tree of a Baserow Formula.
+
+    For example the formula `concat(field('a'),1+1)` is equivalently represented by the
+    following BaserowExpression AST:
+
+    ```
+    BaserowFunctionCall(
+        BaserowConcat(),
+        [
+            BaserowFieldReference('a'),
+            BaserowFunctionCall(
+                BaserowAdd(),
+                [
+                    BaserowIntegerLiteral(1),
+                    BaserowIntegerLiteral(1)
+                ]
+            )
+        ]
+    )
+    ```
+
+    A BaserowExpression has a generic type parameter A. This indicates the type of
+    the additional field `expression_type` attached to every BaserowExpression.
+    This allows us to talk about BaserowExpression's as they go through the various
+    stages of parsing and typing using the python type system to help us.
+
+    For example, imagine I parse a raw input string and have yet to figure out the types
+    of a baserow expression. Then the type of the `expression_type` attached to each
+    node in the BaserowExpression tree is None as we don't know it yet. And so we can
+    write for the formula `concat('a', 'b')`:
+
+
+    ```
+    # Look at what UnTyped is defined as (its `type(None)`)!
+    untyped_expr = BaserowFunctionCall[UnTyped](
+        BaserowConcat(),
+        [
+            BaserowStringLiteral[UnTyped]('a'),
+            BaserowStringLiteral[UnTyped]('b')
+        ]
+    )
+    ```
+
+    Pythons type system will now help us as we have used a generic type here and if
+    we try to do something with `untyped_expr.expression_type` we will get a nice type
+    warning that it is None.
+
+    Now imagine we go through and figure out the types, now we can use the various
+    with_type functions defined below to transform an expression into a different
+    generically typed form!
+
+    ```
+    untyped_expr = BaserowFunctionCall[UnTyped](
+        BaserowConcat(),
+        [
+            BaserowStringLiteral[UnTyped]('a').with_valid_type(
+                BaserowFormulaTextType()
+            ),
+            BaserowStringLiteral[UnTyped]('b').with_valid_type(
+                BaserowFormulaTextType()
+            )
+        ]
+    )
+    typed_expression = untyped_expr.with_valid_type(BaserowFormulaTextType())
+    # Now python knows that typed_expression is of type
+    # BaserowExpression[BaserowFormulaType] and so we can safely access it:
+    do_thing_with_type(typed_expression.expression_type)
+    ```
+    """
+
     def __init__(self, expression_type: A):
         self.expression_type: A = expression_type
 

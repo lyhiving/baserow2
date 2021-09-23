@@ -64,6 +64,12 @@ def _fix_deleted_or_new_refs_in_formula_and_parse_into_untyped_formula(
 
 
 class UntypedFormulaFieldWithReferences:
+    """
+    A graph node class, containing a formula field and it's untyped but parsed
+    BaserowExpression, references to it's child and parent fields and it's formula
+    field with any field/field_by_id transformations applied already.
+    """
+
     def __init__(
         self,
         original_formula_field: FormulaField,
@@ -77,14 +83,6 @@ class UntypedFormulaFieldWithReferences:
         self.formula_children: Dict[int, "UntypedFormulaFieldWithReferences"] = {}
         self.field_children: Set[int] = set()
 
-    def add_child_formulas_and_raise_if_self_ref_found(
-        self, child_formula: "UntypedFormulaFieldWithReferences"
-    ):
-        if child_formula.field_id == self.field_id:
-            raise NoSelfReferencesError()
-        self.formula_children[child_formula.field_id] = child_formula
-        child_formula.parents[self.field_id] = self
-
     @property
     def field_id(self):
         return self.original_formula_field.id
@@ -92,6 +90,21 @@ class UntypedFormulaFieldWithReferences:
     @property
     def field_name(self):
         return self.original_formula_field.name
+
+    def add_child_formulas_and_raise_if_self_ref_found(
+        self, child_formula: "UntypedFormulaFieldWithReferences"
+    ):
+        """
+        Registers itself as a parent with the provided child field and also stores it
+        as a child.
+
+        :param child_formula: The new child to register to this node.
+        """
+
+        if child_formula.field_id == self.field_id:
+            raise NoSelfReferencesError()
+        self.formula_children[child_formula.field_id] = child_formula
+        child_formula.parents[self.field_id] = self
 
     def add_child_field(self, child):
         self.field_children.add(child)
@@ -103,6 +116,18 @@ class UntypedFormulaFieldWithReferences:
             int, "UntypedFormulaFieldWithReferences"
         ],
     ):
+        """
+        Searches down the field graph and adds all children in a depth first order to
+        the provided list of ordered_formula_fields. In other words all children
+        will be added to the ordered_formula_fields list before their parents.
+
+        :param visited_so_far: An ordered dict containing all fields already visited
+            , used to check to see if we have already visited a node in the field graph
+            and if so will raise a NoCircularReferencesError.
+        :param ordered_formula_fields: The output list of fields ordered such that all
+            children appear in the list before their parents.
+        """
+
         if self.field_id in visited_so_far:
             raise NoCircularReferencesError(
                 [f.field_name for f in visited_so_far.values()] + [self.field_name]
@@ -123,6 +148,17 @@ class UntypedFormulaFieldWithReferences:
         typed_expression: BaserowExpression[BaserowFormulaType],
         field_id_to_typed_field: Dict[int, "TypedFieldWithReferences"],
     ) -> "TypedFieldWithReferences":
+        """
+        Given a typed expression for this field generates a TypedFieldWithReferences
+        graph node.
+
+        :param typed_expression: The typed expression for this field.
+        :param field_id_to_typed_field: A dictionary of field id to other
+            TypedFieldWithReferences which must already contain all child fields of this
+            field.
+        :return: A new TypedFieldWithReferences based off this field.
+        """
+
         updated_formula_field = self._create_untyped_copy_of_original_field()
         updated_formula_field.formula = self.fixed_raw_formula
 
@@ -197,6 +233,12 @@ def _calculate_non_formula_field_typed_expression(
 
 
 class TypedFieldWithReferences:
+    """
+    A wrapper graph node containing a field, it's typing information, references to it's
+    parents and child fields and it's original field instance before it was typed and
+    potentially changed.
+    """
+
     def __init__(
         self,
         original_field: Field,
@@ -238,11 +280,14 @@ class TypedFieldWithReferences:
         for child_field_id, child in self.children.items():
             if child_field_id not in already_found_field_ids:
                 already_found_field_ids.add(child_field_id)
+                recursive_child_fields = (
+                    child.get_all_child_fields_not_already_found_recursively(
+                        already_found_field_ids
+                    )
+                )
                 all_not_found_already_child_fields += [
                     child.new_field
-                ] + child.get_all_child_fields_not_already_found_recursively(
-                    already_found_field_ids
-                )
+                ] + recursive_child_fields
         return all_not_found_already_child_fields
 
     def add_child(self, child: "TypedFieldWithReferences"):
@@ -268,8 +313,14 @@ def _type_and_substitute_formula_field(
             typed_expr.expression_type, untyped_formula.original_formula_field
         )
     )
+    # Take into account any user set formatting options on this formula field.
     typed_expr_merged_with_user_options = typed_expr.with_type(merged_expression_type)
 
+    # Here we replace formula field references in the untyped_formula with the
+    # BaserowExpression of the field referenced. The resulting substituted expression
+    # is guaranteed to only contain references to static normal fields meaning we
+    # can evaluate the result of this formula in one shot instead of having to evaluate
+    # all depended on formula fields in turn to then calculate this one.
     typed_expr_with_substituted_field_by_id_references = (
         typed_expr_merged_with_user_options.accept(
             SubstituteFieldByIdWithThatFieldsExpressionVisitor(
@@ -372,12 +423,27 @@ def _fix_and_parse_all_fields(deleted_field_id_to_name, table):
 
 
 class TypedBaserowTable:
+    """
+    Wrapper object class which contains the BaserowFormulaType types and inter field
+    references for all fields in a table.
+    """
+
     def __init__(self, typed_fields: Dict[int, TypedFieldWithReferences]):
         self.typed_fields_with_references = typed_fields
 
-    def calculate_all_child_fields(
+    def get_all_depended_on_fields(
         self, field: Field, field_ids_to_ignore: Set[int]
     ) -> List[Field]:
+        """
+        Returns all other fields not already present in the field_ids_to_ignore set
+        for which field depends on to calculate it's value.
+
+        :param field: The field to get all dependant fields for.
+        :param field_ids_to_ignore: A set of field ids to ignore, will be updated with
+            all the field id's of fields returned by this call.
+        :return: A list of field instances for which field depends on.
+        """
+
         if field.id not in self.typed_fields_with_references:
             return []
         typed_field = self.typed_fields_with_references[field.id]
@@ -388,6 +454,12 @@ class TypedBaserowTable:
     def get_typed_field_expression(
         self, field: Field
     ) -> Optional[BaserowExpression[BaserowFormulaType]]:
+        """
+        :param field: The field to get its typed expression for.
+        :return: If the field has one it's BaserowExpression with type info otherwise
+            None.
+        """
+
         if field.id not in self.typed_fields_with_references:
             return None
         return self.typed_fields_with_references[field.id].typed_expression

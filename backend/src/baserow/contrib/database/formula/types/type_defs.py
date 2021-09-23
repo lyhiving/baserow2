@@ -43,7 +43,7 @@ class BaserowFormulaTextType(BaserowFormulaValidType):
 
     def cast_to_text(
         self,
-        func_call: "BaserowFunctionCall[UnTyped]",
+        to_text_func_call: "BaserowFunctionCall[UnTyped]",
         arg: "BaserowExpression[BaserowFormulaValidType]",
     ) -> "BaserowExpression[BaserowFormulaType]":
         # Explicitly unwrap the func_call here and just return the arg as it is already
@@ -75,11 +75,11 @@ class BaserowFormulaCharType(BaserowFormulaTextType):
 
     def cast_to_text(
         self,
-        func_call: "BaserowFunctionCall[UnTyped]",
+        to_text_func_call: "BaserowFunctionCall[UnTyped]",
         arg: "BaserowExpression[BaserowFormulaValidType]",
     ) -> "BaserowExpression[BaserowFormulaType]":
         # Force char fields to be casted to text so Django does not complain
-        return func_call.with_valid_type(BaserowFormulaTextType())
+        return to_text_func_call.with_valid_type(BaserowFormulaTextType())
 
 
 class BaserowFormulaNumberType(BaserowFormulaValidType):
@@ -189,7 +189,7 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
 
     def cast_to_text(
         self,
-        func_call: BaserowFunctionCall[UnTyped],
+        to_text_func_call: BaserowFunctionCall[UnTyped],
         arg: BaserowExpression[BaserowFormulaValidType],
     ) -> BaserowExpression[BaserowFormulaValidType]:
         return BaserowFunctionCall[BaserowFormulaValidType](

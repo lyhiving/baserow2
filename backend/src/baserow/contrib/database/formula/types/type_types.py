@@ -22,11 +22,19 @@ class BaserowFormulaType(abc.ABC):
     @property
     @abc.abstractmethod
     def type(self) -> str:
+        """
+        Should be set to a unique lowercase string used to identify this type.
+        """
+
         pass
 
     @property
     @abc.abstractmethod
     def comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        """
+        A list of valid types that this type can be compared with in a formula.
+        """
+
         pass
 
     @property
@@ -36,6 +44,10 @@ class BaserowFormulaType(abc.ABC):
 
     def is_invalid(self) -> bool:
         return not self.is_valid
+
+    @abc.abstractmethod
+    def raise_if_invalid(self):
+        pass
 
     @abc.abstractmethod
     def get_serializer_field(self, **kwargs) -> Optional[serializers.Field]:
@@ -111,15 +123,17 @@ class BaserowFormulaType(abc.ABC):
 
         return None
 
-    def __str__(self) -> str:
-        return self.type
-
     def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
+        """
+        :param old_type: The previous type of a formula field.
+        :return: True if the formula field should have it's database column recreated
+            given it's old_type.
+        """
+
         return not isinstance(self, type(old_type))
 
-    @abc.abstractmethod
-    def raise_if_invalid(self):
-        pass
+    def __str__(self) -> str:
+        return self.type
 
 
 class BaserowFormulaInvalidType(BaserowFormulaType):
@@ -168,9 +182,21 @@ class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):
 
     def cast_to_text(
         self,
-        func_call: "tree.BaserowFunctionCall[UnTyped]",
+        to_text_func_call: "tree.BaserowFunctionCall[UnTyped]",
         arg: "tree.BaserowExpression[BaserowFormulaValidType]",
     ) -> "tree.BaserowExpression[BaserowFormulaType]":
+        """
+        Given a expression which is an untyped BaserowToText function call this function
+        should return an expression which results in this type being turning into a
+        BaserowFormulaTextType.
+
+        :param to_text_func_call: A BaserowToText function call expression where the
+            argument is of this type and is required to be turned into a text type.
+        :param arg: The typed argument that needs to be turned into a text type.
+        :return: A typed BaserowExpression which results in arg turning into a text
+            type.
+        """
+
         # We default to not having to do any extra expression wrapping to convert to
         # the text type by just returning the existing to_text func call which by
         # default just does a Cast(arg, output_field=fields.TextField()).
@@ -178,7 +204,7 @@ class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):
             BaserowFormulaTextType,
         )
 
-        return func_call.with_valid_type(BaserowFormulaTextType())
+        return to_text_func_call.with_valid_type(BaserowFormulaTextType())
 
 
 UnTyped = type(None)

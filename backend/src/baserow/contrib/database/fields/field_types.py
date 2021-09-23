@@ -1926,7 +1926,7 @@ class FormulaFieldType(FieldType):
         # included in the django model otherwise we cannot reference them.
         # Allow passing in typer=False to disable any type checking.
         if typed_table:
-            return typed_table.calculate_all_child_fields(
+            return typed_table.get_all_depended_on_fields(
                 field, already_included_field_ids
             )
         else:
