@@ -1659,7 +1659,7 @@ export class FormulaFieldType extends FieldType {
   }
 
   getEmptyValue(field) {
-    return ''
+    return null
   }
 
   getDocsDataType(field) {
