@@ -77,7 +77,9 @@ class UntypedFormulaFieldWithReferences:
         self.formula_children: Dict[int, "UntypedFormulaFieldWithReferences"] = {}
         self.field_children: Set[int] = set()
 
-    def add_child_formula(self, child_formula: "UntypedFormulaFieldWithReferences"):
+    def add_child_formulas_and_raise_if_self_ref_found(
+        self, child_formula: "UntypedFormulaFieldWithReferences"
+    ):
         if child_formula.field_id == self.field_id:
             raise NoSelfReferencesError()
         self.formula_children[child_formula.field_id] = child_formula
@@ -94,7 +96,7 @@ class UntypedFormulaFieldWithReferences:
     def add_child_field(self, child):
         self.field_children.add(child)
 
-    def add_all_unvisited_nodes_in_depth_first_order(
+    def add_all_children_depth_first_order_raise_for_circular_ref(
         self,
         visited_so_far: OrderedDictType[int, "UntypedFormulaFieldWithReferences"],
         ordered_formula_fields: OrderedDictType[
@@ -110,7 +112,7 @@ class UntypedFormulaFieldWithReferences:
         if self.field_id in ordered_formula_fields:
             return
         for formula_child in self.formula_children.values():
-            formula_child.add_all_unvisited_nodes_in_depth_first_order(
+            formula_child.add_all_children_depth_first_order_raise_for_circular_ref(
                 visited_so_far.copy(),
                 ordered_formula_fields,
             )
@@ -149,7 +151,7 @@ class UntypedFormulaFieldWithReferences:
         return updated_formula_field
 
 
-def _add_children_to_untyped_formula(
+def _add_children_to_untyped_formula_raising_if_self_ref_found(
     untyped_formula_field: UntypedFormulaFieldWithReferences,
     field_id_to_untyped_formula: Dict[int, UntypedFormulaFieldWithReferences],
 ):
@@ -159,19 +161,21 @@ def _add_children_to_untyped_formula(
     for child in children:
         if child in field_id_to_untyped_formula:
             child_formula = field_id_to_untyped_formula[child]
-            untyped_formula_field.add_child_formula(child_formula)
+            untyped_formula_field.add_child_formulas_and_raise_if_self_ref_found(
+                child_formula
+            )
         else:
             untyped_formula_field.add_child_field(child)
 
 
-def _calculate_formula_field_type_resolution_order(
+def _find_formula_field_type_resolution_order_and_raise_if_circular_ref_found(
     field_id_to_untyped_formula: Dict[int, UntypedFormulaFieldWithReferences]
 ) -> typing.OrderedDict[int, UntypedFormulaFieldWithReferences]:
     ordered_untyped_formulas: OrderedDict[
         int, UntypedFormulaFieldWithReferences
     ] = OrderedDict()
     for untyped_formula in field_id_to_untyped_formula.values():
-        untyped_formula.add_all_unvisited_nodes_in_depth_first_order(
+        untyped_formula.add_all_children_depth_first_order_raise_for_circular_ref(
             OrderedDict(), ordered_untyped_formulas
         )
     return ordered_untyped_formulas
@@ -306,19 +310,21 @@ def type_all_fields_in_table(
         ) = _fix_and_parse_all_fields(deleted_field_id_to_name, table)
 
         # Step 2. Construct the graph of field dependencies by:
-        #   For every untyped formula populate its list of children with
-        #   references to formulas it depends on.
+        # For every untyped formula populate its list of children with
+        # references to formulas it depends on.
         for untyped_formula in field_id_to_untyped_formula.values():
-            _add_children_to_untyped_formula(
+            _add_children_to_untyped_formula_raising_if_self_ref_found(
                 untyped_formula, field_id_to_untyped_formula
             )
 
         # Step 3. Order the formula fields so we can type them:
-        # Now we have the graph of field dependencies construct an ordering of
-        # the formula fields such that any field that is depended on by another field
+        # Now using the graph of field dependencies we build an ordering of
+        # the formula fields so that any field that is depended on by another field
         # comes earlier in the list than it's parent.
         formula_field_ids_ordered_by_typing_order = (
-            _calculate_formula_field_type_resolution_order(field_id_to_untyped_formula)
+            _find_formula_field_type_resolution_order_and_raise_if_circular_ref_found(
+                field_id_to_untyped_formula
+            )
         )
 
         # Step 4. Type the formula fields:
