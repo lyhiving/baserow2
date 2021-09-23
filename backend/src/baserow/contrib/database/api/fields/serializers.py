@@ -34,6 +34,48 @@ class FieldSerializer(serializers.ModelSerializer):
         return field.type
 
 
+class RelatedFieldsSerializer(serializers.Serializer):
+    related_fields = FieldSerializer(
+        many=True,
+        help_text="A list of related fields which also changed.",
+    )
+
+
+class FieldSerializerWithRelatedFields(serializers.ModelSerializer):
+    related_fields = FieldSerializer(
+        many=True,
+        help_text="A list of related fields which also changed.",
+    )
+    type = serializers.SerializerMethodField(help_text="The type of the related field.")
+
+    class Meta:
+        model = Field
+        fields = (
+            "id",
+            "table_id",
+            "name",
+            "order",
+            "type",
+            "primary",
+            "related_fields",
+        )
+        extra_kwargs = {
+            "id": {"read_only": True},
+            "table_id": {"read_only": True},
+        }
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_type(self, instance):
+        # It could be that the field related to the instance is already in the context
+        # else we can call the specific_class property to find it.
+        field = self.context.get("instance_type")
+
+        if not field:
+            field = field_type_registry.get_by_model(instance.specific_class)
+
+        return field.type
+
+
 class SelectOptionSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=False)
     value = serializers.CharField(max_length=255, required=True)

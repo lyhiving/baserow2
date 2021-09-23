@@ -333,12 +333,15 @@ class DiscriminatorCustomFieldsMappingSerializer:
     extension class.
     """
 
-    def __init__(self, registry, base_class, type_field_name="type", many=False):
+    def __init__(
+        self, registry, base_class, type_field_name="type", many=False, help_text=None
+    ):
         self.read_only = False
         self.registry = registry
         self.base_class = base_class
         self.type_field_name = type_field_name
         self.many = many
+        self.help_text = help_text
 
 
 class DiscriminatorMappingSerializer:

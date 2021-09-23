@@ -152,8 +152,10 @@ class FieldHandler:
             but one already exists.
         :raises MaxFieldLimitExceeded: When we try to create a field,
             but exceeds the field limit.
-        :return: The created field instance.
-        :rtype: Field
+        :return: The created field instance. If return_updated_field is set then any
+            updated fields as a result of creating the field are returned in a list
+            as a second tuple value.
+        :rtype: Union[Field, Tuple[Field, List[Field]]
         """
 
         group = table.database.group
@@ -247,8 +249,10 @@ class FieldHandler:
             error while trying to change the field type. This should rarely happen
             because of the lenient schema editor, which replaces the value with null
             if it could not be converted.
-        :return: The updated field instance.
-        :rtype: Field
+        :return: The updated field instance. If return_updated_field is set then any
+            updated fields as a result of updated the field are returned in a list
+            as a second tuple value.
+        :rtype: Union[Field, Tuple[Field, List[Field]]
         """
 
         if not isinstance(field, Field):
