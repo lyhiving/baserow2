@@ -81,6 +81,9 @@ from .models import (
     FormulaField,
 )
 from .registries import FieldType, field_type_registry
+from ..formula.parser.ast_mapper import (
+    replace_field_refs_according_to_new_or_deleted_fields,
+)
 from ..formula.types.table_typer import TypedBaserowTable
 
 
@@ -1887,6 +1890,28 @@ class FormulaFieldType(FieldType):
             return baserow_expression_to_django_expression(f.expression, None)
         else:
             return None
+
+    def export_serialized(self, field, include_allowed_fields=True):
+        serialized = super().export_serialized(field, include_allowed_fields)
+        if include_allowed_fields:
+            # Replace all field_by_id references back into their field('actual field
+            # name') format when serializing the formula to file. This enables us to
+            # easily re-import this formula into a table with new field ids as when
+            # typing that table we will automatically translate field('..') back into
+            # the field_by_id form but with the correct new field id's. If we did not
+            # do this step instead we would serialize formulas with field_by_id(N)
+            # where the id is a direct reference to a field in this particular table,
+            # meaning you could never import this field into a different table as it
+            # would be referencing an a field id in a different table.
+
+            serialized[
+                "formula"
+            ] = replace_field_refs_according_to_new_or_deleted_fields(
+                serialized["formula"],
+                {f.id: f.name for f in field.table.field_set.all()},
+                {},
+            )
+        return serialized
 
     def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
         formula_type = self._get_formula_type_from_formula_field(from_field)
