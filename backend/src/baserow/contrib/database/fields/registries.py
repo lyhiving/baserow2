@@ -687,6 +687,7 @@ class FieldType(
 
     def to_baserow_formula_type(self, field) -> BaserowFormulaType:
         """
+        field('number field')
         Should return the Baserow Formula Type to use when referencing a field of this
         type in a formula.
 

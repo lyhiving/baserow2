@@ -115,14 +115,10 @@ export default {
       this.fieldNameChanged(oldFieldNameToNewFieldName)
     },
     defaultValues(newValue, oldValue) {
-      if (!this.error) {
-        this.convertServerSideFormulaToClient(newValue.formula)
-      }
+      this.convertServerSideFormulaToClient(newValue.formula)
     },
     'values.formula'(newValue, oldValue) {
-      if (!this.error) {
-        this.convertServerSideFormulaToClient(newValue)
-      }
+      this.convertServerSideFormulaToClient(newValue)
     },
   },
   methods: {

@@ -81,6 +81,66 @@ COMPLEX_VALID_TESTS = [
             [["1", "2", "3"], ["2", "3", "4"], [None, None, None]]
         ),
     ),
+    a_test_case(
+        "Can reference and if a text column",
+        given_a_table(columns=[("text", "text")], rows=[["a"], ["b"], [None]]),
+        when_a_formula_field_is_added("if(field('text')='a', field('text'), 'no')"),
+        then_expect_the_rows_to_be([["a", "a"], ["b", "no"], [None, "no"]]),
+    ),
+    a_test_case(
+        "Can reference and if a phone number column",
+        given_a_table(
+            columns=[("pn", "phone_number")], rows=[["01772"], ["+2002"], [None]]
+        ),
+        when_a_formula_field_is_added("if(field('pn')='01772', field('pn'), 'no')"),
+        then_expect_the_rows_to_be([["01772", "01772"], ["+2002", "no"], [None, "no"]]),
+    ),
+    a_test_case(
+        "Can compare a phone number and number column",
+        given_a_table(
+            columns=[("pn", "phone_number"), ("num", "number")],
+            rows=[["123", "123"], ["+2002", "2002"], [None, None]],
+        ),
+        when_a_formula_field_is_added("field('pn')=field('num')"),
+        then_expect_the_rows_to_be(
+            [["123", "123", True], ["+2002", "2002", False], [None, None, None]]
+        ),
+    ),
+    a_test_case(
+        "Can compare a date field and text with formatting",
+        given_a_table(
+            columns=[("date", {"type": "date", "date_format": "US"})],
+            rows=[["2020-02-01"], ["2020-03-01"], [None]],
+        ),
+        when_a_formula_field_is_added("field('date')='02/01/2020'"),
+        then_expect_the_rows_to_be(
+            [
+                ["2020-02-01", True],
+                ["2020-03-01", False],
+                [None, False],
+            ]
+        ),
+    ),
+    a_test_case(
+        "Can compare a datetime field and text with eu formatting",
+        given_a_table(
+            columns=[
+                (
+                    "date",
+                    {"type": "date", "date_format": "EU", "date_include_time": True},
+                )
+            ],
+            rows=[["2020-02-01T00:10:00Z"], ["2020-02-01T02:00:00Z"], [None]],
+        ),
+        when_a_formula_field_is_added("field('date')='01/02/2020 00:10'"),
+        then_expect_the_rows_to_be(
+            [
+                ["2020-02-01T00:10:00Z", True],
+                ["2020-02-01T02:00:00Z", False],
+                [None, False],
+            ]
+        ),
+    ),
 ]
 
 INVALID_FORMULA_TESTS = [
@@ -255,7 +315,7 @@ def test_valid_complex_formulas(
             assert response_json["results"][i][f"field_{field.id}"] == row[k]
             k += 1
         for f_id in formula_field_ids:
-            assert response_json["results"][i][f"field_{f_id}"] == row[k]
+            assert response_json["results"][i][f"field_{f_id}"] == row[k], response_json
             k += 1
         i += 1
 

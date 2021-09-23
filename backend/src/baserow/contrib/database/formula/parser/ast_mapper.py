@@ -43,16 +43,25 @@ class BaserowFormulaErrorListener(ErrorListener):
 
 
 def raw_formula_to_untyped_expression(formula: str) -> BaserowExpression[UnTyped]:
-    try:
-        lexer = BaserowFormulaLexer(InputStream(formula))
-        stream = CommonTokenStream(lexer)
-        parser = BaserowFormula(stream)
-        parser.removeErrorListeners()
-        parser.addErrorListener(BaserowFormulaErrorListener())
-        tree = parser.root()
-        return BaserowFormulaToBaserowASTMapper().visit(tree)
-    except RecursionError:
-        raise MaximumFormulaSizeError()
+    """
+    Takes a raw user input string, syntax checks it to see if it matches the syntax of
+    a Baserow Formula (raises a BaserowFormulaSyntaxError if not) and converts it into
+    an untyped BaserowExpression.
+
+    :param formula: A raw user supplied string possibly in the format of a Baserow
+        Formula.
+    :return: An untyped BaserowExpression which represents the provided raw formula.
+    :raises BaserowFormulaSyntaxError: If the supplied formula is not in the syntax
+        of the Baserow Formula language.
+    """
+
+    lexer = BaserowFormulaLexer(InputStream(formula))
+    stream = CommonTokenStream(lexer)
+    parser = BaserowFormula(stream)
+    parser.removeErrorListeners()
+    parser.addErrorListener(BaserowFormulaErrorListener())
+    tree = parser.root()
+    return BaserowFormulaToBaserowASTMapper().visit(tree)
 
 
 def replace_field_refs_according_to_new_or_deleted_fields(

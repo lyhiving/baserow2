@@ -71,6 +71,21 @@ class BaserowFormulaTextType(BaserowFormulaValidType):
         return "text"
 
 
+class BaserowFormulaCharType(BaserowFormulaTextType):
+    type = "char"
+
+    def __str__(self) -> str:
+        return "char"
+
+    def cast_to_text(
+        self,
+        func_call: "BaserowFunctionCall[UnTyped]",
+        arg: "BaserowExpression[BaserowFormulaValidType]",
+    ) -> "BaserowExpression[BaserowFormulaType]":
+        # Force char fields to be casted to text so Django does not complain
+        return func_call.with_valid_type(BaserowFormulaTextType())
+
+
 class BaserowFormulaNumberType(BaserowFormulaValidType):
     MAX_DIGITS = 50
 
@@ -310,6 +325,11 @@ class BaserowTextFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
     model_class = BaserowFormulaTextType
 
 
+class BaserowCharFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
+    type = "char"
+    model_class = BaserowFormulaCharType
+
+
 class BaserowBooleanFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
     type = "boolean"
     model_class = BaserowFormulaBooleanType
@@ -337,6 +357,7 @@ BASEROW_FORMULA_TYPE_HANDLER = [
     BaserowBooleanFormulaTypeHandler(),
     BaserowDateFormulaTypeHandler(),
     BaserowNumericFormulaTypeHandler(),
+    BaserowCharFormulaTypeHandler(),
 ]
 
 BASEROW_FORMULA_TYPE_ALLOWED_FIELDS = [

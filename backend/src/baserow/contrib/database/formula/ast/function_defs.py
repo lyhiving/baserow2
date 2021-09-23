@@ -9,10 +9,16 @@ from django.db.models import (
     fields,
     Func,
 )
-from django.db.models.functions import Upper, Lower, Concat, Coalesce, Cast, Greatest
+from django.db.models.functions import (
+    Upper,
+    Lower,
+    Concat,
+    Coalesce,
+    Cast,
+    Greatest,
+)
 
 from baserow.contrib.database.fields.models import (
-    TextField,
     NUMBER_MAX_DECIMAL_PLACES,
 )
 from baserow.contrib.database.formula.ast.function import (
@@ -26,6 +32,9 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
     BaserowExpression,
 )
+from baserow.contrib.database.formula.expression_generator.django_expressions import (
+    EqualsExpr,
+)
 from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaTextType,
     BaserowFormulaDateType,
@@ -37,9 +46,6 @@ from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaValidType,
     UnTyped,
     BaserowArgumentTypeChecker,
-)
-from baserow.contrib.database.formula.expression_generator.django_expressions import (
-    EqualsExpr,
 )
 
 
@@ -89,6 +95,7 @@ class BaserowLower(OneArgumentBaserowFunction):
 
 
 class BaserowToChar(TwoArgumentBaserowFunction):
+    # TODO rename
     type = "to_char"
     arg1_type = [BaserowFormulaDateType]
     arg2_type = [BaserowFormulaTextType]
@@ -102,12 +109,14 @@ class BaserowToChar(TwoArgumentBaserowFunction):
         return func_call.with_valid_type(BaserowFormulaTextType())
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        if isinstance(arg1, Value) and arg1.value is None:
+            return Value("")
         return Coalesce(
             Func(
                 arg1,
                 arg2,
                 function="to_char",
-                output_field=TextField(),
+                output_field=fields.TextField(),
             ),
             Value(""),
         )
@@ -273,7 +282,7 @@ class BaserowEqual(TwoArgumentBaserowFunction):
     ) -> BaserowExpression[BaserowFormulaType]:
         arg1_type = arg1.expression_type
         arg2_type = arg2.expression_type
-        if not isinstance(arg1_type, type(arg2_type)):
+        if not (type(arg1_type) is type(arg2_type)):
             # If trying to compare two types which can be compared, but are of different
             # types, then first cast them to text and then compare.
             return BaserowEqual().call_and_type_with(
@@ -305,7 +314,7 @@ class BaserowIf(ThreeArgumentBaserowFunction):
     ) -> BaserowExpression[BaserowFormulaType]:
         arg2_type = arg2.expression_type
         arg3_type = arg3.expression_type
-        if not isinstance(arg2_type, type(arg3_type)):
+        if not (type(arg2_type) is type(arg3_type)):
             # Replace the current if func_call with one which casts both args to text
             # if they are of different types as PostgreSQL requires all cases of a case
             # statement to be of the same type.

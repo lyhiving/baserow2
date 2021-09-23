@@ -43,6 +43,7 @@ from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaBooleanType,
     BaserowFormulaDateType,
     BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
+    BaserowFormulaCharType,
 )
 from baserow.contrib.database.formula.types.type_handler import (
     BaserowFormulaTypeHandler,
@@ -191,6 +192,9 @@ class CharFieldMatchingRegexFieldType(TextFieldMatchingRegexFieldType):
             validators=[self.validator],
             **kwargs,
         )
+
+    def to_baserow_formula_type(self, field) -> BaserowFormulaType:
+        return BaserowFormulaCharType()
 
 
 class TextFieldType(FieldType):
@@ -1755,8 +1759,10 @@ class PhoneNumberFieldType(CharFieldMatchingRegexFieldType):
 class FormulaFieldType(FieldType):
     type = "formula"
     model_class = FormulaField
+
     requires_typing = True
     read_only = True
+
     can_be_primary_field = False
     can_be_in_form_view = False
 
