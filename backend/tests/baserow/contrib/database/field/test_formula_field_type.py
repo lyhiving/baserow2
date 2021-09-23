@@ -29,7 +29,7 @@ def test_adding_a_formula_field_to_an_existing_table_populates_it_for_all_rows(
     table = data_fixture.create_database_table(user=user)
     before_model = table.get_model()
     existing_row = before_model.objects.create()
-    formula_field, _ = FieldHandler().create_field(
+    formula_field = FieldHandler().create_field(
         user, table, "formula", name="formula", formula="'test'"
     )
     formula_field_name = f"field_{formula_field.id}"

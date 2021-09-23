@@ -24,7 +24,7 @@ def test_adding_a_formula_field_compared_to_normal_field_isnt_slow(data_fixture)
 
     profiler = Profiler()
     profiler.start()
-    field, _ = FieldHandler().create_field(
+    field = FieldHandler().create_field(
         user=user, table=table, name="perf_formula", type_name="formula", formula="'1'"
     )
     profiler.stop()
@@ -35,7 +35,7 @@ def test_adding_a_formula_field_compared_to_normal_field_isnt_slow(data_fixture)
 
     profiler = Profiler()
     profiler.start()
-    field, _ = FieldHandler().create_field(
+    FieldHandler().create_field(
         user=user, table=table, name="perf_text", type_name="text"
     )
     profiler.stop()
@@ -67,7 +67,7 @@ def test_very_nested_formula_field_change(data_fixture, django_assert_num_querie
     num_formulas = 200
     for i in range(1, num_formulas):
         print(f"Creating formula {i}")
-        last_field, _ = FieldHandler().create_field(
+        last_field = FieldHandler().create_field(
             user=user,
             table=table,
             name=f"perf_formula{i}",
@@ -100,7 +100,7 @@ def test_creating_very_nested_formula_field(data_fixture):
     profiler.start()
     for i in range(1, num_formulas):
         print(f"Making formula field {i}")
-        last_field, _ = FieldHandler().create_field(
+        FieldHandler().create_field(
             user=user,
             table=table,
             name=f"perf_formula{i}",
@@ -126,7 +126,7 @@ def test_altering_very_nested_formula_field(data_fixture, django_assert_num_quer
     first_field = None
     for i in range(1, num_formulas):
         print(f"Making formula field {i}")
-        field, _ = FieldHandler().create_field(
+        field = FieldHandler().create_field(
             user=user,
             table=table,
             name=f"perf_formula{i}",
@@ -162,7 +162,7 @@ def test_getting_data_from_a_very_nested_formula_field(data_fixture, api_client)
     num_formulas = 100
     for i in range(1, num_formulas):
         print(f"Making formula field {i}")
-        last_field, _ = FieldHandler().create_field(
+        FieldHandler().create_field(
             user=user,
             table=table,
             name=f"perf_formula{i}",

@@ -1045,7 +1045,7 @@ class LinkRowFieldType(FieldType):
             return
 
         related_field_name = self.find_next_unused_related_field_name(field)
-        field.link_row_related_field, _ = FieldHandler().create_field(
+        field.link_row_related_field = FieldHandler().create_field(
             user=user,
             table=field.link_row_table,
             type_name=self.type,
@@ -1119,7 +1119,7 @@ class LinkRowFieldType(FieldType):
             to_field, self.model_class
         ):
             related_field_name = self.find_next_unused_related_field_name(to_field)
-            to_field.link_row_related_field, _ = FieldHandler().create_field(
+            to_field.link_row_related_field = FieldHandler().create_field(
                 user=user,
                 table=to_field.link_row_table,
                 type_name=self.type,

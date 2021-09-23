@@ -276,7 +276,7 @@ def test_perm_delete_link_row_field(data_fixture):
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
     row_handler.create_row(
@@ -291,7 +291,7 @@ def test_perm_delete_link_row_field(data_fixture):
     )
 
     # Create a primary field and some example data for the cars table.
-    cars_primary_field, _ = field_handler.create_field(
+    cars_primary_field = field_handler.create_field(
         user=user, table=cars_table, type_name="text", name="Name", primary=True
     )
     row_handler.create_row(
@@ -301,7 +301,7 @@ def test_perm_delete_link_row_field(data_fixture):
         user=user, table=cars_table, values={f"field_{cars_primary_field.id}": "Audi"}
     )
 
-    link_field_1, _ = field_handler.create_field(
+    link_field_1 = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",
@@ -331,7 +331,7 @@ def test_trashing_a_table_with_link_fields_pointing_at_it_also_trashes_those_fie
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
     row_handler.create_row(
@@ -346,7 +346,7 @@ def test_trashing_a_table_with_link_fields_pointing_at_it_also_trashes_those_fie
     )
 
     # Create a primary field and some example data for the cars table.
-    cars_primary_field, _ = field_handler.create_field(
+    cars_primary_field = field_handler.create_field(
         user=user, table=cars_table, type_name="text", name="Name", primary=True
     )
     row_handler.create_row(
@@ -356,7 +356,7 @@ def test_trashing_a_table_with_link_fields_pointing_at_it_also_trashes_those_fie
         user=user, table=cars_table, values={f"field_{cars_primary_field.id}": "Audi"}
     )
 
-    link_field_1, _ = field_handler.create_field(
+    link_field_1 = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",
@@ -383,7 +383,7 @@ def test_trashed_row_entry_includes_the_rows_primary_key_value_as_an_extra_descr
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
     row = row_handler.create_row(
@@ -446,7 +446,7 @@ def test_restoring_a_trashed_link_field_restores_the_opposing_field_also(
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
     row_handler.create_row(
@@ -460,7 +460,7 @@ def test_restoring_a_trashed_link_field_restores_the_opposing_field_also(
         values={f"field_{customers_primary_field.id}": "Jane"},
     )
 
-    link_field_1, _ = field_handler.create_field(
+    link_field_1 = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",
@@ -491,7 +491,7 @@ def test_trashing_a_row_hides_it_from_a_link_row_field_pointing_at_it(
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
     john_row = row_handler.create_row(
@@ -505,7 +505,7 @@ def test_trashing_a_row_hides_it_from_a_link_row_field_pointing_at_it(
         values={f"field_{customers_primary_field.id}": "Jane"},
     )
 
-    link_field_1, _ = field_handler.create_field(
+    link_field_1 = field_handler.create_field(
         user=user,
         table=cars_table,
         type_name="link_row",
@@ -513,7 +513,7 @@ def test_trashing_a_row_hides_it_from_a_link_row_field_pointing_at_it(
         link_row_table=customers_table,
     )
     # Create a primary field and some example data for the cars table.
-    cars_primary_field, _ = field_handler.create_field(
+    cars_primary_field = field_handler.create_field(
         user=user, table=cars_table, type_name="text", name="Name", primary=True
     )
     linked_row_pointing_at_john = row_handler.create_row(
@@ -570,7 +570,7 @@ def test_a_trashed_linked_row_pointing_at_a_trashed_row_is_restored_correctly(
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
     john_row = row_handler.create_row(
@@ -584,7 +584,7 @@ def test_a_trashed_linked_row_pointing_at_a_trashed_row_is_restored_correctly(
         values={f"field_{customers_primary_field.id}": "Jane"},
     )
 
-    link_field_1, _ = field_handler.create_field(
+    link_field_1 = field_handler.create_field(
         user=user,
         table=cars_table,
         type_name="link_row",
@@ -592,7 +592,7 @@ def test_a_trashed_linked_row_pointing_at_a_trashed_row_is_restored_correctly(
         link_row_table=customers_table,
     )
     # Create a primary field and some example data for the cars table.
-    cars_primary_field, _ = field_handler.create_field(
+    cars_primary_field = field_handler.create_field(
         user=user, table=cars_table, type_name="text", name="Name", primary=True
     )
     linked_row_pointing_at_john = row_handler.create_row(
@@ -653,7 +653,7 @@ def test_a_parent_id_must_be_provided_when_trashing_or_restoring_a_row(
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
     john_row = row_handler.create_row(
@@ -711,10 +711,10 @@ def test_trashing_a_field_with_a_filter_trashes_the_filter(
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
-    other_field, _ = field_handler.create_field(
+    other_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Other"
     )
     grid_view = data_fixture.create_grid_view(user=user, table=customers_table)
@@ -766,10 +766,10 @@ def test_trashing_a_field_with_a_sort_trashes_the_sort(
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
-    other_field, _ = field_handler.create_field(
+    other_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Other"
     )
     grid_view = data_fixture.create_grid_view(user=user, table=customers_table)
@@ -873,7 +873,7 @@ def test_a_restored_field_will_have_its_name_changed_to_ensure_it_is_unique(
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
     row_handler.create_row(
@@ -887,7 +887,7 @@ def test_a_restored_field_will_have_its_name_changed_to_ensure_it_is_unique(
         values={f"field_{customers_primary_field.id}": "Jane"},
     )
 
-    link_field_1, _ = field_handler.create_field(
+    link_field_1 = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",
@@ -899,16 +899,16 @@ def test_a_restored_field_will_have_its_name_changed_to_ensure_it_is_unique(
 
     assert LinkRowField.trash.count() == 2
 
-    clashing_field, _ = field_handler.create_field(
+    clashing_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name"
     )
-    another_clashing_field, _ = field_handler.create_field(
+    another_clashing_field = field_handler.create_field(
         user=user,
         table=customers_table,
         type_name="text",
         name="Name (Restored)",
     )
-    link_field_2, _ = field_handler.create_field(
+    link_field_2 = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",
@@ -955,7 +955,7 @@ def test_perm_delete_related_link_row_field(data_fixture):
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
     row_handler.create_row(
@@ -969,7 +969,7 @@ def test_perm_delete_related_link_row_field(data_fixture):
         values={f"field_{customers_primary_field.id}": "Jane"},
     )
 
-    link_field_1, _ = field_handler.create_field(
+    link_field_1 = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",
@@ -1008,7 +1008,7 @@ def test_perm_delete_table_and_related_link_row_field(data_fixture):
     row_handler = RowHandler()
 
     # Create a primary field and some example data for the customers table.
-    customers_primary_field, _ = field_handler.create_field(
+    customers_primary_field = field_handler.create_field(
         user=user, table=customers_table, type_name="text", name="Name", primary=True
     )
     row_handler.create_row(
@@ -1022,7 +1022,7 @@ def test_perm_delete_table_and_related_link_row_field(data_fixture):
         values={f"field_{customers_primary_field.id}": "Jane"},
     )
 
-    link_field_1, _ = field_handler.create_field(
+    link_field_1 = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",

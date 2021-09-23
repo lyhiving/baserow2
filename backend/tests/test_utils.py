@@ -47,7 +47,7 @@ def setup_interesting_test_table(data_fixture):
     i = 0
     for field_type_name, all_possible_kwargs in all_possible_kwargs_per_type.items():
         for kwargs in all_possible_kwargs:
-            field, _ = handler.create_field(
+            field = handler.create_field(
                 user=user,
                 table=table,
                 type_name=field_type_name,

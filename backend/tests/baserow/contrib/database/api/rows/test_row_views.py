@@ -1213,7 +1213,7 @@ def test_list_rows_with_attribute_names(api_client, data_fixture):
     field_1 = data_fixture.create_text_field(name="Name", table=table, primary=True)
     field_2 = data_fixture.create_number_field(name="Price,", table=table)
     field_3 = data_fixture.create_boolean_field(name='"Name, 2"', table=table)
-    link_field, _ = FieldHandler().create_field(
+    link_field = FieldHandler().create_field(
         user, table, "link_row", link_row_table=table_to_link_with, name="Link"
     )
 

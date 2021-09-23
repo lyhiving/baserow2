@@ -30,7 +30,7 @@ def test_single_select_field_type(data_fixture):
 
     field_handler = FieldHandler()
 
-    field, _ = field_handler.create_field(
+    field = field_handler.create_field(
         user=user,
         table=table,
         type_name="single_select",
@@ -74,7 +74,7 @@ def test_single_select_field_type(data_fixture):
     field_handler.delete_field(user=user, field=field)
     assert SelectOption.objects.all().count() == 0
 
-    field, _ = field_handler.create_field(
+    field = field_handler.create_field(
         user=user,
         table=table,
         type_name="single_select",
@@ -94,7 +94,7 @@ def test_single_select_field_type_rows(data_fixture, django_assert_num_queries):
     field_handler = FieldHandler()
     row_handler = RowHandler()
 
-    field, _ = field_handler.create_field(
+    field = field_handler.create_field(
         user=user,
         table=table,
         name="name",
@@ -355,7 +355,7 @@ def test_single_select_field_type_api_row_views(api_client, data_fixture):
 
     field_handler = FieldHandler()
 
-    field, _ = field_handler.create_field(
+    field = field_handler.create_field(
         user=user,
         table=table,
         type_name="single_select",
@@ -534,7 +534,7 @@ def test_primary_single_select_field_with_link_row_field(
     row_handler = RowHandler()
 
     data_fixture.create_text_field(name="Name", table=example_table, primary=True)
-    customers_primary, _ = field_handler.create_field(
+    customers_primary = field_handler.create_field(
         user=user,
         table=customers_table,
         name="Single Select",
@@ -546,7 +546,7 @@ def test_primary_single_select_field_with_link_row_field(
         ],
         primary=True,
     )
-    link_row_field, _ = field_handler.create_field(
+    link_row_field = field_handler.create_field(
         user=user,
         table=example_table,
         name="Link row",
@@ -635,7 +635,7 @@ def test_single_select_field_type_random_value(data_fixture):
     cache = {}
     fake = Faker()
 
-    field, _ = field_handler.create_field(
+    field = field_handler.create_field(
         user=user,
         table=table,
         type_name="single_select",
@@ -652,7 +652,7 @@ def test_single_select_field_type_random_value(data_fixture):
     random_choice = SingleSelectFieldType().random_value(field, fake, cache)
     assert random_choice in select_options
 
-    email_field, _ = field_handler.create_field(
+    email_field = field_handler.create_field(
         user=user,
         table=table,
         type_name="email",
@@ -667,7 +667,7 @@ def test_import_export_single_select_field(data_fixture):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
     field_handler = FieldHandler()
-    field, _ = field_handler.create_field(
+    field = field_handler.create_field(
         user=user,
         table=table,
         type_name="single_select",

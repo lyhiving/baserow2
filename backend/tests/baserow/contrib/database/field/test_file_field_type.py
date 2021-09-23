@@ -31,7 +31,7 @@ def test_file_field_type(data_fixture):
     field_handler = FieldHandler()
     row_handler = RowHandler()
 
-    file, _ = field_handler.create_field(
+    file = field_handler.create_field(
         user=user, table=table, type_name="file", name="File"
     )
 
@@ -141,7 +141,7 @@ def test_file_field_type(data_fixture):
     assert FileField.objects.all().count() == 0
     model.objects.all().delete()
 
-    text, _ = field_handler.create_field(
+    text = field_handler.create_field(
         user=user, table=table, type_name="text", name="Text"
     )
     model = table.get_model(attribute_names=True)

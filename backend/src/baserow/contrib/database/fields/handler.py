@@ -118,7 +118,14 @@ class FieldHandler:
         return field
 
     def create_field(
-        self, user, table, type_name, primary=False, do_schema_change=True, **kwargs
+        self,
+        user,
+        table,
+        type_name,
+        primary=False,
+        do_schema_change=True,
+        return_updated_fields=False,
+        **kwargs,
     ):
         """
         Creates a new field with the given type for a table.
@@ -209,7 +216,10 @@ class FieldHandler:
             type_name=type_name,
         )
 
-        return instance, typed_updated_table.updated_fields
+        if return_updated_fields:
+            return instance, typed_updated_table.updated_fields
+        else:
+            return instance
 
     def update_field(self, user, field, new_type_name=None, **kwargs):
         """

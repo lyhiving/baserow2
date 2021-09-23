@@ -11,7 +11,7 @@ from baserow.core.trash.handler import TrashHandler
 def test_field_created(mock_broadcast_to_channel_group, data_fixture):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
-    field, _ = FieldHandler().create_field(
+    field = FieldHandler().create_field(
         user=user, table=table, type_name="text", name="Grid"
     )
 

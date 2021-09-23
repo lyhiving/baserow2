@@ -238,10 +238,10 @@ class TableHandler:
         field_handler = FieldHandler()
 
         view = view_handler.create_view(user, table, GridViewType.type, name="Grid")
-        notes, _ = field_handler.create_field(
+        notes = field_handler.create_field(
             user, table, LongTextFieldType.type, name="Notes"
         )
-        active, _ = field_handler.create_field(
+        active = field_handler.create_field(
             user, table, BooleanFieldType.type, name="Active"
         )
 

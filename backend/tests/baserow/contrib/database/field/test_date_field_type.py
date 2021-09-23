@@ -70,10 +70,10 @@ def test_date_field_type(data_fixture):
     amsterdam = timezone("Europe/Amsterdam")
     utc = timezone("utc")
 
-    date_field_1, _ = field_handler.create_field(
+    date_field_1 = field_handler.create_field(
         user=user, table=table, type_name="date", name="Date"
     )
-    date_field_2, _ = field_handler.create_field(
+    date_field_2 = field_handler.create_field(
         user=user,
         table=table,
         type_name="date",

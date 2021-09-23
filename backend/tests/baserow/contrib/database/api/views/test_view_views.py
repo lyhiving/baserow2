@@ -584,7 +584,7 @@ def test_get_link_row_filter_type_preload_values(data_fixture, api_client):
     grid_view = data_fixture.create_grid_view(table=table)
 
     field_handler = FieldHandler()
-    link_row_field, _ = field_handler.create_field(
+    link_row_field = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",

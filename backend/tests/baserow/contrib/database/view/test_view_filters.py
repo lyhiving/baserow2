@@ -2112,7 +2112,7 @@ def test_empty_filter_type(data_fixture):
 
     tmp_table = data_fixture.create_database_table(database=table.database)
     tmp_field = data_fixture.create_text_field(table=tmp_table, primary=True)
-    link_row_field, _ = FieldHandler().create_field(
+    link_row_field = FieldHandler().create_field(
         user=user,
         table=table,
         name="Link row",
@@ -2250,7 +2250,7 @@ def test_not_empty_filter_type(data_fixture):
 
     tmp_table = data_fixture.create_database_table(database=table.database)
     tmp_field = data_fixture.create_text_field(table=tmp_table, primary=True)
-    link_row_field, _ = FieldHandler().create_field(
+    link_row_field = FieldHandler().create_field(
         user=user,
         table=table,
         name="Link row",
@@ -2429,7 +2429,7 @@ def test_link_row_preload_values(data_fixture, django_assert_num_queries):
     grid_view = data_fixture.create_grid_view(table=table)
 
     field_handler = FieldHandler()
-    link_row_field, _ = field_handler.create_field(
+    link_row_field = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",
@@ -2491,7 +2491,7 @@ def test_link_row_has_filter_type(data_fixture):
     grid_view = data_fixture.create_grid_view(table=table)
 
     field_handler = FieldHandler()
-    link_row_field, _ = field_handler.create_field(
+    link_row_field = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",
@@ -2630,7 +2630,7 @@ def test_link_row_has_not_filter_type(data_fixture):
     grid_view = data_fixture.create_grid_view(table=table)
 
     field_handler = FieldHandler()
-    link_row_field, _ = field_handler.create_field(
+    link_row_field = field_handler.create_field(
         user=user,
         table=table,
         type_name="link_row",

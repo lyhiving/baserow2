@@ -45,10 +45,10 @@ class DatabasePlugin(Plugin):
             user, table, GridViewType.type, name="Grid"
         )
         field_handler.create_field(user, table, TextFieldType.type, name="Last name")
-        notes_field, _ = field_handler.create_field(
+        notes_field = field_handler.create_field(
             user, table, LongTextFieldType.type, name="Notes"
         )
-        active_field, _ = field_handler.create_field(
+        active_field = field_handler.create_field(
             user, table, BooleanFieldType.type, name="Active"
         )
         view_handler.update_field_options(
@@ -79,7 +79,7 @@ class DatabasePlugin(Plugin):
             user, table_2, GridViewType.type, name="Grid"
         )
         field_handler.create_field(user, table_2, DateFieldType.type, name="Started")
-        active_field, _ = field_handler.create_field(
+        active_field = field_handler.create_field(
             user, table_2, BooleanFieldType.type, name="Active"
         )
         model = table_2.get_model(attribute_names=True)

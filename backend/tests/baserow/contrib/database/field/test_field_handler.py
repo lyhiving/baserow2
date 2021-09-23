@@ -102,7 +102,7 @@ def test_can_convert_between_all_fields(data_fixture):
                     copy.pop("name", None)
                     field_type = field_type_registry.get(field_type_name)
                     new_name = f"{name}_to_{inner_field_type_name}_{i}"
-                    from_field, _ = handler.create_field(
+                    from_field = handler.create_field(
                         user=user,
                         table=table,
                         type_name=field_type_name,
@@ -168,7 +168,7 @@ def test_create_field(send_mock, data_fixture):
     table = data_fixture.create_database_table(user=user)
 
     handler = FieldHandler()
-    field, _ = handler.create_field(
+    field = handler.create_field(
         user=user,
         table=table,
         type_name="text",
@@ -301,7 +301,7 @@ def test_create_primary_field(data_fixture):
         )
 
     handler = FieldHandler()
-    field, _ = handler.create_field(
+    field = handler.create_field(
         user=user, table=table_2, type_name="text", primary=True, name="primary"
     )
 
