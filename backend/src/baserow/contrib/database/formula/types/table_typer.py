@@ -41,7 +41,7 @@ from baserow.contrib.database.formula.types.visitors import (
 from baserow.contrib.database.table import models
 
 
-def _construct_all_fields(table):
+def _get_all_fields_and_build_name_dict(table):
     all_fields = []
     field_name_to_id = {}
     for field in table.field_set.all():
@@ -279,39 +279,53 @@ def _type_and_substitute_formula_field(
 def type_all_fields_in_table(
     table: "models.Table", deleted_field_id_to_name: Optional[Dict[int, str]] = None
 ) -> Dict[int, TypedFieldWithReferences]:
+    """
+    The key algorithm responsible for typing a table in Baserow.
+
+    :param table: The table to find Baserow Formula Types for every field.
+    :param deleted_field_id_to_name: A map of field id's to field names which should be
+        provided when a field has just been deleted. It should contain the deleted
+        fields old id and its name prior to deletion. This is used to correctly replace
+        any field_by_id references to that deleted field with field(name) references
+        instead.
+    :return: A dictionary of field id to a wrapper object TypedFieldWithReferences
+        containing type and reference information about that field.
+    """
+
     try:
         if deleted_field_id_to_name is None:
             deleted_field_id_to_name = {}
 
-        all_fields, field_name_to_id = _construct_all_fields(table)
-        field_id_to_untyped_formula: Dict[int, UntypedFormulaFieldWithReferences] = {}
-        field_id_to_updated_typed_field: Dict[int, TypedFieldWithReferences] = {}
+        # Step 1. Preprocess every field:
+        # We go over all the fields, parse formula fields, fix any
+        # references to deleted fields, replace any field references with
+        # field_by_id and finally store type information for non formula fields.
+        (
+            field_id_to_untyped_formula,
+            field_id_to_updated_typed_field,
+        ) = _fix_and_parse_all_fields(deleted_field_id_to_name, table)
 
-        for field in all_fields:
-            specific_class = field.specific_class
-            field_type = field_type_registry.get_by_model(specific_class)
-            field_id = field.id
-            if field_type.type == "formula":
-                field_id_to_untyped_formula[
-                    field_id
-                ] = _fix_deleted_or_new_refs_in_formula_and_parse_into_untyped_formula(
-                    field, deleted_field_id_to_name, field_name_to_id
-                )
-            else:
-                updated_typed_field = _calculate_non_formula_field_typed_expression(
-                    field
-                )
-                field_id_to_updated_typed_field[field_id] = updated_typed_field
-
+        # Step 2. Construct the graph of field dependencies by:
+        #   For every untyped formula populate its list of children with
+        #   references to formulas it depends on.
         for untyped_formula in field_id_to_untyped_formula.values():
             _add_children_to_untyped_formula(
                 untyped_formula, field_id_to_untyped_formula
             )
 
+        # Step 3. Order the formula fields so we can type them:
+        # Now we have the graph of field dependencies construct an ordering of
+        # the formula fields such that any field that is depended on by another field
+        # comes earlier in the list than it's parent.
         formula_field_ids_ordered_by_typing_order = (
             _calculate_formula_field_type_resolution_order(field_id_to_untyped_formula)
         )
 
+        # Step 4. Type the formula fields:
+        # Now we have a list of formulas where we know that by the time we
+        # iterate over a given formula we have already iterated over all of its
+        # dependencies we can now figure out the typed expressions of every formula
+        # field in order.
         for (
             formula_id,
             untyped_formula,
@@ -323,9 +337,32 @@ def type_all_fields_in_table(
             field_id_to_updated_typed_field[field_id] = untyped_formula.to_typed(
                 typed_expr, field_id_to_updated_typed_field
             )
+
         return field_id_to_updated_typed_field
     except RecursionError:
         raise MaximumFormulaSizeError()
+
+
+def _fix_and_parse_all_fields(deleted_field_id_to_name, table):
+    all_fields, field_name_to_id = _get_all_fields_and_build_name_dict(table)
+
+    field_id_to_untyped_formula: Dict[int, UntypedFormulaFieldWithReferences] = {}
+    field_id_to_updated_typed_field: Dict[int, TypedFieldWithReferences] = {}
+
+    for field in all_fields:
+        specific_class = field.specific_class
+        field_type = field_type_registry.get_by_model(specific_class)
+        field_id = field.id
+        if field_type.type == "formula":
+            field_id_to_untyped_formula[
+                field_id
+            ] = _fix_deleted_or_new_refs_in_formula_and_parse_into_untyped_formula(
+                field, deleted_field_id_to_name, field_name_to_id
+            )
+        else:
+            updated_typed_field = _calculate_non_formula_field_typed_expression(field)
+            field_id_to_updated_typed_field[field_id] = updated_typed_field
+    return field_id_to_untyped_formula, field_id_to_updated_typed_field
 
 
 class TypedBaserowTable:
@@ -351,4 +388,13 @@ class TypedBaserowTable:
 
 
 def type_table(table: "models.Table") -> TypedBaserowTable:
+    """
+    Given a table calculates all the Baserow Formula types for every non trashed
+    field in that table.
+
+    :param table: The table to type.
+    :return: A typed baserow table wrapper object containing type information for
+        every field.
+    """
+
     return TypedBaserowTable(type_all_fields_in_table(table))

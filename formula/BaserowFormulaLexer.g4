@@ -22,7 +22,7 @@
 
 lexer grammar BaserowFormulaLexer;
 
-// Skip
+// Skip whitespace and comments
 WHITESPACE          : [ \t\r\n]+    -> channel(HIDDEN);
 BLOCK_COMMENT       : '/*' .*? '*/' -> channel(HIDDEN);
 LINE_COMMENT        : '--' .*? '\n' -> channel(HIDDEN);
