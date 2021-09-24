@@ -1,11 +1,6 @@
 # Baserow Formula Technical Guide
 
-This guide explains the inner workings of Baserow formulas for developers. You will come
-away with an understanding of how to make changes to the Baserow formula language
-itself, how to add your own functions or types and the various design decisions made.
-
-> Links to the relevant code as reference links throughout the guide so you can quickly
-> dive into relevant parts of the code!
+This guide explains the inner workings of Baserow formulas for developers.
 
 See the [understanding baserow formulas guide](./understanding-baserow-formulas.md) if
 you instead want a general guide of how to use formulas as a user within Baserow.
@@ -20,8 +15,8 @@ simple expression based language similar to formulas you will find in other spre
 tools. The Baserow Formula language itself is a fully functioning programming language
 with a :
 
-* A language syntax/grammar definition ([[BaserowParser.g4]][1], [[BaserowLexer.g4]][2])
-  .
+* A language syntax/grammar definition.
+    * See `{git repo root}/formulas/*.g4`.
 * Lexers and parsers generated using ANTLR4 from the grammar.
     * See `{git repo root}/formulas/build.sh` for the script that generates these using
       docker.
@@ -43,81 +38,123 @@ with a :
 
 ## Formula Features from a technical perspective
 
-* Formulas consist of literals (string, int, decimal), functions and operators.
-    * Functions are defined by implementing a BaserowFunctionDefinition and storing it
-      in the `formula_function_registry` (which allows plugins to trivially add their
-      own custom functions)
-        * They have specific number of arguments, or unlimited.
-        * Arguments can be forced to have specific types.
-        * They have a return type.
-        * The implementation of a function is simply a Django Expression given the
-          arguments.
-        * A function can change its definition based on the types of its arguments. For
-          example `BaserowConcat` detects when it's arguments are of a different type
-          and in that situation coerces all arguments to text using the `BaserowToText`
-          function.
-    * Operators are implemented as a mapping from an operator to a
-      `BaserowFunctionDefinition`. So the `+` operator is just a fancy way of calling
-      the `BaserowAdd` function.
-    * Operators have precedence as defined by the rule ordering
-      in [[BaserowParser.g4]][1]
-* Formulas ultimately compile down to a prepared SQL statement which is used to  
-  calculate and store the formula results in a PostgreSQL column:
-    * To generate the SQL we transform a baserow formula into
-      a [Django Expression](https://docs.djangoproject.com/en/3.2/ref/models/expressions/)
-      and then rely on Django to generate the SQL for us.
-* Formulas can reference other fields including other formula fields:
-    * They cannot reference themselves.
-    * Circular references are disallowed.
-    * As a result when any Baserow field is updated we check if any formula field
-      references it, retype and recalculate those formula fields.
-* Formulas have types with user configurable formatting options:
-    * For example a formula field `1+1` is initially calculated to have the type of
-      `BaserowFormulaNumberType(num_decimal_places=0)`
-        * This calculated type is stored on the `FormulaField` model.
-        * It is displayed as `1` in the field's cells.
-        * The user however can then edit these persisted type options themselves to
-          change the type and hence how the field is displayed.
-    * There is an invalid type which stores an error on the `FormulaField` model for
-      formulas which have an invalid type (1+'a') etc.
-    * Generally functions prefer to coerce types in sensible ways that a non-technical
-      user might expect. For
-      example, `CONCAT(field('a date field'),field('a boolean field'))` should work
-      without having to use a function to cast each to text.
-    * However we don't allow users to do odd things like compare a boolean to a date and
-      instead provide a type error rather than always returning false or something.
-* Renaming a field will rename any references to that field in a formula. This is
-  achieved by:
-    * Transforming all formulas stored in the backend so that a `field('name')`
-      reference is replaced with a `field_by_id(1234)` reference where the number is the
-      id of the field.
-    * This way internally a formula directly references fields by id and not by name.
-    * Hence renaming a field does not break any formulas as the id remains the same.
-    * The frontend then dynamically does the reverse transformation
-      replacing `field_by_id` references with `field` for the user to see and edit in
-      realtime.
-    * Sometimes we do not do the backend transformation or reverse it.
-        * For example if a field is deleted we transform any references to it back to
-          the `field('name')` format.
-        * Mark the formulas as broken with an error.
-        * This then lets the user create a new field called `'name'` which will then fix
-          those broken formulas and be substituted in with that new field's id as a
-          `field_by_id`.
-        * This also can happen when a field is restored from deletion or a field is
-          renamed.
-    * Importantly this means creating, restoring or renaming fields can cause any number 
-      of other fields in the same table to go from the invalid type to a valid type.
-* Formula fields can be sorted and filtered using Baserow's existing view filters based
-  on the BaserowFormulaType of the field.
-* Plugins can easily add new Baserow formula functions, types and operators via
-  registry's
-* We use the amazing [Antlr4](https://www.antlr.org/) library to automatically generate
-  lexers and parsers for the formula language. We generate one in Javascript to check
-  the formula as the user types it and another in Python to check and parse formulas
-  provided to the API.
+A Formula is just a single expression which can consist of literals (string, int,
+decimal), functions, operators and nested formulas.
 
-## References
+### Formula Functions
 
-[1]: <https://gitlab.com/bramw/baserow/-/blob/develop/formula/BaserowFormula.g4> "The Baserow Formula Anltr4 grammar definition"
+Functions are defined by implementing a BaserowFunctionDefinition and storing it in
+the `formula_function_registry` (which allows plugins to trivially add their own custom
+functions)
 
-[2]: <https://gitlab.com/bramw/baserow/-/blob/develop/formula/BaserowLexer.g4> "The Baserow Formula Anltr4 lexer tokens definition"
+Functions have specific or unlimited number of arguments. These arguments can be type
+checked and forced to have specific types otherwise an error is shown. The function
+itself has a return type. Also a function can change its behaviour at type checking
+time, for example if a function is given two arguments of different types it could first
+choose to wrap them in a BaserowToText function call.
+
+Functions define how to transform themselves into a Django Expression to calculate their
+result.
+
+### Extending Baserow Formulas using plugins
+
+Plugins can easily add new Baserow formula functions and types by implementing
+a `BaserowFunctionDefinition` or `BaserowValidFormulaType` and registering it in the
+corresponding registry. This means that you could easily write a plugin which added
+geospatial functions and PostGIS support to the Baserow Formula language!
+
+### Formula Operators
+
+Operators are implemented as a mapping from an operator to a `BaserowFunctionDefinition`
+. So the `+` operator is just a fancy way of calling the `BaserowAdd` function.
+Operators have precedence as defined by the rule ordering in [[BaserowParser.g4]][1]
+
+### Calculating the result of a Formula
+
+Formulas ultimately compile down to a prepared SQL statement which is used to  
+calculate and store the formula results in a PostgreSQL column.
+
+To generate the SQL we transform a baserow formula into
+a [Django Expression](https://docs.djangoproject.com/en/3.2/ref/models/expressions/)
+and then rely on Django to generate the SQL for us.
+
+### Field References
+
+Formulas can reference other fields including other formula fields. They cannot
+reference themselves and circular references are disallowed.
+
+Because formula fields can reference other fields, now whenever a field is edited,
+deleted, restored or created it might also affect other fields which depend on it. In
+these situations we construct the reference tree of all fields in a table, recalculate
+what each fields type is and if it has changed refresh that formula fields values.
+
+### User configurable type/formatting options
+
+Formula types can have their options override by user configurable formatting options.
+
+For example:
+
+* A formula field `1+1` is initially calculated to have the type of
+  `BaserowFormulaNumberType(num_decimal_places=0)`.
+* This calculated type is stored on the `FormulaField` model by setting
+  its `formula_type` field to `number`, it's `num_decimal_places` field to `0` and
+  setting all other type option fields to null.
+* Then all cells for this field will be displayed as `1`.
+* The user however can then edit these persisted type options themselves to change the
+  type and hence how the field is displayed.
+* For example the user could then change `num_decimal_places` to `2`, which changes the
+  corresponding field on the model and also changes the type of that field to
+  `BaserowFormulaNumberType(num_decimal_places=2)`.
+* Now the cells will be shown as `1.00`
+
+These user supplied type/formatting options will be reset when the overall type of a
+formula field changes, otherwise they will stick around.
+
+### The Invalid Formula Type
+
+There is an invalid type which stores an error on the `FormulaField` model for formulas
+which have an invalid type such as `(1+'a')` etc.
+
+### Type Coercion
+
+Generally functions prefer to coerce types in sensible ways that a non-technical user
+might expect. For example, `CONCAT(field('a date field'),field('a boolean field'))`
+should work without having to use a function to cast each to text. * However we don't
+allow users to do odd things like compare a boolean to a date and instead provide a type
+error rather than always returning false or something.
+
+### Field Renaming
+
+Renaming a field will rename any references to that field in a formula. This is achieved
+by the following process:
+
+* Transforming all formulas stored in the backend so that a `field('name')`
+  reference is replaced with a `field_by_id(1234)` reference where the number is the id
+  of the field.
+* This way internally a formula directly references fields by id and not by name.
+* So renaming a field does not break any formulas as the id remains the same.
+* The frontend then dynamically does the reverse transformation replacing `field_by_id`
+  references with `field` for the user to see and edit in realtime.
+
+Sometimes we do not do the backend transformation or reverse it. For example:
+
+* If a field is deleted we transform any references to it back to the `field('name')`
+  format.
+* Mark the formulas which referenced it as broken with an error.
+* This then lets the user create a new field called `'name'` which will then fix those
+  broken formulas and be substituted in with that new field's id as a
+  `field_by_id`.
+
+This also can happen when a field is restored from deletion or a field is renamed.
+
+Importantly this means creating, restoring or renaming fields can cause any number of
+other fields in the same table to go from the invalid type to a valid type and hence we
+need to check and re-type the table in these situations.
+
+### Sorting and Filtering Formula Fields
+
+Formula fields can be sorted and filtered using Baserow's existing view filters based on
+the BaserowFormulaType of the field. Simply using
+the `FormulaFieldType.compatible_with_formula_types`
+helper function when defining your view filters `compatible_field_types` to say which of
+the Formula Types work with your view filter.
