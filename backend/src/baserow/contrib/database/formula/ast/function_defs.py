@@ -59,7 +59,7 @@ def register_formula_functions(registry):
     registry.register(BaserowEqual())
     registry.register(BaserowIf())
     registry.register(BaserowToText())
-    registry.register(BaserowToChar())
+    registry.register(BaserowDatetimeFormat())
     registry.register(BaserowToNumber())
 
 
@@ -94,9 +94,8 @@ class BaserowLower(OneArgumentBaserowFunction):
         return Lower(arg)
 
 
-class BaserowToChar(TwoArgumentBaserowFunction):
-    # TODO rename
-    type = "to_char"
+class BaserowDatetimeFormat(TwoArgumentBaserowFunction):
+    type = "datetime_format"
     arg1_type = [BaserowFormulaDateType]
     arg2_type = [BaserowFormulaTextType]
 

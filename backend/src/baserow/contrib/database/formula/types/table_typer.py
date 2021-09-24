@@ -368,7 +368,7 @@ def type_all_fields_in_table(
                 untyped_formula, field_id_to_untyped_formula
             )
 
-        # Step 3. Order the formula fields so we can type them:
+        # Step 3. Order the formula fields using the graph so we can type them:
         # Now using the graph of field dependencies we build an ordering of
         # the formula fields so that any field that is depended on by another field
         # comes earlier in the list than it's parent.

@@ -96,6 +96,12 @@ def _calculate_and_save_updated_fields(
 
 
 class TypedBaserowTableWithUpdatedFields(TypedBaserowTable):
+    """
+    A wrapper class containing all the typed fields in a type and additionally
+    any fields which have been updated as a result of the typing of the table (possibly
+    due to an initially_updated_field).
+    """
+
     def __init__(
         self,
         typed_fields: Dict[int, TypedFieldWithReferences],
@@ -118,6 +124,12 @@ class TypedBaserowTableWithUpdatedFields(TypedBaserowTable):
         )
 
     def update_values_for_all_updated_fields(self):
+        """
+        Does a single large update which refreshes the values of all fields which were
+        updated in the table as a result of a field change.
+        :return:
+        """
+
         all_fields_update_dict = {}
         for updated_field in self.all_updated_fields:
             field_type = field_type_registry.get_by_model(updated_field)
@@ -126,10 +138,25 @@ class TypedBaserowTableWithUpdatedFields(TypedBaserowTable):
             )
             if expr is not None:
                 all_fields_update_dict[f"field_{updated_field.id}"] = expr
+
+        # Also update trash rows so when restored they immediately have correct formula
+        # values.
         self.model.objects_and_trash.update(**all_fields_update_dict)
 
 
 def type_table_and_update_fields(table: "models.Table"):
+    """
+    This will retype all formula fields in the table, update their definitions in the
+    database and return a wrapper class which can then be used to trigger a
+    recalculation of the changed fields at an appropriate time.
+
+    :param table: The table from which the field was deleted.
+    :return: A wrapper object containing all updated fields and all types for fields in
+        the table. The updated fields have not yet had their values recalculated as a
+        and it is up to you to call pdate_values_for_all_updated_fields when appropriate
+        otherwise those fields might have stale data.
+    """
+
     typed_fields = type_all_fields_in_table(table)
     updated_fields = _calculate_and_save_updated_fields(table, typed_fields)
     return (
@@ -140,6 +167,21 @@ def type_table_and_update_fields(table: "models.Table"):
 def type_table_and_update_fields_given_changed_field(
     table: "models.Table", initial_field: Field
 ) -> Tuple["TypedBaserowTableWithUpdatedFields", Field]:
+    """
+    Given the provided field has been changed in some way this will retype all formula
+    fields in the table, update their definitions in the database and return a wrapper
+    class which can then be used to trigger a recalculation of the changed fields at
+    an appropriate time.
+
+    :param table: The table from which the field was deleted.
+    :param initial_field: The field which was changed initially.
+    :return: A wrapper object containing all updated fields and all types for fields in
+        the table. The updated fields have not yet had their values recalculated as a
+        result of the intial_field field change and it is up to you to call
+        update_values_for_all_updated_fields when appropriate otherwise those fields
+        will have stale data.
+    """
+
     typed_fields = type_all_fields_in_table(table)
     updated_fields = _calculate_and_save_updated_fields(
         table, typed_fields, field_which_changed=initial_field
@@ -161,6 +203,27 @@ def type_table_and_update_fields_given_changed_field(
 def type_table_and_update_fields_given_deleted_field(
     table: "models.Table", deleted_field_id: int, deleted_field_name: str
 ):
+    """
+    Given a field with the provided name and id has been deleted will retype all formula
+    fields in the table, update their definitions in the database and return a wrapper
+    class which can then be used to trigger a recalculation of the changed fields at
+    an appropriate time.
+
+    Any formulas which reference the deleted field will be changed to have an invalid
+    type. Those formulas will also have their actual formula changed replacing any
+    field_by_id references to deleted_field_id with a field reference to the
+    deleted_field_name.
+
+    :param table: The table from which the field was deleted.
+    :param deleted_field_id: The id of the field before it was deleted.
+    :param deleted_field_name: The name of the field before it was deleted.
+    :return: A wrapper object containing all updated fields and all types for fields in
+        the table. The updated fields have not yet had their values recalculated as a
+        result of the field deletion and it is up to you to call
+        update_values_for_all_updated_fields when appropriate otherwise those fields
+        will have stale data.
+    """
+
     typed_fields = type_all_fields_in_table(
         table, {deleted_field_id: deleted_field_name}
     )

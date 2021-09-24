@@ -132,6 +132,10 @@ class BaserowStringLiteral(BaserowExpression[A]):
 
 
 class BaserowIntegerLiteral(BaserowExpression[A]):
+    """
+    Represents a literal integer typed into the formula.
+    """
+
     def __init__(self, literal: int, expression_type: A):
         super().__init__(expression_type)
 
@@ -147,6 +151,11 @@ class BaserowIntegerLiteral(BaserowExpression[A]):
 
 
 class BaserowFieldByIdReference(BaserowExpression[A]):
+    """
+    Represents a reference to a specific field with the referenced_field_id in the same
+    table.
+    """
+
     def __init__(self, referenced_field_id: int, expression_type: A):
         super().__init__(expression_type)
         self.referenced_field_id = referenced_field_id
@@ -159,6 +168,11 @@ class BaserowFieldByIdReference(BaserowExpression[A]):
 
 
 class BaserowFieldReference(BaserowExpression[A]):
+    """
+    Represents a reference to a field with the same name as the referenced_field_name
+    if it exists in the table.
+    """
+
     def __init__(self, referenced_field_name: str, expression_type: A):
         super().__init__(expression_type)
         self.referenced_field_name = referenced_field_name
@@ -171,6 +185,11 @@ class BaserowFieldReference(BaserowExpression[A]):
 
 
 class ArgCountSpecifier(abc.ABC):
+    """
+    A base class defining a checker which returns if the number of arguments given to
+    a function is correct or not.
+    """
+
     def __init__(self, count):
         self.count = count
 
@@ -198,6 +217,10 @@ class ArgCountSpecifier(abc.ABC):
 
 
 class BaserowFunctionCall(BaserowExpression[A]):
+    """
+    Represents a function call with arguments to the function defined by function_def.
+    """
+
     def __init__(
         self,
         function_def: "BaserowFunctionDefinition",
@@ -239,6 +262,12 @@ class BaserowFunctionCall(BaserowExpression[A]):
         return self.function_def.check_arg_type_valid(i, typed_arg, all_typed_args)
 
     def with_args(self, new_args) -> "BaserowFunctionCall[A]":
+        """
+        :param new_args: The arguments to use in the newly constructed function call.
+        :return: A new BaserowFunctionCall to the same function_def but with replaced
+            arguments.
+        """
+
         return BaserowFunctionCall(self.function_def, new_args, self.expression_type)
 
     def __str__(self):
@@ -252,22 +281,42 @@ class BaserowFunctionCall(BaserowExpression[A]):
 class BaserowFunctionDefinition(Instance, abc.ABC):
     """
     A registrable instance which defines a function for use in the Baserow Formula
-    language.
+    language. You most likely want to instead work with one of the simpler to use
+    abstract sub classes of this class, depending on how many arguments your function
+    takes:
+    - OneArgumentBaserowFunction
+    - TwoArgumentBaserowFunction
+    - ThreeArgumentBaserowFunction
     """
 
     @property
     @abc.abstractmethod
     def type(self) -> str:
+        """
+        :return: The unique name case insensitive name for this function. Users will
+        call this function using the name defined here.
+        """
+
         pass
 
     @property
     @abc.abstractmethod
     def num_args(self) -> ArgCountSpecifier:
+        """
+        :return: An ArgCountSpecifier which defines how many arguments this function
+            supports.
+        """
+
         pass
 
     @property
     @abc.abstractmethod
     def arg_types(self) -> "type_types.BaserowArgumentTypeChecker":
+        """
+        :return: An argument type checker which checks all arguments provided to this
+            function have valid types.
+        """
+
         pass
 
     @abc.abstractmethod
@@ -276,6 +325,18 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         args: "List[BaserowExpression[type_types.BaserowFormulaValidType]]",
         expression: "BaserowFunctionCall[type_types.UnTyped]",
     ) -> "BaserowExpression[type_types.BaserowFormulaType]":
+        """
+        Given a list of arguments extracted from the function call expression, already
+        typed and checked by the self.arg_types property should calculate and return
+        a typed BaserowExpression for this function.
+
+        :param args: The typed and valid arguments taken from expression.
+        :param expression: A func call expression for this function type which is
+            untyped.
+        :return: A typed and possibly transformed or changed BaserowExpression for this
+            function call.
+        """
+
         pass
 
     @abc.abstractmethod
@@ -283,6 +344,17 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         self,
         args: List[Expression],
     ) -> Expression:
+        """
+        Given the args already converted to Django Expressions should return a Django
+        Expression which calculates the result of a call to this function.
+
+        Will only be called if all the args have passed the type check and the function
+        itself was typed with a BaserowValidType.
+
+        :param args: The already converted to Django expression args.
+        :return: A Django Expression which calculates the result of this function.
+        """
+
         pass
 
     def type_function_given_typed_args(
@@ -290,6 +362,20 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         typed_args: "List[BaserowExpression[type_types.BaserowFormulaType]]",
         expression: "BaserowFunctionCall[type_types.UnTyped]",
     ) -> "BaserowExpression[type_types.BaserowFormulaType]":
+        """
+        Given the already typed arguments for a func_call to a function of this
+        definition this function will check the type of each argument against the
+        arg_types property. If they all pass the type check then the user implemented
+        type_function_given_valid_args will be called. If they don't a
+        BaserowInvalidType will be returned containing a relavent error message.
+
+        :param typed_args: The typed but not checked argument BaserowExpressions.
+        :param expression: The func_call expression which contains the typed_args but
+            is not yet typed as we first need to type and check the args.
+        :return: A fully typed and possibly transformed BaserowExpression which
+            implements a call to this function.
+        """
+
         valid_args: "List[BaserowExpression[type_types.BaserowFormulaValidType]]" = []
         invalid_results: "List[Tuple[int, type_types.BaserowFormulaInvalidType]]" = []
         for i, typed_arg in enumerate(typed_args):
@@ -328,17 +414,28 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
 
     def check_arg_type_valid(
         self,
-        i,
+        arg_index: int,
         typed_arg: "BaserowExpression[type_types.BaserowFormulaType]",
         all_typed_args: "List[BaserowExpression[type_types.BaserowFormulaType]]",
     ) -> "BaserowExpression[type_types.BaserowFormulaType]":
+        """
+        Checks if the typed argument at arg_index is a valid type using the
+        self.arg_types type checker.
+
+        :param arg_index: The 0 based index for this argument.
+        :param typed_arg: The already typed but not checked argument expression.
+        :param all_typed_args: All other typed but not checked arguments for this
+            function call.
+        :return: The updated typed expression for this argument (the same type if it
+            passes the check, an invalid type if it does not pass).
+        """
 
         if callable(self.arg_types):
             arg_types_for_this_arg = self.arg_types(
-                i, [t.expression_type for t in all_typed_args]
+                arg_index, [t.expression_type for t in all_typed_args]
             )
         else:
-            arg_types_for_this_arg = self.arg_types[i]
+            arg_types_for_this_arg = self.arg_types[arg_index]
 
         expression_type = typed_arg.expression_type
         for valid_arg_type in arg_types_for_this_arg:

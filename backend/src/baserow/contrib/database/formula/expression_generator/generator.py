@@ -20,8 +20,8 @@ from baserow.contrib.database.formula.ast.tree import (
 )
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
 from baserow.contrib.database.formula.types.type_types import (
-    InvalidType,
     BaserowFormulaType,
+    BaserowFormulaInvalidType,
 )
 from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 from baserow.contrib.database.table.models import GeneratedTableModel
@@ -52,7 +52,7 @@ def baserow_expression_to_django_expression(
     """
 
     try:
-        if isinstance(baserow_expression.expression_type, InvalidType):
+        if isinstance(baserow_expression.expression_type, BaserowFormulaInvalidType):
             return Value(None)
         else:
             return baserow_expression.accept(

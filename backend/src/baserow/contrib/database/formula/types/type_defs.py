@@ -193,7 +193,7 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
         arg: BaserowExpression[BaserowFormulaValidType],
     ) -> BaserowExpression[BaserowFormulaValidType]:
         return BaserowFunctionCall[BaserowFormulaValidType](
-            formula_function_registry.get("to_char"),
+            formula_function_registry.get("datetime_format"),
             [
                 arg,
                 BaserowStringLiteral(self.get_psql_format(), BaserowFormulaTextType()),

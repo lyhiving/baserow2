@@ -27,7 +27,7 @@ from .exceptions import (
 from .models import Field, SelectOption
 from .registries import field_type_registry, field_converter_registry
 from .signals import field_created, field_updated, field_deleted
-from ..formula.types.typed_field_updater import (
+from baserow.contrib.database.formula.types.typed_field_updater import (
     type_table_and_update_fields_given_changed_field,
     type_table_and_update_fields_given_deleted_field,
 )

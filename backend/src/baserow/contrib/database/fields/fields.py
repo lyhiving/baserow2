@@ -5,10 +5,10 @@ from django.db.models import Field, Value
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
 
 from baserow.contrib.database.formula.ast.tree import BaserowExpression
-from baserow.contrib.database.formula.types.type_types import InvalidType
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
+from baserow.contrib.database.formula.types.type_types import BaserowFormulaInvalidType
 
 
 class SingleSelectForwardManyToOneDescriptor(ForwardManyToOneDescriptor):
@@ -80,7 +80,7 @@ class BaserowExpressionField(models.Field):
         return name, path, args, kwargs
 
     def db_type(self, connection):
-        if isinstance(self.expression_field, InvalidType):
+        if isinstance(self.expression_field, BaserowFormulaInvalidType):
             return "TEXT"
         else:
             return self.expression_field.db_type(connection)
