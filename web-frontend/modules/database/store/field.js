@@ -105,7 +105,7 @@ export const actions = {
    * Creates a new field with the provided type for the given table.
    */
   async create(context, { type, table, values, forceCreate = true }) {
-    const { dispatch, getters } = context
+    const { dispatch } = context
 
     if (Object.prototype.hasOwnProperty.call(values, 'type')) {
       throw new Error(
@@ -123,28 +123,17 @@ export const actions = {
 
     const { data } = await FieldService(this.$client).create(table.id, postData)
     const forceCreateCallback = async () => {
-      for (const f of data.related_fields) {
-        const field = getters.get(f.id)
-        const oldField = clone(field)
-        await dispatch('forceUpdate', {
-          field,
-          oldField,
-          data: f,
-        })
-      }
       return await dispatch('forceCreate', {
         table,
         values: data,
+        relatedFields: data.related_fields,
       })
     }
     const fieldType = this.$registry.get('field', type)
-    const anyRelatedFieldsNeedRefresh = data.related_fields.some((f) => {
-      const relatedFieldType = this.$registry.get('field', f.type)
-      return relatedFieldType.shouldRefreshWhenAdded()
-    })
 
     const refreshNeeded =
-      fieldType.shouldRefreshWhenAdded() || anyRelatedFieldsNeedRefresh
+      fieldType.shouldRefreshWhenAdded() ||
+      anyFieldsNeedRefresh(data.related_fields, this.$registry)
     const callback = forceCreate
       ? await forceCreateCallback()
       : forceCreateCallback
@@ -179,8 +168,8 @@ export const actions = {
   /**
    * Forcefully create a new field without making a call to the backend.
    */
-  async forceCreate(context, { table, values }) {
-    const { commit } = context
+  async forceCreate(context, { table, values, relatedFields = [] }) {
+    const { commit, dispatch } = context
     const fieldType = this.$registry.get('field', values.type)
     const data = populateField(values, this.$registry)
     commit('ADD_ITEM', data)
@@ -191,12 +180,16 @@ export const actions = {
     for (const viewType of Object.values(this.$registry.getAll('view'))) {
       await viewType.fieldCreated(context, table, data, fieldType, 'page/')
     }
+
+    await dispatch('forceUpdateFields', {
+      fields: relatedFields,
+    })
   },
   /**
    * Updates the values of the provided field.
    */
   async update(context, { field, type, values, forceUpdate = true }) {
-    const { dispatch, getters } = context
+    const { dispatch } = context
 
     if (Object.prototype.hasOwnProperty.call(values, 'type')) {
       throw new Error(
@@ -215,22 +208,12 @@ export const actions = {
 
     const { data } = await FieldService(this.$client).update(field.id, postData)
     const forceUpdateCallback = async () => {
-      const result = await dispatch('forceUpdate', {
+      return await dispatch('forceUpdate', {
         field,
         oldField,
         data,
+        relatedFields: data.related_fields,
       })
-      for (const f of data.related_fields) {
-        const field = getters.get(f.id)
-        const oldField = clone(field)
-        await dispatch('forceUpdate', {
-          field,
-          oldField,
-          data: f,
-        })
-      }
-
-      return result
     }
 
     return forceUpdate ? await forceUpdateCallback() : forceUpdateCallback
@@ -238,7 +221,7 @@ export const actions = {
   /**
    * Forcefully update an existing field without making a request to the backend.
    */
-  async forceUpdate(context, { field, oldField, data }) {
+  async forceUpdate(context, { field, oldField, data, relatedFields = [] }) {
     const { commit, dispatch } = context
     const fieldType = this.$registry.get('field', data.type)
     data = populateField(data, this.$registry)
@@ -262,6 +245,26 @@ export const actions = {
     for (const viewType of Object.values(this.$registry.getAll('view'))) {
       await viewType.fieldUpdated(context, data, oldField, fieldType, 'page/')
     }
+
+    await dispatch('forceUpdateFields', {
+      fields: relatedFields,
+    })
+  },
+  /**
+   * Forcefully updates a list of fields.
+   */
+  async forceUpdateFields({ getters, dispatch }, { fields }) {
+    for (const f of fields) {
+      const field = getters.get(f.id)
+      if (field !== undefined) {
+        const oldField = clone(field)
+        await dispatch('forceUpdate', {
+          field,
+          oldField,
+          data: f,
+        })
+      }
+    }
   },
   /**
    * Deletes an existing field with the provided id.
@@ -270,15 +273,9 @@ export const actions = {
     try {
       const { data } = await dispatch('deleteCall', field)
       await dispatch('forceDelete', field)
-      for (const f of data.related_fields) {
-        const field = getters.get(f.id)
-        const oldField = clone(field)
-        await dispatch('forceUpdate', {
-          field,
-          oldField,
-          data: f,
-        })
-      }
+      await dispatch('forceUpdateFields', {
+        fields: data.related_fields,
+      })
     } catch (error) {
       // If the field to delete wasn't found we can just delete it from the
       // state.
@@ -344,4 +341,11 @@ export default {
   getters,
   actions,
   mutations,
+}
+
+export function anyFieldsNeedRefresh(fields, registry) {
+  return fields.some((f) => {
+    const relatedFieldType = registry.get('field', f.type)
+    return relatedFieldType.shouldRefreshWhenAdded()
+  })
 }

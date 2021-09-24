@@ -283,15 +283,14 @@ class FormulaField(Field):
     )
 
     def same_as(self, other):
-        # TODO Why do we need to use str
         return (
-            str(self.formula) == str(other.formula)
-            and str(self.error) == str(other.error)
-            and str(self.formula_type) == str(other.formula_type)
-            and str(self.number_decimal_places) == str(other.number_decimal_places)
-            and str(self.date_format) == str(other.date_format)
-            and str(self.date_time_format) == str(other.date_time_format)
-            and str(self.date_include_time) == str(other.date_include_time)
+            self.formula == other.formula
+            and self.error == other.error
+            and self.formula_type == other.formula_type
+            and self.number_decimal_places == other.number_decimal_places
+            and self.date_format == other.date_format
+            and self.date_time_format == other.date_time_format
+            and self.date_include_time == other.date_include_time
         )
 
     def __str__(self):

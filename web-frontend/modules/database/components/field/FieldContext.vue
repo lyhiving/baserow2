@@ -43,7 +43,6 @@
 import context from '@baserow/modules/core/mixins/context'
 import UpdateFieldContext from '@baserow/modules/database/components/field/UpdateFieldContext'
 import { notifyIf } from '@baserow/modules/core/utils/error'
-import { clone } from '@baserow/modules/core/utils/object'
 
 export default {
   name: 'FieldContext',
@@ -75,15 +74,9 @@ export default {
         const { data } = await this.$store.dispatch('field/deleteCall', field)
         this.$emit('delete')
         await this.$store.dispatch('field/forceDelete', field)
-        for (const f of data.related_fields) {
-          const field = this.$store.getters['field/get'](f.id)
-          const oldField = clone(field)
-          await this.$store.dispatch('field/forceUpdate', {
-            field,
-            oldField,
-            data: f,
-          })
-        }
+        await this.$store.dispatch('field/forceUpdateFields', {
+          fields: data.related_fields,
+        })
         await this.$store.dispatch('notification/restore', {
           trash_item_type: 'field',
           trash_item_id: field.id,

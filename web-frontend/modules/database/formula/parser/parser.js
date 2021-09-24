@@ -26,6 +26,16 @@ export default function parseBaserowFormula(rawBaserowFormulaString) {
   return parser.root()
 }
 
+/**
+ * Given a map of old field name to new field name replaces all field references to
+ * old field names with their new names. Does so whist preserving any whitespace or
+ * comments.
+ *
+ * @param rawBaserowFormulaString The raw string to tokenize and transform.
+ * @param oldFieldNameToNewFieldName The map of old name to new name.
+ * @returns {boolean|{newFormula: string, errors: *[]}} False if the formula is not
+ *    syntactically correct, otherwise the new string and any unknown field errors.
+ */
 export function updateFieldNames(
   rawBaserowFormulaString,
   oldFieldNameToNewFieldName
@@ -84,6 +94,16 @@ export function updateFieldNames(
   return { newFormula, errors }
 }
 
+/**
+ * Given a map of field id to field name replaces all field_by_id references to
+ * with field references. Does so whist preserving any whitespace or
+ * comments.
+ *
+ * @param rawBaserowFormulaString The raw string to tokenize and transform.
+ * @param fieldIdToName The map of field ids to names.
+ * @returns {boolean|{newFormula: string, errors: *[]}} False if the formula is not
+ *    syntactically correct, otherwise the new string and any unknown field errors.
+ */
 export function replaceFieldByIdWithFieldRef(
   rawBaserowFormulaString,
   fieldIdToName

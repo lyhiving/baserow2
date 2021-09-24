@@ -65,12 +65,20 @@ class BaserowExpressionField(models.Field):
 
         self.expression = expression
         self.expression_field = expression_field
+
+        # Add all the various lookups for the underlying Django field so specific
+        # filters work on a field of this type. E.g. if expression_field is a DateField
+        # then by doing this a model containing this field can then be used like so:
+        # Model.objects.filter(expr_field__year='2020')
         for name, lookup in self.expression_field.get_lookups().items():
             self.register_lookup(lookup, lookup_name=name)
         super().__init__(*args, **kwargs)
 
     @property
     def __class__(self):
+        # Pretend to be the expression_field Django model field so Django will let
+        # us do filters on a field of this type which are valid for the underlying
+        # expression field.
         return self.expression_field.__class__
 
     def deconstruct(self):

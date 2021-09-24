@@ -81,10 +81,10 @@ from .models import (
     FormulaField,
 )
 from .registries import FieldType, field_type_registry
-from ..formula.parser.ast_mapper import (
+from baserow.contrib.database.formula.parser.ast_mapper import (
     replace_field_refs_according_to_new_or_deleted_fields,
 )
-from ..formula.types.table_typer import TypedBaserowTable
+from baserow.contrib.database.formula.types.table_typer import TypedBaserowTable
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1796,7 +1796,7 @@ class FormulaFieldType(FieldType):
 
     @staticmethod
     def compatible_with_formula_types(*compatible_formula_types: List[str]):
-        def checker(field):
+        def checker(field) -> bool:
             from baserow.contrib.database.fields.registries import field_type_registry
 
             field_type = field_type_registry.get_by_model(field.specific_class)
@@ -1805,6 +1805,8 @@ class FormulaFieldType(FieldType):
                     field.specific
                 )
                 return formula_type.type in compatible_formula_types
+            else:
+                return False
 
         return checker
 

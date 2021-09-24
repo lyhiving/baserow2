@@ -12,7 +12,7 @@ from baserow.contrib.database.table.models import Table
 from baserow.contrib.database.views.handler import ViewHandler
 from baserow.core.trash.handler import TrashHandler
 from baserow.core.utils import extract_allowed, set_allowed_attrs
-from .constants import RESERVED_BASEROW_FIELD_NAMES
+from baserow.contrib.database.fields.constants import RESERVED_BASEROW_FIELD_NAMES
 from .exceptions import (
     PrimaryFieldAlreadyExists,
     CannotDeletePrimaryField,
