@@ -11,31 +11,32 @@ else:
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3R")
-        buf.write("F\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\3\2\3\2\3\2")
+        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3T")
+        buf.write("G\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\3\2\3\2\3\2")
         buf.write("\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3")
-        buf.write("\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\7\3\'\n\3\f\3\16")
-        buf.write("\3*\13\3\5\3,\n\3\3\3\3\3\5\3\60\n\3\3\3\3\3\3\3\3\3\3")
-        buf.write("\3\3\3\3\3\3\3\3\3\7\3;\n\3\f\3\16\3>\13\3\3\4\3\4\3\5")
-        buf.write("\3\5\3\6\3\6\3\6\2\3\4\7\2\4\6\b\n\2\6\4\2\r\rHH\4\2<")
-        buf.write("<BB\3\2\30\31\3\2\32\33\2L\2\f\3\2\2\2\4/\3\2\2\2\6?\3")
-        buf.write("\2\2\2\bA\3\2\2\2\nC\3\2\2\2\f\r\5\4\3\2\r\16\7\2\2\3")
-        buf.write("\16\3\3\2\2\2\17\20\b\3\1\2\20\60\7\30\2\2\21\60\7\31")
-        buf.write("\2\2\22\60\7\25\2\2\23\60\7\24\2\2\24\25\7\16\2\2\25\26")
-        buf.write("\5\4\3\2\26\27\7\17\2\2\27\60\3\2\2\2\30\31\7\6\2\2\31")
-        buf.write("\32\7\16\2\2\32\33\5\b\5\2\33\34\7\17\2\2\34\60\3\2\2")
-        buf.write("\2\35\36\7\7\2\2\36\37\7\16\2\2\37 \7\25\2\2 \60\7\17")
-        buf.write("\2\2!\"\5\6\4\2\"+\7\16\2\2#(\5\4\3\2$%\7\b\2\2%\'\5\4")
-        buf.write("\3\2&$\3\2\2\2\'*\3\2\2\2(&\3\2\2\2()\3\2\2\2),\3\2\2")
-        buf.write("\2*(\3\2\2\2+#\3\2\2\2+,\3\2\2\2,-\3\2\2\2-.\7\17\2\2")
-        buf.write(".\60\3\2\2\2/\17\3\2\2\2/\21\3\2\2\2/\22\3\2\2\2/\23\3")
-        buf.write("\2\2\2/\24\3\2\2\2/\30\3\2\2\2/\35\3\2\2\2/!\3\2\2\2\60")
-        buf.write("<\3\2\2\2\61\62\f\b\2\2\62\63\t\2\2\2\63;\5\4\3\t\64\65")
-        buf.write("\f\7\2\2\65\66\t\3\2\2\66;\5\4\3\b\678\f\6\2\289\7&\2")
-        buf.write("\29;\5\4\3\7:\61\3\2\2\2:\64\3\2\2\2:\67\3\2\2\2;>\3\2")
-        buf.write("\2\2<:\3\2\2\2<=\3\2\2\2=\5\3\2\2\2><\3\2\2\2?@\5\n\6")
-        buf.write("\2@\7\3\2\2\2AB\t\4\2\2B\t\3\2\2\2CD\t\5\2\2D\13\3\2\2")
-        buf.write("\2\7(+/:<")
+        buf.write("\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\7\3(\n\3\f")
+        buf.write("\3\16\3+\13\3\5\3-\n\3\3\3\3\3\5\3\61\n\3\3\3\3\3\3\3")
+        buf.write("\3\3\3\3\3\3\3\3\3\3\3\3\7\3<\n\3\f\3\16\3?\13\3\3\4\3")
+        buf.write("\4\3\5\3\5\3\6\3\6\3\6\2\3\4\7\2\4\6\b\n\2\b\3\2\6\7\4")
+        buf.write("\2\17\17JJ\4\2>>DD\4\2&&((\3\2\32\33\3\2\34\35\2N\2\f")
+        buf.write("\3\2\2\2\4\60\3\2\2\2\6@\3\2\2\2\bB\3\2\2\2\nD\3\2\2\2")
+        buf.write("\f\r\5\4\3\2\r\16\7\2\2\3\16\3\3\2\2\2\17\20\b\3\1\2\20")
+        buf.write("\61\7\32\2\2\21\61\7\33\2\2\22\61\7\27\2\2\23\61\7\26")
+        buf.write("\2\2\24\61\t\2\2\2\25\26\7\20\2\2\26\27\5\4\3\2\27\30")
+        buf.write("\7\21\2\2\30\61\3\2\2\2\31\32\7\b\2\2\32\33\7\20\2\2\33")
+        buf.write("\34\5\b\5\2\34\35\7\21\2\2\35\61\3\2\2\2\36\37\7\t\2\2")
+        buf.write("\37 \7\20\2\2 !\7\27\2\2!\61\7\21\2\2\"#\5\6\4\2#,\7\20")
+        buf.write("\2\2$)\5\4\3\2%&\7\n\2\2&(\5\4\3\2\'%\3\2\2\2(+\3\2\2")
+        buf.write("\2)\'\3\2\2\2)*\3\2\2\2*-\3\2\2\2+)\3\2\2\2,$\3\2\2\2")
+        buf.write(",-\3\2\2\2-.\3\2\2\2./\7\21\2\2/\61\3\2\2\2\60\17\3\2")
+        buf.write("\2\2\60\21\3\2\2\2\60\22\3\2\2\2\60\23\3\2\2\2\60\24\3")
+        buf.write("\2\2\2\60\25\3\2\2\2\60\31\3\2\2\2\60\36\3\2\2\2\60\"")
+        buf.write("\3\2\2\2\61=\3\2\2\2\62\63\f\b\2\2\63\64\t\3\2\2\64<\5")
+        buf.write("\4\3\t\65\66\f\7\2\2\66\67\t\4\2\2\67<\5\4\3\b89\f\6\2")
+        buf.write("\29:\t\5\2\2:<\5\4\3\7;\62\3\2\2\2;\65\3\2\2\2;8\3\2\2")
+        buf.write("\2<?\3\2\2\2=;\3\2\2\2=>\3\2\2\2>\5\3\2\2\2?=\3\2\2\2")
+        buf.write("@A\5\n\6\2A\7\3\2\2\2BC\t\6\2\2C\t\3\2\2\2DE\t\7\2\2E")
+        buf.write("\13\3\2\2\2\7),\60;=")
         return buf.getvalue()
 
 
@@ -50,34 +51,36 @@ class BaserowFormula ( Parser ):
     sharedContextCache = PredictionContextCache()
 
     literalNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "<INVALID>", "<INVALID>", "','", "':'", "'::'", "'$'", 
-                     "'$$'", "'*'", "'('", "')'", "'['", "']'", "<INVALID>", 
                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "'.'", "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "'&'", "'&&'", "'&<'", "'@@'", "'@>'", "'@'", "'!'", 
-                     "'!!'", "'!='", "'^'", "'='", "'=>'", "'>'", "'>='", 
-                     "'>>'", "'#'", "'#='", "'#>'", "'#>>'", "'##'", "'->'", 
-                     "'->>'", "'-|-'", "'<'", "'<='", "'<@'", "'<^'", "'<>'", 
-                     "'<->'", "'<<'", "'<<='", "'<?>'", "'-'", "'%'", "'|'", 
-                     "'||'", "'||/'", "'|/'", "'+'", "'?'", "'?&'", "'?#'", 
-                     "'?-'", "'?|'", "'/'", "'~'", "'~='", "'~>=~'", "'~>~'", 
-                     "'~<=~'", "'~<~'", "'~*'", "'~~'", "';'" ]
+                     "','", "':'", "'::'", "'$'", "'$$'", "'*'", "'('", 
+                     "')'", "'['", "']'", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "'.'", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "'&'", "'&&'", "'&<'", "'@@'", 
+                     "'@>'", "'@'", "'!'", "'!!'", "'!='", "'^'", "'='", 
+                     "'=>'", "'>'", "'>='", "'>>'", "'#'", "'#='", "'#>'", 
+                     "'#>>'", "'##'", "'->'", "'->>'", "'-|-'", "'<'", "'<='", 
+                     "'<@'", "'<^'", "'<>'", "'<->'", "'<<'", "'<<='", "'<?>'", 
+                     "'-'", "'%'", "'|'", "'||'", "'||/'", "'|/'", "'+'", 
+                     "'?'", "'?&'", "'?#'", "'?-'", "'?|'", "'/'", "'~'", 
+                     "'~='", "'~>=~'", "'~>~'", "'~<=~'", "'~<~'", "'~*'", 
+                     "'~~'", "';'" ]
 
     symbolicNames = [ "<INVALID>", "WHITESPACE", "BLOCK_COMMENT", "LINE_COMMENT", 
-                      "FIELD", "FIELDBYID", "COMMA", "COLON", "COLON_COLON", 
-                      "DOLLAR", "DOLLAR_DOLLAR", "STAR", "OPEN_PAREN", "CLOSE_PAREN", 
-                      "OPEN_BRACKET", "CLOSE_BRACKET", "BIT_STRING", "REGEX_STRING", 
-                      "NUMERIC_LITERAL", "INTEGER_LITERAL", "HEX_INTEGER_LITERAL", 
-                      "DOT", "SINGLEQ_STRING_LITERAL", "DOUBLEQ_STRING_LITERAL", 
-                      "IDENTIFIER", "IDENTIFIER_UNICODE", "AMP", "AMP_AMP", 
-                      "AMP_LT", "AT_AT", "AT_GT", "AT_SIGN", "BANG", "BANG_BANG", 
-                      "BANG_EQUAL", "CARET", "EQUAL", "EQUAL_GT", "GT", 
-                      "GTE", "GT_GT", "HASH", "HASH_EQ", "HASH_GT", "HASH_GT_GT", 
-                      "HASH_HASH", "HYPHEN_GT", "HYPHEN_GT_GT", "HYPHEN_PIPE_HYPHEN", 
-                      "LT", "LTE", "LT_AT", "LT_CARET", "LT_GT", "LT_HYPHEN_GT", 
-                      "LT_LT", "LT_LT_EQ", "LT_QMARK_GT", "MINUS", "PERCENT", 
-                      "PIPE", "PIPE_PIPE", "PIPE_PIPE_SLASH", "PIPE_SLASH", 
-                      "PLUS", "QMARK", "QMARK_AMP", "QMARK_HASH", "QMARK_HYPHEN", 
+                      "TRUE", "FALSE", "FIELD", "FIELDBYID", "COMMA", "COLON", 
+                      "COLON_COLON", "DOLLAR", "DOLLAR_DOLLAR", "STAR", 
+                      "OPEN_PAREN", "CLOSE_PAREN", "OPEN_BRACKET", "CLOSE_BRACKET", 
+                      "BIT_STRING", "REGEX_STRING", "NUMERIC_LITERAL", "INTEGER_LITERAL", 
+                      "HEX_INTEGER_LITERAL", "DOT", "SINGLEQ_STRING_LITERAL", 
+                      "DOUBLEQ_STRING_LITERAL", "IDENTIFIER", "IDENTIFIER_UNICODE", 
+                      "AMP", "AMP_AMP", "AMP_LT", "AT_AT", "AT_GT", "AT_SIGN", 
+                      "BANG", "BANG_BANG", "BANG_EQUAL", "CARET", "EQUAL", 
+                      "EQUAL_GT", "GT", "GTE", "GT_GT", "HASH", "HASH_EQ", 
+                      "HASH_GT", "HASH_GT_GT", "HASH_HASH", "HYPHEN_GT", 
+                      "HYPHEN_GT_GT", "HYPHEN_PIPE_HYPHEN", "LT", "LTE", 
+                      "LT_AT", "LT_CARET", "LT_GT", "LT_HYPHEN_GT", "LT_LT", 
+                      "LT_LT_EQ", "LT_QMARK_GT", "MINUS", "PERCENT", "PIPE", 
+                      "PIPE_PIPE", "PIPE_PIPE_SLASH", "PIPE_SLASH", "PLUS", 
+                      "QMARK", "QMARK_AMP", "QMARK_HASH", "QMARK_HYPHEN", 
                       "QMARK_PIPE", "SLASH", "TIL", "TIL_EQ", "TIL_GTE_TIL", 
                       "TIL_GT_TIL", "TIL_LTE_TIL", "TIL_LT_TIL", "TIL_STAR", 
                       "TIL_TIL", "SEMI", "ErrorCharacter" ]
@@ -94,83 +97,85 @@ class BaserowFormula ( Parser ):
     WHITESPACE=1
     BLOCK_COMMENT=2
     LINE_COMMENT=3
-    FIELD=4
-    FIELDBYID=5
-    COMMA=6
-    COLON=7
-    COLON_COLON=8
-    DOLLAR=9
-    DOLLAR_DOLLAR=10
-    STAR=11
-    OPEN_PAREN=12
-    CLOSE_PAREN=13
-    OPEN_BRACKET=14
-    CLOSE_BRACKET=15
-    BIT_STRING=16
-    REGEX_STRING=17
-    NUMERIC_LITERAL=18
-    INTEGER_LITERAL=19
-    HEX_INTEGER_LITERAL=20
-    DOT=21
-    SINGLEQ_STRING_LITERAL=22
-    DOUBLEQ_STRING_LITERAL=23
-    IDENTIFIER=24
-    IDENTIFIER_UNICODE=25
-    AMP=26
-    AMP_AMP=27
-    AMP_LT=28
-    AT_AT=29
-    AT_GT=30
-    AT_SIGN=31
-    BANG=32
-    BANG_BANG=33
-    BANG_EQUAL=34
-    CARET=35
-    EQUAL=36
-    EQUAL_GT=37
-    GT=38
-    GTE=39
-    GT_GT=40
-    HASH=41
-    HASH_EQ=42
-    HASH_GT=43
-    HASH_GT_GT=44
-    HASH_HASH=45
-    HYPHEN_GT=46
-    HYPHEN_GT_GT=47
-    HYPHEN_PIPE_HYPHEN=48
-    LT=49
-    LTE=50
-    LT_AT=51
-    LT_CARET=52
-    LT_GT=53
-    LT_HYPHEN_GT=54
-    LT_LT=55
-    LT_LT_EQ=56
-    LT_QMARK_GT=57
-    MINUS=58
-    PERCENT=59
-    PIPE=60
-    PIPE_PIPE=61
-    PIPE_PIPE_SLASH=62
-    PIPE_SLASH=63
-    PLUS=64
-    QMARK=65
-    QMARK_AMP=66
-    QMARK_HASH=67
-    QMARK_HYPHEN=68
-    QMARK_PIPE=69
-    SLASH=70
-    TIL=71
-    TIL_EQ=72
-    TIL_GTE_TIL=73
-    TIL_GT_TIL=74
-    TIL_LTE_TIL=75
-    TIL_LT_TIL=76
-    TIL_STAR=77
-    TIL_TIL=78
-    SEMI=79
-    ErrorCharacter=80
+    TRUE=4
+    FALSE=5
+    FIELD=6
+    FIELDBYID=7
+    COMMA=8
+    COLON=9
+    COLON_COLON=10
+    DOLLAR=11
+    DOLLAR_DOLLAR=12
+    STAR=13
+    OPEN_PAREN=14
+    CLOSE_PAREN=15
+    OPEN_BRACKET=16
+    CLOSE_BRACKET=17
+    BIT_STRING=18
+    REGEX_STRING=19
+    NUMERIC_LITERAL=20
+    INTEGER_LITERAL=21
+    HEX_INTEGER_LITERAL=22
+    DOT=23
+    SINGLEQ_STRING_LITERAL=24
+    DOUBLEQ_STRING_LITERAL=25
+    IDENTIFIER=26
+    IDENTIFIER_UNICODE=27
+    AMP=28
+    AMP_AMP=29
+    AMP_LT=30
+    AT_AT=31
+    AT_GT=32
+    AT_SIGN=33
+    BANG=34
+    BANG_BANG=35
+    BANG_EQUAL=36
+    CARET=37
+    EQUAL=38
+    EQUAL_GT=39
+    GT=40
+    GTE=41
+    GT_GT=42
+    HASH=43
+    HASH_EQ=44
+    HASH_GT=45
+    HASH_GT_GT=46
+    HASH_HASH=47
+    HYPHEN_GT=48
+    HYPHEN_GT_GT=49
+    HYPHEN_PIPE_HYPHEN=50
+    LT=51
+    LTE=52
+    LT_AT=53
+    LT_CARET=54
+    LT_GT=55
+    LT_HYPHEN_GT=56
+    LT_LT=57
+    LT_LT_EQ=58
+    LT_QMARK_GT=59
+    MINUS=60
+    PERCENT=61
+    PIPE=62
+    PIPE_PIPE=63
+    PIPE_PIPE_SLASH=64
+    PIPE_SLASH=65
+    PLUS=66
+    QMARK=67
+    QMARK_AMP=68
+    QMARK_HASH=69
+    QMARK_HYPHEN=70
+    QMARK_PIPE=71
+    SLASH=72
+    TIL=73
+    TIL_EQ=74
+    TIL_GTE_TIL=75
+    TIL_GT_TIL=76
+    TIL_LTE_TIL=77
+    TIL_LT_TIL=78
+    TIL_STAR=79
+    TIL_TIL=80
+    SEMI=81
+    ErrorCharacter=82
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -334,6 +339,32 @@ class BaserowFormula ( Parser ):
                 return visitor.visitChildren(self)
 
 
+    class BooleanLiteralContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a BaserowFormula.ExprContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def TRUE(self):
+            return self.getToken(BaserowFormula.TRUE, 0)
+        def FALSE(self):
+            return self.getToken(BaserowFormula.FALSE, 0)
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterBooleanLiteral" ):
+                listener.enterBooleanLiteral(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitBooleanLiteral" ):
+                listener.exitBooleanLiteral(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitBooleanLiteral" ):
+                return visitor.visitBooleanLiteral(self)
+            else:
+                return visitor.visitChildren(self)
+
+
     class DecimalLiteralContext(ExprContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a BaserowFormula.ExprContext
@@ -475,6 +506,8 @@ class BaserowFormula ( Parser ):
             return self.getToken(BaserowFormula.MINUS, 0)
         def EQUAL(self):
             return self.getToken(BaserowFormula.EQUAL, 0)
+        def BANG_EQUAL(self):
+            return self.getToken(BaserowFormula.BANG_EQUAL, 0)
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterBinaryOp" ):
@@ -502,7 +535,7 @@ class BaserowFormula ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 45
+            self.state = 46
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [BaserowFormula.SINGLEQ_STRING_LITERAL]:
@@ -534,79 +567,91 @@ class BaserowFormula ( Parser ):
                 self.state = 17
                 self.match(BaserowFormula.NUMERIC_LITERAL)
                 pass
+            elif token in [BaserowFormula.TRUE, BaserowFormula.FALSE]:
+                localctx = BaserowFormula.BooleanLiteralContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
+                self.state = 18
+                _la = self._input.LA(1)
+                if not(_la==BaserowFormula.TRUE or _la==BaserowFormula.FALSE):
+                    self._errHandler.recoverInline(self)
+                else:
+                    self._errHandler.reportMatch(self)
+                    self.consume()
+                pass
             elif token in [BaserowFormula.OPEN_PAREN]:
                 localctx = BaserowFormula.BracketsContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 18
-                self.match(BaserowFormula.OPEN_PAREN)
                 self.state = 19
-                self.expr(0)
+                self.match(BaserowFormula.OPEN_PAREN)
                 self.state = 20
+                self.expr(0)
+                self.state = 21
                 self.match(BaserowFormula.CLOSE_PAREN)
                 pass
             elif token in [BaserowFormula.FIELD]:
                 localctx = BaserowFormula.FieldReferenceContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 22
-                self.match(BaserowFormula.FIELD)
                 self.state = 23
-                self.match(BaserowFormula.OPEN_PAREN)
+                self.match(BaserowFormula.FIELD)
                 self.state = 24
-                self.field_reference()
+                self.match(BaserowFormula.OPEN_PAREN)
                 self.state = 25
+                self.field_reference()
+                self.state = 26
                 self.match(BaserowFormula.CLOSE_PAREN)
                 pass
             elif token in [BaserowFormula.FIELDBYID]:
                 localctx = BaserowFormula.FieldByIdReferenceContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 27
-                self.match(BaserowFormula.FIELDBYID)
                 self.state = 28
-                self.match(BaserowFormula.OPEN_PAREN)
+                self.match(BaserowFormula.FIELDBYID)
                 self.state = 29
-                self.match(BaserowFormula.INTEGER_LITERAL)
+                self.match(BaserowFormula.OPEN_PAREN)
                 self.state = 30
+                self.match(BaserowFormula.INTEGER_LITERAL)
+                self.state = 31
                 self.match(BaserowFormula.CLOSE_PAREN)
                 pass
             elif token in [BaserowFormula.IDENTIFIER, BaserowFormula.IDENTIFIER_UNICODE]:
                 localctx = BaserowFormula.FunctionCallContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 31
-                self.func_name()
                 self.state = 32
+                self.func_name()
+                self.state = 33
                 self.match(BaserowFormula.OPEN_PAREN)
-                self.state = 41
+                self.state = 42
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << BaserowFormula.FIELD) | (1 << BaserowFormula.FIELDBYID) | (1 << BaserowFormula.OPEN_PAREN) | (1 << BaserowFormula.NUMERIC_LITERAL) | (1 << BaserowFormula.INTEGER_LITERAL) | (1 << BaserowFormula.SINGLEQ_STRING_LITERAL) | (1 << BaserowFormula.DOUBLEQ_STRING_LITERAL) | (1 << BaserowFormula.IDENTIFIER) | (1 << BaserowFormula.IDENTIFIER_UNICODE))) != 0):
-                    self.state = 33
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << BaserowFormula.TRUE) | (1 << BaserowFormula.FALSE) | (1 << BaserowFormula.FIELD) | (1 << BaserowFormula.FIELDBYID) | (1 << BaserowFormula.OPEN_PAREN) | (1 << BaserowFormula.NUMERIC_LITERAL) | (1 << BaserowFormula.INTEGER_LITERAL) | (1 << BaserowFormula.SINGLEQ_STRING_LITERAL) | (1 << BaserowFormula.DOUBLEQ_STRING_LITERAL) | (1 << BaserowFormula.IDENTIFIER) | (1 << BaserowFormula.IDENTIFIER_UNICODE))) != 0):
+                    self.state = 34
                     self.expr(0)
-                    self.state = 38
+                    self.state = 39
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     while _la==BaserowFormula.COMMA:
-                        self.state = 34
-                        self.match(BaserowFormula.COMMA)
                         self.state = 35
+                        self.match(BaserowFormula.COMMA)
+                        self.state = 36
                         self.expr(0)
-                        self.state = 40
+                        self.state = 41
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
 
 
 
-                self.state = 43
+                self.state = 44
                 self.match(BaserowFormula.CLOSE_PAREN)
                 pass
             else:
                 raise NoViableAltException(self)
 
             self._ctx.stop = self._input.LT(-1)
-            self.state = 58
+            self.state = 59
             self._errHandler.sync(self)
             _alt = self._interp.adaptivePredict(self._input,4,self._ctx)
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -614,17 +659,17 @@ class BaserowFormula ( Parser ):
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
-                    self.state = 56
+                    self.state = 57
                     self._errHandler.sync(self)
                     la_ = self._interp.adaptivePredict(self._input,3,self._ctx)
                     if la_ == 1:
                         localctx = BaserowFormula.BinaryOpContext(self, BaserowFormula.ExprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 47
+                        self.state = 48
                         if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
-                        self.state = 48
+                        self.state = 49
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
                         if not(_la==BaserowFormula.STAR or _la==BaserowFormula.SLASH):
@@ -632,18 +677,18 @@ class BaserowFormula ( Parser ):
                         else:
                             self._errHandler.reportMatch(self)
                             self.consume()
-                        self.state = 49
+                        self.state = 50
                         self.expr(7)
                         pass
 
                     elif la_ == 2:
                         localctx = BaserowFormula.BinaryOpContext(self, BaserowFormula.ExprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 50
+                        self.state = 51
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
-                        self.state = 51
+                        self.state = 52
                         localctx.op = self._input.LT(1)
                         _la = self._input.LA(1)
                         if not(_la==BaserowFormula.MINUS or _la==BaserowFormula.PLUS):
@@ -651,25 +696,31 @@ class BaserowFormula ( Parser ):
                         else:
                             self._errHandler.reportMatch(self)
                             self.consume()
-                        self.state = 52
+                        self.state = 53
                         self.expr(6)
                         pass
 
                     elif la_ == 3:
                         localctx = BaserowFormula.BinaryOpContext(self, BaserowFormula.ExprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 53
+                        self.state = 54
                         if not self.precpred(self._ctx, 4):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
-                        self.state = 54
-                        localctx.op = self.match(BaserowFormula.EQUAL)
                         self.state = 55
+                        localctx.op = self._input.LT(1)
+                        _la = self._input.LA(1)
+                        if not(_la==BaserowFormula.BANG_EQUAL or _la==BaserowFormula.EQUAL):
+                            localctx.op = self._errHandler.recoverInline(self)
+                        else:
+                            self._errHandler.reportMatch(self)
+                            self.consume()
+                        self.state = 56
                         self.expr(5)
                         pass
 
              
-                self.state = 60
+                self.state = 61
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,4,self._ctx)
 
@@ -718,7 +769,7 @@ class BaserowFormula ( Parser ):
         self.enterRule(localctx, 4, self.RULE_func_name)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 61
+            self.state = 62
             self.identifier()
         except RecognitionException as re:
             localctx.exception = re
@@ -768,7 +819,7 @@ class BaserowFormula ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 63
+            self.state = 64
             _la = self._input.LA(1)
             if not(_la==BaserowFormula.SINGLEQ_STRING_LITERAL or _la==BaserowFormula.DOUBLEQ_STRING_LITERAL):
                 self._errHandler.recoverInline(self)
@@ -823,7 +874,7 @@ class BaserowFormula ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 65
+            self.state = 66
             _la = self._input.LA(1)
             if not(_la==BaserowFormula.IDENTIFIER or _la==BaserowFormula.IDENTIFIER_UNICODE):
                 self._errHandler.recoverInline(self)

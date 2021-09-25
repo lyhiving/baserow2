@@ -44,6 +44,15 @@ class BaserowFormulaListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by BaserowFormula#BooleanLiteral.
+    def enterBooleanLiteral(self, ctx:BaserowFormula.BooleanLiteralContext):
+        pass
+
+    # Exit a parse tree produced by BaserowFormula#BooleanLiteral.
+    def exitBooleanLiteral(self, ctx:BaserowFormula.BooleanLiteralContext):
+        pass
+
+
     # Enter a parse tree produced by BaserowFormula#DecimalLiteral.
     def enterDecimalLiteral(self, ctx:BaserowFormula.DecimalLiteralContext):
         pass

@@ -47,6 +47,15 @@ BaserowFormulaListener.prototype.exitBrackets = function(ctx) {
 };
 
 
+// Enter a parse tree produced by BaserowFormula#BooleanLiteral.
+BaserowFormulaListener.prototype.enterBooleanLiteral = function(ctx) {
+};
+
+// Exit a parse tree produced by BaserowFormula#BooleanLiteral.
+BaserowFormulaListener.prototype.exitBooleanLiteral = function(ctx) {
+};
+
+
 // Enter a parse tree produced by BaserowFormula#DecimalLiteral.
 BaserowFormulaListener.prototype.enterDecimalLiteral = function(ctx) {
 };

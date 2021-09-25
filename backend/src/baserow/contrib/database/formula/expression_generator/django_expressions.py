@@ -9,3 +9,14 @@ class EqualsExpr(Transform):
     template = "%(expressions)s"
     arg_joiner = "="
     arity = 2
+
+
+class NotEqualsExpr(Transform):
+    template = "%(expressions)s"
+    arg_joiner = "!="
+    arity = 2
+
+
+class NotExpr(Transform):
+    template = "not %(expressions)s"
+    arity = 1

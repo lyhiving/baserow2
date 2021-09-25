@@ -37,3 +37,9 @@ class BaserowFormulaASTVisitor(abc.ABC, Generic[Y, X]):
         self, decimal_literal: "tree.BaserowDecimalLiteral[Y]"
     ) -> X:
         pass
+
+    @abc.abstractmethod
+    def visit_boolean_literal(
+        self, boolean_literal: "tree.BaserowBooleanLiteral[Y]"
+    ) -> X:
+        pass

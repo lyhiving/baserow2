@@ -174,6 +174,22 @@ class BaserowDecimalLiteral(BaserowExpression[A]):
         return str(self.literal)
 
 
+class BaserowBooleanLiteral(BaserowExpression[A]):
+    """
+    Represents a literal boolean typed into the formula.
+    """
+
+    def __init__(self, literal: bool, expression_type: A):
+        super().__init__(expression_type)
+        self.literal = literal
+
+    def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
+        return visitor.visit_boolean_literal(self)
+
+    def __str__(self):
+        return str(self.literal)
+
+
 class BaserowFieldByIdReference(BaserowExpression[A]):
     """
     Represents a reference to a specific field with the referenced_field_id in the same

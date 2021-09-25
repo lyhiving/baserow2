@@ -8,12 +8,14 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFieldByIdReference,
     BaserowExpression,
     BaserowDecimalLiteral,
+    BaserowBooleanLiteral,
 )
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
 from baserow.contrib.database.formula.types import table_typer
 from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaTextType,
     BaserowFormulaNumberType,
+    BaserowFormulaBooleanType,
 )
 from baserow.contrib.database.formula.types.type_types import (
     UnTyped,
@@ -29,6 +31,11 @@ class FieldReferenceResolvingVisitor(BaserowFormulaASTVisitor[Any, List[str]]):
         return []
 
     def visit_string_literal(self, string_literal: BaserowStringLiteral) -> List[str]:
+        return []
+
+    def visit_boolean_literal(
+        self, boolean_literal: BaserowBooleanLiteral
+    ) -> List[str]:
         return []
 
     def visit_function_call(self, function_call: BaserowFunctionCall) -> List[str]:
@@ -97,6 +104,11 @@ class TypeAnnotatingASTVisitor(
             )
         )
 
+    def visit_boolean_literal(
+        self, boolean_literal: BaserowBooleanLiteral[UnTyped]
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return boolean_literal.with_valid_type(BaserowFormulaBooleanType())
+
     def visit_field_by_id_reference(
         self, field_by_id_reference: BaserowFieldByIdReference[UnTyped]
     ) -> BaserowExpression[BaserowFormulaType]:
@@ -142,6 +154,9 @@ class SubstituteFieldByIdWithThatFieldsExpressionVisitor(
 
     def visit_decimal_literal(self, decimal_literal: BaserowDecimalLiteral):
         return decimal_literal
+
+    def visit_boolean_literal(self, boolean_literal: BaserowBooleanLiteral):
+        return boolean_literal
 
     def visit_field_by_id_reference(
         self, field_by_id_reference: BaserowFieldByIdReference

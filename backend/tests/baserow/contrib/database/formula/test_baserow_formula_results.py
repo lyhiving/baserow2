@@ -35,6 +35,7 @@ VALID_FORMULA_TESTS = [
     ("CONCAT(1,2)", "12"),
     ("CONCAT('a',2)", "a2"),
     ("'a' = 'a'", True),
+    ("1 = '1'", True),
     ("IF('a' = 'a', 'a', 'b')", "a"),
     ("IF('a' = 'b', 'a', 'b')", "b"),
     ("IF('a' = 'b', 1, 'b')", "b"),
@@ -43,6 +44,19 @@ VALID_FORMULA_TESTS = [
     ("tonumber('a')", "NaN"),
     ("tonumber('-12.12345')", "-12.12345"),
     ("1.2 * 2", "2.4"),
+    ("isblank(1)", False),
+    ("isblank('')", True),
+    ("isblank(' ')", False),
+    ("t('aaaa')", "aaaa"),
+    ("t(10)", ""),
+    ("true", True),
+    ("false", False),
+    ("not(false)", True),
+    ("not(true)", False),
+    ("true != false", True),
+    ("'a' != 'b'", True),
+    ("'a' != 'a'", False),
+    ("1 != '1'", False),
 ]
 
 

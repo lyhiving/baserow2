@@ -62,6 +62,9 @@ fragment DQUOTA_STRING                : '"' ( '\\'. | ~('"' | '\\') )* '"';
 fragment SQUOTA_STRING                : '\'' ('\\'. | ~('\'' | '\\'))* '\'';
 fragment BQUOTA_STRING                : '`' ( '\\'. | '``' | ~('`' | '\\'))* '`';
 
+TRUE                                 : T R U E;
+FALSE                                : F A L S E;
+
 FIELD                                : F I E L D;
 FIELDBYID                            : F I E L D UNDERSCORE B Y UNDERSCORE I D;
 

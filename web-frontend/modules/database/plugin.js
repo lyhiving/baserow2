@@ -63,9 +63,12 @@ import {
   BaserowEqual,
   BaserowField,
   BaserowIf,
+  BaserowIsBlank,
   BaserowLower,
   BaserowMinus,
   BaserowMultiply,
+  BaserowNot,
+  BaserowT,
   BaserowToNumber,
   BaserowToText,
   BaserowUpper,
@@ -136,6 +139,7 @@ export default ({ store, app }) => {
   app.$registry.register('formula_function', new BaserowLower())
   app.$registry.register('formula_function', new BaserowConcat())
   app.$registry.register('formula_function', new BaserowToText())
+  app.$registry.register('formula_function', new BaserowT())
   // Number functions
   app.$registry.register('formula_function', new BaserowMultiply())
   app.$registry.register('formula_function', new BaserowAdd())
@@ -145,6 +149,8 @@ export default ({ store, app }) => {
   // Boolean functions
   app.$registry.register('formula_function', new BaserowEqual())
   app.$registry.register('formula_function', new BaserowIf())
+  app.$registry.register('formula_function', new BaserowIsBlank())
+  app.$registry.register('formula_function', new BaserowNot())
   // Date functions
   app.$registry.register('formula_function', new BaserowDatetimeFormat())
   // Special functions

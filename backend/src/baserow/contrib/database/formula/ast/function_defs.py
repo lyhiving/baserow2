@@ -34,6 +34,8 @@ from baserow.contrib.database.formula.ast.tree import (
 )
 from baserow.contrib.database.formula.expression_generator.django_expressions import (
     EqualsExpr,
+    NotExpr,
+    NotEqualsExpr,
 )
 from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaTextType,
@@ -55,15 +57,19 @@ def register_formula_functions(registry):
     registry.register(BaserowLower())
     registry.register(BaserowConcat())
     registry.register(BaserowToText())
+    registry.register(BaserowT())
     # Number functions
     registry.register(BaserowAdd())
     registry.register(BaserowMultiply())
     registry.register(BaserowMinus())
     registry.register(BaserowDivide())
     registry.register(BaserowToNumber())
-    registry.register(BaserowEqual())
     # Boolean functions
     registry.register(BaserowIf())
+    registry.register(BaserowEqual())
+    registry.register(BaserowIsBlank())
+    registry.register(BaserowNot())
+    registry.register(BaserowNotEqual())
     # Date functions
     registry.register(BaserowDatetimeFormat())
 
@@ -139,6 +145,24 @@ class BaserowToText(OneArgumentBaserowFunction):
 
     def to_django_expression(self, arg: Expression) -> Expression:
         return Cast(arg, output_field=fields.TextField())
+
+
+class BaserowT(OneArgumentBaserowFunction):
+    type = "t"
+    arg_type = [BaserowFormulaValidType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        if isinstance(arg.expression_type, BaserowFormulaTextType):
+            return arg
+        else:
+            return func_call.with_valid_type(BaserowFormulaTextType())
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Value("")
 
 
 class BaserowConcat(BaserowFunctionDefinition):
@@ -308,7 +332,9 @@ class BaserowEqual(TwoArgumentBaserowFunction):
         if not (type(arg1_type) is type(arg2_type)):
             # If trying to compare two types which can be compared, but are of different
             # types, then first cast them to text and then compare.
-            return BaserowEqual().call_and_type_with(
+            # We to ourselves via the __class__ property here so subtypes of this type
+            # use themselves here instead of us!
+            return self.__class__().call_and_type_with(
                 BaserowToText().call_and_type_with(arg1),
                 BaserowToText().call_and_type_with(arg2),
             )
@@ -380,4 +406,54 @@ class BaserowToNumber(OneArgumentBaserowFunction):
             arg,
             function="try_cast_to_numeric",
             output_field=fields.DecimalField(),
+        )
+
+
+class BaserowIsBlank(OneArgumentBaserowFunction):
+    type = "isblank"
+    arg_type = [BaserowFormulaValidType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_args(
+            [BaserowToText().call_and_type_with(arg)]
+        ).with_valid_type(BaserowFormulaBooleanType())
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return EqualsExpr(
+            Coalesce(
+                arg,
+                Value(""),
+            ),
+            Value(""),
+            output_field=fields.BooleanField(),
+        )
+
+
+class BaserowNot(OneArgumentBaserowFunction):
+    type = "not"
+    arg_type = [BaserowFormulaBooleanType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaBooleanType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(BaserowFormulaBooleanType())
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return NotExpr(arg)
+
+
+class BaserowNotEqual(BaserowEqual):
+    type = "not_equal"
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return NotEqualsExpr(
+            arg1,
+            arg2,
+            output_field=fields.BooleanField(),
         )

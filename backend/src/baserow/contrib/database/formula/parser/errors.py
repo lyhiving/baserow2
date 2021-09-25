@@ -23,6 +23,11 @@ class UnknownFieldReference(BaserowFormulaException):
     pass
 
 
+class UnknownUnaryOperator(BaserowFormulaException):
+    def __init__(self, operatorText):
+        super().__init__(f"unknown binary operator {operatorText}")
+
+
 class UnknownBinaryOperator(BaserowFormulaException):
     def __init__(self, operatorText):
         super().__init__(f"unknown binary operator {operatorText}")

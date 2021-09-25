@@ -7,6 +7,7 @@ from django.db.models import (
     F,
     Field,
     DecimalField,
+    BooleanField,
 )
 
 from baserow.contrib.database.formula.ast.errors import UnknownFieldReference
@@ -18,6 +19,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFieldReference,
     BaserowExpression,
     BaserowDecimalLiteral,
+    BaserowBooleanLiteral,
 )
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
 from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
@@ -115,10 +117,12 @@ class BaserowExpressionToDjangoExpressionGenerator(
         )
 
     def visit_decimal_literal(self, decimal_literal: BaserowDecimalLiteral):
-        pass
         return Value(
             decimal_literal.literal,
             output_field=DecimalField(
                 max_digits=50, decimal_places=decimal_literal.num_decimal_places()
             ),
         )
+
+    def visit_boolean_literal(self, boolean_literal: BaserowBooleanLiteral):
+        return Value(boolean_literal.literal, output_field=BooleanField())

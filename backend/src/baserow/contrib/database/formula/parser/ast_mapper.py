@@ -14,6 +14,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFieldReference,
     BaserowExpression,
     BaserowDecimalLiteral,
+    BaserowBooleanLiteral,
 )
 from baserow.contrib.database.formula.parser.errors import (
     InvalidNumberOfArguments,
@@ -255,6 +256,9 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
     def visitDecimalLiteral(self, ctx: BaserowFormula.DecimalLiteralContext):
         return BaserowDecimalLiteral(Decimal(ctx.getText()), None)
 
+    def visitBooleanLiteral(self, ctx: BaserowFormula.BooleanLiteralContext):
+        return BaserowBooleanLiteral(ctx.TRUE() is not None, None)
+
     def visitBrackets(self, ctx: BaserowFormula.BracketsContext):
         return ctx.expr().accept(self)
 
@@ -287,6 +291,8 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
             op = "divide"
         elif ctx.EQUAL():
             op = "equal"
+        elif ctx.BANG_EQUAL():
+            op = "not_equal"
         elif ctx.STAR():
             op = "multiply"
         else:

@@ -316,3 +316,69 @@ export class BaserowField extends BaserowFunctionDefinition {
     return 'special'
   }
 }
+
+export class BaserowIsBlank extends BaserowFunctionDefinition {
+  static getType() {
+    return 'isblank'
+  }
+
+  getDescription() {
+    return 'Returns true if the argument is empty or blank, false otherwise'
+  }
+
+  getSyntaxUsage() {
+    return ['isblank(any)']
+  }
+
+  getExamples() {
+    return ["isblank('10') "]
+  }
+
+  getFormulaType() {
+    return 'boolean'
+  }
+}
+
+export class BaserowT extends BaserowFunctionDefinition {
+  static getType() {
+    return 't'
+  }
+
+  getDescription() {
+    return 'Returns the arguments value if it is text, but otherwise ""'
+  }
+
+  getSyntaxUsage() {
+    return ['t(any)']
+  }
+
+  getExamples() {
+    return ['t(10)']
+  }
+
+  getFormulaType() {
+    return 'text'
+  }
+}
+
+export class BaserowNot extends BaserowFunctionDefinition {
+  static getType() {
+    return 'not'
+  }
+
+  getDescription() {
+    return 'Returns false if the argument is true and true if the argument is false""'
+  }
+
+  getSyntaxUsage() {
+    return ['not(boolean)']
+  }
+
+  getExamples() {
+    return ['not(true) = false', 'not(10=2) = true']
+  }
+
+  getFormulaType() {
+    return 'boolean'
+  }
+}
