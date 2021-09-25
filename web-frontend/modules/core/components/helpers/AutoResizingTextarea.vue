@@ -5,7 +5,8 @@
     rows="1"
     @blur="$emit('blur', $event)"
     @click="$emit('click', $event)"
-    @keyup="$emit('keyup', $event)"
+    @keyup="handleKeyUp"
+    @keydown="handleKeyDown"
     @input="resize()"
   ></textarea>
 </template>
@@ -36,6 +37,21 @@ export default {
     resize() {
       const $textarea = this.$refs.textarea
       $textarea.style.height = $textarea.scrollHeight + 'px'
+    },
+    handleKeyUp(event) {
+      if (event.keyCode === 9) {
+        event.preventDefault()
+      } else {
+        this.$emit('keyup', event)
+      }
+    },
+    handleKeyDown(event) {
+      if (event.keyCode === 9) {
+        event.preventDefault()
+        this.$emit('tab')
+      } else {
+        this.$emit('keydown', event)
+      }
     },
   },
 }

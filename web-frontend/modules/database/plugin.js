@@ -58,6 +58,7 @@ import { CSVTableExporterType } from '@baserow/modules/database/exporterTypes'
 import {
   BaserowAdd,
   BaserowConcat,
+  BaserowField,
   BaserowLower,
   BaserowUpper,
 } from '@baserow/modules/database/formula/functions'
@@ -126,6 +127,7 @@ export default ({ store, app }) => {
   app.$registry.register('formula_function', new BaserowLower())
   app.$registry.register('formula_function', new BaserowConcat())
   app.$registry.register('formula_function', new BaserowAdd())
+  app.$registry.register('formula_function', new BaserowField())
 
   registerRealtimeEvents(app.$realtime)
 }

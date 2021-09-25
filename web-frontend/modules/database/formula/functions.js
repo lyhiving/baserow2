@@ -115,3 +115,25 @@ export class BaserowAdd extends BaserowFunctionDefinition {
     return 'text'
   }
 }
+
+export class BaserowField extends BaserowFunctionDefinition {
+  static getType() {
+    return 'field'
+  }
+
+  getDescription() {
+    return 'Returns the field named by the single text argument'
+  }
+
+  getSyntaxUsage() {
+    return ["field('a field name')"]
+  }
+
+  getExamples() {
+    return ["field('my text field') = 'flag'"]
+  }
+
+  getFormulaType() {
+    return 'special'
+  }
+}

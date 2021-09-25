@@ -99,55 +99,67 @@ export function getPrefixIfFuncOrFieldRef(rawBaserowFormulaString, position) {
     token,
     insideFieldRef,
     positionInToken,
-    normalTextInsideFieldRefSoFar,
+    textInsideFieldRefSoFar,
     startOfFieldRefInner,
+    closingParenIsNextNormalToken,
   } = getTokenAtPosition(rawBaserowFormulaString, position)
   let type = false
+  const tokenText = token.text
   if (insideFieldRef) {
     if (
-      normalTextInsideFieldRefSoFar.length === 0 ||
-      normalTextInsideFieldRefSoFar.startsWith("'") ||
-      normalTextInsideFieldRefSoFar.startsWith('"')
+      textInsideFieldRefSoFar.length === 0 ||
+      textInsideFieldRefSoFar.startsWith("'") ||
+      textInsideFieldRefSoFar.startsWith('"')
     ) {
-      const innerFieldRefPos = position - startOfFieldRefInner
+      const endsWithQuote =
+        textInsideFieldRefSoFar.endsWith("'") ||
+        textInsideFieldRefSoFar.endsWith('"')
+      const endOffset = endsWithQuote ? 1 : 0
+      const innerFieldRefPos = position - startOfFieldRefInner + endOffset
       return {
         type: 'field_inner_partial',
-        tokenText: normalTextInsideFieldRefSoFar,
+        tokenText: textInsideFieldRefSoFar,
         positionInToken: innerFieldRefPos,
-        tokenTextUptoCursor: normalTextInsideFieldRefSoFar.slice(
+        tokenTextUptoCursor: textInsideFieldRefSoFar.slice(
           0,
-          innerFieldRefPos
+          innerFieldRefPos + 1
         ),
-        cursorAtEndOfToken:
-          normalTextInsideFieldRefSoFar.length === innerFieldRefPos,
+        cursorAtEndOfToken: textInsideFieldRefSoFar.length === innerFieldRefPos,
+        closingParenIsNextNormalToken,
+        cursorLocation: position + endOffset,
       }
     }
   } else {
-    const tokenText = token.text
     switch (token.type) {
       case BaserowFormula.IDENTIFIER:
+      case BaserowFormula.FIELD:
       case BaserowFormula.IDENTIFIER_UNICODE:
         type = 'identifier'
-        break
-      case BaserowFormula.DOUBLEQ_STRING_LITERAL:
-      case BaserowFormula.SINGLEQ_STRING_LITERAL:
-        if (insideFieldRef) {
-          type = 'field_inner'
-        }
-        break
-      case BaserowFormula.FIELD:
-        type = 'field'
-        break
-    }
-
-    return {
-      type,
-      tokenText,
-      positionInToken,
-      tokenTextUptoCursor: tokenText.slice(0, positionInToken),
-      cursorAtEndOfToken: tokenText.length === positionInToken,
     }
   }
+
+  return {
+    type,
+    tokenText,
+    positionInToken,
+    tokenTextUptoCursor: tokenText.slice(0, positionInToken),
+    cursorAtEndOfToken: tokenText.length === positionInToken,
+    closingParenIsNextNormalToken,
+    cursorLocation: position,
+  }
+}
+
+function checkIfNextNormalTokenInStreamIs(i, stop, stream, numOpenBrackets) {
+  for (let k = i; k < stop; k++) {
+    const afterToken = stream.tokens[k]
+    if (afterToken.type === BaserowFormula.OPEN_PAREN) {
+      numOpenBrackets++
+    }
+    if (afterToken.type === BaserowFormula.CLOSE_PAREN) {
+      numOpenBrackets--
+    }
+  }
+  return numOpenBrackets !== 0
 }
 
 export function getTokenAtPosition(rawBaserowFormulaString, position) {
@@ -164,39 +176,54 @@ export function getTokenAtPosition(rawBaserowFormulaString, position) {
   let output = ''
   let startedFieldRef = false
   let insideFieldRef = false
-  let normalTextInsideFieldRefSoFar = ''
+  let textInsideFieldRefSoFar = ''
   let startOfFieldRefInner = false
+  let numOpenBrackets = 0
   for (let i = start; i < stop; i++) {
     const token = stream.tokens[i]
     const isNormalToken = token.channel === 0
-    if (isNormalToken && insideFieldRef) {
-      normalTextInsideFieldRefSoFar += token.text
-      startOfFieldRefInner = output.length
+    if (insideFieldRef) {
+      textInsideFieldRefSoFar += token.text
     }
     output += token.text
     if (insideFieldRef && isNormalToken) {
       if (token.type === BaserowFormula.CLOSE_PAREN) {
         insideFieldRef = false
-        normalTextInsideFieldRefSoFar = ''
+        textInsideFieldRefSoFar = ''
         startOfFieldRefInner = false
       }
+    }
+    if (token.type === BaserowFormula.OPEN_PAREN) {
+      numOpenBrackets++
+    }
+    if (token.type === BaserowFormula.CLOSE_PAREN) {
+      numOpenBrackets--
     }
     if (startedFieldRef && isNormalToken) {
       startedFieldRef = false
       if (token.type === BaserowFormula.OPEN_PAREN) {
         insideFieldRef = true
+        startOfFieldRefInner = output.length
+        textInsideFieldRefSoFar = ''
       }
     }
     if (token.type === BaserowFormula.FIELD) {
       startedFieldRef = true
     }
     if (output.length >= position) {
+      const closingParenIsNextNormalToken = checkIfNextNormalTokenInStreamIs(
+        i + 1,
+        stop,
+        stream,
+        numOpenBrackets
+      )
       return {
         token,
         insideFieldRef,
         positionInToken: position - (output.length - token.text.length),
-        normalTextInsideFieldRefSoFar,
+        textInsideFieldRefSoFar,
         startOfFieldRefInner,
+        closingParenIsNextNormalToken,
       }
     }
   }
@@ -241,7 +268,7 @@ export function replaceFieldByIdWithFieldRef(
         if (fieldIdToName[output] === undefined) {
           errors.push('Unknown field with id ' + output)
         }
-        output = `'${fieldIdToName[output]}'`
+        output = `'${fieldIdToName[output].replace("'", "\\'")}'`
       } else {
         return false
       }
