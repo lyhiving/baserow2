@@ -25,7 +25,7 @@ lexer grammar BaserowFormulaLexer;
 // Skip whitespace and comments
 WHITESPACE          : [ \t\r\n]+    -> channel(HIDDEN);
 BLOCK_COMMENT       : '/*' .*? '*/' -> channel(HIDDEN);
-LINE_COMMENT        : '--' .*? '\n' -> channel(HIDDEN);
+LINE_COMMENT        : '//' .*? '\n' -> channel(HIDDEN);
 
 // Fragments
 fragment A          : ('A'|'a') ;

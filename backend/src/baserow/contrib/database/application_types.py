@@ -145,26 +145,25 @@ class DatabaseApplicationType(ApplicationType):
                     table["_object"], view, id_mapping, files_zip, storage
                 )
 
+            # Once all the fields have been deserialized and created we have to ensure
+            # all fields have been typed and their formulas have correctly been changed
+            # from containing field('..') to field_by_id(..).
+            typed_table = type_table_and_update_fields(table["_object"])
             # We don't need to create all the fields individually because the schema
             # editor can handle the creation of the table schema in one go.
             with connection.schema_editor() as schema_editor:
                 model = table["_object"].get_model(
-                    fields=table["_field_objects"], field_ids=[]
+                    fields=table["_field_objects"],
+                    field_ids=[],
+                    typed_table=typed_table,
                 )
+                table["_model"] = model
                 schema_editor.create_model(model)
-
-            # Once all the fields have been deserialized and created and the table
-            # itself exists we have to ensure all fields have been typed and their
-            # formulas have correctly been changed from containing field('..') to
-            # field_by_id(..).
-            type_table_and_update_fields(table["_object"])
 
         # Now that everything is in place we can start filling the table with the rows
         # in an efficient matter by using the bulk_create functionality.
         for table in tables:
-            model = table["_object"].get_model(
-                fields=table["_field_objects"], field_ids=[]
-            )
+            model = table["_model"]
             field_ids = [field_object.id for field_object in table["_field_objects"]]
             rows_to_be_inserted = []
 

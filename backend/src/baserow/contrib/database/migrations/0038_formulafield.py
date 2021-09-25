@@ -33,10 +33,10 @@ class Migration(migrations.Migration):
                         choices=[
                             ("invalid", "invalid"),
                             ("text", "text"),
-                            ("char", "char"),
                             ("boolean", "boolean"),
                             ("date", "date"),
                             ("number", "number"),
+                            ("char", "char"),
                         ],
                         default="invalid",
                     ),
