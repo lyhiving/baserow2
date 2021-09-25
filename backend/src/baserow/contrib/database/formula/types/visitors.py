@@ -7,8 +7,10 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowIntegerLiteral,
     BaserowFieldByIdReference,
     BaserowExpression,
+    BaserowDecimalLiteral,
 )
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
+from baserow.contrib.database.formula.types import table_typer
 from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaTextType,
     BaserowFormulaNumberType,
@@ -18,7 +20,6 @@ from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
     BaserowFormulaValidType,
 )
-from baserow.contrib.database.formula.types import table_typer
 
 
 class FieldReferenceResolvingVisitor(BaserowFormulaASTVisitor[Any, List[str]]):
@@ -39,6 +40,9 @@ class FieldReferenceResolvingVisitor(BaserowFormulaASTVisitor[Any, List[str]]):
         return combined_references
 
     def visit_int_literal(self, int_literal: BaserowIntegerLiteral):
+        return []
+
+    def visit_decimal_literal(self, decimal_literal: BaserowDecimalLiteral):
         return []
 
     def visit_field_by_id_reference(
@@ -84,6 +88,15 @@ class TypeAnnotatingASTVisitor(
             ),
         )
 
+    def visit_decimal_literal(
+        self, decimal_literal: BaserowDecimalLiteral[UnTyped]
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return decimal_literal.with_valid_type(
+            BaserowFormulaNumberType(
+                number_decimal_places=decimal_literal.num_decimal_places()
+            )
+        )
+
     def visit_field_by_id_reference(
         self, field_by_id_reference: BaserowFieldByIdReference[UnTyped]
     ) -> BaserowExpression[BaserowFormulaType]:
@@ -126,6 +139,9 @@ class SubstituteFieldByIdWithThatFieldsExpressionVisitor(
         self, int_literal: BaserowIntegerLiteral
     ) -> BaserowExpression:
         return int_literal
+
+    def visit_decimal_literal(self, decimal_literal: BaserowDecimalLiteral):
+        return decimal_literal
 
     def visit_field_by_id_reference(
         self, field_by_id_reference: BaserowFieldByIdReference

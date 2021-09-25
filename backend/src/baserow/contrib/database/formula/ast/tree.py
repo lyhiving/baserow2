@@ -1,4 +1,5 @@
 import abc
+from decimal import Decimal
 from typing import List, TypeVar, Generic, Tuple
 
 from django.conf import settings
@@ -115,6 +116,10 @@ class BaserowExpression(abc.ABC, Generic[A]):
 
 
 class BaserowStringLiteral(BaserowExpression[A]):
+    """
+    Represents a string literal typed directly into the formula.
+    """
+
     def __init__(self, literal: str, expression_type: A):
         super().__init__(expression_type)
 
@@ -145,6 +150,25 @@ class BaserowIntegerLiteral(BaserowExpression[A]):
 
     def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
         return visitor.visit_int_literal(self)
+
+    def __str__(self):
+        return str(self.literal)
+
+
+class BaserowDecimalLiteral(BaserowExpression[A]):
+    """
+    Represents a literal decimal typed into the formula.
+    """
+
+    def __init__(self, literal: Decimal, expression_type: A):
+        super().__init__(expression_type)
+        self.literal = literal
+
+    def num_decimal_places(self):
+        return -self.literal.as_tuple().exponent
+
+    def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
+        return visitor.visit_decimal_literal(self)
 
     def __str__(self):
         return str(self.literal)

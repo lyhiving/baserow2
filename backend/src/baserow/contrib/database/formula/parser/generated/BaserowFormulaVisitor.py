@@ -29,6 +29,11 @@ class BaserowFormulaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by BaserowFormula#DecimalLiteral.
+    def visitDecimalLiteral(self, ctx:BaserowFormula.DecimalLiteralContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by BaserowFormula#FunctionCall.
     def visitFunctionCall(self, ctx:BaserowFormula.FunctionCallContext):
         return self.visitChildren(ctx)

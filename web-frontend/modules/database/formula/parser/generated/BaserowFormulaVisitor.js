@@ -36,6 +36,12 @@ BaserowFormulaVisitor.prototype.visitBrackets = function(ctx) {
 };
 
 
+// Visit a parse tree produced by BaserowFormula#DecimalLiteral.
+BaserowFormulaVisitor.prototype.visitDecimalLiteral = function(ctx) {
+  return this.visitChildren(ctx);
+};
+
+
 // Visit a parse tree produced by BaserowFormula#FunctionCall.
 BaserowFormulaVisitor.prototype.visitFunctionCall = function(ctx) {
   return this.visitChildren(ctx);

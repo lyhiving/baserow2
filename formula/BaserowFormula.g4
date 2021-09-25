@@ -32,8 +32,9 @@ expr
     SINGLEQ_STRING_LITERAL # StringLiteral
     | DOUBLEQ_STRING_LITERAL #  StringLiteral
     | INTEGER_LITERAL # IntegerLiteral
+    | NUMERIC_LITERAL # DecimalLiteral
     | OPEN_PAREN expr CLOSE_PAREN # Brackets
-    | expr op=SLASH expr # BinaryOp
+    | expr op=(SLASH | STAR) expr # BinaryOp
     | expr op=(PLUS | MINUS) expr # BinaryOp
     | expr op=EQUAL expr # BinaryOp
     | FIELD OPEN_PAREN field_reference CLOSE_PAREN # FieldReference

@@ -31,3 +31,9 @@ class BaserowFormulaASTVisitor(abc.ABC, Generic[Y, X]):
         self, field_reference: "tree.BaserowFieldReference[Y]"
     ) -> X:
         pass
+
+    @abc.abstractmethod
+    def visit_decimal_literal(
+        self, decimal_literal: "tree.BaserowDecimalLiteral[Y]"
+    ) -> X:
+        pass

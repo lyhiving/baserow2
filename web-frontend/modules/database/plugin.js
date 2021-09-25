@@ -58,8 +58,16 @@ import { CSVTableExporterType } from '@baserow/modules/database/exporterTypes'
 import {
   BaserowAdd,
   BaserowConcat,
+  BaserowDatetimeFormat,
+  BaserowDivide,
+  BaserowEqual,
   BaserowField,
+  BaserowIf,
   BaserowLower,
+  BaserowMinus,
+  BaserowMultiply,
+  BaserowToNumber,
+  BaserowToText,
   BaserowUpper,
 } from '@baserow/modules/database/formula/functions'
 
@@ -123,10 +131,23 @@ export default ({ store, app }) => {
   app.$registry.register('settings', new APITokenSettingsType())
   app.$registry.register('exporter', new CSVTableExporterType())
 
+  // Text functions
   app.$registry.register('formula_function', new BaserowUpper())
   app.$registry.register('formula_function', new BaserowLower())
   app.$registry.register('formula_function', new BaserowConcat())
+  app.$registry.register('formula_function', new BaserowToText())
+  // Number functions
+  app.$registry.register('formula_function', new BaserowMultiply())
   app.$registry.register('formula_function', new BaserowAdd())
+  app.$registry.register('formula_function', new BaserowMinus())
+  app.$registry.register('formula_function', new BaserowDivide())
+  app.$registry.register('formula_function', new BaserowToNumber())
+  // Boolean functions
+  app.$registry.register('formula_function', new BaserowEqual())
+  app.$registry.register('formula_function', new BaserowIf())
+  // Date functions
+  app.$registry.register('formula_function', new BaserowDatetimeFormat())
+  // Special functions
   app.$registry.register('formula_function', new BaserowField())
 
   registerRealtimeEvents(app.$realtime)

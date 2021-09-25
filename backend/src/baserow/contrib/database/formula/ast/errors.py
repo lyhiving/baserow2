@@ -11,6 +11,10 @@ class InvalidIntLiteralProvided(BaserowFormulaException):
     pass
 
 
+class InvalidDecimalLiteralProvided(BaserowFormulaException):
+    pass
+
+
 class UnknownFieldReference(BaserowFormulaException):
     def __init__(self, referenced_field):
         super().__init__(f"An unknown field called: {referenced_field} was referenced")

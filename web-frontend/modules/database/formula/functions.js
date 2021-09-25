@@ -104,7 +104,7 @@ export class BaserowAdd extends BaserowFunctionDefinition {
   }
 
   getSyntaxUsage() {
-    return ['add(number, number)', 'number + number']
+    return ['number + number', 'add(number, number)']
   }
 
   getExamples() {
@@ -112,7 +112,186 @@ export class BaserowAdd extends BaserowFunctionDefinition {
   }
 
   getFormulaType() {
+    return 'number'
+  }
+}
+
+export class BaserowMinus extends BaserowFunctionDefinition {
+  static getType() {
+    return 'minus'
+  }
+
+  getDescription() {
+    return 'Returns its two arguments subtracted'
+  }
+
+  getSyntaxUsage() {
+    return ['number - number', 'minus(number, number)']
+  }
+
+  getExamples() {
+    return ['3-1 = 2']
+  }
+
+  getFormulaType() {
+    return 'number'
+  }
+}
+
+export class BaserowMultiply extends BaserowFunctionDefinition {
+  static getType() {
+    return 'multiply'
+  }
+
+  getDescription() {
+    return 'Returns its two arguments multiplied together'
+  }
+
+  getSyntaxUsage() {
+    return ['number * number', 'multiply(number, number)']
+  }
+
+  getExamples() {
+    return ['2*5 = 10']
+  }
+
+  getFormulaType() {
+    return 'number'
+  }
+}
+
+export class BaserowDivide extends BaserowFunctionDefinition {
+  static getType() {
+    return 'divide'
+  }
+
+  getDescription() {
+    return 'Returns its two arguments divided, the first divided by the second'
+  }
+
+  getSyntaxUsage() {
+    return ['number / number', 'divide(number, number)']
+  }
+
+  getExamples() {
+    return ['10/2 = 5']
+  }
+
+  getFormulaType() {
+    return 'number'
+  }
+}
+
+export class BaserowEqual extends BaserowFunctionDefinition {
+  static getType() {
+    return 'equal'
+  }
+
+  getDescription() {
+    return 'Returns if its two arguments have the same value.'
+  }
+
+  getSyntaxUsage() {
+    return ['any = any', 'equal(any, any)']
+  }
+
+  getExamples() {
+    return ['1=1', "'a' = 'a'"]
+  }
+
+  getFormulaType() {
+    return 'boolean'
+  }
+}
+
+export class BaserowIf extends BaserowFunctionDefinition {
+  static getType() {
+    return 'if'
+  }
+
+  getDescription() {
+    return (
+      'If the first argument is true then returns the second argument, otherwise ' +
+      'returns the third.'
+    )
+  }
+
+  getSyntaxUsage() {
+    return ['if(bool, any, any)']
+  }
+
+  getExamples() {
+    return ["if(field('text field') = 'on', 'it is on', 'it is off')"]
+  }
+
+  getFormulaType() {
+    return 'boolean'
+  }
+}
+
+export class BaserowToText extends BaserowFunctionDefinition {
+  static getType() {
+    return 'totext'
+  }
+
+  getDescription() {
+    return 'Converts the input to text'
+  }
+
+  getSyntaxUsage() {
+    return ['totext(any)']
+  }
+
+  getExamples() {
+    return ["totext(10) = '10'"]
+  }
+
+  getFormulaType() {
     return 'text'
+  }
+}
+
+export class BaserowDatetimeFormat extends BaserowFunctionDefinition {
+  static getType() {
+    return 'datetime_format'
+  }
+
+  getDescription() {
+    return 'Converts the date to text given a way of formatting the date'
+  }
+
+  getSyntaxUsage() {
+    return ['datetime_format(date, text)']
+  }
+
+  getExamples() {
+    return ["datetime_format(field('date field'), 'YYYY')"]
+  }
+
+  getFormulaType() {
+    return 'date'
+  }
+}
+
+export class BaserowToNumber extends BaserowFunctionDefinition {
+  static getType() {
+    return 'tonumber'
+  }
+
+  getDescription() {
+    return 'Converts the input to a number if possible'
+  }
+
+  getSyntaxUsage() {
+    return ['tonumber(text)']
+  }
+
+  getExamples() {
+    return ["tonumber('10') = 10"]
+  }
+
+  getFormulaType() {
+    return 'number'
   }
 }
 

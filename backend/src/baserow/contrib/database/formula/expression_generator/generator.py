@@ -17,13 +17,14 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFieldByIdReference,
     BaserowFieldReference,
     BaserowExpression,
+    BaserowDecimalLiteral,
 )
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
+from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
     BaserowFormulaInvalidType,
 )
-from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 from baserow.contrib.database.table.models import GeneratedTableModel
 
 
@@ -111,4 +112,13 @@ class BaserowExpressionToDjangoExpressionGenerator(
         return Value(
             int_literal.literal,
             output_field=DecimalField(max_digits=50, decimal_places=0),
+        )
+
+    def visit_decimal_literal(self, decimal_literal: BaserowDecimalLiteral):
+        pass
+        return Value(
+            decimal_literal.literal,
+            output_field=DecimalField(
+                max_digits=50, decimal_places=decimal_literal.num_decimal_places()
+            ),
         )

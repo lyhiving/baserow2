@@ -1,3 +1,4 @@
+from decimal import Decimal
 from io import StringIO
 
 from antlr4 import InputStream, CommonTokenStream
@@ -12,6 +13,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFieldByIdReference,
     BaserowFieldReference,
     BaserowExpression,
+    BaserowDecimalLiteral,
 )
 from baserow.contrib.database.formula.parser.errors import (
     InvalidNumberOfArguments,
@@ -248,7 +250,10 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
 
     def visitStringLiteral(self, ctx: BaserowFormula.StringLiteralContext):
         literal = self.process_string(ctx)
-        return BaserowStringLiteral[UnTyped](literal, None)
+        return BaserowStringLiteral(literal, None)
+
+    def visitDecimalLiteral(self, ctx: BaserowFormula.DecimalLiteralContext):
+        return BaserowDecimalLiteral(Decimal(ctx.getText()), None)
 
     def visitBrackets(self, ctx: BaserowFormula.BracketsContext):
         return ctx.expr().accept(self)
@@ -282,6 +287,8 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
             op = "divide"
         elif ctx.EQUAL():
             op = "equal"
+        elif ctx.STAR():
+            op = "multiply"
         else:
             raise UnknownBinaryOperator(ctx.getText())
 

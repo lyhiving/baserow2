@@ -50,17 +50,22 @@ from baserow.contrib.database.formula.types.type_types import (
 
 
 def register_formula_functions(registry):
+    # Text functions
     registry.register(BaserowUpper())
     registry.register(BaserowLower())
     registry.register(BaserowConcat())
+    registry.register(BaserowToText())
+    # Number functions
     registry.register(BaserowAdd())
+    registry.register(BaserowMultiply())
     registry.register(BaserowMinus())
     registry.register(BaserowDivide())
-    registry.register(BaserowEqual())
-    registry.register(BaserowIf())
-    registry.register(BaserowToText())
-    registry.register(BaserowDatetimeFormat())
     registry.register(BaserowToNumber())
+    registry.register(BaserowEqual())
+    # Boolean functions
+    registry.register(BaserowIf())
+    # Date functions
+    registry.register(BaserowDatetimeFormat())
 
 
 class BaserowUpper(OneArgumentBaserowFunction):
@@ -188,6 +193,25 @@ class BaserowAdd(TwoArgumentBaserowFunction):
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
         return arg1 + arg2
+
+
+class BaserowMultiply(TwoArgumentBaserowFunction):
+    type = "multiply"
+    arg1_type = [BaserowFormulaNumberType]
+    arg2_type = [BaserowFormulaNumberType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[BaserowFormulaNumberType],
+        arg2: BaserowExpression[BaserowFormulaNumberType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(
+            _calculate_number_type([arg1.expression_type, arg2.expression_type])
+        )
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return arg1 * arg2
 
 
 class BaserowMinus(TwoArgumentBaserowFunction):
@@ -339,7 +363,7 @@ class BaserowIf(ThreeArgumentBaserowFunction):
 
 
 class BaserowToNumber(OneArgumentBaserowFunction):
-    type = "to_number"
+    type = "tonumber"
     arg_type = [BaserowFormulaTextType]
 
     def type_function(
