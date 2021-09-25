@@ -64,6 +64,30 @@ VALID_FORMULA_TESTS = [
     ("todate('20170103','YYYYMMDD')", "2017-01-03"),
     ("todate('blah', 'YYYY')", None),
     ("day(todate('20170103','YYYYMMDD'))", "3"),
+    (
+        "datediff("
+        "'yy', "
+        "todate('20200101', 'YYYYMMDD'), "
+        "todate('20100101', 'YYYYMMDD')"
+        ")",
+        "-10",
+    ),
+    (
+        "datediff("
+        "'incorrect thingy', "
+        "todate('20200101', 'YYYYMMDD'), "
+        "todate('20100101', 'YYYYMMDD')"
+        ")",
+        "NaN",
+    ),
+    ("and(true, false)", False),
+    ("and(false, false)", False),
+    ("and(false, true)", False),
+    ("and(true, true)", True),
+    ("or(true, false)", True),
+    ("or(false, false)", False),
+    ("or(false, true)", True),
+    ("or(true, true)", True),
 ]
 
 

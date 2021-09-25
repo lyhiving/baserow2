@@ -57,7 +57,9 @@ import { registerRealtimeEvents } from '@baserow/modules/database/realtime'
 import { CSVTableExporterType } from '@baserow/modules/database/exporterTypes'
 import {
   BaserowAdd,
+  BaserowAnd,
   BaserowConcat,
+  BaserowDateDiff,
   BaserowDatetimeFormat,
   BaserowDay,
   BaserowDivide,
@@ -73,6 +75,7 @@ import {
   BaserowMinus,
   BaserowMultiply,
   BaserowNot,
+  BaserowOr,
   BaserowT,
   BaserowToDate,
   BaserowToNumber,
@@ -161,10 +164,13 @@ export default ({ store, app }) => {
   app.$registry.register('formula_function', new BaserowGreaterThanOrEqual())
   app.$registry.register('formula_function', new BaserowLesserThan())
   app.$registry.register('formula_function', new BaserowLesserThanOrEqual())
+  app.$registry.register('formula_function', new BaserowAnd())
+  app.$registry.register('formula_function', new BaserowOr())
   // Date functions
   app.$registry.register('formula_function', new BaserowDatetimeFormat())
   app.$registry.register('formula_function', new BaserowToDate())
   app.$registry.register('formula_function', new BaserowDay())
+  app.$registry.register('formula_function', new BaserowDateDiff())
   // Special functions
   app.$registry.register('formula_function', new BaserowField())
 

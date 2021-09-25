@@ -42,6 +42,8 @@ from baserow.contrib.database.formula.expression_generator.django_expressions im
     GreaterThanOrEqualExpr,
     LessThanExpr,
     LessThanEqualOrExpr,
+    AndExpr,
+    OrExpr,
 )
 from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaTextType,
@@ -80,10 +82,13 @@ def register_formula_functions(registry):
     registry.register(BaserowGreaterThanOrEqual())
     registry.register(BaserowLessThan())
     registry.register(BaserowLessThanOrEqual())
+    registry.register(BaserowAnd())
+    registry.register(BaserowOr())
     # Date functions
     registry.register(BaserowDatetimeFormat())
     registry.register(BaserowDay())
     registry.register(BaserowToDate())
+    registry.register(BaserowDateDiff())
 
 
 class BaserowUpper(OneArgumentBaserowFunction):
@@ -578,3 +583,67 @@ class BaserowDay(OneArgumentBaserowFunction):
 
     def to_django_expression(self, arg: Expression) -> Expression:
         return Extract(arg, "day")
+
+
+class BaserowDateDiff(ThreeArgumentBaserowFunction):
+    type = "datediff"
+
+    arg1_type = [BaserowFormulaTextType]
+    arg2_type = [BaserowFormulaDateType]
+    arg3_type = [BaserowFormulaDateType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[BaserowFormulaValidType],
+        arg2: BaserowExpression[BaserowFormulaValidType],
+        arg3: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(
+            BaserowFormulaNumberType(number_decimal_places=0)
+        )
+
+    def to_django_expression(
+        self, arg1: Expression, arg2: Expression, arg3: Expression
+    ) -> Expression:
+        return Func(
+            arg1,
+            arg2,
+            arg3,
+            function="DateDiff",
+            output_field=fields.DecimalField(),
+        )
+
+
+class BaserowAnd(TwoArgumentBaserowFunction):
+    type = "and"
+    arg1_type = [BaserowFormulaBooleanType]
+    arg2_type = [BaserowFormulaBooleanType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[BaserowFormulaValidType],
+        arg2: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(BaserowFormulaBooleanType())
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return AndExpr(arg1, arg2)
+
+
+class BaserowOr(TwoArgumentBaserowFunction):
+    type = "or"
+    arg1_type = [BaserowFormulaBooleanType]
+    arg2_type = [BaserowFormulaBooleanType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[BaserowFormulaValidType],
+        arg2: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(BaserowFormulaBooleanType())
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return OrExpr(arg1, arg2)

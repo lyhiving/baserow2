@@ -41,6 +41,16 @@ class LessThanEqualOrExpr(BinaryOpExpr):
 
 
 # noinspection PyAbstractClass
+class AndExpr(BinaryOpExpr):
+    arg_joiner = " AND "
+
+
+# noinspection PyAbstractClass
+class OrExpr(BinaryOpExpr):
+    arg_joiner = " OR "
+
+
+# noinspection PyAbstractClass
 class NotExpr(Transform):
     template = "not %(expressions)s"
     arity = 1

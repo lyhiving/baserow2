@@ -129,8 +129,10 @@
               <li class="formula-field__item-group-title">
                 Operators
                 {{
-                  someFunctionsFiltered || someFieldsFiltered
-                    ? `(${operators.length} filtered)`
+                  filteredOperators.length !== operators.length
+                    ? `(${
+                        operators.length - filteredOperators.length
+                      } filtered)`
                     : ''
                 }}
               </li>
@@ -281,11 +283,17 @@ export default {
       }
     },
     filteredOperators() {
-      if (this.fieldFilter !== false || this.functionFilter !== false) {
+      if (this.fieldFilter !== false) {
         return []
       } else {
-        return this.functions.filter((f) => {
-          return f.isOperator()
+        return this.operators.filter((f) => {
+          const matchesFilter =
+            !this.functionFilter ||
+            f
+              .getType()
+              .toLowerCase()
+              .startsWith(this.functionFilter.toLowerCase())
+          return matchesFilter && f.isOperator()
         })
       }
     },
@@ -526,6 +534,8 @@ export default {
           this.functionFilter = tokenTextUptoCursor
           if (this.filteredFunctions.length > 0) {
             this.selectFunction(this.filteredFunctions[0], false)
+          } else if (this.filteredOperators.length > 0) {
+            this.selectFunction(this.filteredOperators[0], false)
           }
         }
       }

@@ -128,7 +128,7 @@ export class BaserowAdd extends BaserowFunctionDefinition {
   }
 
   getOperator() {
-    return '='
+    return '+'
   }
 }
 
@@ -604,5 +604,91 @@ export class BaserowDay extends BaserowFunctionDefinition {
 
   getFormulaType() {
     return 'date'
+  }
+}
+
+export class BaserowDateDiff extends BaserowFunctionDefinition {
+  static getType() {
+    return 'datediff'
+  }
+
+  getDescription() {
+    return (
+      "Given a date unit to measure in as the first argument ('year', " +
+      "'month', 'week', 'day', 'hour', 'minute', 'seconds') calculates and returns " +
+      'the number of units from the second argument to the third.'
+    )
+  }
+
+  getSyntaxUsage() {
+    return ['daydiff(text, date, date)']
+  }
+
+  getExamples() {
+    return [
+      "datediff('yy', todate('2000-01-01', 'YYYY-MM-DD'), todate('2020-01-01', 'YYYY-MM-DD')) = 20",
+    ]
+  }
+
+  getFormulaType() {
+    return 'date'
+  }
+}
+
+export class BaserowAnd extends BaserowFunctionDefinition {
+  static getType() {
+    return 'and'
+  }
+
+  getDescription() {
+    return (
+      'Returns the logical and of the first and second argument, so if they are both' +
+      'true then the result is true, otherwise it is false'
+    )
+  }
+
+  getSyntaxUsage() {
+    return ['and(boolean, boolean)']
+  }
+
+  getExamples() {
+    return [
+      'and(true, false) = false',
+      'and(true, true) = true',
+      "and(field('first test'), field('second test'))",
+    ]
+  }
+
+  getFormulaType() {
+    return 'boolean'
+  }
+}
+
+export class BaserowOr extends BaserowFunctionDefinition {
+  static getType() {
+    return 'or'
+  }
+
+  getDescription() {
+    return (
+      'Returns the logical or of the first and second argument, so if either are ' +
+      'true then the result is true, otherwise it is false'
+    )
+  }
+
+  getSyntaxUsage() {
+    return ['or(boolean, boolean)']
+  }
+
+  getExamples() {
+    return [
+      'or(true, false) = true',
+      'and(true, true) = true',
+      "or(field('first test'), field('second test'))",
+    ]
+  }
+
+  getFormulaType() {
+    return 'boolean'
   }
 }

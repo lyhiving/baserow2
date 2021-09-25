@@ -34,6 +34,74 @@ class NumOfArgsGreaterThan(ArgCountSpecifier):
         return self.count < num_args
 
 
+class ZeroArgumentBaserowFunction(BaserowFunctionDefinition):
+    """
+    A helper sub type of a BaserowFunctionDefinition that lets the
+    user talk specifically about a func with no arguments when implementing. Without
+    this normal classes implementing BaserowFunctionDefinition need to faff
+    about accessing argument lists etc.
+    """
+
+    @property
+    def arg_types(self) -> BaserowArgumentTypeChecker:
+        return []
+
+    @property
+    def num_args(self) -> ArgCountSpecifier:
+        return FixedNumOfArgs(0)
+
+    @abc.abstractmethod
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        """
+        Override this function to type and optionally transform an untyped function
+        call to this function def.
+
+        You can perform any logic you require here and return entirely different or
+        transformed typed expressions. However by default most
+        of the time if your function doesn't need to do different things based on
+        the types of it's arguments all you need to do is something like:
+        ```
+        return func_call.with_valid_type(INSERT VALID TYPE OF FUNC HERE)
+        ```
+
+        :param func_call: An untyped function call to this function which needs typing.
+        :return: A typed BaserowExpression, most probably just the original func_call
+            but with a type, but any expression could be returned here.
+        """
+
+        pass
+
+    @abc.abstractmethod
+    def to_django_expression(self) -> Expression:
+        """
+        Override this function to return a Django Expression which calculates the result
+        of this function.
+        Only will be called if all arguments passed the type check
+        and a valid type for the function has been returned from type_function.
+
+        :return: A Django Expression which when evaluated calculates the results of this
+            function call.
+        """
+
+        pass
+
+    def type_function_given_valid_args(
+        self,
+        args: List[BaserowExpression[BaserowFormulaValidType]],
+        func_call: BaserowFunctionCall[UnTyped],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return self.type_function(func_call)
+
+    def to_django_expression_given_args(self, args: List[Expression]) -> Expression:
+        return self.to_django_expression()
+
+    def call_and_type_with(self) -> BaserowFunctionCall[BaserowFormulaType]:
+        return self.call_and_type_with_args([])
+
+
 class OneArgumentBaserowFunction(BaserowFunctionDefinition):
     """
     A helper sub type of a BaserowFunctionDefinition that lets the
