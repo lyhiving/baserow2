@@ -1,24 +1,40 @@
 <template>
   <div>
-    <div class="control">
-      <div class="control__elements">
-        <input
-          ref="formulaInput"
-          :value="values.formula"
-          type="text"
-          class="input"
-          placeholder="Formula"
-          @click="
-            $refs.editContext.toggle(
-              $refs.formulaInput,
-              'top',
-              'left',
-              -$refs.formulaInput.scrollHeight - 3,
-              -1
-            )
-            $refs.textAreaFormulaInput.focus()
-          "
-        />
+    <div>
+      <div class="control">
+        <div class="control__elements">
+          <input
+            ref="formulaInput"
+            :value="values.formula"
+            type="text"
+            class="input"
+            placeholder="Formula"
+            @click="
+              $refs.editContext.toggle(
+                $refs.formulaInput,
+                'top',
+                'left',
+                -$refs.formulaInput.scrollHeight - 3,
+                -1
+              )
+              $refs.textAreaFormulaInput.focus()
+            "
+          />
+        </div>
+      </div>
+      <div v-if="!values.error">
+        <FieldFormulaNumberSubForm
+          v-if="values.formula_type === 'number'"
+          :default-values="defaultValues"
+          :table="table"
+        >
+        </FieldFormulaNumberSubForm>
+        <FieldDateSubForm
+          v-else-if="values.formula_type === 'date'"
+          :default-values="defaultValues"
+          :table="table"
+        >
+        </FieldDateSubForm>
       </div>
     </div>
     <Context ref="editContext">
@@ -140,20 +156,6 @@
             ><code>{{ examples }}</code></pre>
           </div>
         </div>
-        <div v-if="!values.error">
-          <FieldFormulaNumberSubForm
-            v-if="values.formula_type === 'number'"
-            :default-values="defaultValues"
-            :table="table"
-          >
-          </FieldFormulaNumberSubForm>
-          <FieldDateSubForm
-            v-else-if="values.formula_type === 'date'"
-            :default-values="defaultValues"
-            :table="table"
-          >
-          </FieldDateSubForm>
-        </div>
       </div>
     </Context>
   </div>
@@ -195,6 +197,7 @@ export default {
         formula: '',
         formula_type: '',
         error: '',
+        id: false,
       },
       functions,
       selectedFunction: functions[0],
@@ -504,32 +507,31 @@ export default {
           this.values.formula,
           startingCursorLocation
         )
-        console.log(
-          'type',
-          type,
-          'token',
-          tokenTextUptoCursor,
-          'at end ',
-          cursorAtEndOfToken,
-          'closing parem',
-          closingParenIsNextNormalToken
-        )
-        if (!cursorAtEndOfToken) {
-          return
-        }
         let chosen = false
         let quoteIt = false
         let optionalClosingParen = ''
+        let resultingCursorOffset = 0
         if (type === 'field_inner_partial') {
+          if (!cursorAtEndOfToken) {
+            return
+          }
           if (this.filteredFields.length > 0) {
             quoteIt = true
             chosen = this.filteredFields[0].name
             optionalClosingParen = closingParenIsNextNormalToken ? ')' : ''
+            resultingCursorOffset = 1
           }
         } else if (type === 'identifier') {
           if (this.filteredFunctions.length > 0) {
-            chosen = this.filteredFunctions[0].getType() + '('
-            optionalClosingParen = ')'
+            const funcType = this.filteredFunctions[0].getType()
+            const startingArg = funcType === 'field' ? "''" : ''
+            if (funcType === 'field') {
+              resultingCursorOffset = -1
+            }
+            chosen = funcType + '(' + startingArg
+            if (cursorAtEndOfToken) {
+              optionalClosingParen = ')'
+            }
           }
         }
         if (chosen) {
@@ -551,7 +553,9 @@ export default {
           this.values.formula =
             startWithoutToken + replacement + optionalClosingParen + afterToken
           const beforeClosingBracketPos =
-            startWithoutToken.length + replacement.length
+            startWithoutToken.length +
+            replacement.length +
+            resultingCursorOffset
           this.$nextTick(() => {
             this.$refs.textAreaFormulaInput.$refs.textarea.setSelectionRange(
               beforeClosingBracketPos,
