@@ -94,6 +94,115 @@ export function updateFieldNames(
   return { newFormula, errors }
 }
 
+export function getPrefixIfFuncOrFieldRef(rawBaserowFormulaString, position) {
+  const {
+    token,
+    insideFieldRef,
+    positionInToken,
+    normalTextInsideFieldRefSoFar,
+    startOfFieldRefInner,
+  } = getTokenAtPosition(rawBaserowFormulaString, position)
+  let type = false
+  if (insideFieldRef) {
+    if (
+      normalTextInsideFieldRefSoFar.length === 0 ||
+      normalTextInsideFieldRefSoFar.startsWith("'") ||
+      normalTextInsideFieldRefSoFar.startsWith('"')
+    ) {
+      const innerFieldRefPos = position - startOfFieldRefInner
+      return {
+        type: 'field_inner_partial',
+        tokenText: normalTextInsideFieldRefSoFar,
+        positionInToken: innerFieldRefPos,
+        tokenTextUptoCursor: normalTextInsideFieldRefSoFar.slice(
+          0,
+          innerFieldRefPos
+        ),
+        cursorAtEndOfToken:
+          normalTextInsideFieldRefSoFar.length === innerFieldRefPos,
+      }
+    }
+  } else {
+    const tokenText = token.text
+    switch (token.type) {
+      case BaserowFormula.IDENTIFIER:
+      case BaserowFormula.IDENTIFIER_UNICODE:
+        type = 'identifier'
+        break
+      case BaserowFormula.DOUBLEQ_STRING_LITERAL:
+      case BaserowFormula.SINGLEQ_STRING_LITERAL:
+        if (insideFieldRef) {
+          type = 'field_inner'
+        }
+        break
+      case BaserowFormula.FIELD:
+        type = 'field'
+        break
+    }
+
+    return {
+      type,
+      tokenText,
+      positionInToken,
+      tokenTextUptoCursor: tokenText.slice(0, positionInToken),
+      cursorAtEndOfToken: tokenText.length === positionInToken,
+    }
+  }
+}
+
+export function getTokenAtPosition(rawBaserowFormulaString, position) {
+  const chars = new antlr4.InputStream(rawBaserowFormulaString)
+  const lexer = new BaserowFormulaLexer(chars)
+  const stream = new BufferedTokenStream(lexer)
+  stream.lazyInit()
+  stream.fill()
+  const start = 0
+  const stop = stream.tokens.length
+  if (start < 0 || stop < 0 || stop < start) {
+    return false
+  }
+  let output = ''
+  let startedFieldRef = false
+  let insideFieldRef = false
+  let normalTextInsideFieldRefSoFar = ''
+  let startOfFieldRefInner = false
+  for (let i = start; i < stop; i++) {
+    const token = stream.tokens[i]
+    const isNormalToken = token.channel === 0
+    if (isNormalToken && insideFieldRef) {
+      normalTextInsideFieldRefSoFar += token.text
+      startOfFieldRefInner = output.length
+    }
+    output += token.text
+    if (insideFieldRef && isNormalToken) {
+      if (token.type === BaserowFormula.CLOSE_PAREN) {
+        insideFieldRef = false
+        normalTextInsideFieldRefSoFar = ''
+        startOfFieldRefInner = false
+      }
+    }
+    if (startedFieldRef && isNormalToken) {
+      startedFieldRef = false
+      if (token.type === BaserowFormula.OPEN_PAREN) {
+        insideFieldRef = true
+      }
+    }
+    if (token.type === BaserowFormula.FIELD) {
+      startedFieldRef = true
+    }
+    if (output.length >= position) {
+      return {
+        token,
+        insideFieldRef,
+        positionInToken: position - (output.length - token.text.length),
+        normalTextInsideFieldRefSoFar,
+        startOfFieldRefInner,
+      }
+    }
+  }
+  return { token: false, insideFieldRef: false }
+}
+
 /**
  * Given a map of field id to field name replaces all field_by_id references to
  * with field references. Does so whist preserving any whitespace or

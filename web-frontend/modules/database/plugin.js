@@ -55,6 +55,12 @@ import formStore from '@baserow/modules/database/store/view/form'
 
 import { registerRealtimeEvents } from '@baserow/modules/database/realtime'
 import { CSVTableExporterType } from '@baserow/modules/database/exporterTypes'
+import {
+  BaserowAdd,
+  BaserowConcat,
+  BaserowLower,
+  BaserowUpper,
+} from '@baserow/modules/database/formula/functions'
 
 export default ({ store, app }) => {
   store.registerModule('table', tableStore)
@@ -115,6 +121,11 @@ export default ({ store, app }) => {
   app.$registry.register('importer', new JSONImporterType())
   app.$registry.register('settings', new APITokenSettingsType())
   app.$registry.register('exporter', new CSVTableExporterType())
+
+  app.$registry.register('formula_function', new BaserowUpper())
+  app.$registry.register('formula_function', new BaserowLower())
+  app.$registry.register('formula_function', new BaserowConcat())
+  app.$registry.register('formula_function', new BaserowAdd())
 
   registerRealtimeEvents(app.$realtime)
 }
