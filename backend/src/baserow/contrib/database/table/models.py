@@ -282,6 +282,10 @@ class Table(
             generated in order to generate that model. In order to prevent a
             recursion loop we cache the generated models and pass those along.
         :type manytomany_models: dict
+        :param typed_table: If the table has already been typed then it can be provided
+            here to prevent any retyping calculations. Or instead false can be provided
+            to prevent any automatic typing operations what so ever.
+        :type Union[bool, Optional[TypedBaserowTable]]
         :return: The generated model.
         :rtype: Model
         """
