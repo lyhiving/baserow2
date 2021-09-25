@@ -57,6 +57,13 @@ VALID_FORMULA_TESTS = [
     ("'a' != 'b'", True),
     ("'a' != 'a'", False),
     ("1 != '1'", False),
+    ("1 > 1", False),
+    ("1 >= 1", True),
+    ("1 < 1", False),
+    ("1 <= 1", True),
+    ("todate('20170103','YYYYMMDD')", "2017-01-03"),
+    ("todate('blah', 'YYYY')", None),
+    ("day(todate('20170103','YYYYMMDD'))", "3"),
 ]
 
 
@@ -244,6 +251,12 @@ INVALID_FORMULA_TESTS = [
     ("10/LOWER(1)", "ERROR_WITH_FORMULA", None),
     ("'t'/1", "ERROR_WITH_FORMULA", None),
     ("1/'t'", "ERROR_WITH_FORMULA", None),
+    ("true > true", "ERROR_WITH_FORMULA", None),
+    ("true > 1", "ERROR_WITH_FORMULA", None),
+    ("'a' > 1", "ERROR_WITH_FORMULA", None),
+    ("true < true", "ERROR_WITH_FORMULA", None),
+    ("true < 1", "ERROR_WITH_FORMULA", None),
+    ("'a' < 1", "ERROR_WITH_FORMULA", None),
 ]
 
 

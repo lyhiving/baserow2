@@ -1,3 +1,4 @@
+from abc import ABC
 from decimal import Decimal
 from typing import List
 
@@ -16,6 +17,7 @@ from django.db.models.functions import (
     Coalesce,
     Cast,
     Greatest,
+    Extract,
 )
 
 from baserow.contrib.database.fields.models import (
@@ -36,6 +38,10 @@ from baserow.contrib.database.formula.expression_generator.django_expressions im
     EqualsExpr,
     NotExpr,
     NotEqualsExpr,
+    GreaterThanExpr,
+    GreaterThanOrEqualExpr,
+    LessThanExpr,
+    LessThanEqualOrExpr,
 )
 from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaTextType,
@@ -70,8 +76,14 @@ def register_formula_functions(registry):
     registry.register(BaserowIsBlank())
     registry.register(BaserowNot())
     registry.register(BaserowNotEqual())
+    registry.register(BaserowGreaterThan())
+    registry.register(BaserowGreaterThanOrEqual())
+    registry.register(BaserowLessThan())
+    registry.register(BaserowLessThanOrEqual())
     # Date functions
     registry.register(BaserowDatetimeFormat())
+    registry.register(BaserowDay())
+    registry.register(BaserowToDate())
 
 
 class BaserowUpper(OneArgumentBaserowFunction):
@@ -457,3 +469,112 @@ class BaserowNotEqual(BaserowEqual):
             arg2,
             output_field=fields.BooleanField(),
         )
+
+
+class BaseLimitComparableFunction(TwoArgumentBaserowFunction, ABC):
+    @property
+    def arg_types(self) -> BaserowArgumentTypeChecker:
+        def type_checker(arg_index: int, arg_types: List[BaserowFormulaType]):
+            # The valid types for arg1 are the limit comparable types for arg2 and
+            # vice versa.
+            # For example, if arg1 is a boolean then arg2 must be of type text or
+            # boolean for the two arguments to be comparable.
+            other_arg_index = 1 if arg_index == 0 else 1
+            return arg_types[other_arg_index].limit_comparable_types
+
+        return type_checker
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[BaserowFormulaValidType],
+        arg2: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(BaserowFormulaBooleanType())
+
+
+class BaserowGreaterThan(BaseLimitComparableFunction):
+    type = "greater_than"
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return GreaterThanExpr(
+            arg1,
+            arg2,
+            output_field=fields.BooleanField(),
+        )
+
+
+class BaserowGreaterThanOrEqual(BaseLimitComparableFunction):
+    type = "greater_than_or_equal"
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return GreaterThanOrEqualExpr(
+            arg1,
+            arg2,
+            output_field=fields.BooleanField(),
+        )
+
+
+class BaserowLessThan(BaseLimitComparableFunction):
+    type = "less_than"
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return LessThanExpr(
+            arg1,
+            arg2,
+            output_field=fields.BooleanField(),
+        )
+
+
+class BaserowLessThanOrEqual(BaseLimitComparableFunction):
+    type = "less_than_or_equal"
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return LessThanEqualOrExpr(
+            arg1,
+            arg2,
+            output_field=fields.BooleanField(),
+        )
+
+
+class BaserowToDate(TwoArgumentBaserowFunction):
+    type = "todate"
+    arg_type1 = [BaserowFormulaTextType]
+    arg_type2 = [BaserowFormulaTextType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[BaserowFormulaValidType],
+        arg2: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(
+            BaserowFormulaDateType(
+                date_format="ISO", date_include_time=False, date_time_format="24"
+            )
+        )
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return Func(
+            arg1,
+            arg2,
+            function="try_cast_to_date",
+            output_field=fields.DateField(),
+        )
+
+
+class BaserowDay(OneArgumentBaserowFunction):
+    type = "day"
+    arg_type = [BaserowFormulaDateType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(
+            BaserowFormulaNumberType(number_decimal_places=0)
+        )
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Extract(arg, "day")

@@ -27,6 +27,14 @@ export class BaserowFunctionDefinition extends Registerable {
         'string of the function.'
     )
   }
+
+  isOperator() {
+    return false
+  }
+
+  getOperator() {
+    return ''
+  }
 }
 
 export class BaserowUpper extends BaserowFunctionDefinition {
@@ -114,6 +122,14 @@ export class BaserowAdd extends BaserowFunctionDefinition {
   getFormulaType() {
     return 'number'
   }
+
+  isOperator() {
+    return true
+  }
+
+  getOperator() {
+    return '='
+  }
 }
 
 export class BaserowMinus extends BaserowFunctionDefinition {
@@ -135,6 +151,14 @@ export class BaserowMinus extends BaserowFunctionDefinition {
 
   getFormulaType() {
     return 'number'
+  }
+
+  isOperator() {
+    return true
+  }
+
+  getOperator() {
+    return '-'
   }
 }
 
@@ -158,6 +182,14 @@ export class BaserowMultiply extends BaserowFunctionDefinition {
   getFormulaType() {
     return 'number'
   }
+
+  isOperator() {
+    return true
+  }
+
+  getOperator() {
+    return '*'
+  }
 }
 
 export class BaserowDivide extends BaserowFunctionDefinition {
@@ -180,6 +212,14 @@ export class BaserowDivide extends BaserowFunctionDefinition {
   getFormulaType() {
     return 'number'
   }
+
+  isOperator() {
+    return true
+  }
+
+  getOperator() {
+    return '/'
+  }
 }
 
 export class BaserowEqual extends BaserowFunctionDefinition {
@@ -201,6 +241,14 @@ export class BaserowEqual extends BaserowFunctionDefinition {
 
   getFormulaType() {
     return 'boolean'
+  }
+
+  isOperator() {
+    return true
+  }
+
+  getOperator() {
+    return '='
   }
 }
 
@@ -380,5 +428,181 @@ export class BaserowNot extends BaserowFunctionDefinition {
 
   getFormulaType() {
     return 'boolean'
+  }
+}
+
+export class BaserowGreaterThan extends BaserowFunctionDefinition {
+  static getType() {
+    return 'greater_than'
+  }
+
+  getDescription() {
+    return 'Returns true if the first argument greater than the second, otherwise false""'
+  }
+
+  getSyntaxUsage() {
+    return ['any > any']
+  }
+
+  getExamples() {
+    return [
+      '1 > 2 = false',
+      "if(field('a') > field('b'), 'a is bigger', 'b is bigger or equal')",
+    ]
+  }
+
+  getFormulaType() {
+    return 'boolean'
+  }
+
+  isOperator() {
+    return true
+  }
+
+  getOperator() {
+    return '>'
+  }
+}
+
+export class BaserowGreaterThanOrEqual extends BaserowFunctionDefinition {
+  static getType() {
+    return 'greater_than_or_equal'
+  }
+
+  getDescription() {
+    return 'Returns true if the first argument is greater than or equal to the second, otherwise false""'
+  }
+
+  getSyntaxUsage() {
+    return ['any >= any']
+  }
+
+  getExamples() {
+    return [
+      '1 >= 1 = true',
+      "if(field('a') >= field('b'), 'a is bigger or equal', 'b is smaller')",
+    ]
+  }
+
+  getFormulaType() {
+    return 'boolean'
+  }
+
+  isOperator() {
+    return true
+  }
+
+  getOperator() {
+    return '>='
+  }
+}
+
+export class BaserowLesserThan extends BaserowFunctionDefinition {
+  static getType() {
+    return 'lesser_than'
+  }
+
+  getDescription() {
+    return 'Returns true if the first argument lesser than the second, otherwise false""'
+  }
+
+  getSyntaxUsage() {
+    return ['any < any']
+  }
+
+  getExamples() {
+    return [
+      '2 < 1 = false',
+      "if(field('a') < field('b'), 'a is smaller', 'b is bigger or equal')",
+    ]
+  }
+
+  getFormulaType() {
+    return 'boolean'
+  }
+
+  isOperator() {
+    return true
+  }
+
+  getOperator() {
+    return '<'
+  }
+}
+
+export class BaserowLesserThanOrEqual extends BaserowFunctionDefinition {
+  static getType() {
+    return 'lesser_than_or_equal'
+  }
+
+  getDescription() {
+    return 'Returns true if the first argument lesser than or equal to the second, otherwise false""'
+  }
+
+  getSyntaxUsage() {
+    return ['any <= any']
+  }
+
+  getExamples() {
+    return [
+      '1 <= 1 = true',
+      "if(field('a') <= field('b'), 'a smaller', 'b is greater than or equal')",
+    ]
+  }
+
+  getFormulaType() {
+    return 'boolean'
+  }
+
+  isOperator() {
+    return true
+  }
+
+  getOperator() {
+    return '<='
+  }
+}
+
+export class BaserowToDate extends BaserowFunctionDefinition {
+  static getType() {
+    return 'todate'
+  }
+
+  getDescription() {
+    return 'Returns the first argument converted into a date given a date format string as the second argument'
+  }
+
+  getSyntaxUsage() {
+    return ['todate(text, text)']
+  }
+
+  getExamples() {
+    return ["todate('20210101', 'YYYYMMDD')"]
+  }
+
+  getFormulaType() {
+    return 'date'
+  }
+}
+
+export class BaserowDay extends BaserowFunctionDefinition {
+  static getType() {
+    return 'day'
+  }
+
+  getDescription() {
+    return 'Returns the day of the month as a number between 1 to 31 from the argument'
+  }
+
+  getSyntaxUsage() {
+    return ['day(date)']
+  }
+
+  getExamples() {
+    return ["day(todate('20210101', 'YYYYMMDD')) = 1"]
+  }
+
+  getFormulaType() {
+    return 'date'
   }
 }

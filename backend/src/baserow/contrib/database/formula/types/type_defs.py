@@ -41,6 +41,13 @@ class BaserowFormulaTextType(BaserowFormulaValidType):
             BaserowFormulaBooleanType,
         ]
 
+    @property
+    def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        # Force users to explicitly convert to text before doing any limit comparison
+        # operators as lexicographical comparison can be surprising and so should be opt
+        # in
+        return [type(self)]
+
     def cast_to_text(
         self,
         to_text_func_call: "BaserowFunctionCall[UnTyped]",
@@ -95,6 +102,10 @@ class BaserowFormulaNumberType(BaserowFormulaValidType):
             type(self),
             BaserowFormulaTextType,
         ]
+
+    @property
+    def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return [type(self)]
 
     def contains_query(self, *args):
         return contains_filter(*args)
@@ -155,6 +166,11 @@ class BaserowFormulaBooleanType(BaserowFormulaValidType):
             BaserowFormulaTextType,
         ]
 
+    @property
+    def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        # true > true makes no sense
+        return []
+
     def get_model_field(self, **kwargs) -> models.Field:
         return models.BooleanField(default=False, **kwargs)
 
@@ -180,6 +196,10 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
             type(self),
             BaserowFormulaTextType,
         ]
+
+    @property
+    def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return [type(self)]
 
     def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
         if isinstance(old_type, BaserowFormulaDateType):

@@ -59,16 +59,22 @@ import {
   BaserowAdd,
   BaserowConcat,
   BaserowDatetimeFormat,
+  BaserowDay,
   BaserowDivide,
   BaserowEqual,
   BaserowField,
+  BaserowGreaterThan,
+  BaserowGreaterThanOrEqual,
   BaserowIf,
   BaserowIsBlank,
+  BaserowLesserThan,
+  BaserowLesserThanOrEqual,
   BaserowLower,
   BaserowMinus,
   BaserowMultiply,
   BaserowNot,
   BaserowT,
+  BaserowToDate,
   BaserowToNumber,
   BaserowToText,
   BaserowUpper,
@@ -151,8 +157,14 @@ export default ({ store, app }) => {
   app.$registry.register('formula_function', new BaserowIf())
   app.$registry.register('formula_function', new BaserowIsBlank())
   app.$registry.register('formula_function', new BaserowNot())
+  app.$registry.register('formula_function', new BaserowGreaterThan())
+  app.$registry.register('formula_function', new BaserowGreaterThanOrEqual())
+  app.$registry.register('formula_function', new BaserowLesserThan())
+  app.$registry.register('formula_function', new BaserowLesserThanOrEqual())
   // Date functions
   app.$registry.register('formula_function', new BaserowDatetimeFormat())
+  app.$registry.register('formula_function', new BaserowToDate())
+  app.$registry.register('formula_function', new BaserowDay())
   // Special functions
   app.$registry.register('formula_function', new BaserowField())
 

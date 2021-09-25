@@ -295,6 +295,14 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
             op = "not_equal"
         elif ctx.STAR():
             op = "multiply"
+        elif ctx.GT():
+            op = "greater_than"
+        elif ctx.LT():
+            op = "less_than"
+        elif ctx.GTE():
+            op = "greater_than_or_equal"
+        elif ctx.LTE():
+            op = "less_than_or_equal"
         else:
             raise UnknownBinaryOperator(ctx.getText())
 
