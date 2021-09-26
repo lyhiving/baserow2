@@ -192,11 +192,11 @@ import { required } from 'vuelidate/lib/validators'
 import parseBaserowFormula, {
   getPrefixIfFuncOrFieldRef,
   replaceFieldByIdWithFieldRef,
-  updateFieldNames,
 } from '@baserow/modules/database/formula/parser/parser'
 import { mapGetters } from 'vuex'
 import FieldFormulaNumberSubForm from '@baserow/modules/database/components/field/FieldFormulaNumberSubForm'
 import FieldDateSubForm from '@baserow/modules/database/components/field/FieldDateSubForm'
+import { updateFieldNames } from '@baserow/modules/database/formula/parser/updateFieldNames'
 
 export default {
   name: 'FormulaEditContextMenu',
@@ -429,19 +429,11 @@ export default {
       return false
     },
     fieldNameChanged(oldNameToNewNameMap) {
-      const formula = this.values.formula
-      if (this.convertServerSideFormulaToClient(formula)) {
-        const result = updateFieldNames(
+      if (this.convertServerSideFormulaToClient(this.values.formula)) {
+        this.values.formula = updateFieldNames(
           this.values.formula,
           oldNameToNewNameMap
         )
-        if (result !== false) {
-          const { newFormula, errors } = result
-          this.values.formula = newFormula
-          if (errors.length > 0) {
-            this.error = errors.join(', ')
-          }
-        }
       }
     },
     toHumanReadableErrorMessage(error) {

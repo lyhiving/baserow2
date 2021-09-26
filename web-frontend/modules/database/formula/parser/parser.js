@@ -26,74 +26,6 @@ export default function parseBaserowFormula(rawBaserowFormulaString) {
   return parser.root()
 }
 
-/**
- * Given a map of old field name to new field name replaces all field references to
- * old field names with their new names. Does so whist preserving any whitespace or
- * comments.
- *
- * @param rawBaserowFormulaString The raw string to tokenize and transform.
- * @param oldFieldNameToNewFieldName The map of old name to new name.
- * @returns {boolean|{newFormula: string, errors: *[]}} False if the formula is not
- *    syntactically correct, otherwise the new string and any unknown field errors.
- */
-export function updateFieldNames(
-  rawBaserowFormulaString,
-  oldFieldNameToNewFieldName
-) {
-  const errors = []
-  const chars = new antlr4.InputStream(rawBaserowFormulaString)
-  const lexer = new BaserowFormulaLexer(chars)
-  const stream = new BufferedTokenStream(lexer)
-  stream.lazyInit()
-  stream.fill()
-  const start = 0
-  const stop = stream.tokens.length
-  if (start < 0 || stop < 0 || stop < start) {
-    return false
-  }
-  let fieldReferenceStarted = false
-  let searchedForFieldReferenceStart = false
-  let newFormula = ''
-  for (let i = start; i < stop; i++) {
-    const token = stream.tokens[i]
-    let output = token.text
-    const isNormalToken = token.channel === 0
-    if (isNormalToken) {
-      if (searchedForFieldReferenceStart) {
-        fieldReferenceStarted = false
-        if (token.type === BaserowFormulaLexer.SINGLEQ_STRING_LITERAL) {
-          const replaced = output.replace("\\'", "'").slice(1, -1)
-          if (oldFieldNameToNewFieldName[replaced] !== undefined) {
-            output = oldFieldNameToNewFieldName[replaced]
-          }
-        } else if (token.type === BaserowFormulaLexer.DOUBLEQ_STRING_LITERAL) {
-          const replaced = output.replace('\\"', '"').slice(1, -1)
-          if (oldFieldNameToNewFieldName[replaced] !== undefined) {
-            output = oldFieldNameToNewFieldName[replaced]
-          }
-        } else {
-          return false
-        }
-      } else if (fieldReferenceStarted) {
-        fieldReferenceStarted = false
-        if (token.type === BaserowFormulaLexer.OPEN_PAREN) {
-          searchedForFieldReferenceStart = true
-        } else {
-          return false
-        }
-      }
-    }
-    if (token.type === BaserowFormulaLexer.FIELD) {
-      fieldReferenceStarted = true
-    }
-    if (token.type === BaserowFormulaLexer.EOF) {
-      break
-    }
-    newFormula += output
-  }
-  return { newFormula, errors }
-}
-
 export function getPrefixIfFuncOrFieldRef(rawBaserowFormulaString, position) {
   const {
     token,
@@ -102,7 +34,7 @@ export function getPrefixIfFuncOrFieldRef(rawBaserowFormulaString, position) {
     textInsideFieldRefSoFar,
     startOfFieldRefInner,
     closingParenIsNextNormalToken,
-  } = getTokenAtPosition(rawBaserowFormulaString, position)
+  } = _getTokenAtPosition(rawBaserowFormulaString, position)
   let type = false
   const tokenText = token.text
   if (insideFieldRef) {
@@ -149,7 +81,7 @@ export function getPrefixIfFuncOrFieldRef(rawBaserowFormulaString, position) {
   }
 }
 
-function checkIfNextNormalTokenInStreamIs(i, stop, stream, numOpenBrackets) {
+function _checkIfNextNormalTokenInStreamIs(i, stop, stream, numOpenBrackets) {
   for (let k = i; k < stop; k++) {
     const afterToken = stream.tokens[k]
     if (afterToken.type === BaserowFormula.OPEN_PAREN) {
@@ -162,7 +94,7 @@ function checkIfNextNormalTokenInStreamIs(i, stop, stream, numOpenBrackets) {
   return numOpenBrackets !== 0
 }
 
-export function getTokenAtPosition(rawBaserowFormulaString, position) {
+export function _getTokenAtPosition(rawBaserowFormulaString, position) {
   const chars = new antlr4.InputStream(rawBaserowFormulaString)
   const lexer = new BaserowFormulaLexer(chars)
   const stream = new BufferedTokenStream(lexer)
@@ -211,7 +143,7 @@ export function getTokenAtPosition(rawBaserowFormulaString, position) {
       startedFieldRef = true
     }
     if (output.length >= position) {
-      const closingParenIsNextNormalToken = checkIfNextNormalTokenInStreamIs(
+      const closingParenIsNextNormalToken = _checkIfNextNormalTokenInStreamIs(
         i + 1,
         stop,
         stream,
@@ -291,4 +223,13 @@ export function replaceFieldByIdWithFieldRef(
     newFormula += output
   }
   return { newFormula, errors }
+}
+
+export function getTokenStreamForFormula(rawBaserowFormulaString) {
+  const chars = new antlr4.InputStream(rawBaserowFormulaString)
+  const lexer = new BaserowFormulaLexer(chars)
+  const stream = new BufferedTokenStream(lexer)
+  stream.lazyInit()
+  stream.fill()
+  return stream
 }
