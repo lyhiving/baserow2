@@ -117,4 +117,27 @@ $$
             ),
             ("DROP FUNCTION IF EXISTS try_cast_to_numeric(text);"),
         ),
+        migrations.RunSQL(
+            (
+                """
+create or replace function try_cast_to_date(
+    p_in text,
+    p_format text
+)
+    returns date
+as
+$$
+begin
+    begin
+        return to_date(p_in, p_format);
+    exception when others then
+        return null;
+    end;
+end;
+$$
+    language plpgsql;
+"""
+            ),
+            ("DROP FUNCTION IF EXISTS try_cast_to_date(text, text);"),
+        ),
     ]

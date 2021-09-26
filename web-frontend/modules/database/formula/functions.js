@@ -27,6 +27,14 @@ export class BaserowFunctionDefinition extends Registerable {
         'string of the function.'
     )
   }
+
+  isOperator() {
+    return false
+  }
+
+  getOperator() {
+    return ''
+  }
 }
 
 export class BaserowUpper extends BaserowFunctionDefinition {
@@ -104,7 +112,7 @@ export class BaserowAdd extends BaserowFunctionDefinition {
   }
 
   getSyntaxUsage() {
-    return ['add(number, number)', 'number + number']
+    return ['number + number', 'add(number, number)']
   }
 
   getExamples() {
@@ -112,7 +120,15 @@ export class BaserowAdd extends BaserowFunctionDefinition {
   }
 
   getFormulaType() {
-    return 'text'
+    return 'number'
+  }
+
+  isOperator() {
+    return true
+  }
+
+  getOperator() {
+    return '+'
   }
 }
 

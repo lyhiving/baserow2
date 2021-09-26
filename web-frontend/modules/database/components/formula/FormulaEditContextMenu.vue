@@ -9,16 +9,7 @@
             type="text"
             class="input"
             placeholder="Formula"
-            @click="
-              $refs.editContext.toggle(
-                $refs.formulaInput,
-                'top',
-                'left',
-                -$refs.formulaInput.scrollHeight - 3,
-                -1
-              )
-              $refs.textAreaFormulaInput.focus()
-            "
+            @click="openContext"
           />
         </div>
       </div>
@@ -134,6 +125,38 @@
                 </a>
               </li>
             </ul>
+            <ul class="formula-field__item-group">
+              <li class="formula-field__item-group-title">
+                Operators
+                {{
+                  filteredOperators.length !== operators.length
+                    ? `(${
+                        operators.length - filteredOperators.length
+                      } filtered)`
+                    : ''
+                }}
+              </li>
+              <li
+                v-for="func in filteredOperators"
+                :key="func.getType()"
+                class="formula-field__item"
+                :class="{
+                  'formula-field__item-selected': functionIsSelected(func),
+                }"
+              >
+                <a
+                  href="#"
+                  class="formula-field__item-link"
+                  @click="selectFunction(func)"
+                >
+                  <i
+                    class="fas formula-field__item-icon"
+                    :class="[funcTypeToIconClass(func)]"
+                  />
+                  {{ func.getOperator() }}
+                </a>
+              </li>
+            </ul>
           </div>
           <div class="formula-field__description">
             <div class="formula-field__description-heading-1">
@@ -141,7 +164,7 @@
                 class="fas formula-field__description-icon"
                 :class="[descriptionIcon]"
               />
-              {{ descriptionHeading }}
+              {{ makeHeader(descriptionHeading) }}
             </div>
             <div class="formula-field__description-text">
               {{ descriptionText }}
@@ -238,22 +261,44 @@ export default {
     someFieldsFiltered() {
       return this.numFieldsFiltered > 0
     },
+    normalFunctions() {
+      return this.functions.filter((f) => !f.isOperator())
+    },
+    operators() {
+      return this.functions.filter((f) => f.isOperator())
+    },
     filteredFunctions() {
       if (this.fieldFilter !== false) {
         return []
       } else {
-        return this.functions.filter(
-          (f) =>
+        return this.normalFunctions.filter((f) => {
+          const matchesFilter =
             !this.functionFilter ||
             f
               .getType()
               .toLowerCase()
               .startsWith(this.functionFilter.toLowerCase())
-        )
+          return matchesFilter && !f.isOperator()
+        })
+      }
+    },
+    filteredOperators() {
+      if (this.fieldFilter !== false) {
+        return []
+      } else {
+        return this.operators.filter((f) => {
+          const matchesFilter =
+            !this.functionFilter ||
+            f
+              .getType()
+              .toLowerCase()
+              .startsWith(this.functionFilter.toLowerCase())
+          return matchesFilter && f.isOperator()
+        })
       }
     },
     numFunctionsFiltered() {
-      return this.functions.length - this.filteredFunctions.length
+      return this.normalFunctions.length - this.filteredFunctions.length
     },
     someFunctionsFiltered() {
       return this.numFunctionsFiltered > 0
@@ -489,6 +534,8 @@ export default {
           this.functionFilter = tokenTextUptoCursor
           if (this.filteredFunctions.length > 0) {
             this.selectFunction(this.filteredFunctions[0], false)
+          } else if (this.filteredOperators.length > 0) {
+            this.selectFunction(this.filteredOperators[0], false)
           }
         }
       }
@@ -565,6 +612,21 @@ export default {
           })
         }
       }
+    },
+    openContext() {
+      this.$refs.editContext.toggle(
+        this.$refs.formulaInput,
+        'top',
+        'left',
+        -this.$refs.formulaInput.scrollHeight - 3,
+        -1
+      )
+      this.$nextTick(() => {
+        this.$refs.textAreaFormulaInput.$refs.textarea.focus()
+      })
+    },
+    makeHeader(header) {
+      return header.replaceAll('_', ' ')
     },
   },
   validations() {

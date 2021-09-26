@@ -47,11 +47,11 @@
 
 .formula-field__body {
   display: flex;
-  max-height: 322px;
+  max-height: 302px;
 }
 
 .formula-field__items {
-  flex: 0 0 134px;
+  flex: 0 0 154px;
   overflow-y: auto;
   border-right: solid 1px $color-neutral-200;
 }
@@ -149,6 +149,6 @@
     line-height: 180%;
     max-width: 100%;
     word-break: break-word;
-    white-space: normal;
+    white-space: pre-wrap;
   }
 }
