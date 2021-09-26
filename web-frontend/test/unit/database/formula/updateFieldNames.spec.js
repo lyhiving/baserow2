@@ -19,6 +19,30 @@ describe('Tests checking the updateFieldNames formula parsing function', () => {
     })
     expect(newFormula).toStrictEqual('field( \n \n"newName"  )')
   })
+  test('can replace a double quote field ref with a name containing single quotes', () => {
+    const newFormula = updateFieldNames('field("test")', {
+      test: "newName with '",
+    })
+    expect(newFormula).toStrictEqual('field("newName with \'")')
+  })
+  test('can replace a double quote field ref with a name containing double quotes', () => {
+    const newFormula = updateFieldNames('field("test")', {
+      test: 'newName with "',
+    })
+    expect(newFormula).toStrictEqual('field("newName with \\"")')
+  })
+  test('can replace a single quote field ref with a name containing single quotes', () => {
+    const newFormula = updateFieldNames("field('test')", {
+      test: "newName with '",
+    })
+    expect(newFormula).toStrictEqual("field('newName with \\'')")
+  })
+  test('can replace a single quote field ref with a name containing double quotes', () => {
+    const newFormula = updateFieldNames("field('test')", {
+      test: 'newName with "',
+    })
+    expect(newFormula).toStrictEqual("field('newName with \"')")
+  })
   test('can replace a field reference keeping whitespace and comments', () => {
     const newFormula = updateFieldNames(
       '/* comment */field(/* comment */ \n \n"test"  /* a comment */)',

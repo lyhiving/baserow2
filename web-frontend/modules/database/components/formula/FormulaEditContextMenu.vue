@@ -191,12 +191,12 @@ import form from '@baserow/modules/core/mixins/form'
 import { required } from 'vuelidate/lib/validators'
 import parseBaserowFormula, {
   getPrefixIfFuncOrFieldRef,
-  replaceFieldByIdWithFieldRef,
 } from '@baserow/modules/database/formula/parser/parser'
 import { mapGetters } from 'vuex'
 import FieldFormulaNumberSubForm from '@baserow/modules/database/components/field/FieldFormulaNumberSubForm'
 import FieldDateSubForm from '@baserow/modules/database/components/field/FieldDateSubForm'
 import { updateFieldNames } from '@baserow/modules/database/formula/parser/updateFieldNames'
+import { replaceFieldByIdWithField } from '@baserow/modules/database/formula/parser/replaceFieldByIdWithField'
 
 export default {
   name: 'FormulaEditContextMenu',
@@ -406,35 +406,25 @@ export default {
       }
       try {
         parseBaserowFormula(value)
-        return this.convertServerSideFormulaToClient(value)
+        this.convertServerSideFormulaToClient(value)
+        return true
       } catch (e) {
         this.error = e
         return false
       }
     },
     convertServerSideFormulaToClient(formula) {
-      const result = replaceFieldByIdWithFieldRef(
+      this.values.formula = replaceFieldByIdWithField(
         formula,
         this.fieldIdToNameMap
       )
-      if (result !== false) {
-        const { newFormula, errors } = result
-        this.values.formula = newFormula
-        if (errors.length > 0) {
-          this.error = errors.join(', ')
-        } else {
-          return true
-        }
-      }
-      return false
     },
     fieldNameChanged(oldNameToNewNameMap) {
-      if (this.convertServerSideFormulaToClient(this.values.formula)) {
-        this.values.formula = updateFieldNames(
-          this.values.formula,
-          oldNameToNewNameMap
-        )
-      }
+      this.convertServerSideFormulaToClient(this.values.formula)
+      this.values.formula = updateFieldNames(
+        this.values.formula,
+        oldNameToNewNameMap
+      )
     },
     toHumanReadableErrorMessage(error) {
       const s = error.message
@@ -503,7 +493,6 @@ export default {
           this.values.formula,
           cursorLocation
         )
-        console.log('type', type, 'token', tokenTextUptoCursor)
         this.resetFilters()
         if (type === 'field_inner_partial') {
           // Get rid of any quote in the front

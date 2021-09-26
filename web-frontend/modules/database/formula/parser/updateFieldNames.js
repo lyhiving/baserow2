@@ -4,7 +4,7 @@ import { getTokenStreamForFormula } from '@baserow/modules/database/formula/pars
 /**
  * Given a map of old field name to new field name replaces all field references to
  * old field names with their new names. Does so whist preserving any whitespace or
- * comments.
+ * comments. Any field references to names not in the map will be left as they are.
  *
  * @param rawBaserowFormulaString The raw string to tokenize and transform.
  * @param oldFieldNameToNewFieldName The map of old name to new name.
@@ -88,12 +88,14 @@ function _replaceFieldNameInStringLiteralIfMapped(
   quote,
   oldFieldNameToNewFieldName
 ) {
-  // Handle any escaped quotes inside the field name
-  const replaced = fieldRefStringLiteral
+  const unescapedOldName = fieldRefStringLiteral
     .replace('\\' + quote, quote)
     .slice(1, -1)
-  if (oldFieldNameToNewFieldName[replaced] !== undefined) {
-    return quote + oldFieldNameToNewFieldName[replaced] + quote
+
+  const newName = oldFieldNameToNewFieldName[unescapedOldName]
+  if (newName !== undefined) {
+    const escapedNewName = newName.replace(quote, '\\' + quote)
+    return quote + escapedNewName + quote
   } else {
     return fieldRefStringLiteral
   }

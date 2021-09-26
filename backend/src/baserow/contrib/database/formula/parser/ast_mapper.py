@@ -1,4 +1,5 @@
 from io import StringIO
+from typing import Set
 
 from antlr4 import InputStream, CommonTokenStream
 from antlr4.BufferedTokenStream import BufferedTokenStream
@@ -47,7 +48,9 @@ class BaserowFormulaErrorListener(ErrorListener):
         raise BaserowFormulaSyntaxError(message)
 
 
-def raw_formula_to_untyped_expression(formula: str) -> BaserowExpression[UnTyped]:
+def raw_formula_to_untyped_expression(
+    formula: str, valid_field_ids: Set[int]
+) -> BaserowExpression[UnTyped]:
     """
     Takes a raw user input string, syntax checks it to see if it matches the syntax of
     a Baserow Formula (raises a BaserowFormulaSyntaxError if not) and converts it into
@@ -66,7 +69,7 @@ def raw_formula_to_untyped_expression(formula: str) -> BaserowExpression[UnTyped
     parser.removeErrorListeners()
     parser.addErrorListener(BaserowFormulaErrorListener())
     tree = parser.root()
-    return BaserowFormulaToBaserowASTMapper().visit(tree)
+    return BaserowFormulaToBaserowASTMapper(valid_field_ids).visit(tree)
 
 
 def replace_field_refs_according_to_new_or_deleted_fields(
@@ -243,6 +246,9 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
     not in the registry.
     """
 
+    def __init__(self, valid_field_ids: Set[int]):
+        self.valid_field_ids = valid_field_ids
+
     def visitRoot(self, ctx: BaserowFormula.RootContext):
         return ctx.expr().accept(self)
 
@@ -319,4 +325,6 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
 
     def visitFieldByIdReference(self, ctx: BaserowFormula.FieldByIdReferenceContext):
         field_id = int(str(ctx.INTEGER_LITERAL()))
+        if field_id not in self.valid_field_ids:
+            raise UnknownFieldReference(field_id)
         return BaserowFieldByIdReference[UnTyped](field_id, None)

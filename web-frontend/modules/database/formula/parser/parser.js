@@ -162,69 +162,6 @@ export function _getTokenAtPosition(rawBaserowFormulaString, position) {
   return { token: false, insideFieldRef: false }
 }
 
-/**
- * Given a map of field id to field name replaces all field_by_id references to
- * with field references. Does so whist preserving any whitespace or
- * comments.
- *
- * @param rawBaserowFormulaString The raw string to tokenize and transform.
- * @param fieldIdToName The map of field ids to names.
- * @returns {boolean|{newFormula: string, errors: *[]}} False if the formula is not
- *    syntactically correct, otherwise the new string and any unknown field errors.
- */
-export function replaceFieldByIdWithFieldRef(
-  rawBaserowFormulaString,
-  fieldIdToName
-) {
-  const errors = []
-  const chars = new antlr4.InputStream(rawBaserowFormulaString)
-  const lexer = new BaserowFormulaLexer(chars)
-  const stream = new BufferedTokenStream(lexer)
-  stream.lazyInit()
-  stream.fill()
-  const start = 0
-  const stop = stream.tokens.length
-  if (start < 0 || stop < 0 || stop < start) {
-    return false
-  }
-  let fieldByIdReferenceStarted = false
-  let searchingForFieldByIdReferenceLiteral = false
-  let newFormula = ''
-  for (let i = start; i < stop; i++) {
-    const token = stream.tokens[i]
-    let output = token.text
-    const isNormalToken = token.channel === 0
-    if (searchingForFieldByIdReferenceLiteral && isNormalToken) {
-      searchingForFieldByIdReferenceLiteral = false
-      if (token.type === BaserowFormulaLexer.INTEGER_LITERAL) {
-        if (fieldIdToName[output] === undefined) {
-          errors.push('Unknown field with id ' + output)
-        }
-        output = `'${fieldIdToName[output].replace("'", "\\'")}'`
-      } else {
-        return false
-      }
-    }
-    if (fieldByIdReferenceStarted && isNormalToken) {
-      fieldByIdReferenceStarted = false
-      if (token.type === BaserowFormulaLexer.OPEN_PAREN) {
-        searchingForFieldByIdReferenceLiteral = true
-      } else {
-        return false
-      }
-    }
-    if (token.type === BaserowFormulaLexer.FIELDBYID) {
-      fieldByIdReferenceStarted = true
-      output = 'field'
-    }
-    if (token.type === BaserowFormulaLexer.EOF) {
-      break
-    }
-    newFormula += output
-  }
-  return { newFormula, errors }
-}
-
 export function getTokenStreamForFormula(rawBaserowFormulaString) {
   const chars = new antlr4.InputStream(rawBaserowFormulaString)
   const lexer = new BaserowFormulaLexer(chars)

@@ -59,7 +59,9 @@ def _fix_deleted_or_new_refs_in_formula_and_parse_into_untyped_formula(
     fixed_formula = replace_field_refs_according_to_new_or_deleted_fields(
         field.formula, deleted_field_id_to_name, field_name_to_id
     )
-    untyped_expression = raw_formula_to_untyped_expression(fixed_formula)
+    untyped_expression = raw_formula_to_untyped_expression(
+        fixed_formula, set(field_name_to_id.values())
+    )
     return UntypedFormulaFieldWithReferences(field, fixed_formula, untyped_expression)
 
 
