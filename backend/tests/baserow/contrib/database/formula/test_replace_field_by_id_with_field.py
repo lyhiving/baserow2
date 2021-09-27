@@ -58,11 +58,19 @@ def test_doesnt_change_field_by_id_not_in_dict():
 
 
 def test_returns_same_formula_for_invalid_syntax():
-    new_formula = replace_field_by_id_with_field(
-        "field_by_id(2",
-        {
-            2: "newName",
-        },
+    _assert_returns_same("field_by_id(2")
+    _assert_returns_same("field_by_id('test')")
+    _assert_returns_same("field_by_id(test)")
+    _assert_returns_same("field_by_id((test))")
+    _assert_returns_same("field_by_id('''test'')")
+    _assert_returns_same(
+        "field_by_id(111111111111111111111111111111111111111111111111111111111111111)"
     )
 
-    assert new_formula == "field_by_id(2"
+
+def _assert_returns_same(formula):
+    new_formula = replace_field_by_id_with_field(
+        formula,
+        {2: "newName"},
+    )
+    assert new_formula == formula

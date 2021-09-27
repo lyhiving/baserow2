@@ -1,5 +1,12 @@
 import { updateFieldNames } from '@baserow/modules/database/formula/parser/updateFieldNames'
 
+function _assertReturnsSame(formula) {
+  const newFormula = updateFieldNames(formula, {
+    test: 'newName',
+  })
+  expect(newFormula).toStrictEqual(formula)
+}
+
 describe('Tests checking the updateFieldNames formula parsing function', () => {
   test('can replace a single quoted field reference with one name', () => {
     const newFormula = updateFieldNames("field('test')", {
@@ -73,9 +80,10 @@ describe('Tests checking the updateFieldNames formula parsing function', () => {
     expect(newFormula).toStrictEqual('field("test")')
   })
   test('returns same formula for invalid syntax', () => {
-    const newFormula = updateFieldNames('field("test"', {
-      test: 'newName',
-    })
-    expect(newFormula).toStrictEqual('field("test"')
+    _assertReturnsSame('field("test')
+    _assertReturnsSame('field(1)')
+    _assertReturnsSame('field(""""test"""")')
+    _assertReturnsSame('field(test)')
+    _assertReturnsSame('fielddsadsa(test)')
   })
 })

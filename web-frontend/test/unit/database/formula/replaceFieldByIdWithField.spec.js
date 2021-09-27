@@ -1,5 +1,12 @@
 import { replaceFieldByIdWithField } from '@baserow/modules/database/formula/parser/replaceFieldByIdWithField'
 
+function _assertReturnsSame(formula) {
+  const newFormula = replaceFieldByIdWithField(formula, {
+    22: 'newName',
+  })
+  expect(newFormula).toStrictEqual(formula)
+}
+
 describe('Tests checking the replaceFieldByIdWithField formula parsing function', () => {
   test('can replace a single quoted field by id', () => {
     const newFormula = replaceFieldByIdWithField('field_by_id(1)', {
@@ -55,9 +62,13 @@ describe('Tests checking the replaceFieldByIdWithField formula parsing function'
     expect(newFormula).toStrictEqual('field_by_id(2)')
   })
   test('returns same formula for invalid syntax', () => {
-    const newFormula = replaceFieldByIdWithField('field_by_id(2', {
-      22: 'newName',
-    })
-    expect(newFormula).toStrictEqual('field_by_id(2')
+    _assertReturnsSame('field_by_id(2')
+    _assertReturnsSame("field_by_id('test')")
+    _assertReturnsSame('field_by_id(test)')
+    _assertReturnsSame('field_by_id((test))')
+    _assertReturnsSame("field_by_id('''test'')")
+    _assertReturnsSame(
+      'field_by_id(111111111111111111111111111111111111111111111111111111111111111)'
+    )
   })
 })

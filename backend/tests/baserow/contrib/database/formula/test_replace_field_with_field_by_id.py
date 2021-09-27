@@ -82,11 +82,19 @@ def test_leaves_unknown_field_references_along():
 
 
 def test_returns_same_formula_with_field_names_for_invalid_syntax():
+    _assert_returns_same("field('test'")
+    _assert_returns_same("field(''''test'")
+    _assert_returns_same("field(test")
+    _assert_returns_same("field(1)")
+    _assert_returns_same("field)")
+    _assert_returns_same("field_by_id(1)")
+
+
+def _assert_returns_same(formula):
     new_formula = replace_field_with_field_by_id(
-        "field('test'",
+        formula,
         {
             "test": 1,
         },
     )
-
-    assert new_formula == "field('test'"
+    assert new_formula == formula
