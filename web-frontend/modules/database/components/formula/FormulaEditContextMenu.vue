@@ -70,9 +70,7 @@
             <ul class="formula-field__item-group">
               <li class="formula-field__item-group-title">
                 Fields
-                {{
-                  someFieldsFiltered ? `(${numFieldsFiltered} filtered)` : ''
-                }}
+                {{ getFilterIndicator(fields, filteredFields) }}
               </li>
               <li
                 v-for="field in filteredFields"
@@ -99,13 +97,14 @@
               <li class="formula-field__item-group-title">
                 Functions
                 {{
-                  someFunctionsFiltered
-                    ? `(${numFunctionsFiltered} filtered)`
-                    : ''
+                  getFilterIndicator(
+                    unfilteredNormalFunctions,
+                    filteredNormalFunctions
+                  )
                 }}
               </li>
               <li
-                v-for="func in filteredFunctions"
+                v-for="func in filteredNormalFunctions"
                 :key="func.getType()"
                 class="formula-field__item"
                 :class="{
@@ -128,13 +127,7 @@
             <ul class="formula-field__item-group">
               <li class="formula-field__item-group-title">
                 Operators
-                {{
-                  filteredOperators.length !== operators.length
-                    ? `(${
-                        operators.length - filteredOperators.length
-                      } filtered)`
-                    : ''
-                }}
+                {{ getFilterIndicator(unfilteredOperators, filteredOperators) }}
               </li>
               <li
                 v-for="func in filteredOperators"
@@ -189,14 +182,16 @@ import context from '@baserow/modules/core/mixins/context'
 import AutoResizingTextarea from '@baserow/modules/core/components/helpers/AutoResizingTextarea'
 import form from '@baserow/modules/core/mixins/form'
 import { required } from 'vuelidate/lib/validators'
-import parseBaserowFormula, {
-  getPrefixIfFuncOrFieldRef,
-} from '@baserow/modules/database/formula/parser/parser'
+import parseBaserowFormula from '@baserow/modules/database/formula/parser/parser'
 import { mapGetters } from 'vuex'
 import FieldFormulaNumberSubForm from '@baserow/modules/database/components/field/FieldFormulaNumberSubForm'
 import FieldDateSubForm from '@baserow/modules/database/components/field/FieldDateSubForm'
 import { updateFieldNames } from '@baserow/modules/database/formula/parser/updateFieldNames'
 import { replaceFieldByIdWithField } from '@baserow/modules/database/formula/parser/replaceFieldByIdWithField'
+import {
+  autocompleteFormula,
+  calculateFilteredFunctionsAndFieldsBasedOnCursorLocation,
+} from '@baserow/modules/database/formula/autocompleter/formulaAutocompleter'
 
 export default {
   name: 'FormulaEditContextMenu',
@@ -226,82 +221,30 @@ export default {
       selectedFunction: functions[0],
       selectedCategory: 'function',
       selectedField: false,
-      functionFilter: false,
-      fieldFilter: false,
+      filteredFunctions: functions,
+      filteredFields: [],
     }
   },
   computed: {
     ...mapGetters({
-      fields: 'field/getAllWithPrimary',
+      rawFields: 'field/getAllWithPrimary',
     }),
-
-    allFieldsWithoutThisField() {
-      return this.fields.filter((f) => {
+    fields() {
+      return this.rawFields.filter((f) => {
         return f.id !== this.values.id
       })
     },
-    filteredFields() {
-      if (
-        this.functionFilter !== false &&
-        !'field'.startsWith(this.functionFilter)
-      ) {
-        return []
-      } else {
-        return this.allFieldsWithoutThisField.filter((f) => {
-          return (
-            !this.fieldFilter ||
-            f.name.toLowerCase().startsWith(this.fieldFilter.toLowerCase())
-          )
-        })
-      }
-    },
-    numFieldsFiltered() {
-      return this.allFieldsWithoutThisField.length - this.filteredFields.length
-    },
-    someFieldsFiltered() {
-      return this.numFieldsFiltered > 0
-    },
-    normalFunctions() {
+    unfilteredNormalFunctions() {
       return this.functions.filter((f) => !f.isOperator())
     },
-    operators() {
+    unfilteredOperators() {
       return this.functions.filter((f) => f.isOperator())
     },
-    filteredFunctions() {
-      if (this.fieldFilter !== false) {
-        return []
-      } else {
-        return this.normalFunctions.filter((f) => {
-          const matchesFilter =
-            !this.functionFilter ||
-            f
-              .getType()
-              .toLowerCase()
-              .startsWith(this.functionFilter.toLowerCase())
-          return matchesFilter && !f.isOperator()
-        })
-      }
+    filteredNormalFunctions() {
+      return this.filteredFunctions.filter((f) => !f.isOperator())
     },
     filteredOperators() {
-      if (this.fieldFilter !== false) {
-        return []
-      } else {
-        return this.operators.filter((f) => {
-          const matchesFilter =
-            !this.functionFilter ||
-            f
-              .getType()
-              .toLowerCase()
-              .startsWith(this.functionFilter.toLowerCase())
-          return matchesFilter && f.isOperator()
-        })
-      }
-    },
-    numFunctionsFiltered() {
-      return this.normalFunctions.length - this.filteredFunctions.length
-    },
-    someFunctionsFiltered() {
-      return this.numFunctionsFiltered > 0
+      return this.filteredFunctions.filter((f) => f.isOperator())
     },
     fieldIdToNameMap() {
       return this.fields.reduce(function (map, obj) {
@@ -384,6 +327,9 @@ export default {
       this.convertServerSideFormulaToClient(newValue)
     },
   },
+  mounted() {
+    this.recalcAutoComplete()
+  },
   methods: {
     getFieldIcon(field) {
       const fieldType = this.$registry.get('field', field.type)
@@ -455,8 +401,8 @@ export default {
       this.selectedField = false
     },
     resetFilters() {
-      this.fieldFilter = false
-      this.functionFilter = false
+      this.filteredFunctions = this.functions
+      this.filteredFields = this.fields
     },
     selectFunction(func, resetFilters = true) {
       this.deselectAll()
@@ -488,111 +434,41 @@ export default {
     recalcAutoComplete() {
       const cursorLocation =
         this.$refs.textAreaFormulaInput.$refs.textarea.selectionStart
-      if (cursorLocation >= 0) {
-        const { type, tokenTextUptoCursor } = getPrefixIfFuncOrFieldRef(
+
+      const { filteredFields, filteredFunctions, filtered } =
+        calculateFilteredFunctionsAndFieldsBasedOnCursorLocation(
           this.values.formula,
-          cursorLocation
+          cursorLocation,
+          this.fields,
+          this.functions
         )
-        this.resetFilters()
-        if (type === 'field_inner_partial') {
-          // Get rid of any quote in the front
-          const withoutFrontQuote = tokenTextUptoCursor.slice(1)
-          if (
-            withoutFrontQuote.endsWith("'") ||
-            withoutFrontQuote.endsWith('"')
-          ) {
-            this.fieldFilter = withoutFrontQuote.slice(
-              0,
-              withoutFrontQuote.length - 1
-            )
-          } else {
-            this.fieldFilter = withoutFrontQuote
-          }
-          if (this.filteredFields.length > 0) {
-            this.selectField(this.filteredFields[0], false)
-          }
-        } else if (type === 'identifier') {
-          this.functionFilter = tokenTextUptoCursor
-          if (this.filteredFunctions.length > 0) {
-            this.selectFunction(this.filteredFunctions[0], false)
-          } else if (this.filteredOperators.length > 0) {
-            this.selectFunction(this.filteredOperators[0], false)
-          }
+      this.filteredFunctions = filteredFunctions
+      this.filteredFields = filteredFields
+      if (filtered) {
+        if (this.filteredFunctions.length > 0) {
+          this.selectFunction(filteredFunctions[0], false)
+        } else if (this.filteredFields.length > 0) {
+          this.selectField(filteredFields[0], false)
         }
       }
     },
     doAutoComplete() {
       const startingCursorLocation =
         this.$refs.textAreaFormulaInput.$refs.textarea.selectionStart
-      if (startingCursorLocation >= 0) {
-        const {
-          type,
-          tokenTextUptoCursor,
-          cursorAtEndOfToken,
-          closingParenIsNextNormalToken,
-          cursorLocation,
-        } = getPrefixIfFuncOrFieldRef(
-          this.values.formula,
-          startingCursorLocation
+      const { autocompletedFormula, newCursorPosition } = autocompleteFormula(
+        this.values.formula,
+        startingCursorLocation,
+        this.filteredFunctions,
+        this.filteredFields
+      )
+      this.values.formula = autocompletedFormula
+      this.$nextTick(() => {
+        this.$refs.textAreaFormulaInput.$refs.textarea.setSelectionRange(
+          newCursorPosition,
+          newCursorPosition
         )
-        let chosen = false
-        let quoteIt = false
-        let optionalClosingParen = ''
-        let resultingCursorOffset = 0
-        if (type === 'field_inner_partial') {
-          if (!cursorAtEndOfToken) {
-            return
-          }
-          if (this.filteredFields.length > 0) {
-            quoteIt = true
-            chosen = this.filteredFields[0].name
-            optionalClosingParen = closingParenIsNextNormalToken ? ')' : ''
-            resultingCursorOffset = 1
-          }
-        } else if (type === 'identifier') {
-          if (this.filteredFunctions.length > 0) {
-            const funcType = this.filteredFunctions[0].getType()
-            const startingArg = funcType === 'field' ? "''" : ''
-            if (funcType === 'field') {
-              resultingCursorOffset = -1
-            }
-            chosen = funcType + '(' + startingArg
-            if (cursorAtEndOfToken) {
-              optionalClosingParen = ')'
-            }
-          }
-        }
-        if (chosen) {
-          const startWithoutToken = this.values.formula.slice(
-            0,
-            cursorLocation - tokenTextUptoCursor.length
-          )
-          const afterToken = this.values.formula.slice(cursorLocation)
-          const doubleQuote = tokenTextUptoCursor.startsWith('"')
-          let replacement
-          if (quoteIt) {
-            replacement = doubleQuote
-              ? `"${chosen.replace('"', '\\"')}"`
-              : `'${chosen.replace("'", "\\'")}'`
-          } else {
-            replacement = chosen
-          }
-
-          this.values.formula =
-            startWithoutToken + replacement + optionalClosingParen + afterToken
-          const beforeClosingBracketPos =
-            startWithoutToken.length +
-            replacement.length +
-            resultingCursorOffset
-          this.$nextTick(() => {
-            this.$refs.textAreaFormulaInput.$refs.textarea.setSelectionRange(
-              beforeClosingBracketPos,
-              beforeClosingBracketPos
-            )
-            this.recalcAutoComplete()
-          })
-        }
-      }
+        this.recalcAutoComplete()
+      })
     },
     openContext() {
       this.$refs.editContext.toggle(
@@ -608,6 +484,10 @@ export default {
     },
     makeHeader(header) {
       return header.replaceAll('_', ' ')
+    },
+    getFilterIndicator(unfilteredList, filteredList) {
+      const numFiltered = unfilteredList.length - filteredList.length
+      return numFiltered === 0 ? '' : `(${numFiltered} filtered)`
     },
   },
   validations() {
