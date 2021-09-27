@@ -67,110 +67,30 @@
         </div>
         <div class="formula-field__body">
           <div class="formula-field__items">
-            <ul class="formula-field__item-group">
-              <li class="formula-field__item-group-title">
-                Fields
-                {{ getFilterIndicator(fields, filteredFields) }}
-              </li>
-              <li
-                v-for="field in filteredFields"
-                :key="field.id"
-                class="formula-field__item"
-                :class="{
-                  'formula-field__item-selected': fieldIsSelected(field),
-                }"
-              >
-                <a
-                  href="#"
-                  class="formula-field__item-link"
-                  @click="selectField(field)"
-                >
-                  <i
-                    class="fas formula-field__item-icon"
-                    :class="[getFieldIcon(field)]"
-                  />
-                  {{ field.name }}
-                </a>
-              </li>
-            </ul>
-            <ul class="formula-field__item-group">
-              <li class="formula-field__item-group-title">
-                Functions
-                {{
-                  getFilterIndicator(
-                    unfilteredNormalFunctions,
-                    filteredNormalFunctions
-                  )
-                }}
-              </li>
-              <li
-                v-for="func in filteredNormalFunctions"
-                :key="func.getType()"
-                class="formula-field__item"
-                :class="{
-                  'formula-field__item-selected': functionIsSelected(func),
-                }"
-              >
-                <a
-                  href="#"
-                  class="formula-field__item-link"
-                  @click="selectFunction(func)"
-                >
-                  <i
-                    class="fas formula-field__item-icon"
-                    :class="[funcTypeToIconClass(func)]"
-                  />
-                  {{ func.getType() }}
-                </a>
-              </li>
-            </ul>
-            <ul class="formula-field__item-group">
-              <li class="formula-field__item-group-title">
-                Operators
-                {{ getFilterIndicator(unfilteredOperators, filteredOperators) }}
-              </li>
-              <li
-                v-for="func in filteredOperators"
-                :key="func.getType()"
-                class="formula-field__item"
-                :class="{
-                  'formula-field__item-selected': functionIsSelected(func),
-                }"
-              >
-                <a
-                  href="#"
-                  class="formula-field__item-link"
-                  @click="selectFunction(func)"
-                >
-                  <i
-                    class="fas formula-field__item-icon"
-                    :class="[funcTypeToIconClass(func)]"
-                  />
-                  {{ func.getOperator() }}
-                </a>
-              </li>
-            </ul>
+            <FormulaFieldItemGroup
+              :filtered-items="filteredFields"
+              :unfiltered-items="fields"
+              title="Fields"
+              @select-item="selectItem"
+            >
+            </FormulaFieldItemGroup>
+            <FormulaFieldItemGroup
+              :filtered-items="filteredNormalFunctions"
+              :unfiltered-items="unfilteredNormalFunctions"
+              title="Functions"
+              @select-item="selectItem"
+            >
+            </FormulaFieldItemGroup>
+            <FormulaFieldItemGroup
+              :filtered-items="filteredOperators"
+              :unfiltered-items="unfilteredOperators"
+              title="Operators"
+              @select-item="selectItem"
+            >
+            </FormulaFieldItemGroup>
           </div>
-          <div class="formula-field__description">
-            <div class="formula-field__description-heading-1">
-              <i
-                class="fas formula-field__description-icon"
-                :class="[descriptionIcon]"
-              />
-              {{ makeHeader(descriptionHeading) }}
-            </div>
-            <div class="formula-field__description-text">
-              {{ descriptionText }}
-            </div>
-            <div class="formula-field__description-heading-2">Syntax</div>
-            <pre
-              class="formula-field__description-example"
-            ><code>{{ syntaxUsage }}</code></pre>
-            <div class="formula-field__description-heading-2">Examples</div>
-            <pre
-              class="formula-field__description-example"
-            ><code>{{ examples }}</code></pre>
-          </div>
+          <FormulaFieldItemDescription :selected-item="selectedItem">
+          </FormulaFieldItemDescription>
         </div>
       </div>
     </Context>
@@ -192,10 +112,14 @@ import {
   autocompleteFormula,
   calculateFilteredFunctionsAndFieldsBasedOnCursorLocation,
 } from '@baserow/modules/database/formula/autocompleter/formulaAutocompleter'
+import FormulaFieldItemGroup from '@baserow/modules/database/components/formula/FormulaFieldItemGroup'
+import FormulaFieldItemDescription from '@baserow/modules/database/components/formula/FormulaFieldItemDescription'
 
 export default {
   name: 'FormulaEditContextMenu',
   components: {
+    FormulaFieldItemDescription,
+    FormulaFieldItemGroup,
     AutoResizingTextarea,
     FieldDateSubForm,
     FieldFormulaNumberSubForm,
@@ -208,7 +132,19 @@ export default {
     },
   },
   data() {
-    const functions = Object.values(this.$registry.getAll('formula_function'))
+    const functions = Object.values(
+      this.$registry.getAll('formula_function')
+    ).map((f) =>
+      this.wrapItem(
+        f.isOperator() ? f.getOperator() : f.getType(),
+        f.getType(),
+        this.funcTypeToIconClass(f),
+        f.getDescription(),
+        f.getExamples(),
+        f.getSyntaxUsage(),
+        f
+      )
+    )
     return {
       allowedValues: ['formula', 'formula_type', 'error', 'id'],
       values: {
@@ -218,9 +154,7 @@ export default {
         id: false,
       },
       functions,
-      selectedFunction: functions[0],
-      selectedCategory: 'function',
-      selectedField: false,
+      selectedItem: functions[0],
       filteredFunctions: functions,
       filteredFields: [],
     }
@@ -230,81 +164,39 @@ export default {
       rawFields: 'field/getAllWithPrimary',
     }),
     fields() {
-      return this.rawFields.filter((f) => {
-        return f.id !== this.values.id
-      })
+      return this.rawFields
+        .filter((f) => {
+          return f.id !== this.values.id
+        })
+        .map((f) =>
+          this.wrapItem(
+            f.name,
+            f.id,
+            this.getFieldIcon(f),
+            `A ${f.type} field`,
+            `concat(field('${f.name}'), ' extra text ')`,
+            `field('${f.name}')`,
+            f
+          )
+        )
     },
     unfilteredNormalFunctions() {
-      return this.functions.filter((f) => !f.isOperator())
+      return this.functions.filter((f) => !f.item.isOperator())
     },
     unfilteredOperators() {
-      return this.functions.filter((f) => f.isOperator())
+      return this.functions.filter((f) => f.item.isOperator())
     },
     filteredNormalFunctions() {
-      return this.filteredFunctions.filter((f) => !f.isOperator())
+      return this.filteredFunctions.filter((f) => !f.item.isOperator())
     },
     filteredOperators() {
-      return this.filteredFunctions.filter((f) => f.isOperator())
+      return this.filteredFunctions.filter((f) => f.item.isOperator())
     },
     fieldIdToNameMap() {
-      return this.fields.reduce(function (map, obj) {
+      return this.rawFields.reduce(function (map, obj) {
         map[obj.id] = obj.name
         return map
       }, {})
-    },
-    descriptionHeading() {
-      switch (this.selectedCategory) {
-        case 'function':
-          return this.selectedFunction.getType()
-        case 'field':
-          return this.selectedField.name
-        default:
-          return ''
-      }
-    },
-    descriptionText() {
-      switch (this.selectedCategory) {
-        case 'function':
-          return this.selectedFunction.getDescription()
-        case 'field':
-          return `A ${this.selectedField.type} field`
-        default:
-          return ''
-      }
-    },
-    descriptionIcon() {
-      switch (this.selectedCategory) {
-        case 'function':
-          return this.funcTypeToIconClass(this.selectedFunction)
-        case 'field':
-          return this.getFieldIcon(this.selectedField)
-        default:
-          return ''
-      }
-    },
-    syntaxUsage() {
-      let result = ''
-      switch (this.selectedCategory) {
-        case 'function':
-          result = this.selectedFunction.getSyntaxUsage()
-          break
-        case 'field':
-          result = `field('${this.selectedField.name}')`
-          break
-      }
-      return this.wrapInListIfNotAlready(result).join('\n')
-    },
-    examples() {
-      let result = ''
-      switch (this.selectedCategory) {
-        case 'function':
-          result = this.selectedFunction.getExamples()
-          break
-        case 'field':
-          result = `concat(field('${this.selectedField.name}'), ' extra text ')`
-          break
-      }
-      return this.wrapInListIfNotAlready(result).join('\n')
     },
   },
   watch: {
@@ -389,47 +281,18 @@ export default {
         .replace('}', '')
       return s + '.'
     },
-    wrapInListIfNotAlready(item) {
-      if (Array.isArray(item)) {
-        return item
-      } else {
-        return [item]
-      }
-    },
-    deselectAll() {
-      this.selectedFunction = false
-      this.selectedField = false
-    },
     resetFilters() {
       this.filteredFunctions = this.functions
       this.filteredFields = this.fields
     },
-    selectFunction(func, resetFilters = true) {
-      this.deselectAll()
+    selectItem(item, resetFilters = true) {
+      this.selectedItem.isSelected = false
+      this.selectedItem = false
       if (resetFilters) {
         this.resetFilters()
       }
-      this.selectedFunction = func
-      this.selectedCategory = 'function'
-    },
-    selectField(field, resetFilters = true) {
-      this.deselectAll()
-      if (resetFilters) {
-        this.resetFilters()
-      }
-      this.selectedField = field
-      this.selectedCategory = 'field'
-    },
-    functionIsSelected(func) {
-      return (
-        this.selectedCategory === 'function' &&
-        this.selectedFunction.getType() === func.getType()
-      )
-    },
-    fieldIsSelected(field) {
-      return (
-        this.selectedCategory === 'field' && this.selectedField.id === field.id
-      )
+      this.selectedItem = item
+      item.isSelected = true
     },
     recalcAutoComplete() {
       const cursorLocation =
@@ -446,9 +309,9 @@ export default {
       this.filteredFields = filteredFields
       if (filtered) {
         if (this.filteredFunctions.length > 0) {
-          this.selectFunction(filteredFunctions[0], false)
+          this.selectItem(filteredFunctions[0], false)
         } else if (this.filteredFields.length > 0) {
-          this.selectField(filteredFields[0], false)
+          this.selectItem(filteredFields[0], false)
         }
       }
     },
@@ -482,12 +345,17 @@ export default {
         this.$refs.textAreaFormulaInput.$refs.textarea.focus()
       })
     },
-    makeHeader(header) {
-      return header.replaceAll('_', ' ')
-    },
-    getFilterIndicator(unfilteredList, filteredList) {
-      const numFiltered = unfilteredList.length - filteredList.length
-      return numFiltered === 0 ? '' : `(${numFiltered} filtered)`
+    wrapItem(value, key, icon, description, examples, syntaxUsage, item) {
+      return {
+        value,
+        key,
+        icon,
+        isSelected: false,
+        description,
+        examples,
+        syntaxUsage,
+        item,
+      }
     },
   },
   validations() {

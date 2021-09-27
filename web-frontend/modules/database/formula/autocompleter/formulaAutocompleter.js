@@ -26,13 +26,13 @@ export function autocompleteFormula(
     }
     if (filteredFields.length > 0) {
       quoteIt = true
-      chosen = filteredFields[0].name
+      chosen = filteredFields[0].value
       optionalClosingParen = closingParenIsNextNormalToken ? ')' : ''
       resultingCursorOffset = 1
     }
   } else if (type === 'identifier') {
     if (filteredFunctions.length > 0) {
-      const funcType = filteredFunctions[0].getType()
+      const funcType = filteredFunctions[0].value
       const startingArg = funcType === 'field' ? "''" : ''
       if (funcType === 'field') {
         resultingCursorOffset = -1
@@ -90,11 +90,11 @@ export function calculateFilteredFunctionsAndFieldsBasedOnCursorLocation(
     } else {
       fieldFilter = withoutFrontQuote
     }
-    const filteredFields = fields.filter((f) => f.name.startsWith(fieldFilter))
+    const filteredFields = fields.filter((f) => f.value.startsWith(fieldFilter))
     return { filteredFields, filteredFunctions: [], filtered: true }
   } else if (type === 'identifier') {
     const filteredFunctions = functions.filter((f) =>
-      f.getType().startsWith(tokenTextUptoCursor)
+      f.value.startsWith(tokenTextUptoCursor)
     )
     return { filteredFields: [], filteredFunctions, filtered: true }
   }

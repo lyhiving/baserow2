@@ -3,24 +3,14 @@ import {
   calculateFilteredFunctionsAndFieldsBasedOnCursorLocation,
 } from '@baserow/modules/database/formula/autocompleter/formulaAutocompleter'
 
-function wrapFields(fields) {
+function wrap(fields) {
   return fields.map((f) => ({
-    name: f,
+    value: f,
   }))
 }
 
-function unwrapFields(fields) {
-  return fields.map((f) => f.name)
-}
-
-function wrapFunctions(fields) {
-  return fields.map((f) => ({
-    getType: () => f,
-  }))
-}
-
-function unwrapFunctions(fields) {
-  return fields.map((f) => f.getType())
+function unwrap(fields) {
+  return fields.map((f) => f.value)
 }
 
 const ALL_FIELDS = ['field name a', 'double quoted "', "single quoted '"]
@@ -55,13 +45,11 @@ describe('Tests checking the formula autocomplete logic', () => {
         calculateFilteredFunctionsAndFieldsBasedOnCursorLocation(
           formulaWithoutCursorMarker,
           startingCursorPosition,
-          wrapFields(ALL_FIELDS),
-          wrapFunctions(ALL_FUNCTIONS)
+          wrap(ALL_FIELDS),
+          wrap(ALL_FUNCTIONS)
         )
-      expect(unwrapFunctions(filteredFunctions)).toEqual(
-        expectedFilteredFunctions
-      )
-      expect(unwrapFields(filteredFields)).toEqual(expectedFilteredFields)
+      expect(unwrap(filteredFunctions)).toEqual(expectedFilteredFunctions)
+      expect(unwrap(filteredFields)).toEqual(expectedFilteredFields)
       expect(filtered).toEqual(expectedIsFiltered)
     }
   )
@@ -112,8 +100,8 @@ describe('Tests checking the formula autocomplete logic', () => {
         calculateFilteredFunctionsAndFieldsBasedOnCursorLocation(
           formulaWithoutCursorMarker,
           startingCursorPosition,
-          wrapFields(ALL_FIELDS),
-          wrapFunctions(ALL_FUNCTIONS)
+          wrap(ALL_FIELDS),
+          wrap(ALL_FUNCTIONS)
         )
       const { autocompletedFormula, newCursorPosition } = autocompleteFormula(
         formulaWithoutCursorMarker,
