@@ -55,6 +55,7 @@ export default {
         id: false,
       },
       parsingError: null,
+      errorFromServer: null,
     }
   },
   computed: {
@@ -82,6 +83,8 @@ export default {
           '\n' +
           this.toHumanReadableErrorMessage(this.parsingError)
         )
+      } else if (this.errorFromServer) {
+        return this.errorFromServer
       } else if (this.values.error) {
         return this.values.error
       } else {
@@ -153,6 +156,18 @@ export default {
         .replace('{', '')
         .replace('}', '')
       return s + '.'
+    },
+    handleError(error) {
+      if (error.handler.code === 'ERROR_WITH_FORMULA') {
+        this.errorFromServer = error.handler.detail
+        return true
+      } else {
+        return false
+      }
+    },
+    reset() {
+      form.methods.reset.call(this)
+      this.errorFromServer = null
     },
   },
   validations() {
