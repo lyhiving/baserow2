@@ -6,16 +6,13 @@ import { getTokenStreamForFormula } from '@baserow/modules/database/formula/pars
  * old field names with their new names. Does so whist preserving any whitespace or
  * comments. Any field references to names not in the map will be left as they are.
  *
- * @param rawBaserowFormulaString The raw string to tokenize and transform.
+ * @param formula The raw string to tokenize and transform.
  * @param oldFieldNameToNewFieldName The map of old name to new name.
- * @returns string The updated rawBaserowFormulaString or if any invalid syntax was
+ * @returns string The updated formula or if any invalid syntax was
  *    found the original string provided will be returned.
  */
-export function updateFieldNames(
-  rawBaserowFormulaString,
-  oldFieldNameToNewFieldName
-) {
-  const stream = getTokenStreamForFormula(rawBaserowFormulaString)
+export function updateFieldNames(formula, oldFieldNameToNewFieldName) {
+  const stream = getTokenStreamForFormula(formula)
 
   let searchingForOpenParen = false
   let searchingForInnerFieldReferenceStringLiteral = false
@@ -51,7 +48,7 @@ export function updateFieldNames(
           // The only valid normal token is a string literal, we've encountered a
           // different token and hence the input string is invalid and so we'll just
           // return it untouched.
-          return rawBaserowFormulaString
+          return formula
         }
       } else if (searchingForOpenParen) {
         searchingForOpenParen = false
@@ -61,7 +58,7 @@ export function updateFieldNames(
           // The only valid normal token is a (, we've encountered a different
           // token and hence the input string is invalid and so we'll just return it
           // untouched.
-          return rawBaserowFormulaString
+          return formula
         }
       } else if (searchingForCloseParen) {
         searchingForCloseParen = false
@@ -69,7 +66,7 @@ export function updateFieldNames(
           // The only valid normal token is a ), we've encountered a different
           // token and hence the input string is invalid and so we'll just return it
           // untouched.
-          return rawBaserowFormulaString
+          return formula
         }
       } else if (token.type === BaserowFormulaLexer.FIELD) {
         searchingForOpenParen = true

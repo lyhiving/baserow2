@@ -6,16 +6,16 @@ import { getTokenStreamForFormula } from '@baserow/modules/database/formula/pars
  * with field references. Does so whist preserving any whitespace or
  * comments. If a reference to an unknown field_by_id is made it will be left as it is.
  *
- * @param rawBaserowFormulaString The raw string to tokenize and transform.
+ * This algorithm is duplicated in the backend in replace_field_by_id_with_field.py
+ * please sync across any changes.
+ *
+ * @param formula The raw string to tokenize and transform.
  * @param fieldIdToName The map of field ids to names.
  * @returns string False if the formula is not
  *    syntactically correct, otherwise the new updated formula string.
  */
-export function replaceFieldByIdWithField(
-  rawBaserowFormulaString,
-  fieldIdToName
-) {
-  const stream = getTokenStreamForFormula(rawBaserowFormulaString)
+export function replaceFieldByIdWithField(formula, fieldIdToName) {
+  const stream = getTokenStreamForFormula(formula)
 
   let searchingForOpenParen = false
   let searchingForCloseParen = false
@@ -25,8 +25,8 @@ export function replaceFieldByIdWithField(
   for (let i = 0; i < stream.tokens.length; i++) {
     const token = stream.tokens[i]
     let output = token.text
-    const isNormalToken = token.channel === 0
 
+    const isNormalToken = token.channel === 0
     if (isNormalToken) {
       if (searchingForIntegerLiteral) {
         searchingForIntegerLiteral = false
@@ -37,19 +37,19 @@ export function replaceFieldByIdWithField(
           // The only valid normal token is an int, we've encountered a different
           // token and hence the input string is invalid and so we'll just return it
           // untouched.
-          return rawBaserowFormulaString
+          return formula
         }
       } else if (searchingForOpenParen) {
         searchingForOpenParen = false
         if (token.type === BaserowFormulaLexer.OPEN_PAREN) {
           searchingForIntegerLiteral = true
         } else {
-          return rawBaserowFormulaString
+          return formula
         }
       } else if (searchingForCloseParen) {
         searchingForCloseParen = false
         if (token.type !== BaserowFormulaLexer.CLOSE_PAREN) {
-          return rawBaserowFormulaString
+          return formula
         }
       } else if (token.type === BaserowFormulaLexer.FIELDBYID) {
         const futureIntLiteral = _lookaheadAndFindFieldByIdIntLiteral(
@@ -68,9 +68,11 @@ export function replaceFieldByIdWithField(
         }
       }
     }
+
     if (token.type === BaserowFormulaLexer.EOF) {
       break
     }
+
     newFormula += output
   }
   return newFormula
@@ -84,9 +86,8 @@ function _lookaheadAndFindFieldByIdIntLiteral(start, stream) {
 
     if (isNormalToken) {
       if (searchingForIntegerLiteral) {
-        searchingForIntegerLiteral = false
         if (token.type === BaserowFormulaLexer.INTEGER_LITERAL) {
-          return token.text
+          return parseInt(token.text)
         } else {
           return false
         }

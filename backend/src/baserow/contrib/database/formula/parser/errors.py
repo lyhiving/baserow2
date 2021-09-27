@@ -20,7 +20,8 @@ class UnexpectedFieldReference(BaserowFormulaException):
 
 
 class UnknownFieldReference(BaserowFormulaException):
-    pass
+    def __init__(self, unknown_field_name):
+        super().__init__(f"unknown field referenced called: {unknown_field_name}")
 
 
 class UnknownFieldByIdReference(BaserowFormulaException):

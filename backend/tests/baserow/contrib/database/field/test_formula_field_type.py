@@ -127,6 +127,14 @@ def test_can_replace_field_with_field_by_id_whilst_keeping_whitespace(data_fixtu
         )
         == """concat(\nfield('Deleted Field'), 'test')"""
     )
+    assert (
+        replace_field_refs_according_to_new_or_deleted_fields(
+            """concat(\nfield('Deleted Field'), 'test')""",
+            {2: "Deleted Field"},
+            {"My Field Name": 3},
+        )
+        == """concat(\nfield('Deleted Field'), 'test')"""
+    )
 
 
 @pytest.mark.django_db
@@ -163,7 +171,7 @@ def test_can_use_complex_date_filters_on_formula_field(data_fixture):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
     grid_view = data_fixture.create_grid_view(user, table=table)
-    data_fixture.create_date_field(user=user, name="date_Field")
+    data_fixture.create_date_field(user=user, table=table, name="date_field")
     formula_field = data_fixture.create_formula_field(
         table=table, formula="field('date_field')", formula_type="date", name="formula"
     )
@@ -186,7 +194,9 @@ def test_can_use_complex_contains_filters_on_formula_field(data_fixture):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
     grid_view = data_fixture.create_grid_view(user, table=table)
-    data_fixture.create_date_field(user=user, name="date_field", date_format="US")
+    data_fixture.create_date_field(
+        user=user, table=table, name="date_field", date_format="US"
+    )
     formula_field = data_fixture.create_formula_field(
         table=table,
         formula="field('date_field')",

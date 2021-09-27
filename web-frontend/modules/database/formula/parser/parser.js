@@ -8,15 +8,16 @@ import BaserowFormulaParserError from '@baserow/modules/database/formula/parser/
  * Attempts to parse an input string into a Baserow Formula. If it fails a
  * BaserowFormulaParserError will be raised.
  *
- * @param rawBaserowFormulaString
+ * @param formula
  * @return {*} The resulting antlr4 parse tree of the formula
  */
-export default function parseBaserowFormula(rawBaserowFormulaString) {
-  const chars = new antlr4.InputStream(rawBaserowFormulaString)
+export default function parseBaserowFormula(formula) {
+  const chars = new antlr4.InputStream(formula)
   const lexer = new BaserowFormulaLexer(chars)
   const tokens = new antlr4.CommonTokenStream(lexer)
   const parser = new BaserowFormula(tokens)
   parser.removeErrorListeners()
+  // noinspection JSUnusedLocalSymbols
   parser.addErrorListener({
     syntaxError: (recognizer, offendingSymbol, line, column, msg, err) => {
       throw new BaserowFormulaParserError(offendingSymbol, line, column, msg)
@@ -26,7 +27,7 @@ export default function parseBaserowFormula(rawBaserowFormulaString) {
   return parser.root()
 }
 
-export function getPrefixIfFuncOrFieldRef(rawBaserowFormulaString, position) {
+export function getPrefixIfFuncOrFieldRef(formula, position) {
   const {
     token,
     insideFieldRef,
@@ -34,7 +35,7 @@ export function getPrefixIfFuncOrFieldRef(rawBaserowFormulaString, position) {
     textInsideFieldRefSoFar,
     startOfFieldRefInner,
     closingParenIsNextNormalToken,
-  } = _getTokenAtPosition(rawBaserowFormulaString, position)
+  } = _getTokenAtPosition(formula, position)
   let type = false
   const tokenText = token.text
   if (insideFieldRef) {
@@ -94,8 +95,8 @@ function _checkIfNextNormalTokenInStreamIs(i, stop, stream, numOpenBrackets) {
   return numOpenBrackets !== 0
 }
 
-export function _getTokenAtPosition(rawBaserowFormulaString, position) {
-  const chars = new antlr4.InputStream(rawBaserowFormulaString)
+export function _getTokenAtPosition(formula, position) {
+  const chars = new antlr4.InputStream(formula)
   const lexer = new BaserowFormulaLexer(chars)
   const stream = new BufferedTokenStream(lexer)
   stream.lazyInit()
@@ -162,8 +163,8 @@ export function _getTokenAtPosition(rawBaserowFormulaString, position) {
   return { token: false, insideFieldRef: false }
 }
 
-export function getTokenStreamForFormula(rawBaserowFormulaString) {
-  const chars = new antlr4.InputStream(rawBaserowFormulaString)
+export function getTokenStreamForFormula(formula) {
+  const chars = new antlr4.InputStream(formula)
   const lexer = new BaserowFormulaLexer(chars)
   const stream = new BufferedTokenStream(lexer)
   stream.lazyInit()
