@@ -98,8 +98,8 @@ export default {
         )
       } else if (this.errorFromServer) {
         return this.errorFromServer
-      } else if (this.values.error) {
-        return this.values.error
+      } else if (this.defaultValues.error) {
+        return this.defaultValues.error
       } else {
         return null
       }

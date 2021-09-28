@@ -217,3 +217,21 @@ def test_can_use_complex_contains_filters_on_formula_field(data_fixture):
     queryset = ViewHandler().get_queryset(grid_view)
     assert not queryset.exists()
     assert queryset.count() == 0
+
+
+@pytest.mark.django_db
+def test_can_change_formula_type_breaking_other_fields(data_fixture):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    handler = FieldHandler()
+    first_formula_field = handler.create_field(
+        user=user, table=table, name="1", type_name="formula", formula="1+1"
+    )
+    second_formula_field = handler.create_field(
+        user=user, table=table, type_name="formula", name="2", formula="field('1')+1"
+    )
+    handler.update_field(
+        user=user, field=first_formula_field, new_type_name="formula", formula="'a'"
+    )
+    second_formula_field.refresh_from_db()
+    assert "invalid" in second_formula_field.error

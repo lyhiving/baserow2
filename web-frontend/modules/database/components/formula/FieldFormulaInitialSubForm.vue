@@ -58,7 +58,8 @@ export default {
     },
     formulaType: {
       type: String,
-      required: true,
+      required: false,
+      default: null,
     },
     error: {
       type: String,

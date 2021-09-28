@@ -373,11 +373,7 @@ class BaserowErrorToNan(OneArgumentBaserowFunction):
         return func_call.with_valid_type(arg.expression_type)
 
     def to_django_expression(self, arg: Expression) -> Expression:
-        return Func(
-            arg,
-            function="replace_errors_with_nan",
-            output_field=fields.DecimalField(),
-        )
+        return Func(arg, function="replace_errors_with_nan")
 
 
 class BaserowErrorToNull(OneArgumentBaserowFunction):
@@ -392,8 +388,4 @@ class BaserowErrorToNull(OneArgumentBaserowFunction):
         return func_call.with_valid_type(arg.expression_type)
 
     def to_django_expression(self, arg: Expression) -> Expression:
-        return Func(
-            arg,
-            function="replace_errors_with_null",
-            output_field=fields.DecimalField(),
-        )
+        return Func(arg, function="replace_errors_with_null")

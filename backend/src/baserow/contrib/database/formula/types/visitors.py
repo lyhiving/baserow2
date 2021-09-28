@@ -92,7 +92,9 @@ class TypeAnnotatingASTVisitor(
             updated_typed_field = self.field_id_to_typed_field[
                 field_by_id_reference.referenced_field_id
             ]
-            return updated_typed_field.typed_expression
+            return field_by_id_reference.with_type(
+                updated_typed_field.typed_expression.expression_type
+            )
         else:
             return field_by_id_reference.with_invalid_type(
                 f"references an unknown field with id "
