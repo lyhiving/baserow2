@@ -52,7 +52,7 @@ class JSONWebTokenAuthentication(JWTJSONWebTokenAuthentication):
             if BlacklistedToken.is_blocked(token, payload):
                 msg = _("Token is blacklisted.")
                 raise exceptions.PermissionDenied(
-                    {"detail": msg, "error": "ERROR_PERMISSION_DENIED"}
+                    {"detail": msg, "error": "ERROR_SIGNATURE_HAS_EXPIRED"}
                 )
         user = self.authenticate_credentials(payload)
 

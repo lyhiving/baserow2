@@ -9,6 +9,7 @@ import ViewFilterTypeTimeZone from '@baserow/modules/database/components/view/Vi
 import ViewFilterTypeLinkRow from '@baserow/modules/database/components/view/ViewFilterTypeLinkRow'
 import { trueString } from '@baserow/modules/database/utils/constants'
 import { isNumeric } from '@baserow/modules/core/utils/string'
+import ViewFilterTypeFileTypeDropdown from '@baserow/modules/database/components/view/ViewFilterTypeFileTypeDropdown'
 import { FormulaFieldType } from '@baserow/modules/database/fieldTypes'
 
 export class ViewFilterType extends Registerable {
@@ -23,10 +24,9 @@ export class ViewFilterType extends Registerable {
     return 'string'
   }
 
-  constructor() {
-    super()
+  constructor(...args) {
+    super(...args)
     this.type = this.getType()
-    this.name = this.getName()
     this.example = this.getExample()
     this.compatibleFieldTypes = this.getCompatibleFieldTypes()
 
@@ -44,7 +44,7 @@ export class ViewFilterType extends Registerable {
   serialize() {
     return {
       type: this.type,
-      name: this.name,
+      name: this.getName(),
       compatibleFieldTypes: this.compatibleFieldTypes,
     }
   }
@@ -129,7 +129,8 @@ export class EqualViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'is'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.is')
   }
 
   getInputComponent() {
@@ -165,7 +166,8 @@ export class NotEqualViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'is not'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.isNot')
   }
 
   getInputComponent() {
@@ -201,7 +203,8 @@ export class FilenameContainsViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'filename contains'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.filenameContains')
   }
 
   getInputComponent() {
@@ -217,13 +220,53 @@ export class FilenameContainsViewFilterType extends ViewFilterType {
   }
 }
 
+export class HasFileTypeViewFilterType extends ViewFilterType {
+  static getType() {
+    return 'has_file_type'
+  }
+
+  getName() {
+    return 'has file type'
+  }
+
+  getExample() {
+    return 'image | document'
+  }
+
+  getInputComponent() {
+    return ViewFilterTypeFileTypeDropdown
+  }
+
+  getCompatibleFieldTypes() {
+    return ['file']
+  }
+
+  matches(rowValue, filterValue, field, fieldType) {
+    const isImage = filterValue === 'image'
+    const isDocument = filterValue === 'document'
+
+    if (!isImage && !isDocument) {
+      return true
+    }
+
+    for (let i = 0; i < rowValue.length; i++) {
+      if (rowValue[i].is_image === isImage) {
+        return true
+      }
+    }
+
+    return false
+  }
+}
+
 export class ContainsViewFilterType extends ViewFilterType {
   static getType() {
     return 'contains'
   }
 
   getName() {
-    return 'contains'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.contains')
   }
 
   getInputComponent() {
@@ -262,7 +305,8 @@ export class ContainsNotViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'contains not'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.containsNot')
   }
 
   getInputComponent() {
@@ -301,7 +345,8 @@ export class DateEqualViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'is date'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.isDate')
   }
 
   getExample() {
@@ -343,7 +388,8 @@ export class DateBeforeViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'before date'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.isBeforeDate')
   }
 
   getExample() {
@@ -395,7 +441,8 @@ export class DateAfterViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'after date'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.isAfterDate')
   }
 
   getExample() {
@@ -447,7 +494,8 @@ export class DateNotEqualViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'is not date'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.isNotDate')
   }
 
   getExample() {
@@ -489,7 +537,8 @@ export class DateEqualsTodayViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'is today'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.isToday')
   }
 
   getInputComponent() {
@@ -548,7 +597,8 @@ export class DateEqualsCurrentMonthViewFilterType extends DateEqualsTodayViewFil
   }
 
   getName() {
-    return 'in this month'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.inThisMonth')
   }
 }
 
@@ -562,7 +612,8 @@ export class DateEqualsCurrentYearViewFilterType extends DateEqualsTodayViewFilt
   }
 
   getName() {
-    return 'in this year'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.inThisYear')
   }
 }
 
@@ -572,7 +623,8 @@ export class HigherThanViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'higher than'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.higherThan')
   }
 
   getExample() {
@@ -604,7 +656,8 @@ export class LowerThanViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'lower than'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.lowerThan')
   }
 
   getExample() {
@@ -636,7 +689,8 @@ export class SingleSelectEqualViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'is'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.is')
   }
 
   getExample() {
@@ -665,7 +719,8 @@ export class SingleSelectNotEqualViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'is not'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.isNot')
   }
 
   getExample() {
@@ -695,7 +750,8 @@ export class BooleanViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'is'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.is')
   }
 
   getExample() {
@@ -725,7 +781,8 @@ export class LinkRowHasFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'has'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.has')
   }
 
   getExample() {
@@ -756,7 +813,8 @@ export class LinkRowHasNotFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'has not'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.hasNot')
   }
 
   getExample() {
@@ -787,7 +845,8 @@ export class EmptyViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'is empty'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.isEmpty')
   }
 
   getExample() {
@@ -833,7 +892,8 @@ export class NotEmptyViewFilterType extends ViewFilterType {
   }
 
   getName() {
-    return 'is not empty'
+    const { i18n } = this.app
+    return i18n.t('viewFilter.isNotEmpty')
   }
 
   getExample() {

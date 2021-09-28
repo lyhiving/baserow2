@@ -1,6 +1,7 @@
 from django.urls import re_path
 
 from .views import (
+    AccountView,
     UserView,
     SendResetPasswordEmailView,
     ResetPasswordView,
@@ -15,6 +16,7 @@ from .views import (
 app_name = "baserow.api.user"
 
 urlpatterns = [
+    re_path(r"^account/$", AccountView.as_view(), name="account"),
     re_path(r"^token-auth/$", ObtainJSONWebToken.as_view(), name="token_auth"),
     re_path(r"^token-refresh/$", RefreshJSONWebToken.as_view(), name="token_refresh"),
     re_path(r"^token-verify/$", VerifyJSONWebToken.as_view(), name="token_verify"),

@@ -6,6 +6,7 @@ import {
   DateEqualViewFilterType,
   DateNotEqualViewFilterType,
   DateEqualsTodayViewFilterType,
+  HasFileTypeViewFilterType,
 } from '@baserow/modules/database/viewFilters'
 
 const dateBeforeCasesWithTimezone = [
@@ -304,7 +305,7 @@ describe('All Tests', () => {
   test.each(dateBeforeCasesWithTimezone)(
     'BeforeViewFilter with Timezone',
     (values) => {
-      const result = new DateBeforeViewFilterType().matches(
+      const result = new DateBeforeViewFilterType({ app: testApp }).matches(
         values.rowValue,
         values.filterValue,
         { timezone: values.timezone }
@@ -316,7 +317,7 @@ describe('All Tests', () => {
   test.each(dateBeforeCasesWithoutTimezone)(
     'BeforeViewFilter without Timezone',
     (values) => {
-      const result = new DateBeforeViewFilterType().matches(
+      const result = new DateBeforeViewFilterType({ app: testApp }).matches(
         values.rowValue,
         values.filterValue,
         {}
@@ -328,7 +329,7 @@ describe('All Tests', () => {
   test.each(dateAfterCasesWithTimezone)(
     'AfterViewFilter with Timezone',
     (values) => {
-      const result = new DateAfterViewFilterType().matches(
+      const result = new DateAfterViewFilterType({ app: testApp }).matches(
         values.rowValue,
         values.filterValue,
         { timezone: values.timezone }
@@ -340,7 +341,7 @@ describe('All Tests', () => {
   test.each(dateAfterCasesWithoutTimezone)(
     'AfterViewFilter without Timezone',
     (values) => {
-      const result = new DateAfterViewFilterType().matches(
+      const result = new DateAfterViewFilterType({ app: testApp }).matches(
         values.rowValue,
         values.filterValue,
         {}
@@ -350,7 +351,7 @@ describe('All Tests', () => {
   )
 
   test.each(dateEqualCasesWithTimezone)('DateEqual with Timezone', (values) => {
-    const result = new DateEqualViewFilterType().matches(
+    const result = new DateEqualViewFilterType({ app: testApp }).matches(
       values.rowValue,
       values.filterValue,
       { timezone: values.timezone }
@@ -361,7 +362,7 @@ describe('All Tests', () => {
   test.each(dateEqualWithoutTimezone)(
     'DateEqual without Timezone',
     (values) => {
-      const result = new DateEqualViewFilterType().matches(
+      const result = new DateEqualViewFilterType({ app: testApp }).matches(
         values.rowValue,
         values.filterValue,
         { timezone: values.timezone }
@@ -372,7 +373,7 @@ describe('All Tests', () => {
   test.each(dateNotEqualCasesWithTimezone)(
     'DateNotEqual with Timezone',
     (values) => {
-      const result = new DateNotEqualViewFilterType().matches(
+      const result = new DateNotEqualViewFilterType({ app: testApp }).matches(
         values.rowValue,
         values.filterValue,
         { timezone: values.timezone }
@@ -383,7 +384,7 @@ describe('All Tests', () => {
   test.each(dateNotEqualCasesWithoutTimezone)(
     'DateNotEqual without Timezone',
     (values) => {
-      const result = new DateNotEqualViewFilterType().matches(
+      const result = new DateNotEqualViewFilterType({ app: testApp }).matches(
         values.rowValue,
         values.filterValue,
         {}
@@ -393,11 +394,57 @@ describe('All Tests', () => {
   )
 
   test.each(dateToday)('DateToday', (values) => {
-    const result = new DateEqualsTodayViewFilterType().matches(
+    const result = new DateEqualsTodayViewFilterType({ app: testApp }).matches(
       values.rowValue,
       values.filterValue,
       {}
     )
     expect(result).toBe(values.expected)
+  })
+
+  test('HasFileType contains image', () => {
+    expect(new HasFileTypeViewFilterType().matches([], '', {})).toBe(true)
+    expect(new HasFileTypeViewFilterType().matches([], 'image', {})).toBe(false)
+    expect(new HasFileTypeViewFilterType().matches([], 'document', {})).toBe(
+      false
+    )
+    expect(
+      new HasFileTypeViewFilterType().matches([{ is_image: true }], 'image', {})
+    ).toBe(true)
+    expect(
+      new HasFileTypeViewFilterType().matches(
+        [{ is_image: true }],
+        'document',
+        {}
+      )
+    ).toBe(false)
+    expect(
+      new HasFileTypeViewFilterType().matches(
+        [{ is_image: false }],
+        'image',
+        {}
+      )
+    ).toBe(false)
+    expect(
+      new HasFileTypeViewFilterType().matches(
+        [{ is_image: false }],
+        'document',
+        {}
+      )
+    ).toBe(true)
+    expect(
+      new HasFileTypeViewFilterType().matches(
+        [{ is_image: true }, { is_image: false }],
+        'image',
+        {}
+      )
+    ).toBe(true)
+    expect(
+      new HasFileTypeViewFilterType().matches(
+        [{ is_image: true }, { is_image: false }],
+        'document',
+        {}
+      )
+    ).toBe(true)
   })
 })
