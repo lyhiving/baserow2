@@ -1644,7 +1644,8 @@ export class FormulaFieldType extends FieldType {
   }
 
   getName() {
-    return 'Formula'
+    const { i18n } = this.app
+    return i18n.t('fieldType.formula')
   }
 
   getGridViewFieldComponent() {

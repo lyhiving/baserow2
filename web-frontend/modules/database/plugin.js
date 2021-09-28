@@ -123,6 +123,7 @@ export default (context) => {
   app.$registry.register('field', new FileFieldType(context))
   app.$registry.register('field', new SingleSelectFieldType(context))
   app.$registry.register('field', new PhoneNumberFieldType(context))
+  app.$registry.register('field', new FormulaFieldType(context))
   app.$registry.register('importer', new CSVImporterType(context))
   app.$registry.register('importer', new PasteImporterType(context))
   app.$registry.register('importer', new XMLImporterType(context))
