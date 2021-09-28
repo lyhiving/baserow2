@@ -41,13 +41,19 @@ from baserow.contrib.database.formula.types.visitors import (
 from baserow.contrib.database.table import models
 
 
-def _get_all_fields_and_build_name_dict(table):
+def _get_all_fields_and_build_name_dict(
+    table: "models.Table", overridden_field: Optional[Field]
+):
     all_fields = []
     field_name_to_id = {}
     for field in table.field_set.all():
-        field = field.specific
-        all_fields.append(field)
-        field_name_to_id[field.name] = field.id
+        if overridden_field and field.id == overridden_field.id:
+            extracted_field = overridden_field
+        else:
+            extracted_field = field
+        extracted_field = extracted_field.specific
+        all_fields.append(extracted_field)
+        field_name_to_id[extracted_field.name] = extracted_field.id
     return all_fields, field_name_to_id
 
 
@@ -334,7 +340,9 @@ def _type_and_substitute_formula_field(
 
 
 def type_all_fields_in_table(
-    table: "models.Table", deleted_field_id_to_name: Optional[Dict[int, str]] = None
+    table: "models.Table",
+    deleted_field_id_to_name: Optional[Dict[int, str]] = None,
+    overridden_field: Optional[Field] = None,
 ) -> Dict[int, TypedFieldWithReferences]:
     """
     The key algorithm responsible for typing a table in Baserow.
@@ -345,6 +353,8 @@ def type_all_fields_in_table(
         fields old id and its name prior to deletion. This is used to correctly replace
         any field_by_id references to that deleted field with field(name) references
         instead.
+    :param overridden_field: An optional field instance which will be used instead of
+        that field's current database value when typing the table.
     :return: A dictionary of field id to a wrapper object TypedFieldWithReferences
         containing type and reference information about that field.
     """
@@ -360,7 +370,7 @@ def type_all_fields_in_table(
         (
             field_id_to_untyped_formula,
             field_id_to_updated_typed_field,
-        ) = _fix_and_parse_all_fields(deleted_field_id_to_name, table)
+        ) = _fix_and_parse_all_fields(deleted_field_id_to_name, table, overridden_field)
 
         # Step 2. Construct the graph of field dependencies by:
         # For every untyped formula populate its list of children with
@@ -402,8 +412,14 @@ def type_all_fields_in_table(
         raise MaximumFormulaSizeError()
 
 
-def _fix_and_parse_all_fields(deleted_field_id_to_name, table):
-    all_fields, field_name_to_id = _get_all_fields_and_build_name_dict(table)
+def _fix_and_parse_all_fields(
+    deleted_field_id_to_name: Dict[int, str],
+    table: "models.Table",
+    overridden_field: Optional[Field],
+):
+    all_fields, field_name_to_id = _get_all_fields_and_build_name_dict(
+        table, overridden_field
+    )
 
     field_id_to_untyped_formula: Dict[int, UntypedFormulaFieldWithReferences] = {}
     field_id_to_updated_typed_field: Dict[int, TypedFieldWithReferences] = {}
@@ -466,15 +482,29 @@ class TypedBaserowTable:
             return None
         return self.typed_fields_with_references[field.id].typed_expression
 
+    def get_typed_field(self, field_id: int) -> Field:
+        """
+        :param field_id: The field id to get its newly typed field for.
+        :return: The updated field instance after typing.
+        """
 
-def type_table(table: "models.Table") -> TypedBaserowTable:
+        return self.typed_fields_with_references[field_id].new_field
+
+
+def type_table(
+    table: "models.Table", overridden_field: Optional[Field] = None
+) -> TypedBaserowTable:
     """
     Given a table calculates all the Baserow Formula types for every non trashed
     field in that table.
 
     :param table: The table to type.
+    :param overridden_field: An optional field instance which will be used instead of
+        that field's current database value when typing the table.
     :return: A typed baserow table wrapper object containing type information for
         every field.
     """
 
-    return TypedBaserowTable(type_all_fields_in_table(table))
+    return TypedBaserowTable(
+        type_all_fields_in_table(table, overridden_field=overridden_field)
+    )

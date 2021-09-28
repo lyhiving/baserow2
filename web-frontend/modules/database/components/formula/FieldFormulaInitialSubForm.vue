@@ -12,15 +12,20 @@
         />
       </div>
     </div>
-    <div v-if="error" class="error grid-field-formula__error">{{ error }}</div>
+    <div v-if="error" class="error grid-field-formula__error">
+      {{ error }}
+    </div>
+    <div v-if="formulaChanged && !parsingError">
+      <a href="#" @click="$emit('retype-formula')">Get new formula options</a>
+    </div>
     <FieldFormulaNumberSubForm
-      v-else-if="defaultValues.formula_type === 'number'"
+      v-else-if="formulaType === 'number'"
       :default-values="defaultValues"
       :table="table"
     >
     </FieldFormulaNumberSubForm>
     <FieldDateSubForm
-      v-else-if="defaultValues.formula_type === 'date'"
+      v-else-if="formulaType === 'date'"
       :default-values="defaultValues"
       :table="table"
     >
@@ -45,8 +50,22 @@ export default {
       type: String,
       required: true,
     },
+    initialFormula: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    formulaType: {
+      type: String,
+      required: true,
+    },
     error: {
       type: String,
+      required: false,
+      default: null,
+    },
+    parsingError: {
+      type: Error,
       required: false,
       default: null,
     },
@@ -56,6 +75,13 @@ export default {
       allowedValues: [],
       values: {},
     }
+  },
+  computed: {
+    formulaChanged() {
+      return (
+        this.initialFormula !== null && this.formula !== this.initialFormula
+      )
+    },
   },
 }
 </script>

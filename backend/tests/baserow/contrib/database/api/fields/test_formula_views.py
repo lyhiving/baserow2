@@ -1,6 +1,11 @@
 import pytest
 from django.urls import reverse
-from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
+)
 
 from baserow.core.trash.handler import TrashHandler
 
@@ -923,3 +928,251 @@ def test_trashing_formula_field(api_client, data_fixture):
     response_json = response.json()
     assert response_json["count"] == 1
     assert f"field_{formula_field_id}" not in response_json["results"][0]
+
+
+@pytest.mark.django_db
+def test_can_type_an_invalid_formula_field(
+    data_fixture, api_client, django_assert_num_queries
+):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "number", "type": "number", "number_type": "INTEGER"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+
+    # Create a formula field referencing the normal number field
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula2", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+    formula_field_id = response.json()["id"]
+
+    response = api_client.post(
+        reverse(
+            "api:database:formula:type_formula", kwargs={"field_id": formula_field_id}
+        ),
+        {f"formula": "1+'a'"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == 200, response_json
+    assert response_json["formula_type"] == "invalid"
+    assert "invalid" in response_json["error"]
+
+
+@pytest.mark.django_db
+def test_can_type_a_valid_formula_field(
+    data_fixture, api_client, django_assert_num_queries
+):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "number", "type": "number", "number_type": "INTEGER"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+
+    # Create a formula field referencing the normal number field
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula2", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+    formula_field_id = response.json()["id"]
+
+    response = api_client.post(
+        reverse(
+            "api:database:formula:type_formula", kwargs={"field_id": formula_field_id}
+        ),
+        {f"formula": "1+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == 200, response_json
+    assert response_json == {
+        "date_format": None,
+        "date_include_time": None,
+        "date_time_format": None,
+        "error": None,
+        "formula": "1+1",
+        "formula_type": "number",
+        "number_decimal_places": 0,
+    }
+
+
+@pytest.mark.django_db
+def test_type_endpoint_returns_error_for_bad_syntax(
+    data_fixture, api_client, django_assert_num_queries
+):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "number", "type": "number", "number_type": "INTEGER"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+
+    # Create a formula field referencing the normal number field
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula2", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+    formula_field_id = response.json()["id"]
+
+    response = api_client.post(
+        reverse(
+            "api:database:formula:type_formula", kwargs={"field_id": formula_field_id}
+        ),
+        {f"formula": "bad syntax"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response_json["error"] == "ERROR_WITH_FORMULA"
+
+
+@pytest.mark.django_db
+def test_type_endpoint_returns_error_for_missing_parameters(
+    data_fixture, api_client, django_assert_num_queries
+):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "number", "type": "number", "number_type": "INTEGER"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+
+    # Create a formula field referencing the normal number field
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula2", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+    formula_field_id = response.json()["id"]
+
+    response = api_client.post(
+        reverse(
+            "api:database:formula:type_formula", kwargs={"field_id": formula_field_id}
+        ),
+        {},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
+
+
+@pytest.mark.django_db
+def test_type_endpoint_returns_error_for_missing_field(
+    data_fixture, api_client, django_assert_num_queries
+):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "number", "type": "number", "number_type": "INTEGER"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+
+    response = api_client.post(
+        reverse("api:database:formula:type_formula", kwargs={"field_id": 9999}),
+        {f"formula": "bad syntax"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_404_NOT_FOUND
+    assert response_json["error"] == "ERROR_FIELD_DOES_NOT_EXIST"
+
+
+@pytest.mark.django_db
+def test_type_endpoint_returns_error_for_non_formula_field(
+    data_fixture, api_client, django_assert_num_queries
+):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "number", "type": "number", "number_type": "INTEGER"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+    number_field_id = response.json()["id"]
+
+    response = api_client.post(
+        reverse(
+            "api:database:formula:type_formula", kwargs={"field_id": number_field_id}
+        ),
+        {f"formula": "bad syntax"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_404_NOT_FOUND
+    assert response_json["error"] == "ERROR_FIELD_DOES_NOT_EXIST"
+
+
+@pytest.mark.django_db
+def test_type_endpoint_returns_error_if_not_permissioned_for_field(
+    data_fixture, api_client, django_assert_num_queries
+):
+    user, token = data_fixture.create_user_and_token()
+    other_user, other_token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "number", "type": "number", "number_type": "INTEGER"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+
+    # Create a formula field referencing the normal number field
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "Formula2", "type": "formula", "formula": "field('number')+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+    formula_field_id = response.json()["id"]
+
+    response = api_client.post(
+        reverse(
+            "api:database:formula:type_formula", kwargs={"field_id": formula_field_id}
+        ),
+        {f"formula": "1+1"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {other_token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response_json["error"] == "ERROR_USER_NOT_IN_GROUP"

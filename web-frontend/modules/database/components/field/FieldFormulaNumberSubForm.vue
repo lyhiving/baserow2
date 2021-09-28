@@ -4,8 +4,9 @@
       <label class="control__label control__label--small">Number type</label>
       <div class="control__elements">
         <Dropdown
-          v-model="numberType"
           :class="{ 'dropdown--error': $v.numberType.$error }"
+          :value="numberType"
+          @input="changeNumberType($event)"
           @hide="$v.numberType.$touch()"
         >
           <DropdownItem name="Integer (1)" value="INTEGER"></DropdownItem>
@@ -44,14 +45,18 @@ export default {
   data() {
     return {
       allowedValues: ['number_decimal_places'],
-      numberType: 'INTEGER',
       values: {
         number_decimal_places: 0,
       },
     }
   },
-  watch: {
-    numberType(newValue) {
+  computed: {
+    numberType() {
+      return this.values.number_decimal_places === 0 ? 'INTEGER' : 'DECIMAL'
+    },
+  },
+  methods: {
+    changeNumberType(newValue) {
       if (newValue === 'INTEGER') {
         this.values.number_decimal_places = 0
       } else {

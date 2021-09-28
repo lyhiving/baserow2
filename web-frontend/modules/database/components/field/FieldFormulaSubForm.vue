@@ -1,13 +1,17 @@
 <template>
   <div>
     <FieldFormulaInitialSubForm
-      :default-values="defaultValues"
+      :default-values="mergedTypeOptions"
       :formula="values.formula"
       :error="localOrServerError"
+      :formula-type="localOrServerFormulaType"
+      :initial-formula="initialFormula"
+      :parsing-error="parsingError"
       :table="table"
       @open-advanced-context="
         $refs.advancedFormulaEditContext.openContext($event)
       "
+      @retype-formula="retypeFormula"
     >
     </FieldFormulaInitialSubForm>
     <FormulaAdvancedEditContext
@@ -23,6 +27,7 @@
 
 <script>
 import form from '@baserow/modules/core/mixins/form'
+import { notifyIf } from '@baserow/modules/core/utils/error'
 
 import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
 import { mapGetters } from 'vuex'
@@ -32,6 +37,7 @@ import { updateFieldNames } from '@baserow/modules/database/formula/parser/updat
 import { required } from 'vuelidate/lib/validators'
 import FieldFormulaInitialSubForm from '@baserow/modules/database/components/formula/FieldFormulaInitialSubForm'
 import FormulaAdvancedEditContext from '@baserow/modules/database/components/formula/FormulaAdvancedEditContext'
+import FormulaService from '@baserow/modules/database/services/formula'
 
 export default {
   name: 'FieldFormulaSubForm',
@@ -52,14 +58,23 @@ export default {
       values: {
         formula: '',
       },
+      typeOptions: {},
+      mergedTypeOptions: Object.assign({}, this.defaultValues),
       parsingError: null,
       errorFromServer: null,
+      localFormulaType: null,
+      initialFormula: null,
     }
   },
   computed: {
     ...mapGetters({
       rawFields: 'field/getAllWithPrimary',
     }),
+    localOrServerFormulaType() {
+      return this.localFormulaType
+        ? this.localFormulaType
+        : this.defaultValues.formula_type
+    },
     fieldsWithoutThisField() {
       return this.rawFields.filter((f) => {
         return f.id !== this.defaultValues.id
@@ -105,6 +120,7 @@ export default {
     },
     defaultValues(newValue, oldValue) {
       this.convertServerSideFormulaToClient(newValue.formula)
+      this.mergedTypeOptions = Object.assign({}, newValue)
     },
     'values.formula'(newValue, oldValue) {
       this.$v.values.formula.$touch()
@@ -130,6 +146,9 @@ export default {
         formula,
         this.fieldIdToNameMap
       )
+      if (!this.initialFormula) {
+        this.initialFormula = this.values.formula
+      }
     },
     fieldNameChanged(oldNameToNewNameMap) {
       this.convertServerSideFormulaToClient(this.values.formula)
@@ -166,6 +185,31 @@ export default {
     reset() {
       form.methods.reset.call(this)
       this.errorFromServer = null
+      this.initialFormula = null
+    },
+    async retypeFormula() {
+      try {
+        const { data } = await FormulaService(this.$client).type(
+          this.defaultValues.id,
+          this.values.formula
+        )
+        // eslint-disable-next-line camelcase
+        const { formula_type, error, ...otherTypeOptions } = data
+
+        this.mergedTypeOptions = Object.assign(
+          {},
+          this.mergedTypeOptions,
+          otherTypeOptions
+        )
+        this.errorFromServer = error
+        // eslint-disable-next-line camelcase
+        this.localFormulaType = formula_type
+        this.initialFormula = this.values.formula
+      } catch (e) {
+        if (!this.handleError(e)) {
+          notifyIf(e, 'field')
+        }
+      }
     },
   },
   validations() {
