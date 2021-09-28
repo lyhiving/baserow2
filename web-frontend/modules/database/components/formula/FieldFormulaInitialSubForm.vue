@@ -14,13 +14,13 @@
     </div>
     <div v-if="error" class="error grid-field-formula__error">{{ error }}</div>
     <FieldFormulaNumberSubForm
-      v-else-if="formulaType === 'number'"
+      v-else-if="defaultValues.formula_type === 'number'"
       :default-values="defaultValues"
       :table="table"
     >
     </FieldFormulaNumberSubForm>
     <FieldDateSubForm
-      v-else-if="formulaType === 'date'"
+      v-else-if="defaultValues.formula_type === 'date'"
       :default-values="defaultValues"
       :table="table"
     >
@@ -42,10 +42,6 @@ export default {
   mixins: [form, fieldSubForm],
   props: {
     formula: {
-      type: String,
-      required: true,
-    },
-    formulaType: {
       type: String,
       required: true,
     },

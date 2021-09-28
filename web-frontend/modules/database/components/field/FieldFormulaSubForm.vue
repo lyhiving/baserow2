@@ -3,14 +3,15 @@
     <FieldFormulaInitialSubForm
       :default-values="defaultValues"
       :formula="values.formula"
-      :formula-type="values.formula_type"
       :error="localOrServerError"
       :table="table"
-      @open-advanced-context="$refs.advancedFormulaContext.openContext($event)"
+      @open-advanced-context="
+        $refs.advancedFormulaEditContext.openContext($event)
+      "
     >
     </FieldFormulaInitialSubForm>
     <FormulaAdvancedEditContext
-      ref="advancedFormulaContext"
+      ref="advancedFormulaEditContext"
       v-model="values.formula"
       :table="table"
       :fields="fieldsWithoutThisField"
@@ -47,12 +48,9 @@ export default {
   },
   data() {
     return {
-      allowedValues: ['formula', 'formula_type', 'error', 'id'],
+      allowedValues: ['formula'],
       values: {
         formula: '',
-        formula_type: '',
-        error: '',
-        id: false,
       },
       parsingError: null,
       errorFromServer: null,
@@ -64,7 +62,7 @@ export default {
     }),
     fieldsWithoutThisField() {
       return this.rawFields.filter((f) => {
-        return f.id !== this.values.id
+        return f.id !== this.defaultValues.id
       })
     },
     fieldIdToNameMap() {

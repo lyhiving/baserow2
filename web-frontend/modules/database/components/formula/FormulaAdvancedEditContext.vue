@@ -2,14 +2,15 @@
   <Context ref="editContext">
     <div class="formula-field">
       <div class="formula-field__input">
-        <AutoResizingTextarea
+        <AutoExpandableTextarea
           ref="textAreaFormulaInput"
           v-model="formula"
           class="formula-field__input-formula"
+          placeholder="Enter your formula here, use tab to autocomplete."
           @click="recalcAutoComplete"
           @keyup="recalcAutoComplete"
-          @tab="doAutoComplete"
-        ></AutoResizingTextarea>
+          @keydown.tab.prevent="doAutoComplete"
+        ></AutoExpandableTextarea>
       </div>
       <div v-if="error" class="formula-field__input-error">{{ error }}</div>
       <div class="formula-field__body">
@@ -45,20 +46,21 @@
 
 <script>
 import context from '@baserow/modules/core/mixins/context'
-import AutoResizingTextarea from '@baserow/modules/core/components/helpers/AutoResizingTextarea'
 import {
   autocompleteFormula,
   calculateFilteredFunctionsAndFieldsBasedOnCursorLocation,
 } from '@baserow/modules/database/formula/autocompleter/formulaAutocompleter'
 import FormulaFieldItemGroup from '@baserow/modules/database/components/formula/FormulaFieldItemGroup'
 import FormulaFieldItemDescription from '@baserow/modules/database/components/formula/FormulaFieldItemDescription'
+import AutoExpandableTextarea from '@baserow/modules/core/components/helpers/AutoExpandableTextarea'
 
+const TAB_KEYCODE = 9
 export default {
   name: 'FormulaAdvancedEditContext',
   components: {
     FormulaFieldItemDescription,
     FormulaFieldItemGroup,
-    AutoResizingTextarea,
+    AutoExpandableTextarea,
   },
   mixins: [context],
   props: {
@@ -75,8 +77,9 @@ export default {
       required: true,
     },
     error: {
-      type: Boolean,
-      required: true,
+      type: String,
+      required: false,
+      default: null,
     },
   },
   data() {
@@ -155,9 +158,14 @@ export default {
       this.selectedItem = item
       item.isSelected = true
     },
-    recalcAutoComplete() {
+    recalcAutoComplete(event) {
+      // Prevent tabs from doing anything as doAutocomplete will handle a tab instead.
+      if (event && event.keyCode === TAB_KEYCODE) {
+        event.preventDefault()
+        return
+      }
       const cursorLocation =
-        this.$refs.textAreaFormulaInput.$refs.textarea.selectionStart
+        this.$refs.textAreaFormulaInput.$refs.inputTextArea.selectionStart
 
       const { filteredFields, filteredFunctions, filtered } =
         calculateFilteredFunctionsAndFieldsBasedOnCursorLocation(
@@ -180,7 +188,7 @@ export default {
     },
     doAutoComplete() {
       const startingCursorLocation =
-        this.$refs.textAreaFormulaInput.$refs.textarea.selectionStart
+        this.$refs.textAreaFormulaInput.$refs.inputTextArea.selectionStart
 
       const { autocompletedFormula, newCursorPosition } = autocompleteFormula(
         this.formula,
@@ -191,7 +199,7 @@ export default {
       this.formula = autocompletedFormula
 
       this.$nextTick(() => {
-        this.$refs.textAreaFormulaInput.$refs.textarea.setSelectionRange(
+        this.$refs.textAreaFormulaInput.$refs.inputTextArea.setSelectionRange(
           newCursorPosition,
           newCursorPosition
         )
@@ -207,7 +215,7 @@ export default {
         -1
       )
       this.$nextTick(() => {
-        this.$refs.textAreaFormulaInput.$refs.textarea.focus()
+        this.$refs.textAreaFormulaInput.$refs.inputTextArea.focus()
       })
     },
     wrapItem(value, key, icon, description, examples, syntaxUsage, item) {
