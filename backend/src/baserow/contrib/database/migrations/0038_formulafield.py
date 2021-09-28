@@ -117,4 +117,52 @@ $$
             ),
             ("DROP FUNCTION IF EXISTS try_cast_to_numeric(text);"),
         ),
+        migrations.RunSQL(
+            (
+                """
+    create or replace function replace_errors_with_nan(
+        p_in anyelement
+    )
+        returns numeric(55,5)
+    as
+    $$
+    begin
+        begin
+            IF p_in < 10^50 OR p_in is null THEN
+                return p_in;
+            ELSE
+                return 'NaN';
+            END IF;
+        exception when others then
+            return 'NaN';
+        end;
+    end;
+    $$
+        language plpgsql;
+    """
+            ),
+            ("DROP FUNCTION IF EXISTS replace_errors_with_nan(anyelement);"),
+        ),
+        migrations.RunSQL(
+            (
+                """
+    create or replace function replace_errors_with_null(
+        p_in anyelement
+    )
+        returns anyelement
+    as
+    $$
+    begin
+        begin
+            return p_in;
+        exception when others then
+            return null;
+        end;
+    end;
+    $$
+        language plpgsql;
+    """
+            ),
+            ("DROP FUNCTION IF EXISTS replace_errors_with_null(anyelement);"),
+        ),
     ]

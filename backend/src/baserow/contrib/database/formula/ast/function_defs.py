@@ -61,6 +61,8 @@ def register_formula_functions(registry):
     registry.register(BaserowToText())
     registry.register(BaserowDatetimeFormat())
     registry.register(BaserowToNumber())
+    registry.register(BaserowErrorToNan())
+    registry.register(BaserowErrorToNull())
 
 
 class BaserowUpper(OneArgumentBaserowFunction):
@@ -355,5 +357,43 @@ class BaserowToNumber(OneArgumentBaserowFunction):
         return Func(
             arg,
             function="try_cast_to_numeric",
+            output_field=fields.DecimalField(),
+        )
+
+
+class BaserowErrorToNan(OneArgumentBaserowFunction):
+    type = "error_to_nan"
+    arg_type = [BaserowFormulaNumberType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(arg.expression_type)
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Func(
+            arg,
+            function="replace_errors_with_nan",
+            output_field=fields.DecimalField(),
+        )
+
+
+class BaserowErrorToNull(OneArgumentBaserowFunction):
+    type = "error_to_null"
+    arg_type = [BaserowFormulaValidType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(arg.expression_type)
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Func(
+            arg,
+            function="replace_errors_with_null",
             output_field=fields.DecimalField(),
         )

@@ -5,9 +5,9 @@ from django.db.models import (
     Expression,
     Value,
     F,
-    Field,
     DecimalField,
 )
+from django.db.models.functions import Cast
 
 from baserow.contrib.database.formula.ast.errors import UnknownFieldReference
 from baserow.contrib.database.formula.ast.tree import (
@@ -19,11 +19,11 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
 )
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
+from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
     BaserowFormulaInvalidType,
 )
-from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 from baserow.contrib.database.table.models import GeneratedTableModel
 
 
@@ -63,7 +63,7 @@ def baserow_expression_to_django_expression(
 
 
 class BaserowExpressionToDjangoExpressionGenerator(
-    BaserowFormulaASTVisitor[Field, Expression]
+    BaserowFormulaASTVisitor[BaserowFormulaType, Expression]
 ):
     """
     Visits a BaserowExpression replacing it with the equivalent Django Expression.
@@ -79,14 +79,16 @@ class BaserowExpressionToDjangoExpressionGenerator(
     ):
         self.model_instance = model_instance
 
-    def visit_field_reference(self, field_reference: BaserowFieldReference):
+    def visit_field_reference(
+        self, field_reference: BaserowFieldReference[BaserowFormulaType]
+    ):
         # If a field() reference still exists it must not have been able to find a
         # field with that name and replace it with a field_by_id. This means we cannot
         # proceed as we do not know what field should be referenced here.
         raise UnknownFieldReference(field_reference.referenced_field_name)
 
     def visit_field_by_id_reference(
-        self, field_by_id_reference: BaserowFieldByIdReference
+        self, field_by_id_reference: BaserowFieldByIdReference[BaserowFormulaType]
     ):
         field_id = field_by_id_reference.referenced_field_id
         db_field_name = f"field_{field_id}"
@@ -96,18 +98,28 @@ class BaserowExpressionToDjangoExpressionGenerator(
         elif not hasattr(self.model_instance, db_field_name):
             raise UnknownFieldReference(field_id)
         else:
-            return Value(
-                getattr(self.model_instance, db_field_name),
+            return Cast(
+                Value(
+                    getattr(self.model_instance, db_field_name),
+                ),
+                output_field=field_by_id_reference.expression_type.get_model_field(),
             )
 
-    def visit_function_call(self, function_call: BaserowFunctionCall) -> Expression:
+    def visit_function_call(
+        self, function_call: BaserowFunctionCall[BaserowFormulaType]
+    ) -> Expression:
         args = [expr.accept(self) for expr in function_call.args]
         return function_call.to_django_expression_given_args(args)
 
-    def visit_string_literal(self, string_literal: BaserowStringLiteral) -> Expression:
-        return Value(string_literal.literal, output_field=models.TextField())
+    def visit_string_literal(
+        self, string_literal: BaserowStringLiteral[BaserowFormulaType]
+    ) -> Expression:
+        return Cast(
+            Value(string_literal.literal, output_field=models.TextField()),
+            output_field=models.TextField(),
+        )
 
-    def visit_int_literal(self, int_literal: BaserowIntegerLiteral):
+    def visit_int_literal(self, int_literal: BaserowIntegerLiteral[BaserowFormulaType]):
         return Value(
             int_literal.literal,
             output_field=DecimalField(max_digits=50, decimal_places=0),

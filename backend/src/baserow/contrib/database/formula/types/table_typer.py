@@ -324,17 +324,19 @@ def _type_and_substitute_formula_field(
     # Take into account any user set formatting options on this formula field.
     typed_expr_merged_with_user_options = typed_expr.with_type(merged_expression_type)
 
+    wrapped_typed_expr = (
+        typed_expr_merged_with_user_options.expression_type.wrap_at_field_level(
+            typed_expr_merged_with_user_options
+        )
+    )
+
     # Here we replace formula field references in the untyped_formula with the
     # BaserowExpression of the field referenced. The resulting substituted expression
     # is guaranteed to only contain references to static normal fields meaning we
     # can evaluate the result of this formula in one shot instead of having to evaluate
     # all depended on formula fields in turn to then calculate this one.
-    typed_expr_with_substituted_field_by_id_references = (
-        typed_expr_merged_with_user_options.accept(
-            SubstituteFieldByIdWithThatFieldsExpressionVisitor(
-                field_id_to_typed_expression
-            )
-        )
+    typed_expr_with_substituted_field_by_id_references = wrapped_typed_expr.accept(
+        SubstituteFieldByIdWithThatFieldsExpressionVisitor(field_id_to_typed_expression)
     )
     return typed_expr_with_substituted_field_by_id_references
 

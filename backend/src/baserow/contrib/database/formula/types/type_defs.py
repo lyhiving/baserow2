@@ -141,6 +141,9 @@ class BaserowFormulaNumberType(BaserowFormulaValidType):
         else:
             return True
 
+    def wrap_at_field_level(self, expr: "BaserowExpression[BaserowFormulaType]"):
+        return formula_function_registry.get("error_to_nan").call_and_type_with(expr)
+
     def __str__(self) -> str:
         return f"number({self.number_decimal_places})"
 

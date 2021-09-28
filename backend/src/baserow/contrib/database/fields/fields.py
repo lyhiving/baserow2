@@ -3,6 +3,7 @@ from typing import Optional
 from django.db import models
 from django.db.models import Field, Value
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
+from django.db.models.functions import Cast
 
 from baserow.contrib.database.formula.ast.tree import BaserowExpression
 from baserow.contrib.database.formula.expression_generator.generator import (
@@ -98,7 +99,7 @@ class BaserowExpressionField(models.Field):
 
     def pre_save(self, model_instance, add):
         if self.expression is None:
-            return Value(None)
+            return Cast(Value(None), output_field=models.TextField())
         else:
             return baserow_expression_to_django_expression(
                 self.expression, model_instance
