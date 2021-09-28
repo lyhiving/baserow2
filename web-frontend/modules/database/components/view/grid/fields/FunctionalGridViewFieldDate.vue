@@ -29,11 +29,6 @@ export default {
       type: Object,
       required: true,
     },
-    value: {
-      type: String,
-      required: false,
-      default: '',
-    },
   },
 }
 </script>
