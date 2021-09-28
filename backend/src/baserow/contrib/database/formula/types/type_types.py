@@ -39,15 +39,6 @@ class BaserowFormulaType(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
-        """
-        A list of valid types that this type can be compared using limit operators like
-        >, >=, < or <=.
-        """
-        pass
-
-    @property
-    @abc.abstractmethod
     def is_valid(self) -> bool:
         pass
 
@@ -146,14 +137,9 @@ class BaserowFormulaType(abc.ABC):
 
 
 class BaserowFormulaInvalidType(BaserowFormulaType):
-
     is_valid = False
     comparable_types = []
     type = "invalid"
-
-    @property
-    def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
-        return []
 
     def raise_if_invalid(self):
         raise InvalidFormulaType(self.error)
@@ -190,11 +176,6 @@ class BaserowFormulaInvalidType(BaserowFormulaType):
 
 class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):
     is_valid = True
-
-    @property
-    @abc.abstractmethod
-    def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
-        pass
 
     def raise_if_invalid(self):
         pass
