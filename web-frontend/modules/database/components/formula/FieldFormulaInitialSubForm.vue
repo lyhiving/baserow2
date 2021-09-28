@@ -9,13 +9,14 @@
           class="input"
           placeholder="Formula"
           @click="$emit('open-advanced-context', $refs.formulaInput)"
+          @input="$emit('open-advanced-context', $refs.formulaInput)"
         />
       </div>
     </div>
     <div v-if="error" class="error grid-field-formula__error">
       {{ error }}
     </div>
-    <div v-if="formulaChanged && !parsingError">
+    <div v-if="formulaChanged && !parsingError && defaultValues.id">
       <a href="#" @click="$emit('retype-formula')">Get new formula options</a>
     </div>
     <FieldFormulaNumberSubForm

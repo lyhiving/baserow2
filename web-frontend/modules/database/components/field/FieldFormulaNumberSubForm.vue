@@ -26,7 +26,7 @@
           <DropdownItem name="1.00" :value="2"></DropdownItem>
           <DropdownItem name="1.000" :value="3"></DropdownItem>
           <DropdownItem name="1.0000" :value="4"></DropdownItem>
-          <DropdownItem name="1.0000" :value="5"></DropdownItem>
+          <DropdownItem name="1.00000" :value="5"></DropdownItem>
         </Dropdown>
       </div>
     </div>
