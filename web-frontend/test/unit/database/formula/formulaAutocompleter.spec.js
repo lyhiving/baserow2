@@ -29,7 +29,7 @@ describe('Tests checking the formula autocomplete logic', () => {
     ['$', ALL_FUNCTIONS, ALL_FIELDS, false],
   ]
   test.each(functionFieldFilterTests)(
-    'cursor resting on location filters fields and functions correctly',
+    'for formula %s it filters fields and functions correctly',
     (
       startingFormulaWithCursor,
       expectedFilteredFunctions,
@@ -59,8 +59,8 @@ describe('Tests checking the formula autocomplete logic', () => {
     ['fiel$', "field('$')"],
     ['field$', "field('$')"],
     ['field($', "field('field name a')$"],
-    ["field('$", "field('$"],
-    ["field(''$", "field(''$"],
+    ["field('$", "field('field name a')$"],
+    ["field(''$", "field('field name a')$"],
     ["field('')$", "field('')$"],
     ['fie$)', "field('$'))"],
     ['f$i', "field('$'i"],
@@ -84,12 +84,14 @@ describe('Tests checking the formula autocomplete logic', () => {
     ['u($', 'u($'],
     ['u$)', 'upper($))'],
     ['upper(f$)', "upper(field('$'))"],
+    ['lower(upper(field("$")', 'lower(upper(field("field name a")$)'],
     ['upper(f$', "upper(field('$')"],
     ['upper(l$)', 'upper(lower($))'],
     ['upper(l$', 'upper(lower($)'],
+    ['up$field("a")', 'upper($field("a")'],
   ]
   test.each(autocompleteTestsWhereDollarIsCursorLocation)(
-    'autocomplete tests where dollar is cursor location',
+    'autocomplete test for %s where dollar is cursor location',
     (startingFormulaWithCursor, expectedResultingFormulaWithCursor) => {
       const startingCursorPosition = startingFormulaWithCursor.indexOf('$')
       const formulaWithoutCursorMarker = startingFormulaWithCursor.replace(
