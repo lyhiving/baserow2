@@ -188,7 +188,6 @@ export class FieldType extends Registerable {
     super(...args)
     this.type = this.getType()
     this.iconClass = this.getIconClass()
-    this.sortIndicator = this.getSortIndicator()
     this.canSortInView = this.getCanSortInView()
     this.canBePrimaryField = this.getCanBePrimaryField()
     this.isReadOnly = this.getIsReadOnly()
@@ -222,7 +221,6 @@ export class FieldType extends Registerable {
       type: this.type,
       iconClass: this.iconClass,
       name: this.getName(),
-      sortIndicator: this.sortIndicator,
       canSortInView: this.canSortInView,
       isReadOnly: this.isReadOnly,
     }
@@ -359,10 +357,10 @@ export class FieldType extends Registerable {
    * Converts rowValue to its human readable form first before applying the
    * filter returned from getContainsFilterFunction.
    */
-  containsFilter(rowValue, filterValue, field) {
+  containsFilter(rowValue, filterValue, field, $registry) {
     return (
       filterValue === '' ||
-      this.getContainsFilterFunction()(
+      this.getContainsFilterFunction(field, $registry)(
         rowValue,
         this.toHumanReadableString(field, rowValue),
         filterValue
@@ -377,7 +375,7 @@ export class FieldType extends Registerable {
   notContainsFilter(rowValue, filterValue, field) {
     return (
       filterValue === '' ||
-      !this.getContainsFilterFunction()(
+      !this.getContainsFilterFunction(field)(
         rowValue,
         this.toHumanReadableString(field, rowValue),
         filterValue
@@ -1660,15 +1658,23 @@ export class FormulaFieldType extends FieldType {
     return RowEditFieldFormula
   }
 
-  getSort(name, order) {
-    return (a, b) => {
-      const stringA = a[name] === null ? '' : '' + a[name]
-      const stringB = b[name] === null ? '' : '' + b[name]
+  _mapFormulaTypeToFieldType(formulaType) {
+    return {
+      invalid: TextFieldType.getType(),
+      text: TextFieldType.getType(),
+      char: TextFieldType.getType(),
+      number: NumberFieldType.getType(),
+      date: DateFieldType.getType(),
+      boolean: BooleanFieldType.getType(),
+    }[formulaType]
+  }
 
-      return order === 'ASC'
-        ? stringA.localeCompare(stringB)
-        : stringB.localeCompare(stringA)
-    }
+  getSort(name, order, field, $registry) {
+    const underlyingFieldType = $registry.get(
+      'field',
+      this._mapFormulaTypeToFieldType(field.formula_type)
+    )
+    return underlyingFieldType.getSort(name, order)
   }
 
   getEmptyValue(field) {
@@ -1690,8 +1696,20 @@ export class FormulaFieldType extends FieldType {
     return 'UPPER(CONCAT("some", "text"))'
   }
 
-  getContainsFilterFunction() {
-    return genericContainsFilter
+  getContainsFilterFunction(field, $registry) {
+    const underlyingFieldType = $registry.get(
+      'field',
+      this._mapFormulaTypeToFieldType(field.formula_type)
+    )
+    return underlyingFieldType.getContainsFilterFunction()
+  }
+
+  getSortIndicator(field, $registry) {
+    const underlyingFieldType = $registry.get(
+      'field',
+      this._mapFormulaTypeToFieldType(field.formula_type)
+    )
+    return underlyingFieldType.getSortIndicator()
   }
 
   getFormComponent() {

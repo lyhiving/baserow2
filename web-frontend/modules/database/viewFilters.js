@@ -215,8 +215,8 @@ export class FilenameContainsViewFilterType extends ViewFilterType {
     return ['file']
   }
 
-  matches(rowValue, filterValue, field, fieldType) {
-    return fieldType.containsFilter(rowValue, filterValue, field)
+  matches(rowValue, filterValue, field, fieldType, $registry) {
+    return fieldType.containsFilter(rowValue, filterValue, field, $registry)
   }
 }
 
@@ -294,8 +294,8 @@ export class ContainsViewFilterType extends ViewFilterType {
     ]
   }
 
-  matches(rowValue, filterValue, field, fieldType) {
-    return fieldType.containsFilter(rowValue, filterValue, field)
+  matches(rowValue, filterValue, field, fieldType, $registry) {
+    return fieldType.containsFilter(rowValue, filterValue, field, $registry)
   }
 }
 
