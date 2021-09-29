@@ -98,6 +98,8 @@ class BaserowExpressionToDjangoExpressionGenerator(
         elif not hasattr(self.model_instance, db_field_name):
             raise UnknownFieldReference(field_id)
         else:
+            # We need to cast and be super explicit what type this raw value is so
+            # postgres does not get angry and claim this is an unknown type.
             return Cast(
                 Value(
                     getattr(self.model_instance, db_field_name),
@@ -114,6 +116,8 @@ class BaserowExpressionToDjangoExpressionGenerator(
     def visit_string_literal(
         self, string_literal: BaserowStringLiteral[BaserowFormulaType]
     ) -> Expression:
+        # We need to cast and be super explicit this is a text field so postgres
+        # does not get angry and claim this is an unknown type.
         return Cast(
             Value(string_literal.literal, output_field=models.TextField()),
             output_field=models.TextField(),
