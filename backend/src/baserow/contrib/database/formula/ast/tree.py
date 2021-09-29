@@ -443,11 +443,11 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
                 return typed_arg
         valid_type_names = ",".join(
             [
-                formula_type_handler_registry.get_by_model(t).type
+                formula_type_handler_registry.get_by_cls(t).type
                 for t in arg_types_for_this_arg
             ]
         )
-        expression_type_name = formula_type_handler_registry.get_by_model(
+        expression_type_name = formula_type_handler_registry.get_by_cls(
             expression_type
         ).type
         return typed_arg.with_invalid_type(

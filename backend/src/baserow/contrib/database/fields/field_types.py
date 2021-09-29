@@ -46,7 +46,7 @@ from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaCharType,
 )
 from baserow.contrib.database.formula.types.type_handler import (
-    BaserowFormulaTypeHandler,
+    BaserowFormulaTypeType,
 )
 from baserow.contrib.database.formula.types.type_types import BaserowFormulaType
 from baserow.contrib.database.validators import UnicodeRegexValidator
@@ -1822,7 +1822,7 @@ class FormulaFieldType(FieldType):
         :return: The BaserowFormulaType of the formula field instance.
         """
 
-        formula_type_handler: BaserowFormulaTypeHandler = (
+        formula_type_handler: BaserowFormulaTypeType = (
             formula_type_handler_registry.get(formula_field_instance.formula_type)
         )
         return formula_type_handler.construct_type_from_formula_field(
