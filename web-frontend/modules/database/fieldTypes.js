@@ -1687,7 +1687,7 @@ export class FormulaFieldType extends FieldType {
   }
 
   getDocsRequestExample(field) {
-    return 'UPPER(CONCAT("some", "text"))'
+    return 'Result of a formula calculation'
   }
 
   getContainsFilterFunction() {

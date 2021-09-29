@@ -1800,7 +1800,7 @@ class FormulaFieldType(FieldType):
             from baserow.contrib.database.fields.registries import field_type_registry
 
             field_type = field_type_registry.get_by_model(field.specific_class)
-            if field_type.type == "formula":
+            if field_type.type == FormulaFieldType.type:
                 formula_type = FormulaFieldType._get_formula_type_from_formula_field(
                     field.specific
                 )
