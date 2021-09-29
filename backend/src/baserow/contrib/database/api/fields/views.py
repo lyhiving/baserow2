@@ -49,18 +49,6 @@ from .serializers import (
 )
 
 
-def _build_field_response_with_related_fields(field, related_fields):
-    serializer = field_type_registry.get_serializer(field, FieldSerializer)
-    serializer_data = serializer.data
-
-    serializer_data["related_fields"] = [
-        field_type_registry.get_serializer(f, FieldSerializer).data
-        for f in related_fields
-    ]
-
-    return Response(serializer_data)
-
-
 class FieldsView(APIView):
     authentication_classes = APIView.authentication_classes + [TokenAuthentication]
     permission_classes = (IsAuthenticated,)
@@ -208,7 +196,10 @@ class FieldsView(APIView):
                 request.user, table, type_name, return_updated_fields=True, **data
             )
 
-        return _build_field_response_with_related_fields(field, updated_fields)
+        serializer = field_type_registry.get_serializer(
+            field, FieldSerializerWithRelatedFields, related_fields=updated_fields
+        )
+        return Response(serializer.data)
 
 
 class FieldView(APIView):
@@ -331,7 +322,10 @@ class FieldView(APIView):
                 request.user, field, type_name, return_updated_fields=True, **data
             )
 
-        return _build_field_response_with_related_fields(field, related_fields)
+        serializer = field_type_registry.get_serializer(
+            field, FieldSerializerWithRelatedFields, related_fields=related_fields
+        )
+        return Response(serializer.data)
 
     @extend_schema(
         parameters=[

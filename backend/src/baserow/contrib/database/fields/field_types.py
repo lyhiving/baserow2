@@ -32,7 +32,7 @@ from baserow.contrib.database.api.fields.serializers import (
     SelectOptionSerializer,
     FileFieldResponseSerializer,
 )
-from baserow.contrib.database.formula.errors import BaserowFormulaException
+from baserow.contrib.database.formula.exceptions import BaserowFormulaException
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
@@ -80,11 +80,11 @@ from .models import (
     PhoneNumberField,
     FormulaField,
 )
-from .registries import FieldType, field_type_registry
 from baserow.contrib.database.formula.parser.ast_mapper import (
     replace_field_refs_according_to_new_or_deleted_fields,
 )
 from baserow.contrib.database.formula.types.table_typer import TypedBaserowTable
+from .registries import FieldType, field_type_registry
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):

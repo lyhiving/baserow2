@@ -15,13 +15,14 @@ from baserow.core.registry import (
     ImportExportMixin,
     MapAPIExceptionsInstanceMixin,
 )
+from baserow.contrib.database import models
+
 from .exceptions import (
     ViewTypeAlreadyRegistered,
     ViewTypeDoesNotExist,
     ViewFilterTypeAlreadyRegistered,
     ViewFilterTypeDoesNotExist,
 )
-from .. import models
 
 
 class ViewType(

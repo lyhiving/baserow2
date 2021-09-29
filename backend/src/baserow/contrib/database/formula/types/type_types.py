@@ -13,7 +13,7 @@ from django.db.models import Q
 from rest_framework import serializers
 
 from baserow.contrib.database.formula.ast import tree
-from baserow.contrib.database.formula.types.errors import (
+from baserow.contrib.database.formula.types.exceptions import (
     InvalidFormulaType,
 )
 

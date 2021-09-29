@@ -66,7 +66,9 @@ class Migration(migrations.Migration):
                             ("ISO", "ISO (Y-M-D)"),
                         ],
                         default=None,
-                        help_text="EU (20/02/2020), US (02/20/2020) or ISO (2020-02-20)",
+                        help_text=(
+                            "EU (20/02/2020), US (02/20/2020) or ISO (2020-02-20)"
+                        ),
                         max_length=32,
                         null=True,
                     ),

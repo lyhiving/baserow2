@@ -9,7 +9,7 @@ from django.db.models import (
     DecimalField,
 )
 
-from baserow.contrib.database.formula.ast.errors import UnknownFieldReference
+from baserow.contrib.database.formula.ast.exceptions import UnknownFieldReference
 from baserow.contrib.database.formula.ast.tree import (
     BaserowStringLiteral,
     BaserowFunctionCall,

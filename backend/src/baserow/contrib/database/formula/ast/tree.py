@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db.models import Expression
 
 from baserow.contrib.database.formula.ast import visitors
-from baserow.contrib.database.formula.ast.errors import (
+from baserow.contrib.database.formula.ast.exceptions import (
     InvalidStringLiteralProvided,
     TooLargeStringLiteralProvided,
     InvalidIntLiteralProvided,

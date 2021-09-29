@@ -18,7 +18,7 @@ from baserow.contrib.database.formula.parser.ast_mapper import (
 )
 from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
 from baserow.contrib.database.formula.registries import formula_type_handler_registry
-from baserow.contrib.database.formula.types.errors import (
+from baserow.contrib.database.formula.types.exceptions import (
     NoSelfReferencesError,
     NoCircularReferencesError,
 )

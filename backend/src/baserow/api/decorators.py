@@ -48,7 +48,7 @@ def map_exceptions(exceptions: ExceptionMappingType):
     Example 3:
       with map_api_exceptions(
           {
-              SomeException: lambda e: ('ERROR_1, 404, 'Conditional Error')
+              SomeException: lambda e: ('ERROR_1', 404, 'Conditional Error')
               if "something" in str(e)
               else None
           }
@@ -64,7 +64,7 @@ def map_exceptions(exceptions: ExceptionMappingType):
     Example 4:
       with map_api_exceptions(
           {
-              SomeException: lambda e: ('ERROR_1, 404, 'Conditional Error')
+              SomeException: lambda e: ('ERROR_1', 404, 'Conditional Error')
               if "something" in str(e)
               else None
           }
