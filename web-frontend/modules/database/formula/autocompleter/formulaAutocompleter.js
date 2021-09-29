@@ -1,3 +1,19 @@
+/**
+ * Formula autocompleting in Baserow works in two steps:
+ * 1. Given a text cursor location in a formula we first figure out if it's on a
+ *    function name or a field reference. Taking this name / field reference we filter
+ *    down all of the possible fields and functions to just include the ones that start
+ *    with that name. This is done as the user moves around the formula in the web page
+ *    and the filtered functions and fields are updated and displayed in realtime.
+ * 2. When a user then presses tab somewhere in the formula we use the filtered
+ *    lists of fields and functions and try to insert the top field/function in this
+ *    list. If it's possible we autocomplete in the field/function and move the cursor
+ *    to a nice location for the user, otherwise the tab will do nothing.
+ *
+ * See the two functions in this file
+ * calculateFilteredFunctionsAndFieldsBasedOnCursorLocation which does step 1 and
+ * autocompleteFormula which does step 2 given the results of step 1.
+ */
 import { BaserowFormula } from '@baserow/modules/database/formula/parser/generated/BaserowFormula'
 import { getTokenStreamForFormula } from '@baserow/modules/database/formula/parser/parser'
 import { BaserowFormulaLexer } from '@baserow/modules/database/formula/parser/generated/BaserowFormulaLexer'
