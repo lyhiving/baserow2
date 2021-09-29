@@ -3,7 +3,6 @@ from typing import Optional
 from django.db import models
 from django.db.models import Field, Value
 from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
-from django.db.models.functions import Cast
 
 from baserow.contrib.database.formula.ast.tree import BaserowExpression
 from baserow.contrib.database.formula.expression_generator.generator import (
@@ -101,7 +100,7 @@ class BaserowExpressionField(models.Field):
         if self.expression is None:
             # We need to cast and be super explicit this is a text field so postgres
             # does not get angry and claim this is an unknown type.
-            return Cast(Value(None), output_field=models.TextField())
+            return Value(None)
         else:
             return baserow_expression_to_django_expression(
                 self.expression, model_instance

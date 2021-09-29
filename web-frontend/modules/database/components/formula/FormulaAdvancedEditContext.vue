@@ -45,22 +45,24 @@
 </template>
 
 <script>
+import AutoExpandableTextarea from '@baserow/modules/core/components/helpers/AutoExpandableTextarea'
 import context from '@baserow/modules/core/mixins/context'
+
 import {
   autocompleteFormula,
   calculateFilteredFunctionsAndFieldsBasedOnCursorLocation,
 } from '@baserow/modules/database/formula/autocompleter/formulaAutocompleter'
 import FormulaFieldItemGroup from '@baserow/modules/database/components/formula/FormulaFieldItemGroup'
 import FormulaFieldItemDescription from '@baserow/modules/database/components/formula/FormulaFieldItemDescription'
-import AutoExpandableTextarea from '@baserow/modules/core/components/helpers/AutoExpandableTextarea'
 
 const TAB_KEYCODE = 9
+
 export default {
   name: 'FormulaAdvancedEditContext',
   components: {
+    AutoExpandableTextarea,
     FormulaFieldItemDescription,
     FormulaFieldItemGroup,
-    AutoExpandableTextarea,
   },
   mixins: [context],
   props: {

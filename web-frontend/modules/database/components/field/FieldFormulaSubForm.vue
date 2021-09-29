@@ -26,18 +26,19 @@
 </template>
 
 <script>
+import { required } from 'vuelidate/lib/validators'
+import { mapGetters } from 'vuex'
+
 import form from '@baserow/modules/core/mixins/form'
 import { notifyIf } from '@baserow/modules/core/utils/error'
 
 import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
-import { mapGetters } from 'vuex'
-import parseBaserowFormula from '@baserow/modules/database/formula/parser/parser'
-import { replaceFieldByIdWithField } from '@baserow/modules/database/formula/parser/replaceFieldByIdWithField'
-import { updateFieldNames } from '@baserow/modules/database/formula/parser/updateFieldNames'
-import { required } from 'vuelidate/lib/validators'
 import FieldFormulaInitialSubForm from '@baserow/modules/database/components/formula/FieldFormulaInitialSubForm'
 import FormulaAdvancedEditContext from '@baserow/modules/database/components/formula/FormulaAdvancedEditContext'
 import FormulaService from '@baserow/modules/database/services/formula'
+import parseBaserowFormula from '@baserow/modules/database/formula/parser/parser'
+import { replaceFieldByIdWithField } from '@baserow/modules/database/formula/parser/replaceFieldByIdWithField'
+import { updateFieldNames } from '@baserow/modules/database/formula/parser/updateFieldNames'
 
 export default {
   name: 'FieldFormulaSubForm',
@@ -46,12 +47,6 @@ export default {
     FormulaAdvancedEditContext,
   },
   mixins: [form, fieldSubForm],
-  props: {
-    table: {
-      type: Object,
-      required: true,
-    },
-  },
   data() {
     return {
       allowedValues: ['formula'],

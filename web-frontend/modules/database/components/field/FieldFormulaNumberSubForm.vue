@@ -37,6 +37,7 @@
 import { required } from 'vuelidate/lib/validators'
 
 import form from '@baserow/modules/core/mixins/form'
+
 import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
 
 export default {

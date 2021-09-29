@@ -8,7 +8,6 @@
         <FieldSelectOptions
           ref="selectOptions"
           v-model="values.select_options"
-          :table="table"
         ></FieldSelectOptions>
       </div>
     </div>

@@ -5,6 +5,7 @@ from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.formula.parser.ast_mapper import (
     replace_field_refs_according_to_new_or_deleted_fields,
 )
+from baserow.contrib.database.rows.handler import RowHandler
 from baserow.contrib.database.views.handler import ViewHandler
 
 
@@ -235,3 +236,22 @@ def test_can_change_formula_type_breaking_other_fields(data_fixture):
     )
     second_formula_field.refresh_from_db()
     assert "invalid" in second_formula_field.error
+
+
+@pytest.mark.django_db
+def test_can_still_insert_rows_with_an_invalid_but_previously_date_formula_field(
+    data_fixture,
+):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    handler = FieldHandler()
+    date_field = handler.create_field(
+        user=user, table=table, name="1", type_name="date"
+    )
+    formula_field = handler.create_field(
+        user=user, table=table, type_name="formula", name="2", formula="field('1')"
+    )
+    handler.update_field(user=user, field=date_field, new_type_name="single_select")
+
+    row = RowHandler().create_row(user=user, table=table)
+    assert getattr(row, f"field_{formula_field.id}") is None

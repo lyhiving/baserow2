@@ -34,10 +34,11 @@
   </div>
 </template>
 <script>
+import form from '@baserow/modules/core/mixins/form'
+
+import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
 import FieldFormulaNumberSubForm from '@baserow/modules/database/components/field/FieldFormulaNumberSubForm'
 import FieldDateSubForm from '@baserow/modules/database/components/field/FieldDateSubForm'
-import form from '@baserow/modules/core/mixins/form'
-import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
 
 export default {
   name: 'FieldFormulaInitialSubForm',
