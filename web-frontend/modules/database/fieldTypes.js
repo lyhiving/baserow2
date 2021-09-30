@@ -5,6 +5,7 @@ import {
   isValidURL,
   isValidEmail,
   isSimplePhoneNumber,
+  isNumeric,
 } from '@baserow/modules/core/utils/string'
 import { Registerable } from '@baserow/modules/core/registry'
 
@@ -179,11 +180,10 @@ export class FieldType extends Registerable {
     return true
   }
 
-  constructor() {
-    super()
+  constructor(...args) {
+    super(...args)
     this.type = this.getType()
     this.iconClass = this.getIconClass()
-    this.name = this.getName()
     this.sortIndicator = this.getSortIndicator()
     this.canSortInView = this.getCanSortInView()
     this.canBePrimaryField = this.getCanBePrimaryField()
@@ -217,7 +217,7 @@ export class FieldType extends Registerable {
     return {
       type: this.type,
       iconClass: this.iconClass,
-      name: this.name,
+      name: this.getName(),
       sortIndicator: this.sortIndicator,
       canSortInView: this.canSortInView,
       isReadOnly: this.isReadOnly,
@@ -261,7 +261,13 @@ export class FieldType extends Registerable {
    * converted to a string.
    */
   prepareValueForCopy(field, value) {
-    return value.toString()
+    // In case that the 'value' is null or undefined (which means that the cell is empty)
+    // we simply want to return an empty string.
+    if (value == null) {
+      return ''
+    } else {
+      return value.toString()
+    }
   }
 
   /**
@@ -446,7 +452,8 @@ export class TextFieldType extends FieldType {
   }
 
   getName() {
-    return 'Single line text'
+    const { i18n } = this.app
+    return i18n.t('fieldType.singleLineText')
   }
 
   getFormComponent() {
@@ -507,7 +514,8 @@ export class LongTextFieldType extends FieldType {
   }
 
   getName() {
-    return 'Long text'
+    const { i18n } = this.app
+    return i18n.t('fieldType.longText')
   }
 
   getGridViewFieldComponent() {
@@ -564,7 +572,8 @@ export class LinkRowFieldType extends FieldType {
   }
 
   getName() {
-    return 'Link to table'
+    const { i18n } = this.app
+    return i18n.t('fieldType.linkToTable')
   }
 
   getFormComponent() {
@@ -682,7 +691,8 @@ export class NumberFieldType extends FieldType {
   }
 
   getName() {
-    return 'Number'
+    const { i18n } = this.app
+    return i18n.t('fieldType.number')
   }
 
   getFormComponent() {
@@ -834,7 +844,8 @@ export class BooleanFieldType extends FieldType {
   }
 
   getName() {
-    return 'Boolean'
+    const { i18n } = this.app
+    return i18n.t('fieldType.boolean')
   }
 
   getGridViewFieldComponent() {
@@ -985,7 +996,8 @@ export class DateFieldType extends BaseDateFieldType {
   }
 
   getName() {
-    return 'Date'
+    const { i18n } = this.app
+    return i18n.t('fieldType.date')
   }
 
   getGridViewFieldComponent() {
@@ -1090,7 +1102,8 @@ export class LastModifiedFieldType extends CreatedOnLastModifiedBaseFieldType {
   }
 
   getName() {
-    return 'Last Modified'
+    const { i18n } = this.app
+    return i18n.t('fieldType.lastModified')
   }
 
   getDocsDescription(field) {
@@ -1137,7 +1150,8 @@ export class CreatedOnFieldType extends CreatedOnLastModifiedBaseFieldType {
   }
 
   getName() {
-    return 'Created On'
+    const { i18n } = this.app
+    return i18n.t('fieldType.createdOn')
   }
 }
 
@@ -1151,7 +1165,8 @@ export class URLFieldType extends FieldType {
   }
 
   getName() {
-    return 'URL'
+    const { i18n } = this.app
+    return i18n.t('fieldType.url')
   }
 
   getGridViewFieldComponent() {
@@ -1223,7 +1238,8 @@ export class EmailFieldType extends FieldType {
   }
 
   getName() {
-    return 'Email'
+    const { i18n } = this.app
+    return i18n.t('fieldType.email')
   }
 
   getGridViewFieldComponent() {
@@ -1298,7 +1314,8 @@ export class FileFieldType extends FieldType {
   }
 
   getName() {
-    return 'File'
+    const { i18n } = this.app
+    return i18n.t('fieldType.file')
   }
 
   getGridViewFieldComponent() {
@@ -1412,7 +1429,8 @@ export class SingleSelectFieldType extends FieldType {
   }
 
   getName() {
-    return 'Single select'
+    const { i18n } = this.app
+    return i18n.t('fieldType.singleSelect')
   }
 
   getFormComponent() {
@@ -1456,15 +1474,28 @@ export class SingleSelectFieldType extends FieldType {
     return value.id
   }
 
-  prepareValueForPaste(field, clipboardData) {
-    const value = parseInt(clipboardData.getData('text'))
-
-    for (let i = 0; i <= field.select_options.length; i++) {
-      const option = field.select_options[i]
-      if (option.id === value) {
-        return option
-      }
+  _findOptionWithMatchingId(field, rawTextValue) {
+    if (isNumeric(rawTextValue)) {
+      const pastedOptionId = parseInt(rawTextValue)
+      return field.select_options.find((option) => option.id === pastedOptionId)
     }
+    return undefined
+  }
+
+  _findOptionWithMatchingValue(field, rawTextValue) {
+    const trimmedPastedText = rawTextValue.trim()
+    return field.select_options.find(
+      (option) => option.value === trimmedPastedText
+    )
+  }
+
+  prepareValueForPaste(field, clipboardData) {
+    const rawTextValue = clipboardData.getData('text')
+
+    return (
+      this._findOptionWithMatchingId(field, rawTextValue) ||
+      this._findOptionWithMatchingValue(field, rawTextValue)
+    )
   }
 
   toHumanReadableString(field, value) {
@@ -1525,7 +1556,8 @@ export class PhoneNumberFieldType extends FieldType {
   }
 
   getName() {
-    return 'Phone Number'
+    const { i18n } = this.app
+    return i18n.t('fieldType.phoneNumber')
   }
 
   getGridViewFieldComponent() {

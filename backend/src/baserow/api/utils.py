@@ -1,13 +1,12 @@
 from contextlib import contextmanager
 
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer
 
 from baserow.core.exceptions import InstanceTypeDoesNotExist
-
 from .exceptions import RequestBodyValidationException
 
 
@@ -60,7 +59,12 @@ def map_exceptions(mapping):
         raise exc
 
 
-def validate_data(serializer_class, data, partial=False):
+def validate_data(
+    serializer_class,
+    data,
+    partial=False,
+    exception_to_raise=RequestBodyValidationException,
+):
     """
     Validates the provided data via the provided serializer class. If the data doesn't
     match with the schema of the serializer an api exception containing more detailed
@@ -84,12 +88,12 @@ def validate_data(serializer_class, data, partial=False):
         elif isinstance(error, list):
             return [serialize_errors_recursive(errors) for errors in error]
         else:
-            return {"error": force_text(error), "code": error.code}
+            return {"error": force_str(error), "code": error.code}
 
     serializer = serializer_class(data=data, partial=partial)
     if not serializer.is_valid():
         detail = serialize_errors_recursive(serializer.errors)
-        raise RequestBodyValidationException(detail)
+        raise exception_to_raise(detail)
 
     return serializer.data
 
