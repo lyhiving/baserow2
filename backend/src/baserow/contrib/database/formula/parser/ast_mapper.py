@@ -1,9 +1,7 @@
 from decimal import Decimal
-from io import StringIO
+from typing import Set
 
 from antlr4 import InputStream, CommonTokenStream
-from antlr4.BufferedTokenStream import BufferedTokenStream
-from antlr4.Token import Token
 from antlr4.error.ErrorListener import ErrorListener
 
 from baserow.contrib.database.formula.ast.tree import (
@@ -16,12 +14,12 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowDecimalLiteral,
     BaserowBooleanLiteral,
 )
-from baserow.contrib.database.formula.parser.errors import (
+from baserow.contrib.database.formula.parser.exceptions import (
     InvalidNumberOfArguments,
     BaserowFormulaSyntaxError,
-    UnknownFieldReference,
     MaximumFormulaSizeError,
-    UnknownBinaryOperator,
+    UnknownOperator,
+    UnknownFieldByIdReference,
 )
 from baserow.contrib.database.formula.parser.generated.BaserowFormula import (
     BaserowFormula,
@@ -31,6 +29,15 @@ from baserow.contrib.database.formula.parser.generated.BaserowFormulaLexer impor
 )
 from baserow.contrib.database.formula.parser.generated.BaserowFormulaVisitor import (
     BaserowFormulaVisitor,
+)
+from baserow.contrib.database.formula.parser.parser import (
+    convert_string_literal_token_to_string,
+)
+from baserow.contrib.database.formula.parser.replace_field_by_id_with_field import (
+    replace_field_by_id_with_field,
+)
+from baserow.contrib.database.formula.parser.replace_field_with_field_by_id import (
+    replace_field_with_field_by_id,
 )
 from baserow.contrib.database.formula.registries import formula_function_registry
 from baserow.contrib.database.formula.types.type_types import UnTyped
@@ -50,7 +57,9 @@ class BaserowFormulaErrorListener(ErrorListener):
         raise BaserowFormulaSyntaxError(message)
 
 
-def raw_formula_to_untyped_expression(formula: str) -> BaserowExpression[UnTyped]:
+def raw_formula_to_untyped_expression(
+    formula: str, valid_field_ids: Set[int]
+) -> BaserowExpression[UnTyped]:
     """
     Takes a raw user input string, syntax checks it to see if it matches the syntax of
     a Baserow Formula (raises a BaserowFormulaSyntaxError if not) and converts it into
@@ -69,7 +78,7 @@ def raw_formula_to_untyped_expression(formula: str) -> BaserowExpression[UnTyped
     parser.removeErrorListeners()
     parser.addErrorListener(BaserowFormulaErrorListener())
     tree = parser.root()
-    return BaserowFormulaToBaserowASTMapper().visit(tree)
+    return BaserowFormulaToBaserowASTMapper(valid_field_ids).visit(tree)
 
 
 def replace_field_refs_according_to_new_or_deleted_fields(
@@ -98,142 +107,14 @@ def replace_field_refs_according_to_new_or_deleted_fields(
         still present in this returned formula string.
     """
     try:
-        lexer = BaserowFormulaLexer(InputStream(formula))
-        stream = BufferedTokenStream(lexer)
-        return _translate_trashed_or_deleted_field_by_ids_to_fields(
-            stream, trash_ids_to_names, new_names_to_id
+        field_names_replaced_with_field_by_id = replace_field_with_field_by_id(
+            formula, new_names_to_id
+        )
+        return replace_field_by_id_with_field(
+            field_names_replaced_with_field_by_id, trash_ids_to_names
         )
     except RecursionError:
         raise MaximumFormulaSizeError()
-
-
-def _translate_trashed_or_deleted_field_by_ids_to_fields(
-    stream, trashed_ids_to_names, new_names_to_ids
-):
-    """
-    Takes a raw token stream of a Baserow formula and translates any field('..')
-    references to field_by_id(..) references. Needs to operate over the raw tokens as
-    we want to preserve any whitespace or comments and persist the translated formula
-    back in a string form to the db.
-    """
-
-    stream.lazyInit()
-    stream.fill()
-    start = 0
-    stop = len(stream.tokens) - 1
-    if start < 0 or stop < 0 or stop < start:
-        return ""
-    field_by_id_reference_started = False
-    searching_for_field_by_id_literal = False
-    field_reference_started = False
-    searching_for_field_reference_literal = False
-    with StringIO() as buf:
-        for i in range(start, stop + 1):
-            t = stream.tokens[i]
-            out = t.text
-
-            # Normal tokens are all tokens other than white space or comments
-            is_normal_token = t.channel == 0
-            if searching_for_field_by_id_literal:
-                # Continue searching through whitespace or comments until we encounter
-                # the next normal token
-                if is_normal_token:
-                    if t.type == BaserowFormulaLexer.INTEGER_LITERAL:
-                        trashed_id = int(t.text)
-                        if trashed_id not in trashed_ids_to_names:
-                            raise UnknownFieldReference()
-                        out = f"'{trashed_ids_to_names[trashed_id]}'"
-                    else:
-                        searching_for_field_by_id_literal = False
-
-            if field_by_id_reference_started:
-                # Continue searching through whitespace or comments until we encounter
-                # the next normal token
-                if is_normal_token:
-                    field_by_id_reference_started = False
-                    if t.type == BaserowFormulaLexer.OPEN_PAREN:
-                        searching_for_field_by_id_literal = True
-
-            if searching_for_field_reference_literal:
-                # Continue searching through whitespace or comments until we encounter
-                # the next normal token
-                if is_normal_token:
-                    is_singleq = t.type == BaserowFormulaLexer.SINGLEQ_STRING_LITERAL
-                    is_doubleq = t.type == BaserowFormulaLexer.DOUBLEQ_STRING_LITERAL
-                    if is_singleq or is_doubleq:
-                        raw_field_name = _convert_string_literal_token_to_string(
-                            t.text, is_singleq
-                        )
-                        if raw_field_name not in new_names_to_ids:
-                            raise UnknownFieldReference()
-                        field_id = new_names_to_ids[raw_field_name]
-                        out = str(field_id)
-                    else:
-                        searching_for_field_reference_literal = False
-
-            if field_reference_started:
-                if is_normal_token:
-                    field_reference_started = False
-                    if t.type == BaserowFormulaLexer.OPEN_PAREN:
-                        searching_for_field_reference_literal = True
-
-            if t.type == BaserowFormulaLexer.FIELDBYID:
-                looked_ahead_id = _lookahead_to_id(i + 1, stop + 1, stream)
-                if looked_ahead_id and looked_ahead_id in trashed_ids_to_names:
-                    out = "field"
-                    field_by_id_reference_started = True
-            if t.type == BaserowFormulaLexer.FIELD:
-                looked_ahead_name = _lookahead_to_name(i + 1, stop + 1, stream)
-                if looked_ahead_name and looked_ahead_name in new_names_to_ids:
-                    out = "field_by_id"
-                    field_reference_started = True
-            if t.type == Token.EOF:
-                break
-            buf.write(out)
-        return buf.getvalue()
-
-
-def _lookahead_to_id(start, stop, stream):
-    search_for_field_id = False
-    for i in range(start, stop + 1):
-        t = stream.tokens[i]
-        is_normal_token = t.channel == 0
-        if is_normal_token:
-            if t.type == BaserowFormulaLexer.OPEN_PAREN and not search_for_field_id:
-                search_for_field_id = True
-            elif t.type == BaserowFormulaLexer.INTEGER_LITERAL and search_for_field_id:
-                return int(t.text)
-            else:
-                return None
-        if t.type == Token.EOF:
-            return None
-
-
-def _lookahead_to_name(start, stop, stream):
-    search_for_field_name = False
-    for i in range(start, stop + 1):
-        t = stream.tokens[i]
-        is_normal_token = t.channel == 0
-        if is_normal_token:
-            is_singleq = t.type == BaserowFormulaLexer.SINGLEQ_STRING_LITERAL
-            is_doubleq = t.type == BaserowFormulaLexer.DOUBLEQ_STRING_LITERAL
-            if t.type == BaserowFormulaLexer.OPEN_PAREN and not search_for_field_name:
-                search_for_field_name = True
-            elif (is_singleq or is_doubleq) and search_for_field_name:
-                return _convert_string_literal_token_to_string(t.text, is_singleq)
-            else:
-                return None
-        if t.type == Token.EOF:
-            return None
-
-
-def _convert_string_literal_token_to_string(text, is_single_q):
-    literal_without_outer_quotes = text[1:-1]
-    if is_single_q:
-        literal = literal_without_outer_quotes.replace("\\'", "'")
-    else:
-        literal = literal_without_outer_quotes.replace('\\"', '"')
-    return literal
 
 
 class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
@@ -246,10 +127,14 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
     not in the registry.
     """
 
+    def __init__(self, valid_field_ids: Set[int]):
+        self.valid_field_ids = valid_field_ids
+
     def visitRoot(self, ctx: BaserowFormula.RootContext):
         return ctx.expr().accept(self)
 
     def visitStringLiteral(self, ctx: BaserowFormula.StringLiteralContext):
+        # noinspection PyTypeChecker
         literal = self.process_string(ctx)
         return BaserowStringLiteral(literal, None)
 
@@ -304,7 +189,7 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
         elif ctx.LTE():
             op = "less_than_or_equal"
         else:
-            raise UnknownBinaryOperator(ctx.getText())
+            raise UnknownOperator(ctx.getText())
 
         return self._do_func(ctx.expr(), op)
 
@@ -333,11 +218,13 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
 
     def visitFieldReference(self, ctx: BaserowFormula.FieldReferenceContext):
         reference = ctx.field_reference()
-        field_name = _convert_string_literal_token_to_string(
+        field_name = convert_string_literal_token_to_string(
             reference.getText(), reference.SINGLEQ_STRING_LITERAL()
         )
         return BaserowFieldReference[UnTyped](field_name, None)
 
     def visitFieldByIdReference(self, ctx: BaserowFormula.FieldByIdReferenceContext):
         field_id = int(str(ctx.INTEGER_LITERAL()))
+        if field_id not in self.valid_field_ids:
+            raise UnknownFieldByIdReference(field_id)
         return BaserowFieldByIdReference[UnTyped](field_id, None)

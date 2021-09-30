@@ -1163,5 +1163,5 @@ def test_formula_field_type(api_client, data_fixture):
     assert response_json["error"] == "ERROR_WITH_FORMULA"
     assert (
         response_json["detail"]
-        == "The formula is invalid because: version is not a valid function."
+        == "Error with formula: version is not a valid function."
     )

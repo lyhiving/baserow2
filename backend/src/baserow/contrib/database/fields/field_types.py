@@ -32,7 +32,7 @@ from baserow.contrib.database.api.fields.serializers import (
     SelectOptionSerializer,
     FileFieldResponseSerializer,
 )
-from baserow.contrib.database.formula.errors import BaserowFormulaException
+from baserow.contrib.database.formula.exceptions import BaserowFormulaException
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
@@ -46,7 +46,7 @@ from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaCharType,
 )
 from baserow.contrib.database.formula.types.type_handler import (
-    BaserowFormulaTypeHandler,
+    BaserowFormulaTypeType,
 )
 from baserow.contrib.database.formula.types.type_types import BaserowFormulaType
 from baserow.contrib.database.validators import UnicodeRegexValidator
@@ -80,11 +80,11 @@ from .models import (
     PhoneNumberField,
     FormulaField,
 )
-from .registries import FieldType, field_type_registry
 from baserow.contrib.database.formula.parser.ast_mapper import (
     replace_field_refs_according_to_new_or_deleted_fields,
 )
 from baserow.contrib.database.formula.types.table_typer import TypedBaserowTable
+from .registries import FieldType, field_type_registry
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1800,7 +1800,7 @@ class FormulaFieldType(FieldType):
             from baserow.contrib.database.fields.registries import field_type_registry
 
             field_type = field_type_registry.get_by_model(field.specific_class)
-            if field_type.type == "formula":
+            if field_type.type == FormulaFieldType.type:
                 formula_type = FormulaFieldType._get_formula_type_from_formula_field(
                     field.specific
                 )
@@ -1822,7 +1822,7 @@ class FormulaFieldType(FieldType):
         :return: The BaserowFormulaType of the formula field instance.
         """
 
-        formula_type_handler: BaserowFormulaTypeHandler = (
+        formula_type_handler: BaserowFormulaTypeType = (
             formula_type_handler_registry.get(formula_field_instance.formula_type)
         )
         return formula_type_handler.construct_type_from_formula_field(

@@ -295,7 +295,15 @@ export class BaserowToText extends BaserowFunctionDefinition {
   }
 
   getFormulaType() {
-    return 'text'
+    return 'number'
+  }
+
+  isOperator() {
+    return true
+  }
+
+  getOperator() {
+    return '+'
   }
 }
 

@@ -7,7 +7,7 @@
           :class="{ 'button--loading': loading }"
           :disabled="loading"
         >
-          Create
+          {{ $t('action.create') }}
         </button>
       </div>
     </FieldForm>
@@ -63,7 +63,10 @@ export default {
         }
       } catch (error) {
         this.loading = false
-        notifyIf(error, 'field')
+        const handledByForm = this.$refs.form.handleError(error)
+        if (!handledByForm) {
+          notifyIf(error, 'field')
+        }
       }
     },
   },

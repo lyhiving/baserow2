@@ -5,6 +5,8 @@ from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.formula.parser.ast_mapper import (
     replace_field_refs_according_to_new_or_deleted_fields,
 )
+from baserow.contrib.database.formula.types.type_types import BaserowFormulaInvalidType
+from baserow.contrib.database.rows.handler import RowHandler
 from baserow.contrib.database.views.handler import ViewHandler
 
 
@@ -127,6 +129,14 @@ def test_can_replace_field_with_field_by_id_whilst_keeping_whitespace(data_fixtu
         )
         == """concat(\nfield('Deleted Field'), 'test')"""
     )
+    assert (
+        replace_field_refs_according_to_new_or_deleted_fields(
+            """concat(\nfield('Deleted Field'), 'test')""",
+            {2: "Deleted Field"},
+            {"My Field Name": 3},
+        )
+        == """concat(\nfield('Deleted Field'), 'test')"""
+    )
 
 
 @pytest.mark.django_db
@@ -163,7 +173,7 @@ def test_can_use_complex_date_filters_on_formula_field(data_fixture):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
     grid_view = data_fixture.create_grid_view(user, table=table)
-    data_fixture.create_date_field(user=user, name="date_Field")
+    data_fixture.create_date_field(user=user, table=table, name="date_field")
     formula_field = data_fixture.create_formula_field(
         table=table, formula="field('date_field')", formula_type="date", name="formula"
     )
@@ -186,7 +196,9 @@ def test_can_use_complex_contains_filters_on_formula_field(data_fixture):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
     grid_view = data_fixture.create_grid_view(user, table=table)
-    data_fixture.create_date_field(user=user, name="date_field", date_format="US")
+    data_fixture.create_date_field(
+        user=user, table=table, name="date_field", date_format="US"
+    )
     formula_field = data_fixture.create_formula_field(
         table=table,
         formula="field('date_field')",
@@ -207,3 +219,41 @@ def test_can_use_complex_contains_filters_on_formula_field(data_fixture):
     queryset = ViewHandler().get_queryset(grid_view)
     assert not queryset.exists()
     assert queryset.count() == 0
+
+
+@pytest.mark.django_db
+def test_can_change_formula_type_breaking_other_fields(data_fixture):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    handler = FieldHandler()
+    first_formula_field = handler.create_field(
+        user=user, table=table, name="1", type_name="formula", formula="1+1"
+    )
+    second_formula_field = handler.create_field(
+        user=user, table=table, type_name="formula", name="2", formula="field('1')+1"
+    )
+    handler.update_field(
+        user=user, field=first_formula_field, new_type_name="formula", formula="'a'"
+    )
+    second_formula_field.refresh_from_db()
+    assert second_formula_field.formula_type == BaserowFormulaInvalidType.type
+    assert "argument number 1" in second_formula_field.error
+
+
+@pytest.mark.django_db
+def test_can_still_insert_rows_with_an_invalid_but_previously_date_formula_field(
+    data_fixture,
+):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    handler = FieldHandler()
+    date_field = handler.create_field(
+        user=user, table=table, name="1", type_name="date"
+    )
+    formula_field = handler.create_field(
+        user=user, table=table, type_name="formula", name="2", formula="field('1')"
+    )
+    handler.update_field(user=user, field=date_field, new_type_name="single_select")
+
+    row = RowHandler().create_row(user=user, table=table)
+    assert getattr(row, f"field_{formula_field.id}") is None

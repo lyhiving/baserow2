@@ -8,7 +8,7 @@ from baserow.contrib.database.fields.models import FormulaField, Field
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.formula.registries import formula_type_handler_registry
 from baserow.contrib.database.formula.types.type_handler import (
-    BaserowFormulaTypeHandler,
+    BaserowFormulaTypeType,
 )
 from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
@@ -25,7 +25,7 @@ def _check_if_formula_type_change_requires_drop_recreate(
     old_formula_field: FormulaField, new_type: BaserowFormulaType
 ):
     old_formula_field_type = old_formula_field.formula_type
-    old_handler: BaserowFormulaTypeHandler = formula_type_handler_registry.get(
+    old_handler: BaserowFormulaTypeType = formula_type_handler_registry.get(
         old_formula_field_type
     )
     old_type = old_handler.construct_type_from_formula_field(old_formula_field)

@@ -13,7 +13,7 @@ from django.db.models import Q
 from rest_framework import serializers
 
 from baserow.contrib.database.formula.ast import tree
-from baserow.contrib.database.formula.types.errors import (
+from baserow.contrib.database.formula.types.exceptions import (
     InvalidFormulaType,
 )
 
@@ -141,6 +141,18 @@ class BaserowFormulaType(abc.ABC):
 
         return not isinstance(self, type(old_type))
 
+    def wrap_at_field_level(self, expr: "tree.BaserowExpression[BaserowFormulaType]"):
+        """
+        If a field of this formula type requires any wrapping at the highest level
+        do it here.
+
+        :param expr: The calculated and typed expression of this type.
+        :return: A new expression with any required extra calculations done at the top
+            field level.
+        """
+
+        return expr
+
     def __str__(self) -> str:
         return self.type
 
@@ -224,6 +236,13 @@ class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):
         )
 
         return to_text_func_call.with_valid_type(BaserowFormulaTextType())
+
+    def wrap_at_field_level(self, expr: "tree.BaserowExpression[BaserowFormulaType]"):
+        from baserow.contrib.database.formula.registries import (
+            formula_function_registry,
+        )
+
+        return formula_function_registry.get("error_to_null").call_and_type_with(expr)
 
 
 UnTyped = type(None)

@@ -4,8 +4,9 @@
       <label class="control__label control__label--small">Number type</label>
       <div class="control__elements">
         <Dropdown
-          v-model="numberType"
           :class="{ 'dropdown--error': $v.numberType.$error }"
+          :value="numberType"
+          @input="changeNumberType($event)"
           @hide="$v.numberType.$touch()"
         >
           <DropdownItem name="Integer (1)" value="INTEGER"></DropdownItem>
@@ -25,7 +26,7 @@
           <DropdownItem name="1.00" :value="2"></DropdownItem>
           <DropdownItem name="1.000" :value="3"></DropdownItem>
           <DropdownItem name="1.0000" :value="4"></DropdownItem>
-          <DropdownItem name="1.0000" :value="5"></DropdownItem>
+          <DropdownItem name="1.00000" :value="5"></DropdownItem>
         </Dropdown>
       </div>
     </div>
@@ -36,6 +37,7 @@
 import { required } from 'vuelidate/lib/validators'
 
 import form from '@baserow/modules/core/mixins/form'
+
 import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
 
 export default {
@@ -44,14 +46,18 @@ export default {
   data() {
     return {
       allowedValues: ['number_decimal_places'],
-      numberType: 'INTEGER',
       values: {
         number_decimal_places: 0,
       },
     }
   },
-  watch: {
-    numberType(newValue) {
+  computed: {
+    numberType() {
+      return this.values.number_decimal_places === 0 ? 'INTEGER' : 'DECIMAL'
+    },
+  },
+  methods: {
+    changeNumberType(newValue) {
       if (newValue === 'INTEGER') {
         this.values.number_decimal_places = 0
       } else {

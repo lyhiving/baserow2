@@ -16,9 +16,9 @@ from baserow.contrib.database.formula.parser.ast_mapper import (
     raw_formula_to_untyped_expression,
     replace_field_refs_according_to_new_or_deleted_fields,
 )
-from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
+from baserow.contrib.database.formula.parser.exceptions import MaximumFormulaSizeError
 from baserow.contrib.database.formula.registries import formula_type_handler_registry
-from baserow.contrib.database.formula.types.errors import (
+from baserow.contrib.database.formula.types.exceptions import (
     NoSelfReferencesError,
     NoCircularReferencesError,
 )
@@ -26,7 +26,7 @@ from baserow.contrib.database.formula.types.type_defs import (
     BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
 )
 from baserow.contrib.database.formula.types.type_handler import (
-    BaserowFormulaTypeHandler,
+    BaserowFormulaTypeType,
 )
 from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
@@ -41,13 +41,19 @@ from baserow.contrib.database.formula.types.visitors import (
 from baserow.contrib.database.table import models
 
 
-def _get_all_fields_and_build_name_dict(table):
+def _get_all_fields_and_build_name_dict(
+    table: "models.Table", overridden_field: Optional[Field]
+):
     all_fields = []
     field_name_to_id = {}
     for field in table.field_set.all():
-        field = field.specific
-        all_fields.append(field)
-        field_name_to_id[field.name] = field.id
+        if overridden_field and field.id == overridden_field.id:
+            extracted_field = overridden_field
+        else:
+            extracted_field = field
+        extracted_field = extracted_field.specific
+        all_fields.append(extracted_field)
+        field_name_to_id[extracted_field.name] = extracted_field.id
     return all_fields, field_name_to_id
 
 
@@ -59,7 +65,9 @@ def _fix_deleted_or_new_refs_in_formula_and_parse_into_untyped_formula(
     fixed_formula = replace_field_refs_according_to_new_or_deleted_fields(
         field.formula, deleted_field_id_to_name, field_name_to_id
     )
-    untyped_expression = raw_formula_to_untyped_expression(fixed_formula)
+    untyped_expression = raw_formula_to_untyped_expression(
+        fixed_formula, set(field_name_to_id.values())
+    )
     return UntypedFormulaFieldWithReferences(field, fixed_formula, untyped_expression)
 
 
@@ -163,8 +171,8 @@ class UntypedFormulaFieldWithReferences:
         updated_formula_field.formula = self.fixed_raw_formula
 
         new_formula_type = typed_expression.expression_type
-        formula_type_handler: BaserowFormulaTypeHandler = (
-            formula_type_handler_registry.get_by_model(new_formula_type)
+        formula_type_handler: BaserowFormulaTypeType = (
+            formula_type_handler_registry.get_by_cls(new_formula_type)
         )
         formula_type_handler.persist_onto_formula_field(
             new_formula_type, updated_formula_field
@@ -305,8 +313,8 @@ def _type_and_substitute_formula_field(
         TypeAnnotatingASTVisitor(field_id_to_typed_expression)
     )
 
-    expression_type_handler: BaserowFormulaTypeHandler = (
-        formula_type_handler_registry.get_by_model(typed_expr.expression_type)
+    expression_type_handler: BaserowFormulaTypeType = (
+        formula_type_handler_registry.get_by_cls(typed_expr.expression_type)
     )
     merged_expression_type = (
         expression_type_handler.new_type_with_user_and_calculated_options_merged(
@@ -316,23 +324,27 @@ def _type_and_substitute_formula_field(
     # Take into account any user set formatting options on this formula field.
     typed_expr_merged_with_user_options = typed_expr.with_type(merged_expression_type)
 
+    wrapped_typed_expr = (
+        typed_expr_merged_with_user_options.expression_type.wrap_at_field_level(
+            typed_expr_merged_with_user_options
+        )
+    )
+
     # Here we replace formula field references in the untyped_formula with the
     # BaserowExpression of the field referenced. The resulting substituted expression
     # is guaranteed to only contain references to static normal fields meaning we
     # can evaluate the result of this formula in one shot instead of having to evaluate
     # all depended on formula fields in turn to then calculate this one.
-    typed_expr_with_substituted_field_by_id_references = (
-        typed_expr_merged_with_user_options.accept(
-            SubstituteFieldByIdWithThatFieldsExpressionVisitor(
-                field_id_to_typed_expression
-            )
-        )
+    typed_expr_with_substituted_field_by_id_references = wrapped_typed_expr.accept(
+        SubstituteFieldByIdWithThatFieldsExpressionVisitor(field_id_to_typed_expression)
     )
     return typed_expr_with_substituted_field_by_id_references
 
 
 def type_all_fields_in_table(
-    table: "models.Table", deleted_field_id_to_name: Optional[Dict[int, str]] = None
+    table: "models.Table",
+    deleted_field_id_to_name: Optional[Dict[int, str]] = None,
+    overridden_field: Optional[Field] = None,
 ) -> Dict[int, TypedFieldWithReferences]:
     """
     The key algorithm responsible for typing a table in Baserow.
@@ -343,6 +355,8 @@ def type_all_fields_in_table(
         fields old id and its name prior to deletion. This is used to correctly replace
         any field_by_id references to that deleted field with field(name) references
         instead.
+    :param overridden_field: An optional field instance which will be used instead of
+        that field's current database value when typing the table.
     :return: A dictionary of field id to a wrapper object TypedFieldWithReferences
         containing type and reference information about that field.
     """
@@ -358,7 +372,7 @@ def type_all_fields_in_table(
         (
             field_id_to_untyped_formula,
             field_id_to_updated_typed_field,
-        ) = _fix_and_parse_all_fields(deleted_field_id_to_name, table)
+        ) = _fix_and_parse_all_fields(deleted_field_id_to_name, table, overridden_field)
 
         # Step 2. Construct the graph of field dependencies by:
         # For every untyped formula populate its list of children with
@@ -400,8 +414,14 @@ def type_all_fields_in_table(
         raise MaximumFormulaSizeError()
 
 
-def _fix_and_parse_all_fields(deleted_field_id_to_name, table):
-    all_fields, field_name_to_id = _get_all_fields_and_build_name_dict(table)
+def _fix_and_parse_all_fields(
+    deleted_field_id_to_name: Dict[int, str],
+    table: "models.Table",
+    overridden_field: Optional[Field],
+):
+    all_fields, field_name_to_id = _get_all_fields_and_build_name_dict(
+        table, overridden_field
+    )
 
     field_id_to_untyped_formula: Dict[int, UntypedFormulaFieldWithReferences] = {}
     field_id_to_updated_typed_field: Dict[int, TypedFieldWithReferences] = {}
@@ -464,15 +484,29 @@ class TypedBaserowTable:
             return None
         return self.typed_fields_with_references[field.id].typed_expression
 
+    def get_typed_field(self, field_id: int) -> Field:
+        """
+        :param field_id: The field id to get its newly typed field for.
+        :return: The updated field instance after typing.
+        """
 
-def type_table(table: "models.Table") -> TypedBaserowTable:
+        return self.typed_fields_with_references[field_id].new_field
+
+
+def type_table(
+    table: "models.Table", overridden_field: Optional[Field] = None
+) -> TypedBaserowTable:
     """
     Given a table calculates all the Baserow Formula types for every non trashed
     field in that table.
 
     :param table: The table to type.
+    :param overridden_field: An optional field instance which will be used instead of
+        that field's current database value when typing the table.
     :return: A typed baserow table wrapper object containing type information for
         every field.
     """
 
-    return TypedBaserowTable(type_all_fields_in_table(table))
+    return TypedBaserowTable(
+        type_all_fields_in_table(table, overridden_field=overridden_field)
+    )

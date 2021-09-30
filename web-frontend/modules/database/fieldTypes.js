@@ -184,12 +184,10 @@ export class FieldType extends Registerable {
     return true
   }
 
-  constructor() {
-    super()
+  constructor(...args) {
+    super(...args)
     this.type = this.getType()
     this.iconClass = this.getIconClass()
-    this.name = this.getName()
-    this.sortIndicator = this.getSortIndicator()
     this.canSortInView = this.getCanSortInView()
     this.canBePrimaryField = this.getCanBePrimaryField()
     this.isReadOnly = this.getIsReadOnly()
@@ -222,8 +220,7 @@ export class FieldType extends Registerable {
     return {
       type: this.type,
       iconClass: this.iconClass,
-      name: this.name,
-      sortIndicator: this.sortIndicator,
+      name: this.getName(),
       canSortInView: this.canSortInView,
       isReadOnly: this.isReadOnly,
     }
@@ -360,10 +357,10 @@ export class FieldType extends Registerable {
    * Converts rowValue to its human readable form first before applying the
    * filter returned from getContainsFilterFunction.
    */
-  containsFilter(rowValue, filterValue, field) {
+  containsFilter(rowValue, filterValue, field, $registry) {
     return (
       filterValue === '' ||
-      this.getContainsFilterFunction()(
+      this.getContainsFilterFunction(field, $registry)(
         rowValue,
         this.toHumanReadableString(field, rowValue),
         filterValue
@@ -378,7 +375,7 @@ export class FieldType extends Registerable {
   notContainsFilter(rowValue, filterValue, field) {
     return (
       filterValue === '' ||
-      !this.getContainsFilterFunction()(
+      !this.getContainsFilterFunction(field)(
         rowValue,
         this.toHumanReadableString(field, rowValue),
         filterValue
@@ -451,7 +448,8 @@ export class TextFieldType extends FieldType {
   }
 
   getName() {
-    return 'Single line text'
+    const { i18n } = this.app
+    return i18n.t('fieldType.singleLineText')
   }
 
   getFormComponent() {
@@ -512,7 +510,8 @@ export class LongTextFieldType extends FieldType {
   }
 
   getName() {
-    return 'Long text'
+    const { i18n } = this.app
+    return i18n.t('fieldType.longText')
   }
 
   getGridViewFieldComponent() {
@@ -569,7 +568,8 @@ export class LinkRowFieldType extends FieldType {
   }
 
   getName() {
-    return 'Link to table'
+    const { i18n } = this.app
+    return i18n.t('fieldType.linkToTable')
   }
 
   getFormComponent() {
@@ -687,7 +687,8 @@ export class NumberFieldType extends FieldType {
   }
 
   getName() {
-    return 'Number'
+    const { i18n } = this.app
+    return i18n.t('fieldType.number')
   }
 
   getFormComponent() {
@@ -839,7 +840,8 @@ export class BooleanFieldType extends FieldType {
   }
 
   getName() {
-    return 'Boolean'
+    const { i18n } = this.app
+    return i18n.t('fieldType.boolean')
   }
 
   getGridViewFieldComponent() {
@@ -990,7 +992,8 @@ export class DateFieldType extends BaseDateFieldType {
   }
 
   getName() {
-    return 'Date'
+    const { i18n } = this.app
+    return i18n.t('fieldType.date')
   }
 
   getGridViewFieldComponent() {
@@ -1095,7 +1098,8 @@ export class LastModifiedFieldType extends CreatedOnLastModifiedBaseFieldType {
   }
 
   getName() {
-    return 'Last Modified'
+    const { i18n } = this.app
+    return i18n.t('fieldType.lastModified')
   }
 
   getDocsDescription(field) {
@@ -1142,7 +1146,8 @@ export class CreatedOnFieldType extends CreatedOnLastModifiedBaseFieldType {
   }
 
   getName() {
-    return 'Created On'
+    const { i18n } = this.app
+    return i18n.t('fieldType.createdOn')
   }
 }
 
@@ -1156,7 +1161,8 @@ export class URLFieldType extends FieldType {
   }
 
   getName() {
-    return 'URL'
+    const { i18n } = this.app
+    return i18n.t('fieldType.url')
   }
 
   getGridViewFieldComponent() {
@@ -1228,7 +1234,8 @@ export class EmailFieldType extends FieldType {
   }
 
   getName() {
-    return 'Email'
+    const { i18n } = this.app
+    return i18n.t('fieldType.email')
   }
 
   getGridViewFieldComponent() {
@@ -1303,7 +1310,8 @@ export class FileFieldType extends FieldType {
   }
 
   getName() {
-    return 'File'
+    const { i18n } = this.app
+    return i18n.t('fieldType.file')
   }
 
   getGridViewFieldComponent() {
@@ -1417,7 +1425,8 @@ export class SingleSelectFieldType extends FieldType {
   }
 
   getName() {
-    return 'Single select'
+    const { i18n } = this.app
+    return i18n.t('fieldType.singleSelect')
   }
 
   getFormComponent() {
@@ -1543,7 +1552,8 @@ export class PhoneNumberFieldType extends FieldType {
   }
 
   getName() {
-    return 'Phone Number'
+    const { i18n } = this.app
+    return i18n.t('fieldType.phoneNumber')
   }
 
   getGridViewFieldComponent() {
@@ -1632,7 +1642,8 @@ export class FormulaFieldType extends FieldType {
   }
 
   getName() {
-    return 'Formula'
+    const { i18n } = this.app
+    return i18n.t('fieldType.formula')
   }
 
   getGridViewFieldComponent() {
@@ -1647,15 +1658,23 @@ export class FormulaFieldType extends FieldType {
     return RowEditFieldFormula
   }
 
-  getSort(name, order) {
-    return (a, b) => {
-      const stringA = a[name] === null ? '' : '' + a[name]
-      const stringB = b[name] === null ? '' : '' + b[name]
+  _mapFormulaTypeToFieldType(formulaType) {
+    return {
+      invalid: TextFieldType.getType(),
+      text: TextFieldType.getType(),
+      char: TextFieldType.getType(),
+      number: NumberFieldType.getType(),
+      date: DateFieldType.getType(),
+      boolean: BooleanFieldType.getType(),
+    }[formulaType]
+  }
 
-      return order === 'ASC'
-        ? stringA.localeCompare(stringB)
-        : stringB.localeCompare(stringA)
-    }
+  getSort(name, order, field, $registry) {
+    const underlyingFieldType = $registry.get(
+      'field',
+      this._mapFormulaTypeToFieldType(field.formula_type)
+    )
+    return underlyingFieldType.getSort(name, order)
   }
 
   getEmptyValue(field) {
@@ -1674,11 +1693,23 @@ export class FormulaFieldType extends FieldType {
   }
 
   getDocsRequestExample(field) {
-    return 'UPPER(CONCAT("some", "text"))'
+    return 'Result of a formula calculation'
   }
 
-  getContainsFilterFunction() {
-    return genericContainsFilter
+  getContainsFilterFunction(field, $registry) {
+    const underlyingFieldType = $registry.get(
+      'field',
+      this._mapFormulaTypeToFieldType(field.formula_type)
+    )
+    return underlyingFieldType.getContainsFilterFunction()
+  }
+
+  getSortIndicator(field, $registry) {
+    const underlyingFieldType = $registry.get(
+      'field',
+      this._mapFormulaTypeToFieldType(field.formula_type)
+    )
+    return underlyingFieldType.getSortIndicator()
   }
 
   getFormComponent() {

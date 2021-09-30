@@ -123,6 +123,7 @@ class DatabaseConfig(AppConfig):
             LowerThanViewFilterType,
             ContainsViewFilterType,
             FilenameContainsViewFilterType,
+            HasFileTypeViewFilterType,
             ContainsNotViewFilterType,
             BooleanViewFilterType,
             SingleSelectEqualViewFilterType,
@@ -134,6 +135,7 @@ class DatabaseConfig(AppConfig):
         view_filter_type_registry.register(EqualViewFilterType())
         view_filter_type_registry.register(NotEqualViewFilterType())
         view_filter_type_registry.register(FilenameContainsViewFilterType())
+        view_filter_type_registry.register(HasFileTypeViewFilterType())
         view_filter_type_registry.register(ContainsViewFilterType())
         view_filter_type_registry.register(ContainsNotViewFilterType())
         view_filter_type_registry.register(HigherThanViewFilterType())
@@ -180,10 +182,10 @@ class DatabaseConfig(AppConfig):
         register_formula_functions(formula_function_registry)
 
         from baserow.contrib.database.formula.types.type_defs import (
-            register_formula_types,
+            register_formula_type_types,
         )
 
-        register_formula_types(formula_type_handler_registry)
+        register_formula_type_types(formula_type_handler_registry)
 
         # The signals must always be imported last because they use the registries
         # which need to be filled first.

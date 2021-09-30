@@ -72,6 +72,7 @@ def register_formula_functions(registry):
     registry.register(BaserowMinus())
     registry.register(BaserowDivide())
     registry.register(BaserowToNumber())
+    registry.register(BaserowErrorToNan())
     # Boolean functions
     registry.register(BaserowIf())
     registry.register(BaserowEqual())
@@ -89,6 +90,8 @@ def register_formula_functions(registry):
     registry.register(BaserowDay())
     registry.register(BaserowToDate())
     registry.register(BaserowDateDiff())
+    # Special Functions
+    registry.register(BaserowErrorToNull())
 
 
 class BaserowUpper(OneArgumentBaserowFunction):
@@ -179,7 +182,7 @@ class BaserowT(OneArgumentBaserowFunction):
             return func_call.with_valid_type(BaserowFormulaTextType())
 
     def to_django_expression(self, arg: Expression) -> Expression:
-        return Value("")
+        return Cast(Value(""), output_field=fields.TextField())
 
 
 class BaserowConcat(BaserowFunctionDefinition):
@@ -219,6 +222,7 @@ def _calculate_number_type(
 
 class BaserowAdd(TwoArgumentBaserowFunction):
     type = "add"
+    operator = "+"
     arg1_type = [BaserowFormulaNumberType]
     arg2_type = [BaserowFormulaNumberType]
 
@@ -257,6 +261,7 @@ class BaserowMultiply(TwoArgumentBaserowFunction):
 
 class BaserowMinus(TwoArgumentBaserowFunction):
     type = "minus"
+    operator = "-"
     arg1_type = [BaserowFormulaNumberType]
     arg2_type = [BaserowFormulaNumberType]
 
@@ -295,6 +300,7 @@ class BaserowMax(TwoArgumentBaserowFunction):
 
 class BaserowDivide(TwoArgumentBaserowFunction):
     type = "divide"
+    operator = "/"
 
     arg1_type = [BaserowFormulaNumberType]
     arg2_type = [BaserowFormulaNumberType]
@@ -326,6 +332,7 @@ class BaserowDivide(TwoArgumentBaserowFunction):
 
 class BaserowEqual(TwoArgumentBaserowFunction):
     type = "equal"
+    operator = "="
 
     @property
     def arg_types(self) -> BaserowArgumentTypeChecker:
@@ -426,6 +433,36 @@ class BaserowToNumber(OneArgumentBaserowFunction):
         )
 
 
+class BaserowErrorToNan(OneArgumentBaserowFunction):
+    type = "error_to_nan"
+    arg_type = [BaserowFormulaNumberType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(arg.expression_type)
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Func(arg, function="replace_errors_with_nan")
+
+
+class BaserowErrorToNull(OneArgumentBaserowFunction):
+    type = "error_to_null"
+    arg_type = [BaserowFormulaValidType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(arg.expression_type)
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Func(arg, function="replace_errors_with_null")
+
+
 class BaserowIsBlank(OneArgumentBaserowFunction):
     type = "isblank"
     arg_type = [BaserowFormulaValidType]
@@ -500,6 +537,7 @@ class BaseLimitComparableFunction(TwoArgumentBaserowFunction, ABC):
 
 class BaserowGreaterThan(BaseLimitComparableFunction):
     type = "greater_than"
+    operator = ">"
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
         return GreaterThanExpr(
@@ -511,6 +549,7 @@ class BaserowGreaterThan(BaseLimitComparableFunction):
 
 class BaserowGreaterThanOrEqual(BaseLimitComparableFunction):
     type = "greater_than_or_equal"
+    operator = ">="
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
         return GreaterThanOrEqualExpr(
@@ -522,6 +561,7 @@ class BaserowGreaterThanOrEqual(BaseLimitComparableFunction):
 
 class BaserowLessThan(BaseLimitComparableFunction):
     type = "less_than"
+    operator = "<"
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
         return LessThanExpr(
@@ -533,6 +573,7 @@ class BaserowLessThan(BaseLimitComparableFunction):
 
 class BaserowLessThanOrEqual(BaseLimitComparableFunction):
     type = "less_than_or_equal"
+    operator = "<="
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
         return LessThanEqualOrExpr(

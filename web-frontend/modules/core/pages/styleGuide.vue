@@ -731,10 +731,10 @@
         </div>
         <div class="formula-field">
           <div class="formula-field__input">
-            <AutoResizingTextarea
+            <AutoExpandableTextarea
               class="formula-field__input-formula"
               :value="'concat(field(“Text”), field(“Text”))'"
-            ></AutoResizingTextarea>
+            ></AutoExpandableTextarea>
           </div>
           <div class="formula-field__body">
             <div class="formula-field__items">
@@ -1106,12 +1106,12 @@
 
 <script>
 import Notifications from '@baserow/modules/core/components/notifications/Notifications'
-import AutoResizingTextarea from '@baserow/modules/core/components/helpers/AutoResizingTextarea'
+import AutoExpandableTextarea from '@baserow/modules/core/components/helpers/AutoExpandableTextarea'
 
 export default {
   components: {
     Notifications,
-    AutoResizingTextarea,
+    AutoExpandableTextarea,
   },
   data() {
     return {

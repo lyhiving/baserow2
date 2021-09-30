@@ -165,7 +165,12 @@ AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.AllowAllUsersModelBacke
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "en"
+
+LANGUAGES = [
+    ("en", "English"),
+    ("fr", "French"),
+]
 
 TIME_ZONE = "UTC"
 
@@ -235,6 +240,23 @@ SPECTACULAR_SETTINGS = {
         {"name": "Database tokens"},
         {"name": "Admin"},
     ],
+    "ENUM_NAME_OVERRIDES": {
+        "NumberDecimalPlacesB02Enum": [
+            (0, "1"),
+            (1, "1.0"),
+            (2, "1.00"),
+            (3, "1.000"),
+            (4, "1.0000"),
+            (5, "1.00000"),
+        ],
+        "NumberDecimalPlaces0c0Enum": [
+            (1, "1.0"),
+            (2, "1.00"),
+            (3, "1.000"),
+            (4, "1.0000"),
+            (5, "1.00000"),
+        ],
+    },
 }
 
 # The storage must always overwrite existing files.

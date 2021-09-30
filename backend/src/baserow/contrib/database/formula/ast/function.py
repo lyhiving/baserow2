@@ -20,7 +20,11 @@ from baserow.contrib.database.formula.types.type_types import (
 
 class FixedNumOfArgs(ArgCountSpecifier):
     def __str__(self):
-        return f"exactly {self.count} arguments"
+        if self.count == 1:
+            plural = ""
+        else:
+            plural = "s"
+        return f"exactly {self.count} argument{plural}"
 
     def test(self, num_args):
         return self.count == num_args

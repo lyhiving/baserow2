@@ -66,7 +66,9 @@ class Migration(migrations.Migration):
                             ("ISO", "ISO (Y-M-D)"),
                         ],
                         default=None,
-                        help_text="EU (20/02/2020), US (02/20/2020) or ISO (2020-02-20)",
+                        help_text=(
+                            "EU (20/02/2020), US (02/20/2020) or ISO (2020-02-20)"
+                        ),
                         max_length=32,
                         null=True,
                     ),
@@ -154,11 +156,13 @@ CREATE OR REPLACE FUNCTION DateDiff (units TEXT, start_t TIMESTAMP, end_t TIMEST
        years_diff = DATE_PART('year', end_t) - DATE_PART('year', start_t);
 
        IF units IN ('yy', 'yyyy', 'year') THEN
-         -- SQL Server does not count full years passed (only difference between year parts)
+         -- SQL Server does not count full years passed (only difference between year
+         -- parts)
          RETURN years_diff;
        ELSE
          -- If end month is less than start month it will subtracted
-         RETURN years_diff * 12 + (DATE_PART('month', end_t) - DATE_PART('month', start_t));
+         RETURN years_diff * 12 + (DATE_PART('month', end_t) - DATE_PART('month',
+                start_t));
        END IF;
      END IF;
 
@@ -198,5 +202,53 @@ CREATE OR REPLACE FUNCTION DateDiff (units TEXT, start_t TIMESTAMP, end_t TIMEST
 """
             ),
             ("DROP FUNCTION IF EXISTS try_cast_to_date(text, text);"),
+        ),
+        migrations.RunSQL(
+            (
+                """
+    create or replace function replace_errors_with_nan(
+        p_in anyelement
+    )
+        returns numeric(55,5)
+    as
+    $$
+    begin
+        begin
+            IF p_in < 10^50 OR p_in is null THEN
+                return p_in;
+            ELSE
+                return 'NaN';
+            END IF;
+        exception when others then
+            return 'NaN';
+        end;
+    end;
+    $$
+        language plpgsql;
+    """
+            ),
+            ("DROP FUNCTION IF EXISTS replace_errors_with_nan(anyelement);"),
+        ),
+        migrations.RunSQL(
+            (
+                """
+    create or replace function replace_errors_with_null(
+        p_in anyelement
+    )
+        returns anyelement
+    as
+    $$
+    begin
+        begin
+            return p_in;
+        exception when others then
+            return null;
+        end;
+    end;
+    $$
+        language plpgsql;
+    """
+            ),
+            ("DROP FUNCTION IF EXISTS replace_errors_with_null(anyelement);"),
         ),
     ]

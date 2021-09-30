@@ -35,7 +35,7 @@ web-frontend-test:
 
 backend-flake8:
   stage: lint
-  image: python:3.7-bullseye
+  image: python:3.7
   script:
     - mkdir backend/plugins && cp -r premium/backend backend/plugins/premium
     - cd backend
@@ -45,9 +45,9 @@ backend-flake8:
 
 backend-pytest:
   stage: test
-  image: python:3.7-bullseye
+  image: python:3.7
   services:
-    - name: postgres:12.8
+    - name: postgres:11.3
       alias: db
     - name: liminspace/mjml-tcpserver:0.10
       alias: mjml
@@ -65,7 +65,7 @@ backend-pytest:
 
 backend-setup:
   stage: build
-  image: python:3.7-bullseye
+  image: python:3.7
   script:
     - pip install -e ./backend
     - python -c 'import baserow'
