@@ -11,7 +11,7 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFieldReference,
     BaserowExpression,
 )
-from baserow.contrib.database.formula.parser.errors import (
+from baserow.contrib.database.formula.parser.exceptions import (
     InvalidNumberOfArguments,
     BaserowFormulaSyntaxError,
     UnknownFieldReference,
