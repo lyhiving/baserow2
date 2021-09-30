@@ -5,13 +5,13 @@
       :formula="values.formula"
       :error="localOrServerError"
       :formula-type="localOrServerFormulaType"
-      :initial-formula="initialFormula"
-      :parsing-error="parsingError"
       :table="table"
+      :loading="refreshingFormula"
+      :formula-type-refresh-needed="formulaTypeRefreshNeeded"
       @open-advanced-context="
         $refs.advancedFormulaEditContext.openContext($event)
       "
-      @retype-formula="retypeFormula"
+      @refresh-formula-type="refreshFormulaType"
     >
     </FieldFormulaInitialSubForm>
     <FormulaAdvancedEditContext
@@ -59,6 +59,7 @@ export default {
       errorFromServer: null,
       localFormulaType: null,
       initialFormula: null,
+      refreshingFormula: false,
     }
   },
   computed: {
@@ -98,6 +99,22 @@ export default {
       } else {
         return null
       }
+    },
+    formulaChanged() {
+      return (
+        this.initialFormula !== null &&
+        this.values.formula !== this.initialFormula
+      )
+    },
+    updatingExistingFormula() {
+      return this.defaultValues.id
+    },
+    formulaTypeRefreshNeeded() {
+      return (
+        this.formulaChanged &&
+        !this.parsingError &&
+        this.updatingExistingFormula
+      )
     },
   },
   watch: {
@@ -182,8 +199,9 @@ export default {
       this.errorFromServer = null
       this.initialFormula = null
     },
-    async retypeFormula() {
+    async refreshFormulaType() {
       try {
+        this.refreshingFormula = true
         const { data } = await FormulaService(this.$client).type(
           this.defaultValues.id,
           this.values.formula
@@ -196,7 +214,11 @@ export default {
           this.mergedTypeOptions,
           otherTypeOptions
         )
-        this.errorFromServer = error
+        if (error) {
+          this.errorFromServer = `Error with formula: ${error}.`
+        } else {
+          this.errorFromServer = null
+        }
         // eslint-disable-next-line camelcase
         this.localFormulaType = formula_type
         this.initialFormula = this.values.formula
@@ -205,6 +227,7 @@ export default {
           notifyIf(e, 'field')
         }
       }
+      this.refreshingFormula = false
     },
   },
   validations() {

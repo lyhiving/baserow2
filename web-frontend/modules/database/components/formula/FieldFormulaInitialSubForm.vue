@@ -13,24 +13,40 @@
         />
       </div>
     </div>
-    <div v-if="error" class="error grid-field-formula__error">
-      {{ error }}
-    </div>
-    <div v-if="formulaChanged && !parsingError && defaultValues.id">
-      <a href="#" @click="$emit('retype-formula')">Get new formula options</a>
-    </div>
-    <FieldFormulaNumberSubForm
-      v-else-if="formulaType === 'number'"
-      :default-values="defaultValues"
-      :table="table"
+    <div
+      v-if="loading || formulaTypeRefreshNeeded || error"
+      class="formula-field__type-refresher"
     >
-    </FieldFormulaNumberSubForm>
-    <FieldDateSubForm
-      v-else-if="formulaType === 'date'"
-      :default-values="defaultValues"
-      :table="table"
-    >
-    </FieldDateSubForm>
+      <div v-if="loading" class="loading"></div>
+      <template v-else>
+        <div v-if="error" class="error formula-field__error">
+          {{ error }}
+        </div>
+        <a
+          v-if="formulaTypeRefreshNeeded"
+          href="#"
+          class="formula-field__refresh"
+          @click.stop="$emit('refresh-formula-type')"
+        >
+          <i class="fas fa-sync-alt"></i>
+          Refresh formula options
+        </a>
+      </template>
+    </div>
+    <template v-else>
+      <FieldFormulaNumberSubForm
+        v-if="formulaType === 'number'"
+        :default-values="defaultValues"
+        :table="table"
+      >
+      </FieldFormulaNumberSubForm>
+      <FieldDateSubForm
+        v-else-if="formulaType === 'date'"
+        :default-values="defaultValues"
+        :table="table"
+      >
+      </FieldDateSubForm>
+    </template>
   </div>
 </template>
 <script>
@@ -48,14 +64,13 @@ export default {
   },
   mixins: [form, fieldSubForm],
   props: {
+    loading: {
+      type: Boolean,
+      required: true,
+    },
     formula: {
       type: String,
       required: true,
-    },
-    initialFormula: {
-      type: String,
-      required: false,
-      default: null,
     },
     formulaType: {
       type: String,
@@ -67,10 +82,9 @@ export default {
       required: false,
       default: null,
     },
-    parsingError: {
-      type: Error,
-      required: false,
-      default: null,
+    formulaTypeRefreshNeeded: {
+      type: Boolean,
+      required: true,
     },
   },
   data() {
@@ -78,13 +92,6 @@ export default {
       allowedValues: [],
       values: {},
     }
-  },
-  computed: {
-    formulaChanged() {
-      return (
-        this.initialFormula !== null && this.formula !== this.initialFormula
-      )
-    },
   },
 }
 </script>

@@ -8,6 +8,24 @@
   border: solid 1px $color-neutral-300;
 }
 
+.formula-field__error {
+  max-width: 228px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.formula-field__type-refresher {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.formula-field__refresh {
+  &:not(:first-child) {
+    margin-top: 12px;
+  }
+}
+
 .formula-field__input {
   flex-shrink: 0;
   background-color: $color-neutral-100;
