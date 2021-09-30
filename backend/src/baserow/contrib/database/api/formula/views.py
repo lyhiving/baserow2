@@ -38,7 +38,7 @@ class TypeFormulaView(APIView):
                 description="The formula field id to type.",
             ),
         ],
-        tags=["Database formula field"],
+        tags=["Database table fields"],
         operation_id="type_formula_field",
         description="Calculates and returns the new type of the specified formula field"
         " if it's formula is changed to the specified value. Does not change the state"
