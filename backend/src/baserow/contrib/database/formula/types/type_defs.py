@@ -15,11 +15,11 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowStringLiteral,
 )
 from baserow.contrib.database.formula.registries import (
-    BaserowFormulaTypeHandlerRegistry,
+    BaserowFormulaTypeTypeRegistry,
     formula_function_registry,
 )
 from baserow.contrib.database.formula.types.type_handler import (
-    BaserowFormulaTypeHandler,
+    BaserowFormulaTypeType,
 )
 from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaInvalidType,
@@ -309,57 +309,55 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
         return f"{date_or_datetime}({self.date_format}{optional_time_format})"
 
 
-class BaserowFormulaInvalidTypeHandler(
-    BaserowFormulaTypeHandler[BaserowFormulaInvalidType]
-):
-    model_class = BaserowFormulaInvalidType
+class BaserowFormulaInvalidTypeType(BaserowFormulaTypeType[BaserowFormulaInvalidType]):
+    cls = BaserowFormulaInvalidType
     internal_fields = ["error"]
 
 
-class ValidBaserowFormulaTypeHandler(BaserowFormulaTypeHandler, abc.ABC):
+class ValidBaserowFormulaTypeType(BaserowFormulaTypeType, abc.ABC):
     pass
 
 
-class BaserowTextFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
-    model_class = BaserowFormulaTextType
+class BaserowTextFormulaTypeType(ValidBaserowFormulaTypeType):
+    cls = BaserowFormulaTextType
 
 
-class BaserowCharFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
-    model_class = BaserowFormulaCharType
+class BaserowCharFormulaTypeType(ValidBaserowFormulaTypeType):
+    cls = BaserowFormulaCharType
 
 
-class BaserowBooleanFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
-    model_class = BaserowFormulaBooleanType
+class BaserowBooleanFormulaTypeType(ValidBaserowFormulaTypeType):
+    cls = BaserowFormulaBooleanType
 
 
-class BaserowDateFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
+class BaserowDateFormulaTypeType(ValidBaserowFormulaTypeType):
     user_overridable_formatting_option_fields = [
         "date_format",
         "date_include_time",
         "date_time_format",
     ]
-    model_class = BaserowFormulaDateType
+    cls = BaserowFormulaDateType
 
 
-class BaserowNumberFormulaTypeHandler(ValidBaserowFormulaTypeHandler):
+class BaserowNumberFormulaTypeType(ValidBaserowFormulaTypeType):
     user_overridable_formatting_option_fields = ["number_decimal_places"]
-    model_class = BaserowFormulaNumberType
+    cls = BaserowFormulaNumberType
 
 
-BASEROW_FORMULA_TYPE_HANDLER = [
-    BaserowFormulaInvalidTypeHandler(),
-    BaserowTextFormulaTypeHandler(),
-    BaserowBooleanFormulaTypeHandler(),
-    BaserowDateFormulaTypeHandler(),
-    BaserowNumberFormulaTypeHandler(),
-    BaserowCharFormulaTypeHandler(),
+BASEROW_FORMULA_TYPE_TYPES = [
+    BaserowFormulaInvalidTypeType(),
+    BaserowTextFormulaTypeType(),
+    BaserowBooleanFormulaTypeType(),
+    BaserowDateFormulaTypeType(),
+    BaserowNumberFormulaTypeType(),
+    BaserowCharFormulaTypeType(),
 ]
 
 BASEROW_FORMULA_TYPE_ALLOWED_FIELDS = [
-    name for h in BASEROW_FORMULA_TYPE_HANDLER for name in h.all_fields()
+    name for h in BASEROW_FORMULA_TYPE_TYPES for name in h.all_fields()
 ]
 
 
-def register_formula_types(registry: BaserowFormulaTypeHandlerRegistry):
-    for formula_type in BASEROW_FORMULA_TYPE_HANDLER:
+def register_formula_type_types(registry: BaserowFormulaTypeTypeRegistry):
+    for formula_type in BASEROW_FORMULA_TYPE_TYPES:
         registry.register(formula_type)

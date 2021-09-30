@@ -1,6 +1,6 @@
 from typing import List
 
-from baserow.contrib.database.formula.errors import BaserowFormulaException
+from baserow.contrib.database.formula.exceptions import BaserowFormulaException
 
 
 class InvalidFormulaType(BaserowFormulaException):

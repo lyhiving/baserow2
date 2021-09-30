@@ -182,10 +182,10 @@ class DatabaseConfig(AppConfig):
         register_formula_functions(formula_function_registry)
 
         from baserow.contrib.database.formula.types.type_defs import (
-            register_formula_types,
+            register_formula_type_types,
         )
 
-        register_formula_types(formula_type_handler_registry)
+        register_formula_type_types(formula_type_handler_registry)
 
         # The signals must always be imported last because they use the registries
         # which need to be filled first.

@@ -2,19 +2,19 @@ import abc
 from typing import TypeVar, Generic, List, Type
 
 from baserow.contrib.database.fields.models import FormulaField
-from baserow.core.registry import Instance, ModelInstanceMixin
+from baserow.core.registry import Instance, ClsInstanceMixin
 
 T = TypeVar("T")
 
 
-class BaserowFormulaTypeHandler(ModelInstanceMixin, Instance, abc.ABC, Generic[T]):
+class BaserowFormulaTypeType(ClsInstanceMixin, Instance, abc.ABC, Generic[T]):
     @property
     def type(self) -> str:
-        return self.model_class.type
+        return self.cls.type
 
     @property
     @abc.abstractmethod
-    def model_class(self) -> Type[T]:
+    def cls(self) -> Type[T]:
         pass
 
     @property
@@ -92,7 +92,7 @@ class BaserowFormulaTypeHandler(ModelInstanceMixin, Instance, abc.ABC, Generic[T
                 kwargs[field_name] = getattr(instance, field_name)
         for field_name in self.internal_fields:
             kwargs[field_name] = getattr(instance, field_name)
-        return self.model_class(**kwargs)
+        return self.cls(**kwargs)
 
     def construct_type_from_formula_field(self, formula_field: FormulaField) -> T:
         """
@@ -104,4 +104,4 @@ class BaserowFormulaTypeHandler(ModelInstanceMixin, Instance, abc.ABC, Generic[T
         kwargs = {}
         for field_name in self.all_fields():
             kwargs[field_name] = getattr(formula_field, field_name)
-        return self.model_class(**kwargs)
+        return self.cls(**kwargs)
