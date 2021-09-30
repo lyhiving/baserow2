@@ -965,7 +965,7 @@ def test_can_type_an_invalid_formula_field(
     response_json = response.json()
     assert response.status_code == 200, response_json
     assert response_json["formula_type"] == "invalid"
-    assert "argument number 2" in response_json["error"]
+    assert "argument number 1" in response_json["error"]
 
 
 @pytest.mark.django_db
