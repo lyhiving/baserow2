@@ -5,11 +5,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from baserow.core.exceptions import UserNotInGroup
+
 from baserow.api.decorators import map_exceptions, validate_body
 from baserow.api.errors import (
     ERROR_USER_NOT_IN_GROUP,
 )
 from baserow.api.schemas import get_error_schema
+
 from baserow.contrib.database.api.fields.errors import (
     ERROR_FIELD_DOES_NOT_EXIST,
     ERROR_WITH_FORMULA,
@@ -23,7 +26,6 @@ from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import FormulaField
 from baserow.contrib.database.formula.exceptions import BaserowFormulaException
 from baserow.contrib.database.formula.types.table_typer import type_table
-from baserow.core.exceptions import UserNotInGroup
 
 
 class TypeFormulaView(APIView):
