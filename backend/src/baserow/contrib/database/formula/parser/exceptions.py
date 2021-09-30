@@ -3,10 +3,13 @@ from baserow.contrib.database.formula.exceptions import BaserowFormulaException
 
 class InvalidNumberOfArguments(BaserowFormulaException):
     def __init__(self, function_def, num_args):
+        if num_args == 1:
+            error_prefix = "1 argument was"
+        else:
+            error_prefix = f"{num_args} arguments were"
         super().__init__(
-            "An invalid number of arguments were provided to the "
-            f"function {function_def.type}. It excepts "
-            f"{function_def.num_args} but instead {num_args} were given"
+            f"{error_prefix} given to the {function_def}, it must instead "
+            f"be given {function_def.num_args}"
         )
 
 
@@ -15,23 +18,17 @@ class MaximumFormulaSizeError(BaserowFormulaException):
         super().__init__("it exceeded the maximum formula size")
 
 
-class UnexpectedFieldReference(BaserowFormulaException):
-    pass
-
-
-class UnknownFieldReference(BaserowFormulaException):
-    def __init__(self, unknown_field_name):
-        super().__init__(f"unknown field referenced called: {unknown_field_name}")
-
-
 class UnknownFieldByIdReference(BaserowFormulaException):
     def __init__(self, unknown_field_id):
-        super().__init__(f"unknown field referenced directly by id: {unknown_field_id}")
+        super().__init__(
+            f"there is no field with id {unknown_field_id} but the formula"
+            f" included a direct reference to it"
+        )
 
 
-class UnknownBinaryOperator(BaserowFormulaException):
+class UnknownOperator(BaserowFormulaException):
     def __init__(self, operatorText):
-        super().__init__(f"unknown binary operator {operatorText}")
+        super().__init__(f"it used the unknown operator {operatorText}")
 
 
 class BaserowFormulaSyntaxError(BaserowFormulaException):

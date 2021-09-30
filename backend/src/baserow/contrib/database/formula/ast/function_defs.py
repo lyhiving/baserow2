@@ -175,6 +175,7 @@ def _calculate_number_type(
 
 class BaserowAdd(TwoArgumentBaserowFunction):
     type = "add"
+    operator = "+"
     arg1_type = [BaserowFormulaNumberType]
     arg2_type = [BaserowFormulaNumberType]
 
@@ -194,6 +195,7 @@ class BaserowAdd(TwoArgumentBaserowFunction):
 
 class BaserowMinus(TwoArgumentBaserowFunction):
     type = "minus"
+    operator = "-"
     arg1_type = [BaserowFormulaNumberType]
     arg2_type = [BaserowFormulaNumberType]
 
@@ -232,6 +234,7 @@ class BaserowMax(TwoArgumentBaserowFunction):
 
 class BaserowDivide(TwoArgumentBaserowFunction):
     type = "divide"
+    operator = "/"
 
     arg1_type = [BaserowFormulaNumberType]
     arg2_type = [BaserowFormulaNumberType]
@@ -263,6 +266,7 @@ class BaserowDivide(TwoArgumentBaserowFunction):
 
 class BaserowEqual(TwoArgumentBaserowFunction):
     type = "equal"
+    operator = "="
 
     @property
     def arg_types(self) -> BaserowArgumentTypeChecker:

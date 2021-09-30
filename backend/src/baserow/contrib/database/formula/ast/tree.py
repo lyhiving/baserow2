@@ -1,5 +1,5 @@
 import abc
-from typing import List, TypeVar, Generic, Tuple
+from typing import List, TypeVar, Generic, Tuple, Optional
 
 from django.conf import settings
 from django.db.models import Expression
@@ -294,10 +294,19 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
     def type(self) -> str:
         """
         :return: The unique name case insensitive name for this function. Users will
-        call this function using the name defined here.
+            call this function using the name defined here.
         """
 
         pass
+
+    @property
+    def operator(self) -> Optional[str]:
+        """
+        :return: If this function definition is used by an operator return the operators
+             text representation here.
+        """
+
+        return None
 
     @property
     @abc.abstractmethod
@@ -395,13 +404,8 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
                 else:
                     valid_args.append(checked_typed_arg)
         if len(invalid_results) > 0:
-            message = ", ".join(
-                [f"argument {i + 1} {msg.error}" for i, msg in invalid_results]
-            )
-            return expression.with_invalid_type(
-                f"The arguments given to the function call '{self.type}' were invalid "
-                f"because: {message}"
-            )
+            message = ", ".join([t.error for _, t in invalid_results])
+            return expression.with_invalid_type(message)
         else:
             return self.type_function_given_valid_args(valid_args, expression)
 
@@ -441,16 +445,28 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         for valid_arg_type in arg_types_for_this_arg:
             if isinstance(expression_type, valid_arg_type):
                 return typed_arg
-        valid_type_names = ",".join(
-            [
-                formula_type_handler_registry.get_by_cls(t).type
-                for t in arg_types_for_this_arg
-            ]
-        )
+        valid_type_names = [
+            formula_type_handler_registry.get_by_cls(t).type
+            for t in arg_types_for_this_arg
+        ]
         expression_type_name = formula_type_handler_registry.get_by_cls(
             expression_type
         ).type
+        if len(valid_type_names) == 1:
+            postfix = f"the only usable type for this argument is {valid_type_names[0]}"
+        else:
+            postfix = (
+                f"the only usable types for this argument are "
+                f"{','.join(valid_type_names)}"
+            )
+
         return typed_arg.with_invalid_type(
-            f"must be one of the following types '{valid_type_names}' but was "
-            f"instead a '{expression_type_name}'"
+            f"argument number {arg_index+1} given to {self} was of type "
+            f"{expression_type_name} but {postfix}"
         )
+
+    def __str__(self):
+        if self.operator is None:
+            return "function " + self.type
+        else:
+            return "operator " + self.operator

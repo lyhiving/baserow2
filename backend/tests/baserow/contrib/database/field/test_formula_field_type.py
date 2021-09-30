@@ -5,6 +5,7 @@ from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.formula.parser.ast_mapper import (
     replace_field_refs_according_to_new_or_deleted_fields,
 )
+from baserow.contrib.database.formula.types.type_types import BaserowFormulaInvalidType
 from baserow.contrib.database.rows.handler import RowHandler
 from baserow.contrib.database.views.handler import ViewHandler
 
@@ -235,7 +236,8 @@ def test_can_change_formula_type_breaking_other_fields(data_fixture):
         user=user, field=first_formula_field, new_type_name="formula", formula="'a'"
     )
     second_formula_field.refresh_from_db()
-    assert "invalid" in second_formula_field.error
+    assert second_formula_field.formula_type == BaserowFormulaInvalidType.type
+    assert "argument number 1" in second_formula_field.error
 
 
 @pytest.mark.django_db

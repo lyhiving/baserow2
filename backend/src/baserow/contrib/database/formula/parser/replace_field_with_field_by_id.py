@@ -3,7 +3,7 @@ from typing import Dict
 
 from antlr4 import Token
 
-from baserow.contrib.database.formula.parser.exceptions import UnknownFieldReference
+from baserow.contrib.database.formula.ast.exceptions import UnknownFieldReference
 from baserow.contrib.database.formula.parser.generated.BaserowFormulaLexer import (
     BaserowFormulaLexer,
 )

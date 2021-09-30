@@ -12,8 +12,11 @@ class InvalidIntLiteralProvided(BaserowFormulaException):
 
 
 class UnknownFieldReference(BaserowFormulaException):
-    def __init__(self, referenced_field):
-        super().__init__(f"An unknown field called: {referenced_field} was referenced")
+    def __init__(self, unknown_field_name):
+        super().__init__(
+            f"there is no field called {unknown_field_name} but the "
+            f"formula contained a reference to it"
+        )
 
 
 class TooLargeStringLiteralProvided(BaserowFormulaException):

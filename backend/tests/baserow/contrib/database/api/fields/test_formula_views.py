@@ -136,7 +136,7 @@ def test_changing_type_of_reference_field_to_invalid_one_for_formula(
     )
     response_json = response.json()
     assert response.status_code == HTTP_200_OK, response_json
-    assert "argument 1 must be" in response_json[1]["error"]
+    assert "argument number 1" in response_json[1]["error"]
 
 
 @pytest.mark.django_db
@@ -515,7 +515,8 @@ def test_cant_make_self_reference(api_client, data_fixture):
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert response_json == {
-        "detail": "Error with formula: a formula field cannot reference " "itself.",
+        "detail": "Error with formula: it references itself which is impossible to "
+        "calculate a result for.",
         "error": "ERROR_WITH_FORMULA",
     }
 
@@ -964,7 +965,7 @@ def test_can_type_an_invalid_formula_field(
     response_json = response.json()
     assert response.status_code == 200, response_json
     assert response_json["formula_type"] == "invalid"
-    assert "invalid" in response_json["error"]
+    assert "argument number 2" in response_json["error"]
 
 
 @pytest.mark.django_db

@@ -23,7 +23,10 @@ from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
     BaserowFormulaInvalidType,
 )
-from baserow.contrib.database.formula.parser.exceptions import MaximumFormulaSizeError
+from baserow.contrib.database.formula.parser.exceptions import (
+    MaximumFormulaSizeError,
+    UnknownFieldByIdReference,
+)
 from baserow.contrib.database.table.models import GeneratedTableModel
 
 
@@ -96,7 +99,7 @@ class BaserowExpressionToDjangoExpressionGenerator(
         if self.model_instance is None:
             return F(db_field_name)
         elif not hasattr(self.model_instance, db_field_name):
-            raise UnknownFieldReference(field_id)
+            raise UnknownFieldByIdReference(field_id)
         else:
             # We need to cast and be super explicit what type this raw value is so
             # postgres does not get angry and claim this is an unknown type.

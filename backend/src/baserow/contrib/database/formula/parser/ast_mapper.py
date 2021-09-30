@@ -14,9 +14,9 @@ from baserow.contrib.database.formula.ast.tree import (
 from baserow.contrib.database.formula.parser.exceptions import (
     InvalidNumberOfArguments,
     BaserowFormulaSyntaxError,
-    UnknownFieldReference,
     MaximumFormulaSizeError,
-    UnknownBinaryOperator,
+    UnknownOperator,
+    UnknownFieldByIdReference,
 )
 from baserow.contrib.database.formula.parser.generated.BaserowFormula import (
     BaserowFormula,
@@ -168,7 +168,7 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
         elif ctx.EQUAL():
             op = "equal"
         else:
-            raise UnknownBinaryOperator(ctx.getText())
+            raise UnknownOperator(ctx.getText())
 
         return self._do_func(ctx.expr(), op)
 
@@ -205,5 +205,5 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
     def visitFieldByIdReference(self, ctx: BaserowFormula.FieldByIdReferenceContext):
         field_id = int(str(ctx.INTEGER_LITERAL()))
         if field_id not in self.valid_field_ids:
-            raise UnknownFieldReference(field_id)
+            raise UnknownFieldByIdReference(field_id)
         return BaserowFieldByIdReference[UnTyped](field_id, None)
