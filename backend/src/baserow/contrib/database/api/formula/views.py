@@ -21,7 +21,7 @@ from baserow.contrib.database.api.formula.serializers import (
 from baserow.contrib.database.fields.exceptions import FieldDoesNotExist
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import FormulaField
-from baserow.contrib.database.formula.errors import BaserowFormulaException
+from baserow.contrib.database.formula.exceptions import BaserowFormulaException
 from baserow.contrib.database.formula.types.table_typer import type_table
 from baserow.core.exceptions import UserNotInGroup
 
