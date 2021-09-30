@@ -10,14 +10,17 @@ class InvalidFormulaType(BaserowFormulaException):
 class NoCircularReferencesError(BaserowFormulaException):
     def __init__(self, visited_fields: List[str]):
         super().__init__(
-            "a formula field cannot result in a circular reference, detected a "
-            f"circular reference chain of {'->'.join(visited_fields)}"
+            "it references another field, which eventually references back to this "
+            f"field causing an incalculable circular loop of "
+            f"{'->'.join(visited_fields)}"
         )
 
 
 class NoSelfReferencesError(BaserowFormulaException):
     def __init__(self):
-        super().__init__("a formula field cannot reference itself")
+        super().__init__(
+            "it references itself which is impossible to calculate a result for"
+        )
 
 
 class UnknownFormulaType(BaserowFormulaException):

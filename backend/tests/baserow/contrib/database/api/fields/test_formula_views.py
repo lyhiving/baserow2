@@ -515,8 +515,7 @@ def test_cant_make_self_reference(api_client, data_fixture):
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert response_json == {
-        "detail": "The formula is invalid because: a formula field cannot reference "
-        "itself.",
+        "detail": "Error with formula: a formula field cannot reference " "itself.",
         "error": "ERROR_WITH_FORMULA",
     }
 
@@ -556,9 +555,9 @@ def test_cant_make_circular_reference(api_client, data_fixture):
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
     assert response_json == {
-        "detail": "The formula is invalid because: a formula field cannot result in a "
-        "circular reference, detected a circular reference chain of "
-        "Formula->Formula2->Formula.",
+        "detail": "Error with formula: it references another field, which eventually "
+        "references back to this field causing an incalculable circular "
+        "loop of Formula->Formula2->Formula.",
         "error": "ERROR_WITH_FORMULA",
     }
 

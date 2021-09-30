@@ -67,7 +67,7 @@ ERROR_INVALID_BASEROW_FIELD_NAME = (
 ERROR_WITH_FORMULA = (
     "ERROR_WITH_FORMULA",
     HTTP_400_BAD_REQUEST,
-    "The formula is invalid because: {e}.",
+    "Error with formula: {e}.",
 )
 ERROR_TOO_DEEPLY_NESTED_FORMULA = (
     "ERROR_TOO_DEEPLY_NESTED_FORMULA",

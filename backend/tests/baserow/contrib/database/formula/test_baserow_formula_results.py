@@ -157,7 +157,7 @@ INVALID_FORMULA_TESTS = [
         "test",
         "ERROR_WITH_FORMULA",
         (
-            "The formula is invalid because: Invalid syntax at line 1, col 4: "
+            "Error with formula: Invalid syntax at line 1, col 4: "
             "mismatched input 'the end of the formula' expecting '('."
         ),
     ),
@@ -166,66 +166,66 @@ INVALID_FORMULA_TESTS = [
         + "'test'"
         + ")" * (sys.getrecursionlimit()),
         "ERROR_WITH_FORMULA",
-        "The formula is invalid because: it exceeded the maximum formula size.",
+        "Error with formula: it exceeded the maximum formula size.",
     ),
     (
         "CONCAT(" + ",".join(["'test'"] * 5000) + ")",
         "ERROR_WITH_FORMULA",
-        "The formula is invalid because: it exceeded the maximum formula size.",
+        "Error with formula: it exceeded the maximum formula size.",
     ),
     (
         "UPPER('" + "t" * (settings.MAX_FORMULA_STRING_LENGTH + 1) + "')",
         "ERROR_WITH_FORMULA",
-        "The formula is invalid because: an embedded "
+        "Error with formula: an embedded "
         f"string in the formula over the maximum length of "
         f"{settings.MAX_FORMULA_STRING_LENGTH} .",
     ),
     (
         "CONCAT()",
         "ERROR_WITH_FORMULA",
-        "The formula is invalid because: An invalid number of arguments were "
+        "Error with formula: An invalid number of arguments were "
         "provided to the function concat. It excepts more than 1 arguments but "
         "instead 0 were given.",
     ),
     (
         "CONCAT('a')",
         "ERROR_WITH_FORMULA",
-        "The formula is invalid because: An invalid number of arguments were "
+        "Error with formula: An invalid number of arguments were "
         "provided to the function concat. It excepts more than 1 arguments but "
         "instead 1 were given.",
     ),
     (
         "UPPER()",
         "ERROR_WITH_FORMULA",
-        "The formula is invalid because: An invalid number of arguments were "
+        "Error with formula: An invalid number of arguments were "
         "provided to the function upper. It excepts exactly 1 arguments but "
         "instead 0 were given.",
     ),
     (
         "LOWER()",
         "ERROR_WITH_FORMULA",
-        "The formula is invalid because: An invalid number of arguments were "
+        "Error with formula: An invalid number of arguments were "
         "provided to the function lower. It excepts exactly 1 arguments but "
         "instead 0 were given.",
     ),
     (
         "UPPER('a','a')",
         "ERROR_WITH_FORMULA",
-        "The formula is invalid because: An invalid number of arguments were "
+        "Error with formula: An invalid number of arguments were "
         "provided to the function upper. It excepts exactly 1 arguments but "
         "instead 2 were given.",
     ),
     (
         "LOWER('a','a')",
         "ERROR_WITH_FORMULA",
-        "The formula is invalid because: An invalid number of arguments were "
+        "Error with formula: An invalid number of arguments were "
         "provided to the function lower. It excepts exactly 1 arguments but "
         "instead 2 were given.",
     ),
     (
         "LOWER('a', CONCAT())",
         "ERROR_WITH_FORMULA",
-        "The formula is invalid because: An invalid number of arguments were "
+        "Error with formula: An invalid number of arguments were "
         "provided to the function lower. It excepts exactly 1 arguments but "
         "instead 2 were given.",
     ),
