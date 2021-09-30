@@ -5,14 +5,14 @@
       :class="{ 'grid-field-date--has-time': props.field.date_include_time }"
     >
       <div ref="dateDisplay" class="grid-field-date__date">
-        {{ $options.methods.getDate(props.field, props.value || null) }}
+        {{ $options.methods.getDate(props.field, props.value) }}
       </div>
       <div
         v-if="props.field.date_include_time"
         ref="timeDisplay"
         class="grid-field-date__time"
       >
-        {{ $options.methods.getTime(props.field, props.value || null) }}
+        {{ $options.methods.getTime(props.field, props.value) }}
       </div>
     </div>
   </div>
@@ -28,6 +28,11 @@ export default {
     field: {
       type: Object,
       required: true,
+    },
+    value: {
+      type: String,
+      required: false,
+      default: '',
     },
   },
 }

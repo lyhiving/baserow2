@@ -1,8 +1,10 @@
 import sys
+from datetime import timedelta
 
 import pytest
 from django.conf import settings
 from django.urls import reverse
+from django.utils.duration import duration_string
 
 from baserow.contrib.database.fields.models import FormulaField
 
@@ -97,6 +99,21 @@ VALID_FORMULA_TESTS = [
     ("or(false, true)", True),
     ("or(true, true)", True),
     ("'a' + 'b'", "ab"),
+    ("date_interval('1 year')", duration_string(timedelta(days=365))),
+    ("date_interval('1 year') > date_interval('1 day')", True),
+    ("date_interval('1 invalid')", None),
+    ("todate('20200101', 'YYYYMMDD') + date_interval('1 year')", "2021-01-01"),
+    ("date_interval('1 year') + todate('20200101', 'YYYYMMDD')", "2021-01-01"),
+    ("todate('20200101', 'YYYYMMDD') + date_interval('1 second')", "2020-01-01"),
+    ("todate('20200101', 'YYYYMMDD') - date_interval('1 year')", "2019-01-01"),
+    (
+        "todate('20200101', 'YYYYMMDD') - todate('20210101', 'YYYYMMDD')",
+        duration_string(-timedelta(days=366)),
+    ),
+    (
+        "date_interval('1 year') - date_interval('1 day')",
+        duration_string(timedelta(days=364)),
+    ),
 ]
 
 
@@ -249,7 +266,18 @@ INVALID_FORMULA_TESTS = [
     ),
     ("LOWER('a','a')", "ERROR_WITH_FORMULA", None),
     ("LOWER('a', CONCAT())", "ERROR_WITH_FORMULA", None),
-    ("'a' + 2", "ERROR_WITH_FORMULA", None),
+    (
+        "'a' + 2",
+        "ERROR_WITH_FORMULA",
+        "Error with formula: argument number 2 given to operator + was of type number "
+        "but the only usable types for this argument are text,char.",
+    ),
+    (
+        "true + true",
+        "ERROR_WITH_FORMULA",
+        "Error with formula: argument number 2 given to operator + was of type "
+        "boolean but there are no possible types usable here.",
+    ),
     ("UPPER(1,2)", "ERROR_WITH_FORMULA", None),
     ("UPPER(1)", "ERROR_WITH_FORMULA", None),
     ("LOWER(1,2)", "ERROR_WITH_FORMULA", None),
@@ -290,6 +318,18 @@ INVALID_FORMULA_TESTS = [
     ("true < true", "ERROR_WITH_FORMULA", None),
     ("true < 1", "ERROR_WITH_FORMULA", None),
     ("'a' < 1", "ERROR_WITH_FORMULA", None),
+    (
+        "todate('20200101', 'YYYYMMDD') + todate('20210101', 'YYYYMMDD')",
+        "ERROR_WITH_FORMULA",
+        "Error with formula: argument number 2 given to operator + was of type date "
+        "but the only usable type for this argument is date_interval.",
+    ),
+    (
+        "date_interval('1 second') - todate('20210101', 'YYYYMMDD')",
+        "ERROR_WITH_FORMULA",
+        "Error with formula: argument number 2 given to operator - was of type date "
+        "but the only usable type for this argument is date_interval.",
+    ),
 ]
 
 

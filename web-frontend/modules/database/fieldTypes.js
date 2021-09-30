@@ -1666,6 +1666,7 @@ export class FormulaFieldType extends FieldType {
       number: NumberFieldType.getType(),
       date: DateFieldType.getType(),
       boolean: BooleanFieldType.getType(),
+      date_interval: DateFieldType.getType(),
     }[formulaType]
   }
 

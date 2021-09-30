@@ -251,4 +251,26 @@ CREATE OR REPLACE FUNCTION DateDiff (units TEXT, start_t TIMESTAMP, end_t TIMEST
             ),
             ("DROP FUNCTION IF EXISTS replace_errors_with_null(anyelement);"),
         ),
+        migrations.RunSQL(
+            (
+                """
+create or replace function try_cast_to_interval(
+    p_in text
+)
+    returns interval
+as
+$$
+begin
+    begin
+        return p_in::interval;
+    exception when others then
+        return null;
+    end;
+end;
+$$
+    language plpgsql;
+"""
+            ),
+            ("DROP FUNCTION IF EXISTS try_cast_to_interval(text);"),
+        ),
     ]

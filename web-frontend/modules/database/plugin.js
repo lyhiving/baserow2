@@ -61,6 +61,7 @@ import {
   BaserowAnd,
   BaserowConcat,
   BaserowDateDiff,
+  BaserowDateInterval,
   BaserowDatetimeFormat,
   BaserowDay,
   BaserowDivide,
@@ -166,8 +167,6 @@ export default (context) => {
   app.$registry.register('formula_function', new BaserowT())
   // Number functions
   app.$registry.register('formula_function', new BaserowMultiply())
-  app.$registry.register('formula_function', new BaserowAdd())
-  app.$registry.register('formula_function', new BaserowMinus())
   app.$registry.register('formula_function', new BaserowDivide())
   app.$registry.register('formula_function', new BaserowToNumber())
   // Boolean functions
@@ -186,7 +185,11 @@ export default (context) => {
   app.$registry.register('formula_function', new BaserowToDate())
   app.$registry.register('formula_function', new BaserowDay())
   app.$registry.register('formula_function', new BaserowDateDiff())
+  // Date interval functions
+  app.$registry.register('formula_function', new BaserowDateInterval())
   // Special functions
+  app.$registry.register('formula_function', new BaserowAdd())
+  app.$registry.register('formula_function', new BaserowMinus())
   app.$registry.register('formula_function', new BaserowField())
 
   registerRealtimeEvents(app.$realtime)

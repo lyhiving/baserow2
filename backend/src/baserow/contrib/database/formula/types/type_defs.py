@@ -35,10 +35,11 @@ class BaserowFormulaTextType(BaserowFormulaValidType):
     @property
     def comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
         return [
-            type(self),
+            BaserowFormulaTextType,
             BaserowFormulaDateType,
             BaserowFormulaNumberType,
             BaserowFormulaBooleanType,
+            BaserowFormulaCharType,
         ]
 
     @property
@@ -46,11 +47,11 @@ class BaserowFormulaTextType(BaserowFormulaValidType):
         # Force users to explicitly convert to text before doing any limit comparison
         # operators as lexicographical comparison can be surprising and so should be opt
         # in
-        return [type(self)]
+        return [BaserowFormulaTextType, BaserowFormulaCharType]
 
     @property
     def addable_types(self) -> List[Type["BaserowFormulaValidType"]]:
-        return [type(self)]
+        return [BaserowFormulaTextType, BaserowFormulaCharType]
 
     def add(
         self,
@@ -125,6 +126,10 @@ class BaserowFormulaNumberType(BaserowFormulaValidType):
     def addable_types(self) -> List[Type["BaserowFormulaValidType"]]:
         return [type(self)]
 
+    @property
+    def subtractable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return [type(self)]
+
     def add(
         self,
         add_func_call: "BaserowFunctionCall[UnTyped]",
@@ -132,6 +137,16 @@ class BaserowFormulaNumberType(BaserowFormulaValidType):
         arg2: "BaserowExpression[BaserowFormulaNumberType]",
     ):
         return add_func_call.with_valid_type(
+            calculate_number_type([arg1.expression_type, arg2.expression_type])
+        )
+
+    def minus(
+        self,
+        minus_func_call: "BaserowFunctionCall[UnTyped]",
+        arg1: "BaserowExpression[BaserowFormulaNumberType]",
+        arg2: "BaserowExpression[BaserowFormulaNumberType]",
+    ):
+        return minus_func_call.with_valid_type(
             calculate_number_type([arg1.expression_type, arg2.expression_type])
         )
 
@@ -211,6 +226,78 @@ class BaserowFormulaBooleanType(BaserowFormulaValidType):
         )
 
 
+def _calculate_addition_interval_type(
+    arg1: BaserowExpression[BaserowFormulaValidType],
+    arg2: BaserowExpression[BaserowFormulaValidType],
+) -> BaserowFormulaValidType:
+    arg1_type = arg1.expression_type
+    arg2_type = arg2.expression_type
+    if isinstance(arg1_type, BaserowFormulaDateIntervalType) and isinstance(
+        arg2_type, BaserowFormulaDateIntervalType
+    ):
+        # interval + interval = interval
+        resulting_type = arg1_type
+    elif isinstance(arg1_type, BaserowFormulaDateIntervalType):
+        # interval + date = date
+        resulting_type = arg2_type
+    else:
+        # date + interval = date
+        resulting_type = arg1_type
+    return resulting_type
+
+
+class BaserowFormulaDateIntervalType(BaserowFormulaValidType):
+    type = "date_interval"
+
+    @property
+    def comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return [
+            type(self),
+        ]
+
+    @property
+    def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return [type(self)]
+
+    @property
+    def addable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return [type(self), BaserowFormulaDateType]
+
+    @property
+    def subtractable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return [type(self)]
+
+    def get_model_field(self, **kwargs) -> models.Field:
+        kwargs["null"] = True
+        kwargs["blank"] = True
+        return models.DurationField()
+
+    def get_serializer_field(self, **kwargs) -> Optional[Field]:
+        required = kwargs.get("required", False)
+
+        return serializers.DurationField(
+            **{"required": required, "allow_null": not required, **kwargs}
+        )
+
+    def add(
+        self,
+        add_func_call: "BaserowFunctionCall[UnTyped]",
+        arg1: "BaserowExpression[BaserowFormulaValidType]",
+        arg2: "BaserowExpression[BaserowFormulaValidType]",
+    ):
+        return add_func_call.with_valid_type(
+            _calculate_addition_interval_type(arg1, arg2)
+        )
+
+    def minus(
+        self,
+        minus_func_call: "BaserowFunctionCall[UnTyped]",
+        arg1: "BaserowExpression[BaserowFormulaValidType]",
+        arg2: "BaserowExpression[BaserowFormulaValidType]",
+    ):
+        return minus_func_call.with_valid_type(BaserowFormulaDateIntervalType())
+
+
 class BaserowFormulaDateType(BaserowFormulaValidType):
     type = "date"
 
@@ -231,6 +318,40 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
     @property
     def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
         return [type(self)]
+
+    @property
+    def addable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return [BaserowFormulaDateIntervalType]
+
+    @property
+    def subtractable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return [type(self), BaserowFormulaDateIntervalType]
+
+    def add(
+        self,
+        add_func_call: "BaserowFunctionCall[UnTyped]",
+        arg1: "BaserowExpression[BaserowFormulaValidType]",
+        arg2: "BaserowExpression[BaserowFormulaValidType]",
+    ):
+        return add_func_call.with_valid_type(
+            _calculate_addition_interval_type(arg1, arg2)
+        )
+
+    def minus(
+        self,
+        minus_func_call: "BaserowFunctionCall[UnTyped]",
+        arg1: "BaserowExpression[BaserowFormulaValidType]",
+        arg2: "BaserowExpression[BaserowFormulaValidType]",
+    ):
+        arg1_type = arg1.expression_type
+        arg2_type = arg2.expression_type
+        if isinstance(arg2_type, BaserowFormulaDateType):
+            # date - date = interval
+            resulting_type = BaserowFormulaDateIntervalType()
+        else:
+            # date - interval = date
+            resulting_type = arg1_type
+        return minus_func_call.with_valid_type(resulting_type)
 
     def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
         if isinstance(old_type, BaserowFormulaDateType):
@@ -378,6 +499,10 @@ class BaserowBooleanFormulaTypeType(ValidBaserowFormulaTypeType):
     cls = BaserowFormulaBooleanType
 
 
+class BaserowDateIntervalFormulaTypeType(ValidBaserowFormulaTypeType):
+    cls = BaserowFormulaDateIntervalType
+
+
 class BaserowDateFormulaTypeType(ValidBaserowFormulaTypeType):
     user_overridable_formatting_option_fields = [
         "date_format",
@@ -399,6 +524,7 @@ BASEROW_FORMULA_TYPE_TYPES = [
     BaserowDateFormulaTypeType(),
     BaserowNumberFormulaTypeType(),
     BaserowCharFormulaTypeType(),
+    BaserowDateIntervalFormulaTypeType(),
 ]
 
 BASEROW_FORMULA_TYPE_ALLOWED_FIELDS = [

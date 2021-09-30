@@ -35,6 +35,9 @@ export default {
         text: FunctionalGridViewFieldText,
         boolean: FunctionalGridViewFieldBoolean,
         number: FunctionalGridViewFieldNumber,
+        invalid: FunctionalGridViewFieldText,
+        char: FunctionalGridViewFieldText,
+        date_interval: FunctionalGridViewFieldText,
       }[field.formula_type]
     },
   },

@@ -107,7 +107,7 @@ export default {
       )
     },
     updatingExistingFormula() {
-      return this.defaultValues.id
+      return !!this.defaultValues.id
     },
     formulaTypeRefreshNeeded() {
       return (

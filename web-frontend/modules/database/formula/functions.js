@@ -114,9 +114,11 @@ export class BaserowAdd extends BaserowFunctionDefinition {
   getSyntaxUsage() {
     return [
       'number + number',
-      'add(number, number)',
       'text + text',
-      'add(text, text)',
+      'date + date_interval',
+      'date_interval + date_interval',
+      'date_interval + date',
+      'add(number, number)',
     ]
   }
 
@@ -147,7 +149,13 @@ export class BaserowMinus extends BaserowFunctionDefinition {
   }
 
   getSyntaxUsage() {
-    return ['number - number', 'minus(number, number)']
+    return [
+      'number - number',
+      'minus(number, number)',
+      'date - date',
+      'date - date_interval',
+      'date_interval - date_interval',
+    ]
   }
 
   getExamples() {
@@ -155,7 +163,7 @@ export class BaserowMinus extends BaserowFunctionDefinition {
   }
 
   getFormulaType() {
-    return 'number'
+    return 'special'
   }
 
   isOperator() {
@@ -695,5 +703,27 @@ export class BaserowOr extends BaserowFunctionDefinition {
 
   getFormulaType() {
     return 'boolean'
+  }
+}
+
+export class BaserowDateInterval extends BaserowFunctionDefinition {
+  static getType() {
+    return 'date_interval'
+  }
+
+  getDescription() {
+    return 'Returns the date interval corresponding to the provided argument.'
+  }
+
+  getSyntaxUsage() {
+    return ['date_interval(text)']
+  }
+
+  getExamples() {
+    return ["date_interval('1 year')", "date_interval('2 seconds')"]
+  }
+
+  getFormulaType() {
+    return 'date_interval'
   }
 }

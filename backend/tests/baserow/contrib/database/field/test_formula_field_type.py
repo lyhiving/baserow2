@@ -237,7 +237,7 @@ def test_can_change_formula_type_breaking_other_fields(data_fixture):
     )
     second_formula_field.refresh_from_db()
     assert second_formula_field.formula_type == BaserowFormulaInvalidType.type
-    assert "argument number 1" in second_formula_field.error
+    assert "argument number 2" in second_formula_field.error
 
 
 @pytest.mark.django_db

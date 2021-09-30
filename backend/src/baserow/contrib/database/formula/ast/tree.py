@@ -494,6 +494,8 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         ).type
         if len(valid_type_names) == 1:
             postfix = f"the only usable type for this argument is {valid_type_names[0]}"
+        elif len(valid_type_names) == 0:
+            postfix = f"there are no possible types usable here"
         else:
             postfix = (
                 f"the only usable types for this argument are "

@@ -144,6 +144,7 @@ export default {
         number: 'fa-hashtag',
         boolean: 'fa-check-square',
         date: 'fa-calendar-alt',
+        date_interval: 'fa-history',
         special: 'fa-square-root-alt',
       }[formulaType]
     },

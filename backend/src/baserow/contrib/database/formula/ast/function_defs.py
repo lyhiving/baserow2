@@ -51,6 +51,7 @@ from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaNumberType,
     BaserowFormulaBooleanType,
     calculate_number_type,
+    BaserowFormulaDateIntervalType,
 )
 from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
@@ -91,6 +92,8 @@ def register_formula_functions(registry):
     registry.register(BaserowDay())
     registry.register(BaserowToDate())
     registry.register(BaserowDateDiff())
+    # Date interval functions
+    registry.register(BaserowDateInterval())
     # Special Functions
     registry.register(BaserowErrorToNull())
 
@@ -216,11 +219,10 @@ class BaserowAdd(TwoArgumentBaserowFunction):
     @property
     def arg_types(self) -> BaserowArgumentTypeChecker:
         def type_checker(arg_index: int, arg_types: List[BaserowFormulaType]):
-            # The valid types for arg1 are the addable types for arg2 and vice versa.
-            # For example, if arg1 is a number then arg2 must be of type number
-            # for the two arguments to be addable.
-            other_arg_index = 1 if arg_index == 0 else 1
-            return arg_types[other_arg_index].addable_types
+            if arg_index == 1:
+                return arg_types[0].addable_types
+            else:
+                return [BaserowFormulaValidType]
 
         return type_checker
 
@@ -261,15 +263,25 @@ class BaserowMinus(TwoArgumentBaserowFunction):
     arg1_type = [BaserowFormulaNumberType]
     arg2_type = [BaserowFormulaNumberType]
 
+    @property
+    def arg_types(self) -> BaserowArgumentTypeChecker:
+        def type_checker(arg_index: int, arg_types: List[BaserowFormulaType]):
+            if arg_index == 1:
+                # Only type check the left hand side is one of the subtractable types
+                # of the right hand side argument.
+                return arg_types[0].subtractable_types
+            else:
+                return [BaserowFormulaValidType]
+
+        return type_checker
+
     def type_function(
         self,
         func_call: BaserowFunctionCall[UnTyped],
-        arg1: BaserowExpression[BaserowFormulaNumberType],
-        arg2: BaserowExpression[BaserowFormulaNumberType],
+        arg1: BaserowExpression[BaserowFormulaValidType],
+        arg2: BaserowExpression[BaserowFormulaValidType],
     ) -> BaserowExpression[BaserowFormulaType]:
-        return func_call.with_valid_type(
-            calculate_number_type([arg1.expression_type, arg2.expression_type])
-        )
+        return arg1.expression_type.minus(func_call, arg1, arg2)
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
         return arg1 - arg2
@@ -333,11 +345,10 @@ class BaserowEqual(TwoArgumentBaserowFunction):
     @property
     def arg_types(self) -> BaserowArgumentTypeChecker:
         def type_checker(arg_index: int, arg_types: List[BaserowFormulaType]):
-            # The valid types for arg1 are the comparable types for arg2 and vice versa.
-            # For example, if arg1 is a boolean then arg2 must be of type text or
-            # boolean for the two arguments to be comparable.
-            other_arg_index = 1 if arg_index == 0 else 1
-            return arg_types[other_arg_index].comparable_types
+            if arg_index == 1:
+                return arg_types[0].comparable_types
+            else:
+                return [BaserowFormulaValidType]
 
         return type_checker
 
@@ -513,12 +524,10 @@ class BaseLimitComparableFunction(TwoArgumentBaserowFunction, ABC):
     @property
     def arg_types(self) -> BaserowArgumentTypeChecker:
         def type_checker(arg_index: int, arg_types: List[BaserowFormulaType]):
-            # The valid types for arg1 are the limit comparable types for arg2 and
-            # vice versa.
-            # For example, if arg1 is a boolean then arg2 must be of type text or
-            # boolean for the two arguments to be comparable.
-            other_arg_index = 1 if arg_index == 0 else 1
-            return arg_types[other_arg_index].limit_comparable_types
+            if arg_index == 1:
+                return arg_types[0].limit_comparable_types
+            else:
+                return [BaserowFormulaValidType]
 
         return type_checker
 
@@ -684,3 +693,20 @@ class BaserowOr(TwoArgumentBaserowFunction):
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
         return OrExpr(arg1, arg2)
+
+
+class BaserowDateInterval(OneArgumentBaserowFunction):
+    type = "date_interval"
+    arg_type = [BaserowFormulaTextType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(BaserowFormulaDateIntervalType())
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Func(
+            arg, function="try_cast_to_interval", output_field=fields.DurationField()
+        )
