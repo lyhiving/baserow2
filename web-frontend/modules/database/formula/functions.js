@@ -112,15 +112,20 @@ export class BaserowAdd extends BaserowFunctionDefinition {
   }
 
   getSyntaxUsage() {
-    return ['number + number', 'add(number, number)']
+    return [
+      'number + number',
+      'add(number, number)',
+      'text + text',
+      'add(text, text)',
+    ]
   }
 
   getExamples() {
-    return ['1+1 = 2']
+    return ['1+1 = 2', "'a' + 'b' = 'ab'"]
   }
 
   getFormulaType() {
-    return 'number'
+    return 'special'
   }
 
   isOperator() {
@@ -296,14 +301,6 @@ export class BaserowToText extends BaserowFunctionDefinition {
 
   getFormulaType() {
     return 'number'
-  }
-
-  isOperator() {
-    return true
-  }
-
-  getOperator() {
-    return '+'
   }
 }
 

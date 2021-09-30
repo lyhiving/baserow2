@@ -50,6 +50,7 @@ from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaDateType,
     BaserowFormulaNumberType,
     BaserowFormulaBooleanType,
+    calculate_number_type,
 )
 from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
@@ -206,35 +207,30 @@ class BaserowConcat(BaserowFunctionDefinition):
         return Concat(*args, output_field=fields.TextField())
 
 
-def _calculate_number_type(
-    arg_types: List[BaserowFormulaNumberType], min_decimal_places=0
-):
-    max_number_decimal_places = min_decimal_places
-    for a in arg_types:
-        max_number_decimal_places = max(
-            max_number_decimal_places, a.number_decimal_places
-        )
-
-    return BaserowFormulaNumberType(
-        number_decimal_places=max_number_decimal_places,
-    )
-
-
 class BaserowAdd(TwoArgumentBaserowFunction):
     type = "add"
     operator = "+"
     arg1_type = [BaserowFormulaNumberType]
     arg2_type = [BaserowFormulaNumberType]
 
+    @property
+    def arg_types(self) -> BaserowArgumentTypeChecker:
+        def type_checker(arg_index: int, arg_types: List[BaserowFormulaType]):
+            # The valid types for arg1 are the addable types for arg2 and vice versa.
+            # For example, if arg1 is a number then arg2 must be of type number
+            # for the two arguments to be addable.
+            other_arg_index = 1 if arg_index == 0 else 1
+            return arg_types[other_arg_index].addable_types
+
+        return type_checker
+
     def type_function(
         self,
         func_call: BaserowFunctionCall[UnTyped],
-        arg1: BaserowExpression[BaserowFormulaNumberType],
-        arg2: BaserowExpression[BaserowFormulaNumberType],
+        arg1: BaserowExpression[BaserowFormulaValidType],
+        arg2: BaserowExpression[BaserowFormulaValidType],
     ) -> BaserowExpression[BaserowFormulaType]:
-        return func_call.with_valid_type(
-            _calculate_number_type([arg1.expression_type, arg2.expression_type])
-        )
+        return arg1.expression_type.add(func_call, arg1, arg2)
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
         return arg1 + arg2
@@ -252,7 +248,7 @@ class BaserowMultiply(TwoArgumentBaserowFunction):
         arg2: BaserowExpression[BaserowFormulaNumberType],
     ) -> BaserowExpression[BaserowFormulaType]:
         return func_call.with_valid_type(
-            _calculate_number_type([arg1.expression_type, arg2.expression_type])
+            calculate_number_type([arg1.expression_type, arg2.expression_type])
         )
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
@@ -272,7 +268,7 @@ class BaserowMinus(TwoArgumentBaserowFunction):
         arg2: BaserowExpression[BaserowFormulaNumberType],
     ) -> BaserowExpression[BaserowFormulaType]:
         return func_call.with_valid_type(
-            _calculate_number_type([arg1.expression_type, arg2.expression_type])
+            calculate_number_type([arg1.expression_type, arg2.expression_type])
         )
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
@@ -291,7 +287,7 @@ class BaserowMax(TwoArgumentBaserowFunction):
         arg2: BaserowExpression[BaserowFormulaNumberType],
     ) -> BaserowExpression[BaserowFormulaType]:
         return func_call.with_valid_type(
-            _calculate_number_type([arg1.expression_type, arg2.expression_type])
+            calculate_number_type([arg1.expression_type, arg2.expression_type])
         )
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
@@ -400,7 +396,7 @@ class BaserowIf(ThreeArgumentBaserowFunction):
             if isinstance(arg2_type, BaserowFormulaNumberType) and isinstance(
                 arg3_type, BaserowFormulaNumberType
             ):
-                resulting_type = _calculate_number_type([arg2_type, arg3_type])
+                resulting_type = calculate_number_type([arg2_type, arg3_type])
             else:
                 resulting_type = arg2_type
 

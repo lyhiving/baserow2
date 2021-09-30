@@ -48,6 +48,20 @@ class BaserowFormulaTextType(BaserowFormulaValidType):
         # in
         return [type(self)]
 
+    @property
+    def addable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return [type(self)]
+
+    def add(
+        self,
+        add_func_call: "BaserowFunctionCall[UnTyped]",
+        arg1: "BaserowExpression[BaserowFormulaTextType]",
+        arg2: "BaserowExpression[BaserowFormulaTextType]",
+    ):
+        return formula_function_registry.get("concat").call_and_type_with_args(
+            [arg1, arg2]
+        )
+
     def cast_to_text(
         self,
         to_text_func_call: "BaserowFunctionCall[UnTyped]",
@@ -106,6 +120,20 @@ class BaserowFormulaNumberType(BaserowFormulaValidType):
     @property
     def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
         return [type(self)]
+
+    @property
+    def addable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return [type(self)]
+
+    def add(
+        self,
+        add_func_call: "BaserowFunctionCall[UnTyped]",
+        arg1: "BaserowExpression[BaserowFormulaNumberType]",
+        arg2: "BaserowExpression[BaserowFormulaNumberType]",
+    ):
+        return add_func_call.with_valid_type(
+            calculate_number_type([arg1.expression_type, arg2.expression_type])
+        )
 
     def contains_query(self, *args):
         return contains_filter(*args)
@@ -381,3 +409,17 @@ BASEROW_FORMULA_TYPE_ALLOWED_FIELDS = [
 def register_formula_type_types(registry: BaserowFormulaTypeTypeRegistry):
     for formula_type in BASEROW_FORMULA_TYPE_TYPES:
         registry.register(formula_type)
+
+
+def calculate_number_type(
+    arg_types: List[BaserowFormulaNumberType], min_decimal_places=0
+):
+    max_number_decimal_places = min_decimal_places
+    for a in arg_types:
+        max_number_decimal_places = max(
+            max_number_decimal_places, a.number_decimal_places
+        )
+
+    return BaserowFormulaNumberType(
+        number_decimal_places=max_number_decimal_places,
+    )

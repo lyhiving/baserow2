@@ -96,6 +96,7 @@ VALID_FORMULA_TESTS = [
     ("or(false, false)", False),
     ("or(false, true)", True),
     ("or(true, true)", True),
+    ("'a' + 'b'", "ab"),
 ]
 
 

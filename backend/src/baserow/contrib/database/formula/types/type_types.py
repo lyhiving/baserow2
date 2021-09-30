@@ -38,6 +38,15 @@ class BaserowFormulaType(abc.ABC):
         pass
 
     @property
+    def addable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        """
+        A list of valid types that this type can be used with the addition operator
+        in a formula.
+        """
+
+        return []
+
+    @property
     @abc.abstractmethod
     def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
         """
@@ -161,11 +170,8 @@ class BaserowFormulaInvalidType(BaserowFormulaType):
 
     is_valid = False
     comparable_types = []
+    limit_comparable_types = []
     type = "invalid"
-
-    @property
-    def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
-        return []
 
     def raise_if_invalid(self):
         raise InvalidFormulaType(self.error)
@@ -243,6 +249,17 @@ class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):
         )
 
         return formula_function_registry.get("error_to_null").call_and_type_with(expr)
+
+    def add(
+        self,
+        add_func_call: "tree.BaserowFunctionCall[UnTyped]",
+        arg1: "tree.BaserowExpression[BaserowFormulaValidType]",
+        arg2: "tree.BaserowExpression[BaserowFormulaValidType]",
+    ) -> "tree.BaserowExpression[BaserowFormulaType]":
+        return add_func_call.with_invalid_type(
+            f"cannot perform addition on type {arg1.expression_type} and "
+            f"{arg2.expression_type}"
+        )
 
 
 UnTyped = type(None)
