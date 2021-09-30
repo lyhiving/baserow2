@@ -23,7 +23,7 @@ from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
     BaserowFormulaInvalidType,
 )
-from baserow.contrib.database.formula.parser.errors import MaximumFormulaSizeError
+from baserow.contrib.database.formula.parser.exceptions import MaximumFormulaSizeError
 from baserow.contrib.database.table.models import GeneratedTableModel
 
 
