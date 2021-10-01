@@ -347,29 +347,6 @@ class ModelRegistryMixin:
         )
 
 
-class ClsRegistryMixin:
-    def get_by_cls(self, model_instance):
-        """
-        Returns a registered instance of the given a class.
-
-        :param model_instance: The value that must be or must be an instance of the
-            model_class.
-        :type model_instance: Model or Model()
-        :raises InstanceTypeDoesNotExist: When the provided model instance is not
-            found in the registry.
-        :return: The registered instance.
-        :rtype: Instance
-        """
-
-        for value in self.registry.values():
-            if value.cls == model_instance or isinstance(model_instance, value.cls):
-                return value
-
-        raise self.does_not_exist_exception_class(
-            f"The {self.name} model instance {model_instance} does not exist."
-        )
-
-
 class CustomFieldsRegistryMixin:
     def get_serializer(self, model_instance, base_class=None, **kwargs):
         """
