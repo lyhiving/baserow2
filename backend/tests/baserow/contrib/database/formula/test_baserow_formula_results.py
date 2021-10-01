@@ -114,6 +114,9 @@ VALID_FORMULA_TESTS = [
         "date_interval('1 year') - date_interval('1 day')",
         duration_string(timedelta(days=364)),
     ),
+    ("replace('test test', 'test', 'a')", "a a"),
+    ("find('test test', 'test')", "1"),
+    ("find('a', 'test')", "0"),
 ]
 
 

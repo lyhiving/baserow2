@@ -49,11 +49,13 @@ class BaserowExpressionField(models.Field):
     # generated columns are returned using a INSERT ... RETURNING pk, gen_col_1, etc
     # as there is no default and no way of knowing what the expression evaluates to
     db_returning = True
+    requires_refresh_after_update = True
 
     def __init__(
         self,
         expression: Optional[BaserowExpression],
         expression_field: Field,
+        requires_refresh_after_insert: bool,
         *args,
         **kwargs,
     ):
@@ -65,6 +67,7 @@ class BaserowExpressionField(models.Field):
 
         self.expression = expression
         self.expression_field = expression_field
+        self.requires_refresh_after_insert = requires_refresh_after_insert
 
         # Add all the various lookups for the underlying Django field so specific
         # filters work on a field of this type. E.g. if expression_field is a DateField

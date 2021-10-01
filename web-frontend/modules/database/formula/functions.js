@@ -727,3 +727,76 @@ export class BaserowDateInterval extends BaserowFunctionDefinition {
     return 'date_interval'
   }
 }
+
+export class BaserowReplace extends BaserowFunctionDefinition {
+  static getType() {
+    return 'replace'
+  }
+
+  getDescription() {
+    return (
+      'Replaces all instances of the second argument in the first argument with ' +
+      'the third argument'
+    )
+  }
+
+  getSyntaxUsage() {
+    return ['replace(text, text, text)']
+  }
+
+  getExamples() {
+    return ['replace("test a b c test", "test", "1") = "1 a b c 1"']
+  }
+
+  getFormulaType() {
+    return 'text'
+  }
+}
+
+export class BaserowFind extends BaserowFunctionDefinition {
+  static getType() {
+    return 'find'
+  }
+
+  getDescription() {
+    return (
+      'Returns a positive integer starting from 1 for the first ' +
+      'occurrence of the second argument inside the first, or 0 if no ' +
+      'occurrence is found.'
+    )
+  }
+
+  getSyntaxUsage() {
+    return ['find(text, text)']
+  }
+
+  getExamples() {
+    return ['find("test a b c test", "test") = 1', 'find("none", "test") = 0']
+  }
+
+  getFormulaType() {
+    return 'text'
+  }
+}
+
+export class BaserowRowId extends BaserowFunctionDefinition {
+  static getType() {
+    return 'row_id'
+  }
+
+  getDescription() {
+    return 'Returns the rows unique identifying number'
+  }
+
+  getSyntaxUsage() {
+    return ['row_id()']
+  }
+
+  getExamples() {
+    return ['Concat("Row ", row_id())']
+  }
+
+  getFormulaType() {
+    return 'special'
+  }
+}

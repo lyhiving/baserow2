@@ -67,6 +67,7 @@ import {
   BaserowDivide,
   BaserowEqual,
   BaserowField,
+  BaserowFind,
   BaserowGreaterThan,
   BaserowGreaterThanOrEqual,
   BaserowIf,
@@ -78,6 +79,8 @@ import {
   BaserowMultiply,
   BaserowNot,
   BaserowOr,
+  BaserowReplace,
+  BaserowRowId,
   BaserowT,
   BaserowToDate,
   BaserowToNumber,
@@ -165,6 +168,8 @@ export default (context) => {
   app.$registry.register('formula_function', new BaserowConcat())
   app.$registry.register('formula_function', new BaserowToText())
   app.$registry.register('formula_function', new BaserowT())
+  app.$registry.register('formula_function', new BaserowReplace())
+  app.$registry.register('formula_function', new BaserowFind())
   // Number functions
   app.$registry.register('formula_function', new BaserowMultiply())
   app.$registry.register('formula_function', new BaserowDivide())
@@ -191,6 +196,7 @@ export default (context) => {
   app.$registry.register('formula_function', new BaserowAdd())
   app.$registry.register('formula_function', new BaserowMinus())
   app.$registry.register('formula_function', new BaserowField())
+  app.$registry.register('formula_function', new BaserowRowId())
 
   registerRealtimeEvents(app.$realtime)
 }

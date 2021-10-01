@@ -1,5 +1,5 @@
 import abc
-from typing import List
+from typing import List, Optional
 
 from django.db.models import Expression
 
@@ -16,6 +16,7 @@ from baserow.contrib.database.formula.types.type_types import (
     BaserowSingleArgumentTypeChecker,
     BaserowArgumentTypeChecker,
 )
+from baserow.contrib.database.table.models import GeneratedTableModel
 
 
 class FixedNumOfArgs(ArgCountSpecifier):
@@ -99,7 +100,9 @@ class ZeroArgumentBaserowFunction(BaserowFunctionDefinition):
     ) -> BaserowExpression[BaserowFormulaType]:
         return self.type_function(func_call)
 
-    def to_django_expression_given_args(self, args: List[Expression]) -> Expression:
+    def to_django_expression_given_args(
+        self, args: List[Expression], model_instance: Optional[GeneratedTableModel]
+    ) -> Expression:
         return self.to_django_expression()
 
     def call_and_type_with(self) -> BaserowFunctionCall[BaserowFormulaType]:
@@ -187,7 +190,9 @@ class OneArgumentBaserowFunction(BaserowFunctionDefinition):
     ) -> BaserowExpression[BaserowFormulaType]:
         return self.type_function(func_call, args[0])
 
-    def to_django_expression_given_args(self, args: List[Expression]) -> Expression:
+    def to_django_expression_given_args(
+        self, args: List[Expression], model_instance: Optional[GeneratedTableModel]
+    ) -> Expression:
         return self.to_django_expression(args[0])
 
     def call_and_type_with(
@@ -294,7 +299,9 @@ class TwoArgumentBaserowFunction(BaserowFunctionDefinition):
     ) -> BaserowExpression[BaserowFormulaType]:
         return self.type_function(func_call, args[0], args[1])
 
-    def to_django_expression_given_args(self, args: List[Expression]) -> Expression:
+    def to_django_expression_given_args(
+        self, args: List[Expression], model_instance: Optional[GeneratedTableModel]
+    ) -> Expression:
         return self.to_django_expression(args[0], args[1])
 
     def call_and_type_with(
@@ -417,7 +424,9 @@ class ThreeArgumentBaserowFunction(BaserowFunctionDefinition):
     ) -> BaserowExpression[BaserowFormulaType]:
         return self.type_function(func_call, args[0], args[1], args[2])
 
-    def to_django_expression_given_args(self, args: List[Expression]) -> Expression:
+    def to_django_expression_given_args(
+        self, args: List[Expression], model_instance: Optional[GeneratedTableModel]
+    ) -> Expression:
         return self.to_django_expression(args[0], args[1], args[2])
 
     def call_and_type_with(

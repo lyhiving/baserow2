@@ -1,6 +1,6 @@
 from abc import ABC
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 
 from django.db.models import (
     Expression,
@@ -9,6 +9,8 @@ from django.db.models import (
     When,
     fields,
     Func,
+    F,
+    ExpressionWrapper,
 )
 from django.db.models.functions import (
     Upper,
@@ -18,6 +20,8 @@ from django.db.models.functions import (
     Cast,
     Greatest,
     Extract,
+    Replace,
+    StrIndex,
 )
 
 from baserow.contrib.database.fields.models import (
@@ -29,6 +33,7 @@ from baserow.contrib.database.formula.ast.function import (
     OneArgumentBaserowFunction,
     TwoArgumentBaserowFunction,
     ThreeArgumentBaserowFunction,
+    ZeroArgumentBaserowFunction,
 )
 from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
@@ -59,6 +64,7 @@ from baserow.contrib.database.formula.types.type_types import (
     UnTyped,
     BaserowArgumentTypeChecker,
 )
+from baserow.contrib.database.table.models import GeneratedTableModel
 
 
 def register_formula_functions(registry):
@@ -68,6 +74,8 @@ def register_formula_functions(registry):
     registry.register(BaserowConcat())
     registry.register(BaserowToText())
     registry.register(BaserowT())
+    registry.register(BaserowReplace())
+    registry.register(BaserowFind())
     # Number functions
     registry.register(BaserowAdd())
     registry.register(BaserowMultiply())
@@ -96,6 +104,7 @@ def register_formula_functions(registry):
     registry.register(BaserowDateInterval())
     # Special Functions
     registry.register(BaserowErrorToNull())
+    registry.register(BaserowRowId())
 
 
 class BaserowUpper(OneArgumentBaserowFunction):
@@ -206,7 +215,9 @@ class BaserowConcat(BaserowFunctionDefinition):
             [BaserowToText().call_and_type_with(a) for a in args]
         ).with_valid_type(BaserowFormulaTextType())
 
-    def to_django_expression_given_args(self, args: List[Expression]) -> Expression:
+    def to_django_expression_given_args(
+        self, args: List[Expression], model_instance: Optional[GeneratedTableModel]
+    ) -> Expression:
         return Concat(*args, output_field=fields.TextField())
 
 
@@ -710,3 +721,75 @@ class BaserowDateInterval(OneArgumentBaserowFunction):
         return Func(
             arg, function="try_cast_to_interval", output_field=fields.DurationField()
         )
+
+
+class BaserowReplace(ThreeArgumentBaserowFunction):
+    type = "replace"
+    arg1_type = [BaserowFormulaTextType]
+    arg2_type = [BaserowFormulaTextType]
+    arg3_type = [BaserowFormulaTextType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[BaserowFormulaValidType],
+        arg2: BaserowExpression[BaserowFormulaValidType],
+        arg3: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(BaserowFormulaTextType())
+
+    def to_django_expression(
+        self, arg1: Expression, arg2: Expression, arg3: Expression
+    ) -> Expression:
+        return Replace(arg1, arg2, arg3)
+
+
+class BaserowFind(TwoArgumentBaserowFunction):
+    type = "find"
+    arg1_type = [BaserowFormulaTextType]
+    arg2_type = [BaserowFormulaTextType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[BaserowFormulaValidType],
+        arg2: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(
+            BaserowFormulaNumberType(number_decimal_places=0)
+        )
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return StrIndex(arg1, arg2)
+
+
+class BaserowRowId(ZeroArgumentBaserowFunction):
+    type = "row_id"
+    requires_refresh_after_insert = True
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return func_call.with_valid_type(
+            BaserowFormulaNumberType(number_decimal_places=0)
+        )
+
+    def to_django_expression(self) -> Expression:
+        pass
+
+    def to_django_expression_given_args(
+        self, args: List[Expression], model_instance: Optional[GeneratedTableModel]
+    ) -> Expression:
+        if model_instance is None:
+            return ExpressionWrapper(
+                F("id"), output_field=fields.DecimalField(decimal_places=0)
+            )
+        else:
+            # noinspection PyUnresolvedReferences
+            return Cast(
+                Value(model_instance.id),
+                output_field=fields.DecimalField(
+                    max_digits=BaserowFormulaNumberType.MAX_DIGITS, decimal_places=0
+                ),
+            )

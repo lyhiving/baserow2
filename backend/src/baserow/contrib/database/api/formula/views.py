@@ -85,6 +85,6 @@ class TypeFormulaView(APIView):
         field.formula = data["formula"]
         typed_table = type_table(field.table, overridden_field=field)
         # noinspection PyTypeChecker
-        typed_field: FormulaField = typed_table.get_typed_field(field.id)
+        typed_field: FormulaField = typed_table.get_typed_field_instance(field.id)
 
         return Response(TypeFormulaResultSerializer(typed_field).data)

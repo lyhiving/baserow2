@@ -11,6 +11,7 @@ from baserow.contrib.database.fields.registries import field_type_registry, Fiel
 from baserow.contrib.database.formula.ast.tree import (
     BaserowFieldByIdReference,
     BaserowExpression,
+    BaserowFunctionDefinition,
 )
 from baserow.contrib.database.formula.parser.ast_mapper import (
     raw_formula_to_untyped_expression,
@@ -37,6 +38,7 @@ from baserow.contrib.database.formula.types.visitors import (
     FieldReferenceResolvingVisitor,
     TypeAnnotatingASTVisitor,
     SubstituteFieldByIdWithThatFieldsExpressionVisitor,
+    FunctionsUsedVisitor,
 )
 from baserow.contrib.database.table import models
 
@@ -170,6 +172,13 @@ class UntypedFormulaFieldWithReferences:
         updated_formula_field = self._create_untyped_copy_of_original_field()
         updated_formula_field.formula = self.fixed_raw_formula
 
+        functions_used: Set[BaserowFunctionDefinition] = typed_expression.accept(
+            FunctionsUsedVisitor()
+        )
+        expression_needs_refresh_on_insert = any(
+            f.requires_refresh_after_insert for f in functions_used
+        )
+
         new_formula_type = typed_expression.expression_type
         formula_type_handler: BaserowFormulaTypeType = (
             formula_type_handler_registry.get_by_cls(new_formula_type)
@@ -178,7 +187,10 @@ class UntypedFormulaFieldWithReferences:
             new_formula_type, updated_formula_field
         )
         typed_field = TypedFieldWithReferences(
-            self.original_formula_field, updated_formula_field, typed_expression
+            self.original_formula_field,
+            updated_formula_field,
+            typed_expression,
+            expression_needs_refresh_on_insert,
         )
 
         for field_child in self.field_children:
@@ -233,11 +245,7 @@ def _calculate_non_formula_field_typed_expression(
     typed_expr = BaserowFieldByIdReference[BaserowFormulaValidType](
         field.id, formula_type
     )
-    return TypedFieldWithReferences(
-        field,
-        field,
-        typed_expr,
-    )
+    return TypedFieldWithReferences(field, field, typed_expr, False)
 
 
 class TypedFieldWithReferences:
@@ -252,7 +260,9 @@ class TypedFieldWithReferences:
         original_field: Field,
         updated_field: Field,
         typed_expression: BaserowExpression[BaserowFormulaType],
+        expression_needs_refresh_on_insert: bool,
     ):
+        self.expression_needs_refresh_on_insert = expression_needs_refresh_on_insert
         self.original_field = original_field
         self.new_field = updated_field
         self.typed_expression = typed_expression
@@ -471,9 +481,7 @@ class TypedBaserowTable:
             field_ids_to_ignore
         )
 
-    def get_typed_field_expression(
-        self, field: Field
-    ) -> Optional[BaserowExpression[BaserowFormulaType]]:
+    def get_typed_field(self, field: Field) -> Optional[TypedFieldWithReferences]:
         """
         :param field: The field to get its typed expression for.
         :return: If the field has one it's BaserowExpression with type info otherwise
@@ -482,9 +490,9 @@ class TypedBaserowTable:
 
         if field.id not in self.typed_fields_with_references:
             return None
-        return self.typed_fields_with_references[field.id].typed_expression
+        return self.typed_fields_with_references[field.id]
 
-    def get_typed_field(self, field_id: int) -> Field:
+    def get_typed_field_instance(self, field_id: int) -> Field:
         """
         :param field_id: The field id to get its newly typed field for.
         :return: The updated field instance after typing.

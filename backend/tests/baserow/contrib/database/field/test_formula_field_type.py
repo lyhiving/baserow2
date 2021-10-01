@@ -257,3 +257,18 @@ def test_can_still_insert_rows_with_an_invalid_but_previously_date_formula_field
 
     row = RowHandler().create_row(user=user, table=table)
     assert getattr(row, f"field_{formula_field.id}") is None
+
+
+@pytest.mark.django_db
+def test_formula_with_row_id_is_populated_after_creating_row(
+    data_fixture,
+):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    handler = FieldHandler()
+    formula_field = handler.create_field(
+        user=user, table=table, type_name="formula", name="2", formula="row_id()"
+    )
+
+    row = RowHandler().create_row(user=user, table=table)
+    assert getattr(row, f"field_{formula_field.id}") == row.id

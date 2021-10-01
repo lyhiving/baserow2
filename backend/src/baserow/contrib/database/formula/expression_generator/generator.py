@@ -1,12 +1,12 @@
 from typing import Optional
 
-from django.db import models
 from django.db.models import (
     Expression,
     Value,
     F,
     DecimalField,
     BooleanField,
+    fields,
 )
 from django.db.models.functions import Cast
 
@@ -30,12 +30,12 @@ from baserow.contrib.database.formula.types.type_types import (
     BaserowFormulaType,
     BaserowFormulaInvalidType,
 )
-from baserow.contrib.database.table.models import GeneratedTableModel
+from baserow.contrib.database.table import models
 
 
 def baserow_expression_to_django_expression(
     baserow_expression: BaserowExpression[BaserowFormulaType],
-    model_instance: Optional[GeneratedTableModel],
+    model_instance: Optional["models.GeneratedTableModel"],
 ) -> Expression:
     """
     Takes a BaserowExpression and converts it to a Django Expression which calculates
@@ -81,7 +81,7 @@ class BaserowExpressionToDjangoExpressionGenerator(
 
     def __init__(
         self,
-        model_instance: Optional[GeneratedTableModel],
+        model_instance: Optional["models.GeneratedTableModel"],
     ):
         self.model_instance = model_instance
 
@@ -117,7 +117,7 @@ class BaserowExpressionToDjangoExpressionGenerator(
         self, function_call: BaserowFunctionCall[BaserowFormulaType]
     ) -> Expression:
         args = [expr.accept(self) for expr in function_call.args]
-        return function_call.to_django_expression_given_args(args)
+        return function_call.to_django_expression_given_args(args, self.model_instance)
 
     def visit_string_literal(
         self, string_literal: BaserowStringLiteral[BaserowFormulaType]
@@ -125,8 +125,8 @@ class BaserowExpressionToDjangoExpressionGenerator(
         # We need to cast and be super explicit this is a text field so postgres
         # does not get angry and claim this is an unknown type.
         return Cast(
-            Value(string_literal.literal, output_field=models.TextField()),
-            output_field=models.TextField(),
+            Value(string_literal.literal, output_field=fields.TextField()),
+            output_field=fields.TextField(),
         )
 
     def visit_int_literal(self, int_literal: BaserowIntegerLiteral[BaserowFormulaType]):

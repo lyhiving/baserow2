@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Union
 
 import pytz
 from dateutil import parser
@@ -36,7 +36,11 @@ from baserow.contrib.database.formula.exceptions import BaserowFormulaException
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
+from baserow.contrib.database.formula.parser.ast_mapper import (
+    replace_field_refs_according_to_new_or_deleted_fields,
+)
 from baserow.contrib.database.formula.registries import formula_type_handler_registry
+from baserow.contrib.database.formula.types.table_typer import TypedBaserowTable
 from baserow.contrib.database.formula.types.type_defs import (
     BaserowFormulaTextType,
     BaserowFormulaNumberType,
@@ -80,10 +84,6 @@ from .models import (
     PhoneNumberField,
     FormulaField,
 )
-from baserow.contrib.database.formula.parser.ast_mapper import (
-    replace_field_refs_according_to_new_or_deleted_fields,
-)
-from baserow.contrib.database.formula.types.table_typer import TypedBaserowTable
 from .registries import FieldType, field_type_registry
 
 
@@ -1834,21 +1834,29 @@ class FormulaFieldType(FieldType):
         return formula_type.get_serializer_field(**kwargs)
 
     def get_model_field(self, instance, **kwargs):
-        typed_table: Optional[TypedBaserowTable] = kwargs.pop("typed_table", None)
-        if typed_table:
-            expression = typed_table.get_typed_field_expression(instance)
+        typed_table: Union[TypedBaserowTable, bool] = kwargs.pop("typed_table")
+        # When typed_table is False we are constructing a table model without
+        # doing any type checking, we can't know what the expression is in this
+        # case but we still want to generate a model field so the model can be
+        # used to do SQL operations like dropping fields etc.
+        if typed_table and not (instance.error or instance.trashed):
+            typed_field = typed_table.get_typed_field(instance)
+            expression = typed_field.typed_expression
+            requires_refresh_after_insert = (
+                typed_field.expression_needs_refresh_on_insert
+            )
         else:
             expression = None
+            requires_refresh_after_insert = False
 
         formula_type = self._get_formula_type_from_formula_field(instance)
         expression_field_type = formula_type.get_model_field(**kwargs)
-
-        expression_to_use = None if instance.error or instance.trashed else expression
         return BaserowExpressionField(
             null=True,
             blank=True,
-            expression=expression_to_use,
+            expression=expression,
             expression_field=expression_field_type,
+            requires_refresh_after_insert=requires_refresh_after_insert,
             **kwargs,
         )
 

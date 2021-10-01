@@ -13,6 +13,7 @@ from baserow.contrib.database.formula.ast.exceptions import (
 )
 from baserow.contrib.database.formula.registries import formula_type_handler_registry
 from baserow.contrib.database.formula.types import type_types
+from baserow.contrib.database.table import models
 from baserow.core.registry import Instance
 
 A = TypeVar("A")
@@ -290,8 +291,9 @@ class BaserowFunctionCall(BaserowExpression[A]):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
+        model_instance: Optional["models.GeneratedTableModel"],
     ) -> Expression:
-        return self.function_def.to_django_expression_given_args(args)
+        return self.function_def.to_django_expression_given_args(args, model_instance)
 
     def check_arg_type_valid(
         self,
@@ -368,6 +370,15 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
 
         pass
 
+    @property
+    def requires_refresh_after_insert(self) -> bool:
+        """
+        :return: True if by using this function to have it's value calculated properly
+            a row must first be inserted and then refreshed.
+        """
+
+        return False
+
     @abc.abstractmethod
     def type_function_given_valid_args(
         self,
@@ -392,6 +403,7 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
+        model_instance: Optional["models.GeneratedTableModel"],
     ) -> Expression:
         """
         Given the args already converted to Django Expressions should return a Django
@@ -401,6 +413,8 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         itself was typed with a BaserowValidType.
 
         :param args: The already converted to Django expression args.
+        :param model_instance: If set then the model instance which is being inserted
+            or if False then the django expression is for an update statement.
         :return: A Django Expression which calculates the result of this function.
         """
 
@@ -512,3 +526,12 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
             return "function " + self.type
         else:
             return "operator " + self.operator
+
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.type == other.type
+        else:
+            return False
+
+    def __hash__(self):
+        return hash(self.type)
