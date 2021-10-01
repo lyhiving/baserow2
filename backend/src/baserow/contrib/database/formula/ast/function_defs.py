@@ -35,13 +35,13 @@ from baserow.contrib.database.formula.ast.tree import (
 from baserow.contrib.database.formula.expression_generator.django_expressions import (
     EqualsExpr,
 )
-from baserow.contrib.database.formula.types.type_defs import (
+from baserow.contrib.database.formula.types.formula_types import (
     BaserowFormulaTextType,
     BaserowFormulaDateType,
     BaserowFormulaNumberType,
     BaserowFormulaBooleanType,
 )
-from baserow.contrib.database.formula.types.type_types import (
+from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaType,
     BaserowFormulaValidType,
     UnTyped,

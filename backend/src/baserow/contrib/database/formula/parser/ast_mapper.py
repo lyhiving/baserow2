@@ -30,7 +30,7 @@ from baserow.contrib.database.formula.parser.generated.BaserowFormulaVisitor imp
     BaserowFormulaVisitor,
 )
 from baserow.contrib.database.formula.registries import formula_function_registry
-from baserow.contrib.database.formula.types.type_types import UnTyped
+from baserow.contrib.database.formula.types.formula_type import UnTyped
 from baserow.core.exceptions import InstanceTypeDoesNotExist
 
 

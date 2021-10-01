@@ -33,7 +33,7 @@ from baserow.contrib.database.fields.field_types import (
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.core.expressions import Timezone
 from .registries import ViewFilterType
-from baserow.contrib.database.formula.types.type_defs import (
+from baserow.contrib.database.formula.types.formula_types import (
     BaserowFormulaTextType,
     BaserowFormulaNumberType,
     BaserowFormulaCharType,

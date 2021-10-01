@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pytz
 from dateutil import parser
@@ -36,19 +36,20 @@ from baserow.contrib.database.formula.exceptions import BaserowFormulaException
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
-from baserow.contrib.database.formula.registries import formula_type_handler_registry
-from baserow.contrib.database.formula.types.type_defs import (
+from baserow.contrib.database.formula.parser.ast_mapper import (
+    replace_field_refs_according_to_new_or_deleted_fields,
+)
+from baserow.contrib.database.formula.types.formula_type import BaserowFormulaType
+from baserow.contrib.database.formula.types.formula_types import (
     BaserowFormulaTextType,
     BaserowFormulaNumberType,
     BaserowFormulaBooleanType,
     BaserowFormulaDateType,
-    BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
     BaserowFormulaCharType,
+    construct_type_from_formula_field,
+    BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
 )
-from baserow.contrib.database.formula.types.type_handler import (
-    BaserowFormulaTypeType,
-)
-from baserow.contrib.database.formula.types.type_types import BaserowFormulaType
+from baserow.contrib.database.formula.types.table_typer import TypedBaserowTable
 from baserow.contrib.database.validators import UnicodeRegexValidator
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
@@ -79,11 +80,8 @@ from .models import (
     SelectOption,
     PhoneNumberField,
     FormulaField,
+    Field,
 )
-from baserow.contrib.database.formula.parser.ast_mapper import (
-    replace_field_refs_according_to_new_or_deleted_fields,
-)
-from baserow.contrib.database.formula.types.table_typer import TypedBaserowTable
 from .registries import FieldType, field_type_registry
 
 
@@ -161,6 +159,9 @@ class TextFieldMatchingRegexFieldType(FieldType, ABC):
     def to_baserow_formula_type(self, field) -> BaserowFormulaType:
         return BaserowFormulaTextType()
 
+    def from_baserow_formula_type(self, formula_type: BaserowFormulaCharType):
+        return self.model_class()
+
 
 class CharFieldMatchingRegexFieldType(TextFieldMatchingRegexFieldType):
     """
@@ -232,6 +233,11 @@ class TextFieldType(FieldType):
     def to_baserow_formula_type(self, field) -> BaserowFormulaType:
         return BaserowFormulaTextType()
 
+    def from_baserow_formula_type(
+        self, formula_type: BaserowFormulaTextType
+    ) -> TextField:
+        return TextField()
+
 
 class LongTextFieldType(FieldType):
     type = "long_text"
@@ -259,6 +265,11 @@ class LongTextFieldType(FieldType):
 
     def to_baserow_formula_type(self, field) -> BaserowFormulaType:
         return BaserowFormulaTextType()
+
+    def from_baserow_formula_type(
+        self, formula_type: BaserowFormulaTextType
+    ) -> "LongTextField":
+        return LongTextField()
 
 
 class URLFieldType(TextFieldMatchingRegexFieldType):
@@ -392,6 +403,19 @@ class NumberFieldType(FieldType):
             number_decimal_places = field.number_decimal_places
         return BaserowFormulaNumberType(number_decimal_places=number_decimal_places)
 
+    def from_baserow_formula_type(
+        self, formula_type: BaserowFormulaNumberType
+    ) -> NumberField:
+        if formula_type.number_decimal_places == 0:
+            number_type = NUMBER_TYPE_INTEGER
+        else:
+            number_type = NUMBER_TYPE_DECIMAL
+        return NumberField(
+            number_type=number_type,
+            number_decimal_places=formula_type.number_decimal_places,
+            number_negative=True,
+        )
+
 
 class BooleanFieldType(FieldType):
     type = "boolean"
@@ -418,6 +442,11 @@ class BooleanFieldType(FieldType):
 
     def to_baserow_formula_type(self, field: NumberField) -> BaserowFormulaType:
         return BaserowFormulaBooleanType()
+
+    def from_baserow_formula_type(
+        self, boolean_formula_type: BaserowFormulaBooleanType
+    ) -> BooleanField:
+        return BooleanField()
 
 
 class DateFieldType(FieldType):
@@ -595,6 +624,15 @@ class DateFieldType(FieldType):
     def to_baserow_formula_type(self, field: DateField) -> BaserowFormulaType:
         return BaserowFormulaDateType(
             field.date_format, field.date_include_time, field.date_time_format
+        )
+
+    def from_baserow_formula_type(
+        self, formula_type: BaserowFormulaDateType
+    ) -> DateField:
+        return DateField(
+            date_format=formula_type.date_format,
+            date_include_time=formula_type.date_include_time,
+            date_time_format=formula_type.date_time_format,
         )
 
 
@@ -1801,9 +1839,7 @@ class FormulaFieldType(FieldType):
 
             field_type = field_type_registry.get_by_model(field.specific_class)
             if field_type.type == FormulaFieldType.type:
-                formula_type = FormulaFieldType._get_formula_type_from_formula_field(
-                    field.specific
-                )
+                formula_type = construct_type_from_formula_field(field.specific)
                 return formula_type.type in compatible_formula_types
             else:
                 return False
@@ -1811,37 +1847,44 @@ class FormulaFieldType(FieldType):
         return checker
 
     @staticmethod
-    def _get_formula_type_from_formula_field(
+    def _get_field_instance_and_type_from_formula_field(
         formula_field_instance: FormulaField,
-    ) -> BaserowFormulaType:
+    ) -> Tuple[Field, FieldType]:
         """
-        Gets the BaserowFormulaType the provided formula field currently has. This will
-        vary depending on the formula of the field.
+        Gets the BaserowFormulaType the provided formula field currently has and the
+        Baserow FieldType used to work with a formula of that formula type.
 
         :param formula_field_instance: An instance of a formula field.
         :return: The BaserowFormulaType of the formula field instance.
         """
 
-        formula_type_handler: BaserowFormulaTypeType = (
-            formula_type_handler_registry.get(formula_field_instance.formula_type)
+        formula_type = construct_type_from_formula_field(formula_field_instance)
+        baserow_field_type: FieldType = field_type_registry.get(
+            formula_type.baserow_field_type
         )
-        return formula_type_handler.construct_type_from_formula_field(
-            formula_field_instance
-        )
+        field_instance = baserow_field_type.from_baserow_formula_type(formula_type)
 
-    def get_serializer_field(self, instance, **kwargs):
-        formula_type = self._get_formula_type_from_formula_field(instance)
-        return formula_type.get_serializer_field(**kwargs)
+        return field_instance, baserow_field_type
 
-    def get_model_field(self, instance, **kwargs):
+    def get_serializer_field(self, instance: FormulaField, **kwargs):
+        (
+            field_instance,
+            field_type,
+        ) = self._get_field_instance_and_type_from_formula_field(instance)
+        return field_type.get_serializer_field(field_instance, **kwargs)
+
+    def get_model_field(self, instance: FormulaField, **kwargs):
         typed_table: Optional[TypedBaserowTable] = kwargs.pop("typed_table", None)
         if typed_table:
             expression = typed_table.get_typed_field_expression(instance)
         else:
             expression = None
 
-        formula_type = self._get_formula_type_from_formula_field(instance)
-        expression_field_type = formula_type.get_model_field(**kwargs)
+        (
+            field_instance,
+            field_type,
+        ) = self._get_field_instance_and_type_from_formula_field(instance)
+        expression_field_type = field_type.get_model_field(field_instance, **kwargs)
 
         expression_to_use = None if instance.error or instance.trashed else expression
         return BaserowExpressionField(
@@ -1867,8 +1910,14 @@ class FormulaFieldType(FieldType):
 
     def get_export_value(self, value, field_object) -> BaserowFormulaType:
         instance = field_object["field"]
-        formula_type = self._get_formula_type_from_formula_field(instance)
-        return formula_type.get_export_value(value)
+        (
+            field_instance,
+            field_type,
+        ) = self._get_field_instance_and_type_from_formula_field(instance)
+        return field_type.get_export_value(
+            value,
+            {"field": field_instance, "type": field_type, "name": field_object["name"]},
+        )
 
     def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
         # We don't want to export the per row formula values as they can all and
@@ -1882,12 +1931,15 @@ class FormulaFieldType(FieldType):
         # should be derived from the formula itself.
         pass
 
-    def contains_query(self, field_name, value, model_field, field):
-        formula_type = self._get_formula_type_from_formula_field(field)
-        return formula_type.contains_query(field_name, value, model_field, field)
+    def contains_query(self, field_name, value, model_field, field: FormulaField):
+        (
+            field_instance,
+            field_type,
+        ) = self._get_field_instance_and_type_from_formula_field(field)
+        return field_type.contains_query(field_name, value, model_field, field_instance)
 
     def expression_to_update_field_after_related_field_changes(self, field, to_model):
-        if not field.error:
+        if not (field.error or field.trashed):
             f = to_model._meta.get_field(field.db_column)
             return baserow_expression_to_django_expression(f.expression, None)
         else:
@@ -1916,8 +1968,13 @@ class FormulaFieldType(FieldType):
         return serialized
 
     def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
-        formula_type = self._get_formula_type_from_formula_field(from_field)
-        return formula_type.get_alter_column_prepare_old_value()
+        (
+            field_instance,
+            field_type,
+        ) = self._get_field_instance_and_type_from_formula_field(from_field)
+        return field_type.get_alter_column_prepare_old_value(
+            connection, field_instance, to_field
+        )
 
     def add_related_fields_to_model(
         self, typed_table, field, already_included_field_ids

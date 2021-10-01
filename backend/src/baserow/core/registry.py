@@ -33,19 +33,6 @@ class ModelInstanceMixin:
             raise ImproperlyConfigured("The model_class of an instance must be set.")
 
 
-class ClsInstanceMixin:
-    """
-    This mixin introduces a cls attribute that will be related to the instance. It is to
-    be used in combination with a registry that extends the ClsRegistryMixin.
-    """
-
-    cls = None
-
-    def __init__(self):
-        if not self.cls:
-            raise ImproperlyConfigured("The cls of an instance must be set.")
-
-
 class CustomFieldsInstanceMixin:
     """
     If an instance can have custom fields per type, they can be defined here.
@@ -340,29 +327,6 @@ class ModelRegistryMixin:
             if value.model_class == model_instance or isinstance(
                 model_instance, value.model_class
             ):
-                return value
-
-        raise self.does_not_exist_exception_class(
-            f"The {self.name} model instance {model_instance} does not exist."
-        )
-
-
-class ClsRegistryMixin:
-    def get_by_cls(self, model_instance):
-        """
-        Returns a registered instance of the given a class.
-
-        :param model_instance: The value that must be or must be an instance of the
-            model_class.
-        :type model_instance: Model or Model()
-        :raises InstanceTypeDoesNotExist: When the provided model instance is not
-            found in the registry.
-        :return: The registered instance.
-        :rtype: Instance
-        """
-
-        for value in self.registry.values():
-            if value.cls == model_instance or isinstance(model_instance, value.cls):
                 return value
 
         raise self.does_not_exist_exception_class(

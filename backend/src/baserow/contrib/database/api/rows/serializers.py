@@ -1,5 +1,6 @@
 import logging
 
+from django.utils.functional import lazy
 from rest_framework import serializers
 
 from baserow.api.serializers import get_example_pagination_serializer_class
@@ -214,6 +215,9 @@ def get_example_row_metadata_field_serializer():
     )
 
 
-example_pagination_row_serializer_class = get_example_pagination_serializer_class(
-    get_example_row_serializer_class(True, user_field_names=True)
-)
+example_pagination_row_serializer_class = lazy(
+    lambda _: get_example_pagination_serializer_class(
+        get_example_row_serializer_class(True, user_field_names=True)
+    ),
+    object,
+)()

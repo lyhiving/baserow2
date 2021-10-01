@@ -9,7 +9,7 @@ from baserow.contrib.database.formula.ast.tree import (
     ArgCountSpecifier,
     BaserowExpression,
 )
-from baserow.contrib.database.formula.types.type_types import (
+from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaType,
     BaserowFormulaValidType,
     UnTyped,

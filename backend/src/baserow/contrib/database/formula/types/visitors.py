@@ -9,11 +9,11 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
 )
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
-from baserow.contrib.database.formula.types.type_defs import (
+from baserow.contrib.database.formula.types.formula_types import (
     BaserowFormulaTextType,
     BaserowFormulaNumberType,
 )
-from baserow.contrib.database.formula.types.type_types import (
+from baserow.contrib.database.formula.types.formula_type import (
     UnTyped,
     BaserowFormulaType,
     BaserowFormulaValidType,
