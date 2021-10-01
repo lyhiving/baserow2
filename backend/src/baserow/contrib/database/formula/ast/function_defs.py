@@ -122,7 +122,7 @@ class BaserowDatetimeFormat(TwoArgumentBaserowFunction):
 
 
 class BaserowToText(OneArgumentBaserowFunction):
-    type = "totext"
+    type = "to_text"
     arg_type = [BaserowFormulaValidType]
 
     def type_function(
