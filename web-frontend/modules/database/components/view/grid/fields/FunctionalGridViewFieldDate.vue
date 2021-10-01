@@ -1,8 +1,10 @@
 <template functional>
-  <div ref="cell" class="grid-view__cell">
+  <div ref="cell" class="grid-view__cell" :class="data.staticClass || ''">
     <div
       class="grid-field-date"
-      :class="{ 'grid-field-date--has-time': props.field.date_include_time }"
+      :class="{
+        'grid-field-date--has-time': props.field.date_include_time,
+      }"
     >
       <div ref="dateDisplay" class="grid-field-date__date">
         {{ $options.methods.getDate(props.field, props.value) }}
