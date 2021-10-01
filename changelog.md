@@ -20,6 +20,9 @@
   were deleted in rapid succession.
 * Fix accidentally locking of too many rows in various tables during update operations.
 * Introduced the has file type filter.
+* Fixed bug where the backend would fail hard when an invalid integer was provided as
+  'before_id' when moving a row by introducing a decorator to validate query parameters.
+* Fixed bug where copying a cell containing a null value resulted in an error.
 
 ## Released (2021-08-11)
 
