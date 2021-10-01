@@ -17,10 +17,11 @@
 .formula-field__type-refresher {
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 
 .formula-field__refresh {
+  align-self: center;
+
   &:not(:first-child) {
     margin-top: 12px;
   }
@@ -42,6 +43,10 @@
   line-height: 22px;
   height: 22px;
   background-color: transparent;
+  outline: none;
+  box-shadow: none;
+  border: none;
+  padding: 0;
 }
 
 .formula-field__input-error {
@@ -85,10 +90,6 @@
 .formula-field__item {
   &:not(:last-child) {
     margin-bottom: 4px;
-  }
-
-  &-selected {
-    background-color: $color-primary-100;
   }
 }
 

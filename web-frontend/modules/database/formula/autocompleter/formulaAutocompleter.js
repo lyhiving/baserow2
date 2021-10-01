@@ -134,6 +134,10 @@ export function _calculateAutocompleteRangeAndType(formula, cursorPosition) {
  * @param autocompleteEndPosition The end of the range of character we are replacing in
  *    the formula.
  * @param tokenEndPosition The end position of the token under the cursor.
+ * @param insideFunctionRef If true the cursor is already inside a partial or fully
+ *    complete function reference and we should respect it's contents and replace it
+ *    when doing an autocomplete. If false we are just inserting the entire candidate
+ *    at the startPosition and not doing anything fancy.
  * @private
  */
 function _calculateFunctionAutocompleteResult(
@@ -141,7 +145,8 @@ function _calculateFunctionAutocompleteResult(
   cursorPosition,
   autocompleteStartPosition,
   autocompleteEndPosition,
-  tokenEndPosition
+  tokenEndPosition,
+  insideFunctionRef
 ) {
   let autocompleteText = functionCandidate.value + '('
   let shiftCursorToTheRightOfAutocompleteTextBy = 0
@@ -152,17 +157,28 @@ function _calculateFunctionAutocompleteResult(
     autocompleteText += "''"
     shiftCursorToTheRightOfAutocompleteTextBy--
   }
-  if (cursorPosition === tokenEndPosition) {
-    // Only close the function call off if the cursor is at the very end of the token
-    // being autocompleted.
+  if (insideFunctionRef) {
+    if (cursorPosition === tokenEndPosition) {
+      // Only close the function call off if the cursor is at the very end of the token
+      // being autocompleted.
+      autocompleteText += ')'
+      shiftCursorToTheRightOfAutocompleteTextBy--
+    }
+    return {
+      autocompleteStartPosition,
+      autocompleteEndPosition,
+      autocompleteText,
+      shiftCursorToTheRightOfAutocompleteTextBy,
+    }
+  } else {
     autocompleteText += ')'
     shiftCursorToTheRightOfAutocompleteTextBy--
-  }
-  return {
-    autocompleteStartPosition,
-    autocompleteEndPosition,
-    autocompleteText,
-    shiftCursorToTheRightOfAutocompleteTextBy,
+    return {
+      autocompleteStartPosition: autocompleteStartPosition + 1,
+      autocompleteEndPosition: autocompleteStartPosition + 1,
+      autocompleteText,
+      shiftCursorToTheRightOfAutocompleteTextBy,
+    }
   }
 }
 
@@ -215,6 +231,10 @@ function _isCursorAtCorrectLocationInFieldRefToAutocomplete(
  * @param thereIsHangingOpenBracketAtCursor Whether or not there is a hanging open
  *    bracket at the cursor location in the formula. E.g. `field($` is true, `field($)`
  *    is false.
+ * @param insideFieldRef If true the cursor is already inside a partial or fully
+ *    complete field reference and we should respect it's contents and replace it
+ *    when doing an autocomplete. If false we are just inserting the entire candidate
+ *    at the startPosition and not doing anything fancy.
  * @private
  */
 function _calculateFieldAutocompleteResult(
@@ -223,46 +243,61 @@ function _calculateFieldAutocompleteResult(
   autocompleteEndPosition,
   cursorPosition,
   fieldCandidate,
-  thereIsHangingOpenBracketAtCursor
+  thereIsHangingOpenBracketAtCursor,
+  insideFieldRef
 ) {
-  const innerFieldRef = formula.slice(
-    autocompleteStartPosition,
-    autocompleteEndPosition
-  )
-  const startsWithDoubleQuote = innerFieldRef.startsWith('"')
-  const startsWithSingleQuote = innerFieldRef.startsWith("'")
-  // Allow completing inside of a field ref with no text like `field($)` but disallow
-  // any syntactically incorrect refs like `field(a$`.
-  const innerFieldRefCorrectlyStartsWithQuoteOrIsEmpty =
-    innerFieldRef.length === 0 || startsWithSingleQuote || startsWithDoubleQuote
-  if (innerFieldRefCorrectlyStartsWithQuoteOrIsEmpty) {
-    if (
-      _isCursorAtCorrectLocationInFieldRefToAutocomplete(
-        innerFieldRef,
-        cursorPosition,
-        autocompleteEndPosition
-      )
-    ) {
-      let autocompleteText = _fieldNameToStringLiteral(
-        startsWithDoubleQuote,
-        fieldCandidate.value
-      )
+  if (insideFieldRef) {
+    const innerFieldRef = formula.slice(
+      autocompleteStartPosition,
+      autocompleteEndPosition
+    )
+    const startsWithDoubleQuote = innerFieldRef.startsWith('"')
+    const startsWithSingleQuote = innerFieldRef.startsWith("'")
+    // Allow completing inside of a field ref with no text like `field($)` but disallow
+    // any syntactically incorrect refs like `field(a$`.
+    const innerFieldRefCorrectlyStartsWithQuoteOrIsEmpty =
+      innerFieldRef.length === 0 ||
+      startsWithSingleQuote ||
+      startsWithDoubleQuote
+    if (innerFieldRefCorrectlyStartsWithQuoteOrIsEmpty) {
+      if (
+        _isCursorAtCorrectLocationInFieldRefToAutocomplete(
+          innerFieldRef,
+          cursorPosition,
+          autocompleteEndPosition
+        )
+      ) {
+        let autocompleteText = _fieldNameToStringLiteral(
+          startsWithDoubleQuote,
+          fieldCandidate.value
+        )
 
-      let shiftCursorToTheRightOfAutocompleteTextBy = 0
-      if (thereIsHangingOpenBracketAtCursor) {
-        autocompleteText += ')'
-      } else {
-        // There is already a closing bracket for this field(..) so we need to shift
-        // one past it to place the cursor after the field ref like so: field(..)$
-        shiftCursorToTheRightOfAutocompleteTextBy = 1
-      }
+        let shiftCursorToTheRightOfAutocompleteTextBy = 0
+        if (thereIsHangingOpenBracketAtCursor) {
+          autocompleteText += ')'
+        } else {
+          // There is already a closing bracket for this field(..) so we need to shift
+          // one past it to place the cursor after the field ref like so: field(..)$
+          shiftCursorToTheRightOfAutocompleteTextBy = 1
+        }
 
-      return {
-        autocompleteStartPosition,
-        autocompleteEndPosition,
-        autocompleteText,
-        shiftCursorToTheRightOfAutocompleteTextBy,
+        return {
+          autocompleteStartPosition,
+          autocompleteEndPosition,
+          autocompleteText,
+          shiftCursorToTheRightOfAutocompleteTextBy,
+        }
       }
+    }
+  } else {
+    const autocompleteText =
+      'field(' + _fieldNameToStringLiteral(false, fieldCandidate.value) + ')'
+
+    return {
+      autocompleteStartPosition: autocompleteStartPosition + 1,
+      autocompleteEndPosition: autocompleteStartPosition + 1,
+      autocompleteText,
+      shiftCursorToTheRightOfAutocompleteTextBy: 0,
     }
   }
   return false
@@ -276,11 +311,11 @@ function _calculateFieldAutocompleteResult(
  *
  * @param formula The formula autocompletion is being checked for.
  * @param cursorPosition The users text position inside the formula.
- * @param fieldCandidate If the users cursor is in a valid place to do a field reference
  *    autocomplete and a field is provided here then its name will be autocompleted in.
  * @param functionCandidate If the users cursor is in a valid place to do a function
  *    autocomplete and a function is provided here then its function type will be
  *    autocompleted in.
+ * @param fieldCandidate If the users cursor is in a valid place to do a field reference
  * @returns Object An object with the following properties:
  *    - autocompleteStartLocation : The index into the formula where to start replacing
  *        text.
@@ -296,8 +331,8 @@ function _calculateFieldAutocompleteResult(
 export function _calculateAutocompleteLocationAndText(
   formula,
   cursorPosition,
-  fieldCandidate,
-  functionCandidate
+  functionCandidate,
+  fieldCandidate
 ) {
   const {
     insideFieldRef,
@@ -308,25 +343,27 @@ export function _calculateAutocompleteLocationAndText(
     tokenEndPosition,
   } = _calculateAutocompleteRangeAndType(formula, cursorPosition)
 
-  if (insideFieldRef && fieldCandidate) {
+  if (fieldCandidate) {
     const fieldAutocompleteResultOrFalse = _calculateFieldAutocompleteResult(
       formula,
       autocompleteStartPosition,
       autocompleteEndPosition,
       cursorPosition,
       fieldCandidate,
-      thereIsHangingOpenBracketAtCursor
+      thereIsHangingOpenBracketAtCursor,
+      insideFieldRef
     )
     if (fieldAutocompleteResultOrFalse) {
       return fieldAutocompleteResultOrFalse
     }
-  } else if (functionCandidate && insideFunctionRef) {
+  } else if (functionCandidate) {
     return _calculateFunctionAutocompleteResult(
       functionCandidate,
       cursorPosition,
       autocompleteStartPosition,
       autocompleteEndPosition,
-      tokenEndPosition
+      tokenEndPosition,
+      insideFunctionRef
     )
   }
   // No valid autocomplete, return values which result in nothing happening.
@@ -351,12 +388,8 @@ function _fieldNameToStringLiteral(doubleQuote, fieldName) {
  * @param formula The formula to autocomplete
  * @param startingCursorLocation A location inside the formula where to trigger
  *    autocompletion.
- * @param filteredFunctions A list of filtered functions where the first item in the
- *    list is the best autocomplete candidate for a function, the second is second best
- *    and so on.
- * @param filteredFields A list of filtered fields where the first item in the
- *    list is the best autocomplete candidate for a field, the second is second best
- *    and so on.
+ * @param functionCandidate The best autocomplete candidate for a function.
+ * @param fieldCandidate The best autocomplete candidate for a field.
  * @returns {{newCursorPosition: *, autocompletedFormula: string}|{newCursorPosition, autocompletedFormula}}
  *    Returns a formula which has had an autocompletion done if one made sense and a
  *    new location to move the cursor to in the formula. If no autocompletion occured
@@ -365,8 +398,8 @@ function _fieldNameToStringLiteral(doubleQuote, fieldName) {
 export function autocompleteFormula(
   formula,
   startingCursorLocation,
-  filteredFunctions,
-  filteredFields
+  functionCandidate,
+  fieldCandidate
 ) {
   const {
     autocompleteStartPosition,
@@ -376,8 +409,8 @@ export function autocompleteFormula(
   } = _calculateAutocompleteLocationAndText(
     formula,
     startingCursorLocation,
-    filteredFields[0],
-    filteredFunctions[0]
+    functionCandidate,
+    fieldCandidate
   )
 
   const formulaUptoStart = formula.slice(0, autocompleteStartPosition)

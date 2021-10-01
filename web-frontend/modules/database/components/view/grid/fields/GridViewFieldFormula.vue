@@ -1,21 +1,12 @@
 <template>
-  <div
-    v-if="field.formula_type === 'number' && value === 'NaN'"
-    class="grid-view__cell cell-error"
-  >
-    <div class="grid-field-number">Invalid Number</div>
-  </div>
-  <div v-else-if="field.error" ref="cell" class="grid-view__cell active"></div>
   <component
     :is="getComponent(field)"
-    v-else-if="getComponent(field)"
-    v-bind="$props"
+    v-if="getComponent(field)"
+    :field="field"
+    :value="value"
+    class="active"
   ></component>
-  <div
-    v-else-if="field.formula_type === 'invalid'"
-    class="grid-view__cell"
-  ></div>
-  <div v-else ref="cell" class="grid-view__cell active">Unknown field type</div>
+  <div v-else class="grid-view__cell cell-error active">Unknown Field Type</div>
 </template>
 
 <script>

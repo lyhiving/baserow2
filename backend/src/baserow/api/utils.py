@@ -115,7 +115,12 @@ def _search_up_class_hierarchy_for_mapping(e, mapping):
     return None
 
 
-def validate_data(serializer_class, data, partial=False):
+def validate_data(
+    serializer_class,
+    data,
+    partial=False,
+    exception_to_raise=RequestBodyValidationException,
+):
     """
     Validates the provided data via the provided serializer class. If the data doesn't
     match with the schema of the serializer an api exception containing more detailed
@@ -144,7 +149,7 @@ def validate_data(serializer_class, data, partial=False):
     serializer = serializer_class(data=data, partial=partial)
     if not serializer.is_valid():
         detail = serialize_errors_recursive(serializer.errors)
-        raise RequestBodyValidationException(detail)
+        raise exception_to_raise(detail)
 
     return serializer.data
 

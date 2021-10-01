@@ -12,6 +12,7 @@
     @click="$emit('click', $event)"
     @keyup="$emit('keyup', $event)"
     @keydown="$emit('keydown', $event)"
+    @blur="$emit('blur', $event)"
   />
 </template>
 <script>

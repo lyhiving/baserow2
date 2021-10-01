@@ -94,7 +94,7 @@ class FieldHandler:
         :param field_model: If provided that model's objects are used to select the
             field. This can for example be useful when you want to select a TextField or
             other child of the Field model.
-        :type field_model: Field
+        :type field_model: Type[Field]
         :param base_queryset: The base queryset from where to select the field.
             object. This can for example be used to do a `select_related`. Note that
             if this is used the `field_model` parameter doesn't work anymore.

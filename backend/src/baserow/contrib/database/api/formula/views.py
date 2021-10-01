@@ -44,9 +44,7 @@ class TypeFormulaView(APIView):
         operation_id="type_formula_field",
         description="Calculates and returns the new type of the specified formula field"
         " if it's formula is changed to the specified value. Does not change the state"
-        "of the server, this request should be a GET request but due to"
-        "the semi-unsupported nature of GET requests with JSON bodies we have had to "
-        "use a POST instead.",
+        "of the field in any way.",
         request=TypeFormulaRequestSerializer,
         responses={
             200: TypeFormulaResultSerializer,
@@ -75,11 +73,8 @@ class TypeFormulaView(APIView):
         value.
         """
 
-        field = FieldHandler().get_field(field_id)
+        field = FieldHandler().get_field(field_id, field_model=FormulaField)
         field.table.database.group.has_user(request.user, raise_error=True)
-
-        if not (field.specific_class is FormulaField):
-            raise FieldDoesNotExist()
 
         field = field.specific
         field.formula = data["formula"]

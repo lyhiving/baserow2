@@ -1131,6 +1131,7 @@ export const actions = {
         values
       )
       commit('UPDATE_ROW_IN_BUFFER', { row, values: updatedRow.data })
+      dispatch('onRowChange', { view, row, fields, primary })
     } catch (error) {
       commit('UPDATE_ROW_IN_BUFFER', {
         row,

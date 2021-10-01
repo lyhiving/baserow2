@@ -355,12 +355,12 @@
   .grid-view__row--selected & {
     background-color: $color-neutral-50;
 
-    &.cell-error {
-      background-color: $color-error-100;
-    }
-
     &.active {
       background-color: $white;
+    }
+
+    &.cell-error {
+      background-color: $color-error-100;
     }
   }
 

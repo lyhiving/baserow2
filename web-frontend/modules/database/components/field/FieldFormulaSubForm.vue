@@ -20,6 +20,7 @@
       :table="table"
       :fields="fieldsWithoutThisField"
       :error="localOrServerError"
+      @blur="$v.values.formula.$touch()"
     >
     </FormulaAdvancedEditContext>
   </div>
@@ -83,9 +84,10 @@ export default {
       }, {})
     },
     localOrServerError() {
-      if (!this.$v.values.formula.required) {
+      const dirty = this.$v.values.formula.$dirty
+      if (dirty && !this.$v.values.formula.required) {
         return 'Please enter a formula'
-      } else if (!this.$v.values.formula.parseFormula) {
+      } else if (dirty && !this.$v.values.formula.parseFormula) {
         return (
           `Error in the formula on line ${this.parsingError.line} starting at
         letter ${this.parsingError.character}` +
@@ -135,7 +137,7 @@ export default {
       this.mergedTypeOptions = Object.assign({}, newValue)
     },
     'values.formula'(newValue, oldValue) {
-      this.$v.values.formula.$touch()
+      this.parseFormula(newValue)
     },
   },
   methods: {
@@ -186,7 +188,7 @@ export default {
         .replace('}', '')
       return s + '.'
     },
-    handleError(error) {
+    handleErrorByForm(error) {
       if (error.handler.code === 'ERROR_WITH_FORMULA') {
         this.errorFromServer = error.handler.detail
         return true
@@ -221,12 +223,12 @@ export default {
         }
         // eslint-disable-next-line camelcase
         this.localFormulaType = formula_type
-        this.initialFormula = this.values.formula
       } catch (e) {
-        if (!this.handleError(e)) {
+        if (!this.handleErrorByForm(e)) {
           notifyIf(e, 'field')
         }
       }
+      this.initialFormula = this.values.formula
       this.refreshingFormula = false
     },
   },
