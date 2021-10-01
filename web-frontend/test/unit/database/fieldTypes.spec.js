@@ -120,6 +120,14 @@ const mockedFields = {
     table_id: 42,
     type: 'phone_number',
   },
+  formula: {
+    id: 14,
+    name: 'formula',
+    order: 13,
+    primary: false,
+    table_id: 42,
+    type: 'formula',
+  },
 }
 
 const valuesToCall = [null, undefined]

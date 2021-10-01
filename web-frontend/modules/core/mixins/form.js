@@ -138,10 +138,10 @@ export default {
     /**
      * Returns if a child form has indicated it handled the error, false otherwise.
      */
-    handleError(error) {
+    handleErrorByForm(error) {
       let childHandledIt = false
       for (const child of this.$children) {
-        if ('handleError' in child && child.handleError(error)) {
+        if ('handleError' in child && child.handleErrorByForm(error)) {
           childHandledIt = true
         }
       }

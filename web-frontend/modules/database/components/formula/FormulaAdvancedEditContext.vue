@@ -7,9 +7,11 @@
           v-model="formula"
           class="formula-field__input-formula"
           placeholder="Enter your formula here, use tab to autocomplete."
+          @blur="$emit('blur', $event)"
           @click="recalcAutoComplete"
           @keyup="recalcAutoComplete"
-          @keydown.tab.prevent="doAutoComplete"
+          @keydown.tab.prevent="doAutoCompleteAfterTab"
+          @keydown.enter.exact.prevent="$refs.editContext.hide()"
         ></AutoExpandableTextarea>
       </div>
       <div v-if="error" class="formula-field__input-error">{{ error }}</div>
@@ -19,21 +21,25 @@
             :filtered-items="filteredFields"
             :unfiltered-items="fields"
             title="Fields"
-            @select-item="selectItem"
+            @hover-item="selectItem"
+            @click-item="doAutoComplete(null, $event)"
           >
           </FormulaFieldItemGroup>
           <FormulaFieldItemGroup
-            :filtered-items="filteredNormalFunctions"
-            :unfiltered-items="unfilteredNormalFunctions"
+            :filtered-items="filteredFunctions"
+            :unfiltered-items="functions"
             title="Functions"
-            @select-item="selectItem"
+            @hover-item="selectItem"
+            @click-item="doAutoComplete($event, null)"
           >
           </FormulaFieldItemGroup>
           <FormulaFieldItemGroup
             :filtered-items="filteredOperators"
             :unfiltered-items="unfilteredOperators"
             title="Operators"
-            @select-item="selectItem"
+            :show-operator="true"
+            @hover-item="selectItem"
+            @click-item="doAutoComplete($event, null)"
           >
           </FormulaFieldItemGroup>
         </div>
@@ -106,26 +112,20 @@ export default {
       return this.fields.map((f) =>
         this.wrapItem(
           f.name,
-          f.id,
           this.getFieldIcon(f),
           `A ${f.type} field`,
           `concat(field('${f.name}'), ' extra text ')`,
           `field('${f.name}')`,
+          false,
           f
         )
       )
     },
-    unfilteredNormalFunctions() {
-      return this.functions.filter((f) => !f.item.isOperator())
-    },
     unfilteredOperators() {
-      return this.functions.filter((f) => f.item.isOperator())
-    },
-    filteredNormalFunctions() {
-      return this.filteredFunctions.filter((f) => !f.item.isOperator())
+      return this.functions.filter((f) => f.operator)
     },
     filteredOperators() {
-      return this.filteredFunctions.filter((f) => f.item.isOperator())
+      return this.filteredFunctions.filter((f) => f.operator)
     },
   },
   mounted() {
@@ -154,9 +154,6 @@ export default {
     selectItem(item, resetFilters = true) {
       this.selectedItem.isSelected = false
       this.selectedItem = false
-      if (resetFilters) {
-        this.resetFilters()
-      }
       this.selectedItem = item
       item.isSelected = true
     },
@@ -188,19 +185,23 @@ export default {
         }
       }
     },
-    doAutoComplete() {
+    doAutoCompleteAfterTab() {
+      this.doAutoComplete(this.filteredFunctions[0], this.filteredFields[0])
+    },
+    doAutoComplete(functionCandidate, fieldCandidate) {
       const startingCursorLocation =
         this.$refs.textAreaFormulaInput.$refs.inputTextArea.selectionStart
 
       const { autocompletedFormula, newCursorPosition } = autocompleteFormula(
         this.formula,
         startingCursorLocation,
-        this.filteredFunctions,
-        this.filteredFields
+        functionCandidate,
+        fieldCandidate
       )
       this.formula = autocompletedFormula
 
       this.$nextTick(() => {
+        this.$refs.textAreaFormulaInput.$refs.inputTextArea.focus()
         this.$refs.textAreaFormulaInput.$refs.inputTextArea.setSelectionRange(
           newCursorPosition,
           newCursorPosition
@@ -209,7 +210,7 @@ export default {
       })
     },
     openContext(triggeringEl) {
-      this.$refs.editContext.toggle(
+      this.$refs.editContext.show(
         triggeringEl,
         'top',
         'left',
@@ -220,27 +221,27 @@ export default {
         this.$refs.textAreaFormulaInput.$refs.inputTextArea.focus()
       })
     },
-    wrapItem(value, key, icon, description, examples, syntaxUsage, item) {
+    wrapItem(value, icon, description, examples, syntaxUsage, operator, item) {
       return {
         value,
-        key,
         icon,
         isSelected: false,
         description,
         examples,
         syntaxUsage,
+        operator,
         item,
       }
     },
     getAndWrapFunctions() {
       return Object.values(this.$registry.getAll('formula_function')).map((f) =>
         this.wrapItem(
-          f.isOperator() ? f.getOperator() : f.getType(),
           f.getType(),
           this.funcTypeToIconClass(f),
           f.getDescription(),
           f.getExamples(),
           f.getSyntaxUsage(),
+          f.getOperator(),
           f
         )
       )

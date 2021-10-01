@@ -6,19 +6,17 @@
     </li>
     <li
       v-for="item in filteredItems"
-      :key="item.key"
+      :key="item.value"
       class="formula-field__item"
-      :class="{
-        'formula-field__item-selected': item.isSelected,
-      }"
     >
       <a
         href="#"
         class="formula-field__item-link"
-        @click="$emit('select-item', item)"
+        @mouseover="$emit('hover-item', item)"
+        @click.stop="$emit('click-item', item)"
       >
         <i class="fas formula-field__item-icon" :class="[item.icon]" />
-        {{ item.value }}
+        {{ showOperator ? item.operator : item.value }}
       </a>
     </li>
   </ul>
@@ -38,6 +36,11 @@ export default {
     filteredItems: {
       type: Array,
       required: true,
+    },
+    showOperator: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
   },
   methods: {

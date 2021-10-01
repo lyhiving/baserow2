@@ -729,11 +729,11 @@
             </ul>
           </div>
         </div>
-        <div class="formula-field">
+        <div class="formula-field margin-bottom-3">
           <div class="formula-field__input">
             <AutoExpandableTextarea
+              v-model="formula"
               class="formula-field__input-formula"
-              :value="'concat(field(“Text”), field(“Text”))'"
             ></AutoExpandableTextarea>
           </div>
           <div class="formula-field__body">
@@ -1121,6 +1121,7 @@ export default {
       dropdown: '',
       longDropdown: '0',
       date: '',
+      formula: 'concat(field("Text"), field("Text"))',
     }
   },
   head() {

@@ -6,10 +6,10 @@
           ref="formulaInput"
           :value="formula"
           type="text"
-          class="input"
-          placeholder="Formula"
-          @click="$emit('open-advanced-context', $refs.formulaInput)"
-          @input="$emit('open-advanced-context', $refs.formulaInput)"
+          class="input input--monospace"
+          @click.="$emit('open-advanced-context', $refs.formulaInput)"
+          @input.stop="$emit('open-advanced-context', $refs.formulaInput)"
+          @focus.stop="$emit('open-advanced-context', $refs.formulaInput)"
         />
       </div>
     </div>

@@ -61,10 +61,10 @@ describe('Tests checking the formula autocomplete logic', () => {
     ['field($', "field('field name a')$"],
     ["field('$", "field('field name a')$"],
     ["field(''$", "field('field name a')$"],
-    ["field('')$", "field('')$"],
+    ["field('')$", "field('')field('field name a')$"],
     ['fie$)', "field('$'))"],
     ['f$i', "field('$'i"],
-    ["field2('$", "field2('$"],
+    ["field2('$", "field2('field('field name a')$"],
     ["field('$')", "field('field name a')$"],
     ['field("$")', 'field("field name a")$'],
     ['field("field na$me a")', 'field("field na$me a")'],
@@ -81,7 +81,7 @@ describe('Tests checking the formula autocomplete logic', () => {
     ['u$', 'upper($)'],
     ['l$', 'lower($)'],
     ['le$', 'length($)'],
-    ['u($', 'u($'],
+    ['u($', "u(field('field name a')$"],
     ['u$)', 'upper($))'],
     ['upper(f$)', "upper(field('$'))"],
     ['lower(upper(field("$")', 'lower(upper(field("field name a")$)'],
@@ -108,8 +108,8 @@ describe('Tests checking the formula autocomplete logic', () => {
       const { autocompletedFormula, newCursorPosition } = autocompleteFormula(
         formulaWithoutCursorMarker,
         startingCursorPosition,
-        filteredFunctions,
-        filteredFields
+        filteredFunctions[0],
+        filteredFields[0]
       )
       const resultingFormulaWithCursor = [
         autocompletedFormula.slice(0, newCursorPosition),
