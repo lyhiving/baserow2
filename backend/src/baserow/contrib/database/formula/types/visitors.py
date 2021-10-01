@@ -12,17 +12,17 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionDefinition,
 )
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
-from baserow.contrib.database.formula.types import table_typer
-from baserow.contrib.database.formula.types.type_defs import (
+from baserow.contrib.database.formula.types.formula_types import (
     BaserowFormulaTextType,
     BaserowFormulaNumberType,
     BaserowFormulaBooleanType,
 )
-from baserow.contrib.database.formula.types.type_types import (
+from baserow.contrib.database.formula.types.formula_type import (
     UnTyped,
     BaserowFormulaType,
     BaserowFormulaValidType,
 )
+from baserow.contrib.database.formula.types import table_typer
 
 
 class FieldReferenceResolvingVisitor(BaserowFormulaASTVisitor[Any, List[str]]):

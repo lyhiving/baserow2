@@ -1,6 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.utils.functional import lazy
 
 from baserow.contrib.database.fields.mixins import (
     BaseDateMixin,
@@ -8,7 +7,9 @@ from baserow.contrib.database.fields.mixins import (
     DATE_FORMAT_CHOICES,
     DATE_TIME_FORMAT_CHOICES,
 )
-from baserow.contrib.database.formula.registries import formula_type_handler_registry
+from baserow.contrib.database.formula.types.formula_types import (
+    BASEROW_FORMULA_TYPE_CHOICES,
+)
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
 from baserow.core.mixins import (
     OrderableMixin,
@@ -257,7 +258,7 @@ class FormulaField(Field):
     error = models.TextField(null=True, blank=True)
 
     formula_type = models.TextField(
-        choices=lazy(formula_type_handler_registry.get_types_as_tuples, list)(),
+        choices=BASEROW_FORMULA_TYPE_CHOICES,
         default="invalid",
     )
     number_decimal_places = models.IntegerField(

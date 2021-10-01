@@ -11,8 +11,7 @@ from baserow.contrib.database.formula.ast.exceptions import (
     TooLargeStringLiteralProvided,
     InvalidIntLiteralProvided,
 )
-from baserow.contrib.database.formula.registries import formula_type_handler_registry
-from baserow.contrib.database.formula.types import type_types
+from baserow.contrib.database.formula.types import formula_type
 from baserow.contrib.database.table import models
 from baserow.core.registry import Instance
 
@@ -106,14 +105,14 @@ class BaserowExpression(abc.ABC, Generic[A]):
         return self
 
     def with_valid_type(
-        self, expression_type: "type_types.BaserowFormulaValidType"
-    ) -> "BaserowExpression[type_types.BaserowFormulaValidType]":
+        self, expression_type: "formula_type.BaserowFormulaValidType"
+    ) -> "BaserowExpression[formula_type.BaserowFormulaValidType]":
         return self.with_type(expression_type)
 
     def with_invalid_type(
         self, error: str
-    ) -> "BaserowExpression[type_types.BaserowFormulaInvalidType]":
-        return self.with_type(type_types.BaserowFormulaInvalidType(error))
+    ) -> "BaserowExpression[formula_type.BaserowFormulaInvalidType]":
+        return self.with_type(formula_type.BaserowFormulaInvalidType(error))
 
 
 class BaserowStringLiteral(BaserowExpression[A]):
@@ -278,14 +277,14 @@ class BaserowFunctionCall(BaserowExpression[A]):
 
     def type_function_given_typed_args(
         self,
-        args: "List[BaserowExpression[type_types.BaserowFormulaType]]",
-    ) -> "BaserowExpression[type_types.BaserowFormulaType]":
+        args: "List[BaserowExpression[formula_type.BaserowFormulaType]]",
+    ) -> "BaserowExpression[formula_type.BaserowFormulaType]":
         return self.function_def.type_function_given_typed_args(args, self)
 
     def type_function_given_valid_args(
         self,
-        args: "List[BaserowExpression[type_types.BaserowFormulaValidType]]",
-    ) -> "BaserowExpression[type_types.BaserowFormulaType]":
+        args: "List[BaserowExpression[formula_type.BaserowFormulaValidType]]",
+    ) -> "BaserowExpression[formula_type.BaserowFormulaType]":
         return self.function_def.type_function_given_valid_args(args, self)
 
     def to_django_expression_given_args(
@@ -298,9 +297,9 @@ class BaserowFunctionCall(BaserowExpression[A]):
     def check_arg_type_valid(
         self,
         i: int,
-        typed_arg: "BaserowExpression[" "type_types.BaserowFormulaType]",
-        all_typed_args: "List[BaserowExpression[type_types.BaserowFormulaType]]",
-    ) -> "BaserowExpression[type_types.BaserowFormulaType]":
+        typed_arg: "BaserowExpression[" "formula_type.BaserowFormulaType]",
+        all_typed_args: "List[BaserowExpression[formula_type.BaserowFormulaType]]",
+    ) -> "BaserowExpression[formula_type.BaserowFormulaType]":
         return self.function_def.check_arg_type_valid(i, typed_arg, all_typed_args)
 
     def with_args(self, new_args) -> "BaserowFunctionCall[A]":
@@ -362,7 +361,7 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
 
     @property
     @abc.abstractmethod
-    def arg_types(self) -> "type_types.BaserowArgumentTypeChecker":
+    def arg_types(self) -> "formula_type.BaserowArgumentTypeChecker":
         """
         :return: An argument type checker which checks all arguments provided to this
             function have valid types.
@@ -382,9 +381,9 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
     @abc.abstractmethod
     def type_function_given_valid_args(
         self,
-        args: "List[BaserowExpression[type_types.BaserowFormulaValidType]]",
-        expression: "BaserowFunctionCall[type_types.UnTyped]",
-    ) -> "BaserowExpression[type_types.BaserowFormulaType]":
+        args: "List[BaserowExpression[formula_type.BaserowFormulaValidType]]",
+        expression: "BaserowFunctionCall[formula_type.UnTyped]",
+    ) -> "BaserowExpression[formula_type.BaserowFormulaType]":
         """
         Given a list of arguments extracted from the function call expression, already
         typed and checked by the self.arg_types property should calculate and return
@@ -422,9 +421,9 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
 
     def type_function_given_typed_args(
         self,
-        typed_args: "List[BaserowExpression[type_types.BaserowFormulaType]]",
-        expression: "BaserowFunctionCall[type_types.UnTyped]",
-    ) -> "BaserowExpression[type_types.BaserowFormulaType]":
+        typed_args: "List[BaserowExpression[formula_type.BaserowFormulaType]]",
+        expression: "BaserowFunctionCall[formula_type.UnTyped]",
+    ) -> "BaserowExpression[formula_type.BaserowFormulaType]":
         """
         Given the already typed arguments for a func_call to a function of this
         definition this function will check the type of each argument against the
@@ -439,12 +438,14 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
             implements a call to this function.
         """
 
-        valid_args: "List[BaserowExpression[type_types.BaserowFormulaValidType]]" = []
-        invalid_results: "List[Tuple[int, type_types.BaserowFormulaInvalidType]]" = []
+        valid_args: "List[BaserowExpression[formula_type.BaserowFormulaValidType]]" = (
+            list()
+        )
+        invalid_results: "List[Tuple[int, formula_type.BaserowFormulaInvalidType]]" = []
         for i, typed_arg in enumerate(typed_args):
             arg_type = typed_arg.expression_type
 
-            if isinstance(arg_type, type_types.BaserowFormulaInvalidType):
+            if isinstance(arg_type, formula_type.BaserowFormulaInvalidType):
                 invalid_results.append((i, arg_type))
             else:
                 checked_typed_arg = expression.check_arg_type_valid(
@@ -452,10 +453,12 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
                 )
                 if isinstance(
                     checked_typed_arg.expression_type,
-                    type_types.BaserowFormulaInvalidType,
+                    formula_type.BaserowFormulaInvalidType,
                 ):
                     invalid_results.append((i, checked_typed_arg.expression_type))
                 else:
+                    # Must be a valid type but the intellij type checker isn't so smart
+                    # noinspection PyTypeChecker
                     valid_args.append(checked_typed_arg)
         if len(invalid_results) > 0:
             message = ", ".join([t.error for _, t in invalid_results])
@@ -465,17 +468,17 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
 
     def call_and_type_with_args(
         self,
-        args: "List[BaserowExpression[type_types.BaserowFormulaType]]",
-    ) -> "BaserowFunctionCall[type_types.BaserowFormulaType]":
-        func_call = BaserowFunctionCall[type_types.UnTyped](self, args, None)
+        args: "List[BaserowExpression[formula_type.BaserowFormulaType]]",
+    ) -> "BaserowFunctionCall[formula_type.BaserowFormulaType]":
+        func_call = BaserowFunctionCall[formula_type.UnTyped](self, args, None)
         return func_call.type_function_given_typed_args(args)
 
     def check_arg_type_valid(
         self,
         arg_index: int,
-        typed_arg: "BaserowExpression[type_types.BaserowFormulaType]",
-        all_typed_args: "List[BaserowExpression[type_types.BaserowFormulaType]]",
-    ) -> "BaserowExpression[type_types.BaserowFormulaType]":
+        typed_arg: "BaserowExpression[formula_type.BaserowFormulaType]",
+        all_typed_args: "List[BaserowExpression[formula_type.BaserowFormulaType]]",
+    ) -> "BaserowExpression[formula_type.BaserowFormulaType]":
         """
         Checks if the typed argument at arg_index is a valid type using the
         self.arg_types type checker.
@@ -499,13 +502,8 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         for valid_arg_type in arg_types_for_this_arg:
             if isinstance(expression_type, valid_arg_type):
                 return typed_arg
-        valid_type_names = [
-            formula_type_handler_registry.get_by_cls(t).type
-            for t in arg_types_for_this_arg
-        ]
-        expression_type_name = formula_type_handler_registry.get_by_cls(
-            expression_type
-        ).type
+        valid_type_names = [str(t.type) for t in arg_types_for_this_arg]
+        expression_type_name = expression_type.type
         if len(valid_type_names) == 1:
             postfix = f"the only usable type for this argument is {valid_type_names[0]}"
         elif len(valid_type_names) == 0:

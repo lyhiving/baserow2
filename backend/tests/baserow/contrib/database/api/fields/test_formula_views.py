@@ -127,7 +127,7 @@ def test_changing_type_of_reference_field_to_invalid_one_for_formula(
     )
     response_json = response.json()
     assert response_json["count"] == 1
-    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
+    assert response_json["results"][0][f"field_{formula_field_id}"] is None
 
     response = api_client.get(
         reverse("api:database:fields:list", kwargs={"table_id": table.id}),

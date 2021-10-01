@@ -50,7 +50,7 @@ from baserow.contrib.database.formula.expression_generator.django_expressions im
     AndExpr,
     OrExpr,
 )
-from baserow.contrib.database.formula.types.type_defs import (
+from baserow.contrib.database.formula.types.formula_types import (
     BaserowFormulaTextType,
     BaserowFormulaDateType,
     BaserowFormulaNumberType,
@@ -58,7 +58,7 @@ from baserow.contrib.database.formula.types.type_defs import (
     calculate_number_type,
     BaserowFormulaDateIntervalType,
 )
-from baserow.contrib.database.formula.types.type_types import (
+from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaType,
     BaserowFormulaValidType,
     UnTyped,
@@ -75,7 +75,7 @@ def register_formula_functions(registry):
     registry.register(BaserowToText())
     registry.register(BaserowT())
     registry.register(BaserowReplace())
-    registry.register(BaserowFind())
+    registry.register(BaserowSearch())
     # Number functions
     registry.register(BaserowAdd())
     registry.register(BaserowMultiply())
@@ -166,7 +166,7 @@ class BaserowDatetimeFormat(TwoArgumentBaserowFunction):
 
 
 class BaserowToText(OneArgumentBaserowFunction):
-    type = "totext"
+    type = "to_text"
     arg_type = [BaserowFormulaValidType]
 
     def type_function(
@@ -744,8 +744,8 @@ class BaserowReplace(ThreeArgumentBaserowFunction):
         return Replace(arg1, arg2, arg3)
 
 
-class BaserowFind(TwoArgumentBaserowFunction):
-    type = "find"
+class BaserowSearch(TwoArgumentBaserowFunction):
+    type = "search"
     arg1_type = [BaserowFormulaTextType]
     arg2_type = [BaserowFormulaTextType]
 

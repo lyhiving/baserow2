@@ -753,9 +753,9 @@ export class BaserowReplace extends BaserowFunctionDefinition {
   }
 }
 
-export class BaserowFind extends BaserowFunctionDefinition {
+export class BaserowSearch extends BaserowFunctionDefinition {
   static getType() {
-    return 'find'
+    return 'search'
   }
 
   getDescription() {
@@ -767,11 +767,14 @@ export class BaserowFind extends BaserowFunctionDefinition {
   }
 
   getSyntaxUsage() {
-    return ['find(text, text)']
+    return ['search(text, text)']
   }
 
   getExamples() {
-    return ['find("test a b c test", "test") = 1', 'find("none", "test") = 0']
+    return [
+      'search("test a b c test", "test") = 1',
+      'search("none", "test") = 0',
+    ]
   }
 
   getFormulaType() {

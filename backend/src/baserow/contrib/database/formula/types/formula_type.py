@@ -1,21 +1,21 @@
 import abc
 from typing import (
-    Optional,
-    Any,
     List,
     Type,
     Union,
     Callable,
+    TypeVar,
 )
 
-from django.db import models
-from django.db.models import Q
-from rest_framework import serializers
+from django.utils.functional import classproperty
 
+from baserow.contrib.database.fields import models
 from baserow.contrib.database.formula.ast import tree
 from baserow.contrib.database.formula.types.exceptions import (
     InvalidFormulaType,
 )
+
+T = TypeVar("T", bound="BaserowFormulaType")
 
 
 class BaserowFormulaType(abc.ABC):
@@ -23,10 +23,48 @@ class BaserowFormulaType(abc.ABC):
     @abc.abstractmethod
     def type(self) -> str:
         """
-        Should be set to a unique lowercase string used to identify this type.
+        Should be a unique lowercase string used to identify this type.
         """
 
         pass
+
+    @property
+    @abc.abstractmethod
+    def baserow_field_type(self) -> str:
+        """
+        The Baserow field type that corresponds to this formula type and should be
+        used to do various Baserow operations for a formula field of this type.
+        """
+
+        pass
+
+    @classproperty
+    def user_overridable_formatting_option_fields(self) -> List[str]:
+        """
+        :return: The list of FormulaField model field names which control
+        formatting for a formula field of this type and should be allowed to be
+        controlled and set by a user.
+        """
+
+        return []
+
+    @classproperty
+    def internal_fields(self) -> List[str]:
+        """
+        :return: The list of FormulaField model field names which store internal
+        information required for a formula of this type.
+        """
+
+        return []
+
+    @classmethod
+    def all_fields(cls) -> List[str]:
+        """
+        :returns All FormulaField model field names required for a formula field of
+        this type.
+        """
+
+        return cls.user_overridable_formatting_option_fields + cls.internal_fields
 
     @property
     @abc.abstractmethod
@@ -75,79 +113,79 @@ class BaserowFormulaType(abc.ABC):
     def raise_if_invalid(self):
         pass
 
-    @abc.abstractmethod
-    def get_serializer_field(self, **kwargs) -> Optional[serializers.Field]:
+    @classmethod
+    def all_types(cls) -> List[Type["BaserowFormulaType"]]:
+        invalid_type: List[Type["BaserowFormulaType"]] = [BaserowFormulaInvalidType]
+        return invalid_type + BaserowFormulaValidType.__subclasses__()
+
+    @classmethod
+    def construct_type_from_formula_field(
+        cls: Type[T], formula_field: "models.FormulaField"
+    ) -> T:
         """
-        Should return a serializer field which serializes a single row's value for a
-        formula field of this type. If None is returned then nothing we be serialized
-        for this row.
-
-        :param kwargs: The kwargs that will be passed to the field.
-        :return: The serializer field that represents a cell in this formula type.
-        """
-
-        pass
-
-    @abc.abstractmethod
-    def get_model_field(self, **kwargs) -> models.Field:
-        """
-        Should return the django model field which can be used to represent this formula
-        type in a Baserow table.
-
-        :param kwargs: The kwargs that will be passed to the field.
-        :return: The model field that represents this formula type on a table.
+        Creates a BaserowFormulaType instance based on what is set on the formula field.
+        :param formula_field: The formula field to get type info from.
+        :return: A new BaserowFormulaType.
         """
 
-        pass
+        kwargs = {}
+        for field_name in cls.all_fields():
+            kwargs[field_name] = getattr(formula_field, field_name)
+        return cls(**kwargs)
 
-    def get_export_value(self, value) -> Any:
+    def new_type_with_user_and_calculated_options_merged(
+        self: T, formula_field: "models.FormulaField"
+    ):
         """
-        Should convert this formula type's internal baserow value to a form suitable
-        for exporting to a standalone file.
+        Generates a new merged BaserowFormulaType instance from what has been set on the
+        formula field and this instance of the type. Fields which are set on
+        this types user_overridable_formatting_option_fields will be taken from the
+        FormulaField instance if set there, otherwise the values from the type instance
+        will be used.
 
-        :param value: The internal value to convert to a suitable export format
-        :return: A value suitable to be serialized and stored in a file format for
-            users.
-        """
-
-        return value
-
-    def contains_query(self, field_name, value, model_field, field):
-        """
-        Returns a Q or AnnotatedQ filter which performs a contains filter over the a
-        formula field for this specific type of formula.
-
-        :param field_name: The name of the formula field being filtered.
-        :type field_name: str
-        :param value: The value to check if this formula field contains or not.
-        :type value: str
-        :param model_field: The field's actual django field model instance.
-        :type model_field: models.Field
-        :param field: The related field's instance.
-        :type field: Field
-        :return: A Q or AnnotatedQ filter.
-            given value.
-        :rtype: OptionallyAnnotatedQ
+        :param formula_field: The formula field to get any type option overrides set by
+            the user from.
+        :return: A new merged object of the formula type using values from both the
+            instance and if set values also from the formula field.
         """
 
-        return Q()
+        kwargs = {}
+        for field_name in self.user_overridable_formatting_option_fields:
+            override_set_by_user = getattr(formula_field, field_name)
+            if override_set_by_user is not None:
+                kwargs[field_name] = override_set_by_user
+            else:
+                kwargs[field_name] = getattr(self, field_name)
+        for field_name in self.internal_fields:
+            kwargs[field_name] = getattr(self, field_name)
+        return self.__class__(**kwargs)
 
-    def get_alter_column_prepare_old_value(self):
+    def persist_onto_formula_field(self, formula_field: "models.FormulaField"):
         """
-        Can return an SQL statement to convert the `p_in` variable to a readable text
-        format for the new field.
-        This SQL will not be run when converting between two fields of the same
-        baserow type which share the same underlying database column type.
-        If you require this then implement force_same_type_alter_column.
+        Saves this type onto the provided formula_field instance for later retrieval.
+        Sets the attributes on the formula_field required
+        for this formula type and unsets all other formula types attributes. Does not
+        save the formula_field.
 
-        Example: return "p_in = lower(p_in);"
-
-        :return: The SQL statement converting the value to text for the next field. The
-            can for example be used to convert a select option to plain text.
-        :rtype: None or str
+        :param formula_field: The formula field to store the type information onto.
         """
 
-        return None
+        formula_field.formula_type = self.type
+        for field_name in self.user_overridable_formatting_option_fields:
+            # Only set the calculated type formatting options if the user has not
+            # already set them.
+            if getattr(formula_field, field_name) is None:
+                setattr(formula_field, field_name, getattr(self, field_name))
+
+        for field_name in self.internal_fields:
+            setattr(formula_field, field_name, getattr(self, field_name))
+
+    def get_baserow_field_instance_and_type(self):
+        from baserow.contrib.database.fields.registries import field_type_registry
+
+        baserow_field_type = field_type_registry.get(self.baserow_field_type)
+        field_instance = baserow_field_type.from_baserow_formula_type(self)
+        return field_instance, baserow_field_type
 
     def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
         """
@@ -202,38 +240,16 @@ class BaserowFormulaInvalidType(BaserowFormulaType):
     comparable_types = []
     limit_comparable_types = []
     type = "invalid"
+    baserow_field_type = "text"
+    internal_fields = ["error"]
+
+    text_default = ""
 
     def raise_if_invalid(self):
         raise InvalidFormulaType(self.error)
 
-    def get_export_value(self, value) -> Any:
-        return None
-
     def __init__(self, error: str):
         self.error = error
-
-    def get_model_field(self, **kwargs) -> models.Field:
-        return models.CharField(
-            default=None,
-            blank=True,
-            null=True,
-            **kwargs,
-        )
-
-    def get_serializer_field(self, **kwargs) -> Optional[serializers.Field]:
-        required = kwargs.get("required", False)
-        return serializers.CharField(
-            **{
-                "required": required,
-                "allow_null": not required,
-                "allow_blank": not required,
-                "default": None,
-                **kwargs,
-            }
-        )
-
-    def should_recreate_when_old_type_was(self, old_type: "BaserowFormulaType") -> bool:
-        return False
 
 
 class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):
@@ -267,7 +283,7 @@ class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):
         # We default to not having to do any extra expression wrapping to convert to
         # the text type by just returning the existing to_text func call which by
         # default just does a Cast(arg, output_field=fields.TextField()).
-        from baserow.contrib.database.formula.types.type_defs import (
+        from baserow.contrib.database.formula.types.formula_types import (
             BaserowFormulaTextType,
         )
 

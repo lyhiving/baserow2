@@ -18,18 +18,14 @@ from baserow.contrib.database.formula.parser.ast_mapper import (
     replace_field_refs_according_to_new_or_deleted_fields,
 )
 from baserow.contrib.database.formula.parser.exceptions import MaximumFormulaSizeError
-from baserow.contrib.database.formula.registries import formula_type_handler_registry
 from baserow.contrib.database.formula.types.exceptions import (
     NoSelfReferencesError,
     NoCircularReferencesError,
 )
-from baserow.contrib.database.formula.types.type_defs import (
+from baserow.contrib.database.formula.types.formula_types import (
     BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
 )
-from baserow.contrib.database.formula.types.type_handler import (
-    BaserowFormulaTypeType,
-)
-from baserow.contrib.database.formula.types.type_types import (
+from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaType,
     BaserowFormulaValidType,
     UnTyped,
@@ -180,12 +176,7 @@ class UntypedFormulaFieldWithReferences:
         )
 
         new_formula_type = typed_expression.expression_type
-        formula_type_handler: BaserowFormulaTypeType = (
-            formula_type_handler_registry.get_by_cls(new_formula_type)
-        )
-        formula_type_handler.persist_onto_formula_field(
-            new_formula_type, updated_formula_field
-        )
+        new_formula_type.persist_onto_formula_field(updated_formula_field)
         typed_field = TypedFieldWithReferences(
             self.original_formula_field,
             updated_formula_field,
@@ -323,12 +314,9 @@ def _type_and_substitute_formula_field(
         TypeAnnotatingASTVisitor(field_id_to_typed_expression)
     )
 
-    expression_type_handler: BaserowFormulaTypeType = (
-        formula_type_handler_registry.get_by_cls(typed_expr.expression_type)
-    )
     merged_expression_type = (
-        expression_type_handler.new_type_with_user_and_calculated_options_merged(
-            typed_expr.expression_type, untyped_formula.original_formula_field
+        typed_expr.expression_type.new_type_with_user_and_calculated_options_merged(
+            untyped_formula.original_formula_field
         )
     )
     # Take into account any user set formatting options on this formula field.

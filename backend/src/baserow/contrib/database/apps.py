@@ -53,7 +53,6 @@ class DatabaseConfig(AppConfig):
         from .export.registries import table_exporter_registry
         from .formula.registries import (
             formula_function_registry,
-            formula_type_handler_registry,
         )
 
         from .plugins import DatabasePlugin
@@ -180,12 +179,6 @@ class DatabaseConfig(AppConfig):
         from .formula.ast.function_defs import register_formula_functions
 
         register_formula_functions(formula_function_registry)
-
-        from baserow.contrib.database.formula.types.type_defs import (
-            register_formula_type_types,
-        )
-
-        register_formula_type_types(formula_type_handler_registry)
 
         # The signals must always be imported last because they use the registries
         # which need to be filled first.

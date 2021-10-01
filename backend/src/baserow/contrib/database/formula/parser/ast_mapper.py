@@ -40,7 +40,7 @@ from baserow.contrib.database.formula.parser.replace_field_with_field_by_id impo
     replace_field_with_field_by_id,
 )
 from baserow.contrib.database.formula.registries import formula_function_registry
-from baserow.contrib.database.formula.types.type_types import UnTyped
+from baserow.contrib.database.formula.types.formula_type import UnTyped
 from baserow.core.exceptions import InstanceTypeDoesNotExist
 
 

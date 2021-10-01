@@ -33,19 +33,6 @@ class ModelInstanceMixin:
             raise ImproperlyConfigured("The model_class of an instance must be set.")
 
 
-class ClsInstanceMixin:
-    """
-    This mixin introduces a cls attribute that will be related to the instance. It is to
-    be used in combination with a registry that extends the ClsRegistryMixin.
-    """
-
-    cls = None
-
-    def __init__(self):
-        if not self.cls:
-            raise ImproperlyConfigured("The cls of an instance must be set.")
-
-
 class CustomFieldsInstanceMixin:
     """
     If an instance can have custom fields per type, they can be defined here.

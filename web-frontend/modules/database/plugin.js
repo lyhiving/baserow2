@@ -67,7 +67,7 @@ import {
   BaserowDivide,
   BaserowEqual,
   BaserowField,
-  BaserowFind,
+  BaserowSearch,
   BaserowGreaterThan,
   BaserowGreaterThanOrEqual,
   BaserowIf,
@@ -169,7 +169,7 @@ export default (context) => {
   app.$registry.register('formula_function', new BaserowToText())
   app.$registry.register('formula_function', new BaserowT())
   app.$registry.register('formula_function', new BaserowReplace())
-  app.$registry.register('formula_function', new BaserowFind())
+  app.$registry.register('formula_function', new BaserowSearch())
   // Number functions
   app.$registry.register('formula_function', new BaserowMultiply())
   app.$registry.register('formula_function', new BaserowDivide())

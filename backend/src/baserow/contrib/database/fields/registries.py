@@ -2,6 +2,10 @@ from typing import Any, List
 
 from django.db.models import Q
 
+from baserow.contrib.database.formula.types.formula_type import (
+    BaserowFormulaType,
+    BaserowFormulaInvalidType,
+)
 from baserow.core.registry import (
     Instance,
     Registry,
@@ -15,11 +19,7 @@ from baserow.core.registry import (
     ImportExportMixin,
 )
 from .exceptions import FieldTypeAlreadyRegistered, FieldTypeDoesNotExist
-from .models import SelectOption
-from baserow.contrib.database.formula.types.type_types import (
-    BaserowFormulaType,
-    BaserowFormulaInvalidType,
-)
+from .models import SelectOption, Field
 
 
 class FieldType(
@@ -687,16 +687,29 @@ class FieldType(
 
     def to_baserow_formula_type(self, field) -> BaserowFormulaType:
         """
-        field('number field')
         Should return the Baserow Formula Type to use when referencing a field of this
         type in a formula.
 
         :param field: The specific instance of the field that a formula type should
-            be generated for.
+            be created for.
         :return: The Baserow Formula Type that represents this field in a formula.
         """
 
         return BaserowFormulaInvalidType(
+            f"A field of type {self.type} cannot be referenced in a Baserow formula."
+        )
+
+    def from_baserow_formula_type(self, formula_type) -> Field:
+        """
+        Should return the Baserow Field Type when converting a formula type back
+        to a field type.
+
+        :param formula_type: The specific instance of a formula type that a field type
+            model should be created for.
+        :return: A Baserow Field Type model instance that represents this formula type.
+        """
+
+        raise NotImplementedError(
             f"A field of type {self.type} cannot be referenced in a Baserow formula."
         )
 

@@ -8,7 +8,9 @@ from baserow.contrib.database.formula.ast.tree import BaserowExpression
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
-from baserow.contrib.database.formula.types.type_types import BaserowFormulaInvalidType
+from baserow.contrib.database.formula.types.formula_type import (
+    BaserowFormulaInvalidType,
+)
 
 
 class SingleSelectForwardManyToOneDescriptor(ForwardManyToOneDescriptor):

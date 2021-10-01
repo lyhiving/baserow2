@@ -26,7 +26,7 @@ from baserow.contrib.database.formula.parser.exceptions import (
     MaximumFormulaSizeError,
     UnknownFieldByIdReference,
 )
-from baserow.contrib.database.formula.types.type_types import (
+from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaType,
     BaserowFormulaInvalidType,
 )
@@ -68,6 +68,16 @@ def baserow_expression_to_django_expression(
         raise MaximumFormulaSizeError()
 
 
+def _get_model_field_for_type(expression_type):
+
+    (
+        field_instance,
+        baserow_field_type,
+    ) = expression_type.get_baserow_field_instance_and_type()
+    model_field = baserow_field_type.get_model_field(field_instance)
+    return model_field
+
+
 class BaserowExpressionToDjangoExpressionGenerator(
     BaserowFormulaASTVisitor[BaserowFormulaType, Expression]
 ):
@@ -104,13 +114,16 @@ class BaserowExpressionToDjangoExpressionGenerator(
         elif not hasattr(self.model_instance, db_field_name):
             raise UnknownFieldByIdReference(field_id)
         else:
+            expression_type = field_by_id_reference.expression_type
+            model_field = _get_model_field_for_type(expression_type)
+
             # We need to cast and be super explicit what type this raw value is so
             # postgres does not get angry and claim this is an unknown type.
             return Cast(
                 Value(
                     getattr(self.model_instance, db_field_name),
                 ),
-                output_field=field_by_id_reference.expression_type.get_model_field(),
+                output_field=model_field,
             )
 
     def visit_function_call(
