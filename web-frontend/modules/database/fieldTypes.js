@@ -971,6 +971,10 @@ class BaseDateFieldType extends FieldType {
     }
   }
 
+  prepareValueForCopy(field, value) {
+    return this.toHumanReadableString(field, value)
+  }
+
   getDocsDataType(field) {
     return 'date'
   }
@@ -1066,10 +1070,6 @@ export class CreatedOnLastModifiedBaseFieldType extends BaseDateFieldType {
     } else {
       return ''
     }
-  }
-
-  prepareValueForCopy(field, value) {
-    return this.toHumanReadableString(field, value)
   }
 
   getDocsDataType(field) {
