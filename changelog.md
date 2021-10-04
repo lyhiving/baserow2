@@ -24,6 +24,7 @@
   'before_id' when moving a row by introducing a decorator to validate query parameters.
 * Fixed bug where copying a cell containing a null value resulted in an error.
 * Added "Multiple Select" field type.
+* Fixed bug where copying a "Date" field type cell would not respect the human readable string formatting.
 
 ## Released (2021-08-11)
 
