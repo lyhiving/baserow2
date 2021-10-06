@@ -61,6 +61,15 @@ export default {
   data() {
     return {
       colorContextSelected: -1,
+      // When we first add new select options to the field, they don't have an ID yet,
+      // which means a user cannot reorder these select options since the reordering
+      // depends on the fact that a select option item has an ID. With the
+      // localSelectOptionID we create a local ID for the select option simply so that
+      // these can be reordered. After creating the field they will get their "real"
+      // ID by the backend. It starts at -1 and will decrement for each additional
+      // select option added to this field. This is so that the local ID will never
+      // interfere with the ID of the select option that it gets in the database.
+      localSelectOptionID: -1,
     }
   },
   methods: {
@@ -71,9 +80,11 @@ export default {
     },
     add() {
       this.value.push({
+        id: this.localSelectOptionID,
         value: '',
         color: colors[Math.floor(Math.random() * colors.length)],
       })
+      this.localSelectOptionID--
       this.$emit('input', this.value)
     },
     openColor(index) {

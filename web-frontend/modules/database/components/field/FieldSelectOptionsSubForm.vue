@@ -36,6 +36,19 @@ export default {
       this.$refs.selectOptions.$v.$touch()
       return !this.$refs.selectOptions.$v.$invalid
     },
+    getFormValues() {
+      // We only want to send the select option item with an ID to the backend
+      // if that ID was created by the backend. Every ID lower than 0 was created
+      // locally by the FieldSelectOptions component, hence we want to remove this
+      // ID before making the API request.
+      const newSelectOptions = this.values.select_options.map((item) => {
+        if (item.id < 0) {
+          delete item.id
+        }
+        return item
+      })
+      return { select_options: newSelectOptions }
+    },
   },
 }
 </script>
