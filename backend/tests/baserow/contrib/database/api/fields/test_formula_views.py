@@ -485,7 +485,6 @@ def test_trashing_creating_child_field(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_200_OK, response_json
-    new_field_id = response_json["id"]
 
     response = api_client.get(
         reverse("api:database:fields:item", kwargs={"field_id": formula_field_id}),
