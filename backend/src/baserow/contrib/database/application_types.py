@@ -2,14 +2,11 @@ from django.core.management.color import no_style
 from django.db import connection
 from django.urls import path, include
 
+from baserow.contrib.database.api.serializers import DatabaseSerializer
 from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.contrib.database.models import Database, Table
 from baserow.contrib.database.views.registries import view_type_registry
 from baserow.core.registries import ApplicationType
-from baserow.contrib.database.api.serializers import DatabaseSerializer
-from baserow.contrib.database.formula.types.typed_field_updater import (
-    type_table_and_update_fields,
-)
-from baserow.contrib.database.models import Database, Table
 from baserow.core.trash.handler import TrashHandler
 
 
