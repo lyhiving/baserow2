@@ -2,7 +2,6 @@ from typing import Dict, Optional
 
 from baserow.contrib.database.formula.parser.exceptions import (
     MaximumFormulaSizeError,
-    UnknownFieldByIdReference,
 )
 from baserow.contrib.database.formula.parser.generated.BaserowFormula import (
     BaserowFormula,
@@ -78,7 +77,7 @@ class UpdateFieldNameFormulaVisitor(BaserowFormulaVisitor):
     def visitFieldByIdReference(self, ctx: BaserowFormula.FieldByIdReferenceContext):
         field_id = int(str(ctx.INTEGER_LITERAL()))
         if field_id not in self.all_field_ids_to_name:
-            raise UnknownFieldByIdReference(field_id)
+            return f"field('unknown field {field_id}')"
         new_name = self.all_field_ids_to_name[field_id]
         escaped_new_name = convert_string_to_string_literal_token(new_name, True)
         return f"field({escaped_new_name})"

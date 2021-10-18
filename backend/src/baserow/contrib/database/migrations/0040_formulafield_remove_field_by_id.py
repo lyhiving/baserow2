@@ -17,18 +17,25 @@ from baserow.contrib.database.formula.parser.generated.BaserowFormulaVisitor imp
 from baserow.contrib.database.formula.parser.parser import get_parse_tree_for_formula
 
 
+# Copied from parser.py to ensure future changes to that file dont
+# break this migration
 def convert_string_literal_token_to_string(string_literal, is_single_q):
     literal_without_outer_quotes = string_literal[1:-1]
     quote = "'" if is_single_q else '"'
     return literal_without_outer_quotes.replace("\\" + quote, quote)
 
 
+# Copied from parser.py to ensure future changes to that file dont
+# break this migration
 def convert_string_to_string_literal_token(string, is_single_q):
     quote = "'" if is_single_q else '"'
     escaped = string.replace(quote, "\\" + quote)
     return quote + escaped + quote
 
 
+# Copied from update_field_names.py to ensure future changes to that file dont
+# break this migration
+# noinspection DuplicatedCode
 class UpdateFieldNameFormulaVisitor(BaserowFormulaVisitor):
     def __init__(
         self,
@@ -122,6 +129,7 @@ def update_field_names(
         raise MaximumFormulaSizeError()
 
 
+# noinspection PyPep8Naming
 def forward(apps, schema_editor):
     FormulaField = apps.get_model("database", "FormulaField")
 
@@ -134,6 +142,7 @@ def forward(apps, schema_editor):
         formula.save()
 
 
+# noinspection PyPep8Naming
 def reverse(apps, schema_editor):
     FormulaField = apps.get_model("database", "FormulaField")
 
@@ -143,7 +152,6 @@ def reverse(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("database", "0039_formulafield"),
     ]

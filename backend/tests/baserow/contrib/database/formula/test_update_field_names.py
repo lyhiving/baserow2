@@ -110,3 +110,49 @@ def _assert_raises(formula):
                 "test": "new test",
             },
         )
+
+
+def test_replaces_unknown_field_by_id_with_field():
+    new_formula = update_field_names(
+        "field_by_id(1)",
+        {},
+    )
+    assert new_formula == "field('unknown field 1')"
+
+
+def test_replaces_unknown_field_by_id_with_field_multiple():
+    new_formula = update_field_names(
+        "field_by_id(1)+concat(field('a'), field_by_id(2))",
+        {},
+    )
+    assert (
+        new_formula == "field('unknown field 1')+concat(field('a'), field('unknown "
+        "field 2'))"
+    )
+
+
+def test_replaces_known_field_by_id():
+    new_formula = update_field_names(
+        "field_by_id(1)+concat(field('a'), field_by_id(2))",
+        {},
+        all_field_ids_to_names={1: "test", 2: "other_test"},
+    )
+    assert new_formula == "field('test')+concat(field('a'), field('other_test'))"
+
+
+def test_replaces_known_field_by_id_single_quotes():
+    new_formula = update_field_names(
+        "field_by_id(1)",
+        {},
+        all_field_ids_to_names={1: "test with ' '", 2: "other_test"},
+    )
+    assert new_formula == "field('test with \\' \\'')"
+
+
+def test_replaces_known_field_by_id_double_quotes():
+    new_formula = update_field_names(
+        "field_by_id(1)",
+        {},
+        all_field_ids_to_names={1: 'test with " "', 2: "other_test"},
+    )
+    assert new_formula == "field('test with \" \"')"
