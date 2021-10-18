@@ -91,7 +91,7 @@ class UpdateFieldNameFormulaVisitor(BaserowFormulaVisitor):
     def visitFieldByIdReference(self, ctx: BaserowFormula.FieldByIdReferenceContext):
         field_id = int(str(ctx.INTEGER_LITERAL()))
         if field_id not in self.all_field_ids_to_name:
-            raise UnknownFieldByIdReference(field_id)
+            return f"field('unknown field {field_id}')"
         new_name = self.all_field_ids_to_name[field_id]
         escaped_new_name = convert_string_to_string_literal_token(new_name, True)
         return f"field({escaped_new_name})"
@@ -128,7 +128,7 @@ def forward(apps, schema_editor):
 
     for formula in FormulaField.objects.all():
         field_id_to_name = {}
-        for field in formula.table.field_set():
+        for field in formula.table.field_set.all():
             field_id_to_name[field.id] = field.name
         formula.old_formula_with_field_by_id = formula.formula
         formula.formula = update_field_names(formula.formula, {}, field_id_to_name)
