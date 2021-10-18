@@ -7,7 +7,6 @@ from django.db.models import F
 
 from baserow.contrib.database.formula.parser.exceptions import (
     MaximumFormulaSizeError,
-    UnknownFieldByIdReference,
 )
 from baserow.contrib.database.formula.parser.generated.BaserowFormula import (
     BaserowFormula,
