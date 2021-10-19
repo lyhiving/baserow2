@@ -8,6 +8,7 @@ from baserow.contrib.database.api.webhooks.validators import (
 from baserow.contrib.database.webhooks.models import (
     TableWebhook,
     TableWebhookEvents,
+    TableWebhookHeader,
 )
 from baserow.contrib.database.webhooks.registries import webhook_event_type_registry
 
@@ -54,8 +55,15 @@ class TableWebhookEventsResponseSerializer(serializers.ModelSerializer):
         fields = ["event_type"]
 
 
+class TableWebhookHeaderResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TableWebhookHeader
+        fields = "__all__"
+
+
 class TableWebhookResultSerializer(serializers.ModelSerializer):
     events = TableWebhookEventsResponseSerializer(many=True)
+    headers = TableWebhookHeaderResponseSerializer(many=True)
 
     class Meta:
         model = TableWebhook

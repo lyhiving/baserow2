@@ -22,12 +22,9 @@ class TableWebhookFixture:
 
         webhook = TableWebhook.objects.create(**kwargs)
 
-        if not len(events) == 0:
+        if not len(events) == 0 and not kwargs["include_all_events"]:
             TableWebhookEvents.objects.bulk_create(
-                [
-                    TableWebhookEvents(event_type=x, webhook_id=webhook)
-                    for x in kwargs["events"]
-                ]
+                [TableWebhookEvents(event_type=x, webhook_id=webhook) for x in events]
             )
 
         return webhook

@@ -25,3 +25,5 @@ def call_webhook(self, **kwargs):
                 webhook_handler.increment_failed_trigger(webhook_id)
             else:
                 webhook_handler.deactivate_webhook(webhook_id)
+
+    webhook_handler.reset_failed_trigger(webhook_id)

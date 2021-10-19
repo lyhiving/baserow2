@@ -18,7 +18,7 @@ urlpatterns = [
     re_path(
         r"(?P<table_id>[0-9]+)/webhooks/$",
         TableWebhooksView.as_view(),
-        name="list",
+        name="list_webhooks",
     ),
     re_path(r"database/(?P<database_id>[0-9]+)/$", TablesView.as_view(), name="list"),
     re_path(

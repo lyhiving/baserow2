@@ -199,9 +199,15 @@ class DatabaseConfig(AppConfig):
 
         register_formula_functions(formula_function_registry)
 
-        from .webhooks.webhook_event_types import RowCreatedEventType
+        from .webhooks.webhook_event_types import (
+            RowCreatedEventType,
+            RowUpdatedEventType,
+            RowDeletedEventType,
+        )
 
         webhook_event_type_registry.register(RowCreatedEventType())
+        webhook_event_type_registry.register(RowUpdatedEventType())
+        webhook_event_type_registry.register(RowDeletedEventType())
 
         # The signals must always be imported last because they use the registries
         # which need to be filled first.

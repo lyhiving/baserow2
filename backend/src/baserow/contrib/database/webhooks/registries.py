@@ -30,7 +30,7 @@ class WebhookEventType(Instance):
         payload = self.get_payload(**kwargs)
         table_id = kwargs.get("table").id
         webhook_handler = WebhookHandler()
-        webhooks = webhook_handler.grab_related_webhooks(table_id, self.type)
+        webhooks = webhook_handler.find_webhooks_to_call(table_id, self.type)
         event_id = uuid.uuid4()
         for webhook in webhooks:
             call_webhook.delay(
