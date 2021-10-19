@@ -134,8 +134,7 @@ def test_replaces_unknown_field_by_id_with_field_multiple():
 def test_replaces_known_field_by_id():
     new_formula = update_field_names(
         "field_by_id(1)+concat(field('a'), field_by_id(2))",
-        {},
-        all_field_ids_to_names={1: "test", 2: "other_test"},
+        field_ids_to_replace_with_name_refs={1: "test", 2: "other_test"},
     )
     assert new_formula == "field('test')+concat(field('a'), field('other_test'))"
 
@@ -143,8 +142,7 @@ def test_replaces_known_field_by_id():
 def test_replaces_known_field_by_id_single_quotes():
     new_formula = update_field_names(
         "field_by_id(1)",
-        {},
-        all_field_ids_to_names={1: "test with ' '", 2: "other_test"},
+        field_ids_to_replace_with_name_refs={1: "test with ' '", 2: "other_test"},
     )
     assert new_formula == "field('test with \\' \\'')"
 
@@ -152,7 +150,38 @@ def test_replaces_known_field_by_id_single_quotes():
 def test_replaces_known_field_by_id_double_quotes():
     new_formula = update_field_names(
         "field_by_id(1)",
-        {},
-        all_field_ids_to_names={1: 'test with " "', 2: "other_test"},
+        field_ids_to_replace_with_name_refs={1: 'test with " "', 2: "other_test"},
     )
     assert new_formula == "field('test with \" \"')"
+
+
+def test_replaces_field_with_field_by_id():
+    new_formula = update_field_names(
+        "field('a')",
+        field_names_to_replace_with_id_refs={"a": 1},
+    )
+    assert new_formula == "field_by_id(1)"
+
+
+def test_doesnt_replace_unknown_field():
+    new_formula = update_field_names(
+        "field('b')+concat(field('a'), field('c'))",
+        field_names_to_replace_with_id_refs={"a": 1},
+    )
+    assert new_formula == "field('b')+concat(field_by_id(1), field('c'))"
+
+
+def test_replaces_field_with_single_quotes_with_id():
+    new_formula = update_field_names(
+        "field('test with \\' \\'')",
+        field_names_to_replace_with_id_refs={"test with ' '": 1, "other_test": 2},
+    )
+    assert new_formula == "field_by_id(1)"
+
+
+def test_replaces_field_with_double_quotes_with_id():
+    new_formula = update_field_names(
+        "field('test with \" \"')",
+        field_names_to_replace_with_id_refs={'test with " "': 1, "other_test": 2},
+    )
+    assert new_formula == "field_by_id(1)"

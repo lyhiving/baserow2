@@ -37,7 +37,7 @@ import fieldSubForm from '@baserow/modules/database/mixins/fieldSubForm'
 import FieldFormulaInitialSubForm from '@baserow/modules/database/components/formula/FieldFormulaInitialSubForm'
 import FormulaAdvancedEditContext from '@baserow/modules/database/components/formula/FormulaAdvancedEditContext'
 import FormulaService from '@baserow/modules/database/services/formula'
-import throwIfNotValidBaserowFormula from '@baserow/modules/database/formula/parser/parser'
+import parseBaserowFormula from '@baserow/modules/database/formula/parser/parser'
 import {
   FileFieldType,
   LinkRowFieldType,
@@ -141,7 +141,7 @@ export default {
         return false
       }
       try {
-        throwIfNotValidBaserowFormula(value)
+        parseBaserowFormula(value)
         if (!this.initialFormula) {
           this.initialFormula = this.values.formula
         }

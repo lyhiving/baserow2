@@ -26,10 +26,10 @@ from baserow.contrib.database.formula.types import table_typer
 
 class FieldReferenceResolvingVisitor(BaserowFormulaASTVisitor[Any, List[str]]):
     def visit_field_reference(self, field_reference: BaserowFieldReference):
-        if field_reference.underlying_db_column is None:
-            return []
-        else:
+        if field_reference.is_reference_to_valid_field():
             return [field_reference.referenced_field_name]
+        else:
+            return []
 
     def visit_string_literal(self, string_literal: BaserowStringLiteral) -> List[str]:
         return []

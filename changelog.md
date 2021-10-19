@@ -8,6 +8,7 @@
   env variable. If using MEDIA_PORT you now need to set MEDIA_URL also.
 * **Breaking Change**: Baserow's `docker-compose.yml` container names have changed to
   no longer be hardcoded to prevent naming clashes.
+* Deprecate internal formula field function field_by_id.
 
 ## Released (2021-10-05)
 

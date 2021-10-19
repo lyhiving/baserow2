@@ -211,6 +211,9 @@ class BaserowFieldReference(BaserowExpression[A]):
     def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
         return visitor.visit_field_reference(self)
 
+    def is_reference_to_valid_field(self):
+        return self.underlying_db_column is not None
+
     def __str__(self):
         return f"field({self.referenced_field_name}, {self.underlying_db_column})"
 

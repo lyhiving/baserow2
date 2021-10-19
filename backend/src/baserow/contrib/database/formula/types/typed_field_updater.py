@@ -209,7 +209,7 @@ def update_other_fields_referencing_this_fields_name(
             if isinstance(other_field, FormulaField):
                 old_formula = other_field.formula
                 other_field.formula = update_field_names(
-                    old_formula, {old_field_name: new_field_name}, {}
+                    old_formula, {old_field_name: new_field_name}
                 )
                 if old_formula != other_field.formula:
                     field_updates.append(other_field)
