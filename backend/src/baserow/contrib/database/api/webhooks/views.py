@@ -1,11 +1,23 @@
+import uuid
 from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.openapi import OpenApiParameter, OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from baserow.api.errors import ERROR_USER_NOT_IN_GROUP
+from baserow.api.schemas import get_error_schema
 from baserow.contrib.database.api.tables.errors import ERROR_TABLE_DOES_NOT_EXIST
 from baserow.contrib.database.api.tokens.authentications import TokenAuthentication
+from baserow.contrib.database.api.webhooks.errors import (
+    ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED,
+)
 from baserow.contrib.database.table.exceptions import TableDoesNotExist
-from baserow.contrib.database.webhooks.exceptions import TableWebhookDoesNotExist
+from baserow.contrib.database.webhooks.exceptions import (
+    TableWebhookDoesNotExist,
+    TableWebhookMaxAllowedCountExceeded,
+)
+from baserow.core.exceptions import UserNotInGroup
 from .serializers import TableWebhookRequestSerializer, TableWebhookResultSerializer
 from baserow.contrib.database.tokens.handler import TokenHandler
 from baserow.contrib.database.webhooks.handler import WebhookHandler
@@ -20,6 +32,32 @@ class TableWebhooksView(APIView):
     authentication_classes = APIView.authentication_classes + [TokenAuthentication]
     permission_classes = (IsAuthenticated,)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="table_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The ID of the table for which to retrieve the webhooks.",
+            ),
+        ],
+        tags=["Database table webhooks"],
+        operation_id="list_database_table_webhooks",
+        description="Lists all the webhooks for the given table.",
+        responses={
+            200: TableWebhookResultSerializer(many=True),
+            400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
+            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
+            404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
+        },
+    )
+    @map_exceptions(
+        {
+            UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
+            TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
+            NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
+        }
+    )
     def get(self, request, table_id):
         """
         Lists all the webhooks of a given table.
@@ -32,11 +70,35 @@ class TableWebhooksView(APIView):
         )
         return Response(TableWebhookResultSerializer(webhooks, many=True).data)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="table_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The ID of the table for which the webhook shall be "
+                "created.",
+            ),
+        ],
+        tags=["Database table webhooks"],
+        operation_id="create_database_table_webhook",
+        description="Create a webhook for a given table.",
+        request=TableWebhookRequestSerializer(),
+        responses={
+            200: TableWebhookResultSerializer(),
+            400: get_error_schema(
+                ["ERROR_USER_NOT_IN_GROUP", "ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED"]
+            ),
+            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
+            404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
+        },
+    )
     @transaction.atomic
     @map_exceptions(
         {
             NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
+            TableWebhookMaxAllowedCountExceeded: ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED,
         }
     )
     @validate_body(TableWebhookRequestSerializer)
@@ -55,6 +117,31 @@ class TableWebhooksView(APIView):
 
 
 class TableWebhookView(APIView):
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="table_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The ID of the table for which to retrieve the webhook.",
+            ),
+            OpenApiParameter(
+                name="webhook_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The ID of the webhook that shall be retrieved.",
+            ),
+        ],
+        tags=["Database table webhooks"],
+        operation_id="get_database_table_webhook",
+        description="Returns an existing, single webhook.",
+        responses={
+            200: TableWebhookResultSerializer(),
+            400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
+            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
+            404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
+        },
+    )
     @map_exceptions(
         {
             NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
@@ -71,6 +158,32 @@ class TableWebhookView(APIView):
         )
         return Response(TableWebhookResultSerializer(webhook).data)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="table_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The ID of the table under which the webhook was created.",
+            ),
+            OpenApiParameter(
+                name="webhook_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The ID of the webhook that shall be updated.",
+            ),
+        ],
+        tags=["Database table webhooks"],
+        operation_id="update_database_table_webhook",
+        description="Update a specific table webhook.",
+        request=TableWebhookRequestSerializer(),
+        responses={
+            200: TableWebhookResultSerializer(),
+            400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
+            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
+            404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
+        },
+    )
     @validate_body(TableWebhookRequestSerializer)
     def patch(self, request, data, table_id, webhook_id):
         table = TableHandler().get_table(table_id)
@@ -81,6 +194,32 @@ class TableWebhookView(APIView):
         )
         return Response(TableWebhookResultSerializer(webhook).data)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="table_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The ID of the table under which the webhook was created.",
+            ),
+            OpenApiParameter(
+                name="webhook_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The ID of the webhook that shall be deleted.",
+            ),
+        ],
+        tags=["Database table webhooks"],
+        operation_id="delete_database_table_webhook",
+        description="Delete a specific table webhook.",
+        request=TableWebhookRequestSerializer(),
+        responses={
+            200: TableWebhookResultSerializer(),
+            400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
+            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
+            404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
+        },
+    )
     def delete(self, request, table_id, webhook_id):
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
@@ -89,3 +228,41 @@ class TableWebhookView(APIView):
             webhook_id=webhook_id, table=table, user=request.user
         )
         return Response(data="OK", status=200)
+
+
+class TableWebhookCallView(APIView):
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="table_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The ID of the table under which the webhook was created.",
+            ),
+            OpenApiParameter(
+                name="webhook_id",
+                location=OpenApiParameter.PATH,
+                type=OpenApiTypes.INT,
+                description="The ID of the webhook that shall be called.",
+            ),
+        ],
+        tags=["Database table webhooks"],
+        operation_id="call_database_table_webhook",
+        description="Manually calls a specific table webhook.",
+        request=TableWebhookRequestSerializer(),
+        responses={
+            200: TableWebhookResultSerializer(),
+            400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
+            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
+            404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
+        },
+    )
+    def get(self, request, table_id, webhook_id):
+        table = TableHandler().get_table(table_id)
+        webhook_handler = WebhookHandler()
+        TokenHandler().check_table_permissions(request, "create", table, False)
+        event_id = uuid.uuid4()
+        webhook_handler.call(
+            webhook_id, {"some": "example"}, str(event_id), "manual.call"
+        )
+        return Response(data="Könnte callen", status=200)

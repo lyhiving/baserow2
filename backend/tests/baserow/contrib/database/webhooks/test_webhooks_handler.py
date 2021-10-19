@@ -1,5 +1,4 @@
 import json
-from unittest.mock import patch
 import uuid
 import pytest
 import responses
@@ -15,7 +14,6 @@ from baserow.contrib.database.webhooks.models import TableWebhookCall
 
 from baserow.core.exceptions import UserNotInGroup
 from baserow.contrib.database.webhooks.handler import WebhookHandler
-from baserow.contrib.database.webhooks.tasks import call_webhook
 
 
 @pytest.mark.django_db(transaction=True)

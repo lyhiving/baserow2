@@ -5,8 +5,6 @@ from django.db.models.query import QuerySet
 from requests import request, ConnectionError
 from django.db.models import Q, F
 
-from baserow.contrib.database.table.handler import TableHandler
-
 from .models import (
     TableWebhook,
     TableWebhookCall,
