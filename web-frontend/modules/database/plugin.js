@@ -56,6 +56,7 @@ import viewStore from '@baserow/modules/database/store/view'
 import fieldStore from '@baserow/modules/database/store/field'
 import gridStore from '@baserow/modules/database/store/view/grid'
 import formStore from '@baserow/modules/database/store/view/form'
+import webhookStore from '@baserow/modules/database/store/webhook'
 
 import { registerRealtimeEvents } from '@baserow/modules/database/realtime'
 import { CSVTableExporterType } from '@baserow/modules/database/exporterTypes'
@@ -103,6 +104,7 @@ export default (context) => {
   store.registerModule('page/view/form', formStore)
   store.registerModule('template/view/grid', gridStore)
   store.registerModule('template/view/form', formStore)
+  store.registerModule('webhook', webhookStore)
 
   app.$registry.register('application', new DatabaseApplicationType(context))
   app.$registry.register('view', new GridViewType(context))
