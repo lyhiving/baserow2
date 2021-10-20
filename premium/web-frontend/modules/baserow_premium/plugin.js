@@ -14,6 +14,13 @@ import { registerRealtimeEvents } from '@baserow_premium/realtime'
 
 export default (context) => {
   const { store, app } = context
+
+  app.$clientErrorMap.setError(
+    'ERROR_NO_ACTIVE_PREMIUM_LICENSE',
+    'License required',
+    'This functionality requires an active premium license. Please refresh the page.'
+  )
+
   store.registerModule('row_comments', rowCommentsStore)
 
   app.$registry.register('plugin', new PremiumPlugin(context))

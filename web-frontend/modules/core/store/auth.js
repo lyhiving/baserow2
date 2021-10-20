@@ -8,14 +8,19 @@ export const state = () => ({
   refreshing: false,
   token: null,
   user: null,
+  additional: {},
   webSocketId: null,
 })
 
 export const mutations = {
-  SET_USER_DATA(state, { token, user }) {
+  SET_USER_DATA(state, { token, user, ...additional }) {
     state.token = token
     state.token_data = jwtDecode(token)
     state.user = user
+    // Additional entries in the response payload could have been added via the
+    // backend user data registry. We want to store them in the `additional` state so
+    // that it can be used by other modules.
+    state.additional = additional
   },
   CLEAR_USER_DATA(state) {
     state.token = null
@@ -168,6 +173,9 @@ export const getters = {
   tokenExpireSeconds(state) {
     const now = Math.ceil(new Date().getTime() / 1000)
     return state.token_data.exp - now
+  },
+  getAdditionalUserData(state) {
+    return state.additional
   },
 }
 
