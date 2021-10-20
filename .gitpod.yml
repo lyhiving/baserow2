@@ -1,0 +1,11 @@
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - command: python /workspace/baserow/backend/manage.py runserver 0.0.0.0:8000
+
+ports:
+  - port: 8000
+    onOpen: ignore
+#  - port: 3000
+#    onOpen: open-preview
