@@ -7,7 +7,7 @@ tasks:
       export PYTHONPATH=$PYTHONPATH:/workspace/baserow/backend/src:/workspace/baserow/premium/backend/src
       export DJANGO_SETTINGS_MODULE='baserow.config.settings.dev'
   - command: |
-      python /workspace/baserow/backend/src/baserow/manage.py runserver 0.0.0.0:8000
+      python3 /workspace/baserow/backend/src/baserow/manage.py runserver 0.0.0.0:8000
 
 ports:
   - port: 8000
