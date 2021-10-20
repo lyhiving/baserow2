@@ -3,10 +3,14 @@ image:
 
 tasks:
   - init: |
+      psql -h localhost -d postgres -c "create database baserow; \
+        create user baserow with encrypted password 'baserow'; \
+        grant all privileges on database baserow to baserow;"
       pip3 install --no-warn-script-location \
         -r /workspace/baserow/backend/requirements/base.txt \
         -r /workspace/baserow/backend/requirements/dev.txt
     command: |
+      export DATABASE_HOST=localhost
       export PYTHONUNBUFFERED=1
       export PYTHONPATH=$PYTHONPATH:/workspace/baserow/backend/src:/workspace/baserow/premium/backend/src
       export DJANGO_SETTINGS_MODULE='baserow.config.settings.dev'
