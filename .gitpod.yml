@@ -11,11 +11,8 @@ tasks:
       pip3 install --no-warn-script-location \
         -r /workspace/baserow/backend/requirements/base.txt \
         -r /workspace/baserow/backend/requirements/dev.txt
+      python3 /workspace/baserow/backend/src/baserow/manage.py migrate
     command: |
-      export DATABASE_HOST=localhost
-      export PYTHONUNBUFFERED=1
-      export PYTHONPATH=$PYTHONPATH:/workspace/baserow/backend/src:/workspace/baserow/premium/backend/src
-      export DJANGO_SETTINGS_MODULE='baserow.config.settings.dev'
       python3 /workspace/baserow/backend/src/baserow/manage.py runserver 0.0.0.0:8000
 
 ports:
