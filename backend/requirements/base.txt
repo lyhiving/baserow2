@@ -26,3 +26,4 @@ service-identity==21.1.0
 regex==2021.8.3
 click==7.1.2
 antlr4-python3-runtime==4.8.0
+django-postgresql-dag==0.3.1

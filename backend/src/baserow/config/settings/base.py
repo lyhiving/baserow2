@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "mjml",
     "drf_spectacular",
     "djcelery_email",
+    "django_postgresql_dag",
     "baserow.core",
     "baserow.api",
     "baserow.ws",

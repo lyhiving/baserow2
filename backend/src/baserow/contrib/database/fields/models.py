@@ -1,5 +1,9 @@
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.models import Model, Q
+from django_ltree_field.fields import LTreeField
+from django_postgresql_dag.models import edge_factory, node_factory
+from treebeard.mp_tree import MP_Node
 
 from baserow.contrib.database.fields.mixins import (
     BaseDateMixin,
@@ -11,6 +15,7 @@ from baserow.contrib.database.formula.types.formula_types import (
     BASEROW_FORMULA_TYPE_CHOICES,
 )
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
+from baserow.contrib.database.table.models import Table
 from baserow.core.mixins import (
     OrderableMixin,
     PolymorphicContentTypeMixin,
@@ -329,3 +334,34 @@ class FormulaField(Field):
             + f"error={self.error},\n"
             + ")"
         )
+
+
+class FieldEdge(edge_factory("FieldNode", concrete=False)):
+    via = models.ForeignKey(
+        Field,
+        on_delete=models.CASCADE,
+        related_name="vias",
+        null=True,
+        blank=True,
+    )
+
+
+class FieldNode(node_factory(FieldEdge)):
+    field = models.OneToOneField(
+        Field,
+        on_delete=models.CASCADE,
+        related_name="nodes",
+        null=True,
+        blank=True,
+    )
+    unresolved_field_name = models.TextField(
+        null=True,
+        blank=True,
+    )
+    table = models.ForeignKey(
+        Table,
+        on_delete=models.CASCADE,
+        related_name="nodes",
+        null=True,
+        blank=True,
+    )

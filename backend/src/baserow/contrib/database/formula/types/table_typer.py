@@ -58,7 +58,6 @@ def _parse_formula_string_to_untyped_expression(
     field: FormulaField,
     field_name_to_db_column: Dict[str, str],
 ):
-
     untyped_expression = raw_formula_to_untyped_expression(
         field.formula, field_name_to_db_column
     )
@@ -329,20 +328,23 @@ def _type_and_substitute_formula_field(
     return typed_expr_with_substituted_field_references
 
 
-def type_all_fields_in_table(
-    table: "models.Table",
+def type_fields(
+    fields: "List[models.Field]",
     overridden_field: Optional[Field] = None,
 ) -> Dict[str, TypedFieldWithReferences]:
     """
-    The key algorithm responsible for typing a table in Baserow.
+    The key algorithm responsible for typing a set of fields in Baserow.
 
-    :param table: The table to find Baserow Formula Types for every field.
+    :param fields: The table to find Baserow Formula Types for every field.
     :param overridden_field: An optional field instance which will be used instead of
         that field's current database value when typing the table.
     :return: A dictionary of field name to a wrapper object TypedFieldWithReferences
         containing type and reference information about that field.
     """
+    pass
 
+
+def type_field(field: "models.Field"):
     try:
         # Step 1. Preprocess every field:
         # We go over all the fields, parse formula fields, fix any
@@ -351,7 +353,7 @@ def type_all_fields_in_table(
         (
             field_name_to_untyped_formula,
             field_name_to_typed_field,
-        ) = _parse_all_fields(table, overridden_field)
+        ) = _parse_all_fields(field.table, field)
 
         # Step 2. Construct the graph of field dependencies by:
         # For every untyped formula populate its list of children with
@@ -420,6 +422,14 @@ def _parse_all_fields(
     return field_name_to_untyped_formula, field_name_to_updated_typed_field
 
 
+class TypedBaserowTables:
+    def __init__(self):
+        self.typed_tables: Dict[int, TypedBaserowTable] = {}
+
+    # def add_table(self, typed_table: Typed):
+    #     pass
+
+
 class TypedBaserowTable:
     """
     Wrapper object class which contains the BaserowFormulaType types and inter field
@@ -483,6 +493,4 @@ def type_table(
         every field.
     """
 
-    return TypedBaserowTable(
-        type_all_fields_in_table(table, overridden_field=overridden_field)
-    )
+    return TypedBaserowTable(type_fields(table, overridden_field=overridden_field))

@@ -20,7 +20,7 @@ from baserow.contrib.database.formula.types.formula_types import (
 from baserow.contrib.database.formula.types.table_typer import (
     TypedFieldWithReferences,
     TypedBaserowTable,
-    type_all_fields_in_table,
+    type_fields,
 )
 from baserow.contrib.database.views.handler import ViewHandler
 
@@ -144,20 +144,23 @@ class TypedBaserowTableWithUpdatedFields(TypedBaserowTable):
         self.model.objects_and_trash.update(**all_fields_update_dict)
 
 
-def type_table_and_update_fields(table: "models.Table"):
+def type_and_update_fields(fields: List[Field]):
     """
-    This will retype all formula fields in the table, update their definitions in the
-    database and return a wrapper class which can then be used to trigger a
-    recalculation of the changed fields at an appropriate time.
+    This will go through the formula fields in the provided fields parameter and
+    update their formula types. This will continue on recursively and update
+    types for fields depending on this initial list of fields and so on.
 
-    :param table: The table from which the field was deleted.
-    :return: A wrapper object containing all updated fields and all types for fields in
-        the table. The updated fields have not yet had their values recalculated as a
-        and it is up to you to call pdate_values_for_all_updated_fields when appropriate
-        otherwise those fields might have stale data.
+    A wrapper class will be returned which can then be used to trigger the update of the
+    formula fields row values at an appropriate time.
+
+    :param fields: The fields to recalculate their definitions for.
+    :return: A wrapper object containing all updated fields and all types for fields in.
+        The updated fields have not yet had their values recalculated as a
+        and it is up to you to call update_values_for_all_updated_fields when
+        appropriate otherwise those fields might have stale data.
     """
 
-    typed_fields = type_all_fields_in_table(table)
+    typed_fields = type_fields(fields)
     updated_fields = _calculate_and_save_updated_fields(table, typed_fields)
     return TypedBaserowTableWithUpdatedFields(typed_fields, table, None, updated_fields)
 
@@ -180,7 +183,7 @@ def type_table_and_update_fields_given_changed_field(
         will have stale data.
     """
 
-    typed_fields = type_all_fields_in_table(table)
+    typed_fields = type_fields(table)
     updated_fields = _calculate_and_save_updated_fields(
         table, typed_fields, field_which_changed=initial_field
     )

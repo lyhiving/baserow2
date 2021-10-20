@@ -10,7 +10,7 @@ from baserow.contrib.database.db.schema import lenient_schema_editor
 from baserow.contrib.database.fields.constants import RESERVED_BASEROW_FIELD_NAMES
 from baserow.contrib.database.formula.types.typed_field_updater import (
     type_table_and_update_fields_given_changed_field,
-    type_table_and_update_fields,
+    type_and_update_fields,
     update_other_fields_referencing_this_fields_name,
 )
 from baserow.contrib.database.table.models import Table
@@ -461,8 +461,9 @@ class FieldHandler:
             )
 
         field = field.specific
+        dependants = field.dependants
         TrashHandler.trash(user, group, field.table.database, field)
-        typed_updated_table = type_table_and_update_fields(field.table)
+        typed_updated_table = type_and_update_fields(dependants)
         field_deleted.send(
             self,
             field_id=field.id,

@@ -8,7 +8,7 @@ from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.fields.signals import field_restored
 from baserow.contrib.database.formula.types.typed_field_updater import (
     type_table_and_update_fields_given_changed_field,
-    type_table_and_update_fields,
+    type_and_update_fields,
 )
 from baserow.contrib.database.rows.signals import row_created
 from baserow.contrib.database.table.models import Table, GeneratedTableModel
@@ -136,7 +136,7 @@ class FieldTrashableItemType(TrashableItemType):
 
         table = field.table
         field.delete()
-        type_table_and_update_fields(table)
+        type_and_update_fields(table)
 
         # After the field is deleted we are going to to call the after_delete method of
         # the field type because some instance cleanup might need to happen.
