@@ -5,7 +5,7 @@ RUN sudo add-apt-repository ppa:chris-lea/redis-server
 RUN sudo apt-get update && \
     sudo apt-get install -y redis-server && \
     sudo rm -rf /var/lib/apt/lists/* \
-RUN redis-server --daemonize yes
+RUN systemctl start redis-server.service
 ENV REDIS_HOST=localhost
 
 USER gitpod

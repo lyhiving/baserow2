@@ -14,11 +14,17 @@ tasks:
       python3 /workspace/baserow/backend/src/baserow/manage.py migrate
     command: |
       python3 /workspace/baserow/backend/src/baserow/manage.py runserver 0.0.0.0:8000
+  - init: |
+      (cd web-frontend && yarn install)
+      (cd web-frontend && yarn run build)
+    command: |
+      (cd web-frontend && yarn run dev)
+
 
 ports:
   - port: 5432
     onOpen: ignore
   - port: 8000
     onOpen: ignore
-#  - port: 3000
-#    onOpen: open-preview
+  - port: 3000
+    onOpen: open-preview
