@@ -11,6 +11,7 @@ from baserow_premium.admin.users.exceptions import (
 from baserow_premium.admin.users.handler import (
     UserAdminHandler,
 )
+from baserow_premium.license.exceptions import NoPremiumLicenseError
 
 User = get_user_model()
 invalid_passwords = [
@@ -32,52 +33,70 @@ invalid_passwords = [
 
 
 @pytest.mark.django_db
-def test_admin_can_delete_user(data_fixture):
+def test_admin_can_delete_user(premium_data_fixture):
     handler = UserAdminHandler()
-    admin_user = data_fixture.create_user(
+    admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password="password",
         first_name="Test1",
         is_staff=True,
+        has_active_premium_license=True,
     )
-    user_to_delete = data_fixture.create_user(
+    user_to_delete = premium_data_fixture.create_user(
         email="delete_me@test.nl",
         password="password",
         first_name="Test1",
         is_staff=True,
+        has_active_premium_license=True,
     )
     handler.delete_user(admin_user, user_to_delete.id)
     assert not User.objects.filter(id=user_to_delete.id).exists()
 
 
 @pytest.mark.django_db
-def test_non_admin_cant_delete_user(data_fixture):
+def test_non_admin_cant_delete_user(premium_data_fixture):
     handler = UserAdminHandler()
-    non_admin_user = data_fixture.create_user(
+    non_admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password="password",
         first_name="Test1",
         is_staff=False,
+        has_active_premium_license=True,
     )
     with pytest.raises(IsNotAdminError):
         handler.delete_user(non_admin_user, non_admin_user.id)
 
 
 @pytest.mark.django_db
-def test_admin_can_modify_allowed_user_attributes(data_fixture):
+def test_admin_delete_user_without_premium_license(premium_data_fixture):
     handler = UserAdminHandler()
-    admin_user = data_fixture.create_user(
+    admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password="password",
         first_name="Test1",
         is_staff=True,
     )
-    user_to_modify = data_fixture.create_user(
+    with pytest.raises(NoPremiumLicenseError):
+        handler.delete_user(admin_user, admin_user.id)
+
+
+@pytest.mark.django_db
+def test_admin_can_modify_allowed_user_attributes(premium_data_fixture):
+    handler = UserAdminHandler()
+    admin_user = premium_data_fixture.create_user(
+        email="test@test.nl",
+        password="password",
+        first_name="Test1",
+        is_staff=True,
+        has_active_premium_license=True,
+    )
+    user_to_modify = premium_data_fixture.create_user(
         email="delete_me@test.nl",
         password="password",
         first_name="Test1",
         is_staff=False,
         is_active=False,
+        has_active_premium_license=True,
     )
     old_password = user_to_modify.password
     handler.update_user(
@@ -101,25 +120,28 @@ def test_admin_can_modify_allowed_user_attributes(data_fixture):
 
 
 @pytest.mark.django_db
-def test_admin_can_deactive_and_unstaff_other_users(data_fixture):
+def test_admin_can_deactive_and_unstaff_other_users(premium_data_fixture):
     handler = UserAdminHandler()
-    admin_user = data_fixture.create_user(
+    admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password="password",
         first_name="Test1",
         is_staff=True,
+        has_active_premium_license=True,
     )
-    staff_user = data_fixture.create_user(
+    staff_user = premium_data_fixture.create_user(
         email="staff@test.nl",
         password="password",
         first_name="Test1",
         is_staff=True,
+        has_active_premium_license=True,
     )
-    active_user = data_fixture.create_user(
+    active_user = premium_data_fixture.create_user(
         email="active@test.nl",
         password="password",
         first_name="Test1",
         is_active=True,
+        has_active_premium_license=True,
     )
 
     handler.update_user(
@@ -141,21 +163,23 @@ def test_admin_can_deactive_and_unstaff_other_users(data_fixture):
 
 @pytest.mark.django_db
 def test_updating_a_users_password_uses_djangos_built_in_smart_set_password(
-    data_fixture, mocker
+    premium_data_fixture, mocker
 ):
     handler = UserAdminHandler()
-    admin_user = data_fixture.create_user(
+    admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password="password",
         first_name="Test1",
         is_staff=True,
+        has_active_premium_license=True,
     )
-    user_to_modify = data_fixture.create_user(
+    user_to_modify = premium_data_fixture.create_user(
         email="delete_me@test.nl",
         password="password",
         first_name="Test1",
         is_staff=False,
         is_active=False,
+        has_active_premium_license=True,
     )
     old_password_hash = user_to_modify.password
     set_password_spy = mocker.spy(User, "set_password")
@@ -172,23 +196,25 @@ def test_updating_a_users_password_uses_djangos_built_in_smart_set_password(
 @pytest.mark.django_db
 @pytest.mark.parametrize("invalid_password", invalid_passwords)
 def test_updating_a_users_password_with_invalid_password_raises_error(
-    data_fixture, invalid_password
+    premium_data_fixture, invalid_password
 ):
     handler = UserAdminHandler()
     valid_password = "thisIsAValidPassword"
 
-    admin_user = data_fixture.create_user(
+    admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password=valid_password,
         first_name="Test1",
         is_staff=True,
+        has_active_premium_license=True,
     )
-    user_to_modify = data_fixture.create_user(
+    user_to_modify = premium_data_fixture.create_user(
         email="delete_me@test.nl",
         password=valid_password,
         first_name="Test1",
         is_staff=False,
         is_active=False,
+        has_active_premium_license=True,
     )
 
     with pytest.raises(PasswordDoesNotMatchValidation):
@@ -202,13 +228,14 @@ def test_updating_a_users_password_with_invalid_password_raises_error(
 
 
 @pytest.mark.django_db
-def test_non_admin_cant_edit_user(data_fixture):
+def test_non_admin_cant_edit_user(premium_data_fixture):
     handler = UserAdminHandler()
-    non_admin_user = data_fixture.create_user(
+    non_admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password="password",
         first_name="Test1",
         is_staff=False,
+        has_active_premium_license=True,
     )
     with pytest.raises(IsNotAdminError):
         handler.update_user(non_admin_user, non_admin_user.id, "new_email@example.com")
@@ -217,14 +244,15 @@ def test_non_admin_cant_edit_user(data_fixture):
 
 
 @pytest.mark.django_db
-def test_admin_cant_deactivate_themselves(data_fixture):
+def test_admin_cant_deactivate_themselves(premium_data_fixture):
     handler = UserAdminHandler()
-    admin_user = data_fixture.create_user(
+    admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password="password",
         first_name="Test1",
         is_staff=True,
         is_active=True,
+        has_active_premium_license=True,
     )
     with pytest.raises(CannotDeactivateYourselfException):
         handler.update_user(
@@ -237,14 +265,15 @@ def test_admin_cant_deactivate_themselves(data_fixture):
 
 
 @pytest.mark.django_db
-def test_admin_cant_destaff_themselves(data_fixture):
+def test_admin_cant_destaff_themselves(premium_data_fixture):
     handler = UserAdminHandler()
-    admin_user = data_fixture.create_user(
+    admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password="password",
         first_name="Test1",
         is_staff=True,
         is_active=True,
+        has_active_premium_license=True,
     )
     with pytest.raises(CannotDeactivateYourselfException):
         handler.update_user(
@@ -257,14 +286,28 @@ def test_admin_cant_destaff_themselves(data_fixture):
 
 
 @pytest.mark.django_db
-def test_admin_cant_delete_themselves(data_fixture):
+def test_admin_update_user_without_premium_license(premium_data_fixture):
     handler = UserAdminHandler()
-    admin_user = data_fixture.create_user(
+    admin_user = premium_data_fixture.create_user(
+        email="test@test.nl",
+        password="password",
+        first_name="Test1",
+        is_staff=True,
+    )
+    with pytest.raises(NoPremiumLicenseError):
+        handler.update_user(admin_user, admin_user.id)
+
+
+@pytest.mark.django_db
+def test_admin_cant_delete_themselves(premium_data_fixture):
+    handler = UserAdminHandler()
+    admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password="password",
         first_name="Test1",
         is_staff=True,
         is_active=True,
+        has_active_premium_license=True,
     )
     with pytest.raises(CannotDeleteYourselfException):
         handler.delete_user(admin_user, admin_user.id)
@@ -273,28 +316,30 @@ def test_admin_cant_delete_themselves(data_fixture):
 
 
 @pytest.mark.django_db
-def test_raises_exception_when_deleting_an_unknown_user(data_fixture):
+def test_raises_exception_when_deleting_an_unknown_user(premium_data_fixture):
     handler = UserAdminHandler()
-    admin_user = data_fixture.create_user(
+    admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password="password",
         first_name="Test1",
         is_staff=True,
         is_active=True,
+        has_active_premium_license=True,
     )
     with pytest.raises(UserDoesNotExistException):
         handler.delete_user(admin_user, 99999)
 
 
 @pytest.mark.django_db
-def test_raises_exception_when_updating_an_unknown_user(data_fixture):
+def test_raises_exception_when_updating_an_unknown_user(premium_data_fixture):
     handler = UserAdminHandler()
-    admin_user = data_fixture.create_user(
+    admin_user = premium_data_fixture.create_user(
         email="test@test.nl",
         password="password",
         first_name="Test1",
         is_staff=True,
         is_active=True,
+        has_active_premium_license=True,
     )
     with pytest.raises(UserDoesNotExistException):
         handler.update_user(admin_user, 99999, username="new_password")

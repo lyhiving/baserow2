@@ -7,6 +7,9 @@ from django.utils.timezone import utc, make_aware
 
 from baserow.contrib.database.export.handler import ExportHandler
 from baserow.contrib.database.rows.handler import RowHandler
+
+from baserow_premium.license.exceptions import NoPremiumLicenseError
+
 from tests.test_utils import setup_interesting_test_table
 
 
@@ -21,10 +24,13 @@ def _parse_date(date):
 @pytest.mark.django_db
 @patch("baserow.contrib.database.export.handler.default_storage")
 def test_can_export_every_interesting_different_field_to_json(
-    storage_mock, data_fixture
+    storage_mock, premium_data_fixture
 ):
     contents = run_export_over_interesting_test_table(
-        data_fixture, storage_mock, {"exporter_type": "json"}
+        premium_data_fixture,
+        storage_mock,
+        {"exporter_type": "json"},
+        user_kwargs={"has_active_premium_license": True},
     )
     assert (
         contents
@@ -129,15 +135,24 @@ def test_can_export_every_interesting_different_field_to_json(
 
 @pytest.mark.django_db
 @patch("baserow.contrib.database.export.handler.default_storage")
-def test_if_duplicate_field_names_json_export(storage_mock, data_fixture):
-    user = data_fixture.create_user()
-    database = data_fixture.create_database_application(user=user)
-    table = data_fixture.create_database_table(database=database)
-    data_fixture.create_text_field(table=table, name="name", order=1)
-    data_fixture.create_text_field(table=table, name="name", order=2)
-    data_fixture.create_text_field(table=table, name="name", order=3)
-    data_fixture.create_text_field(table=table, name='Another"name', order=4)
-    data_fixture.create_text_field(table=table, name='Another"name', order=5)
+def test_cannot_export_json_without_premium_license(storage_mock, premium_data_fixture):
+    with pytest.raises(NoPremiumLicenseError):
+        run_export_over_interesting_test_table(
+            premium_data_fixture, storage_mock, {"exporter_type": "json"}
+        )
+
+
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_if_duplicate_field_names_json_export(storage_mock, premium_data_fixture):
+    user = premium_data_fixture.create_user(has_active_premium_license=True)
+    database = premium_data_fixture.create_database_application(user=user)
+    table = premium_data_fixture.create_database_table(database=database)
+    premium_data_fixture.create_text_field(table=table, name="name", order=1)
+    premium_data_fixture.create_text_field(table=table, name="name", order=2)
+    premium_data_fixture.create_text_field(table=table, name="name", order=3)
+    premium_data_fixture.create_text_field(table=table, name='Another"name', order=4)
+    premium_data_fixture.create_text_field(table=table, name='Another"name', order=5)
     row_handler = RowHandler()
     row_handler.create_row(user=user, table=table)
     job, contents = run_export_job_with_mock_storage(
@@ -162,10 +177,13 @@ def test_if_duplicate_field_names_json_export(storage_mock, data_fixture):
 @pytest.mark.django_db
 @patch("baserow.contrib.database.export.handler.default_storage")
 def test_can_export_every_interesting_different_field_to_xml(
-    storage_mock, data_fixture
+    storage_mock, premium_data_fixture
 ):
     xml = run_export_over_interesting_test_table(
-        data_fixture, storage_mock, {"exporter_type": "xml"}
+        premium_data_fixture,
+        storage_mock,
+        {"exporter_type": "xml"},
+        user_kwargs={"has_active_premium_license": True},
     )
     expected_xml = f"""<?xml version="1.0" encoding="utf-8" ?>
 <rows>
@@ -271,17 +289,19 @@ def test_can_export_every_interesting_different_field_to_xml(
 
 @pytest.mark.django_db
 @patch("baserow.contrib.database.export.handler.default_storage")
-def test_if_xml_duplicate_name_and_value_are_escaped(storage_mock, data_fixture):
-    user = data_fixture.create_user()
-    database = data_fixture.create_database_application(user=user)
-    table = data_fixture.create_database_table(database=database)
-    text = data_fixture.create_text_field(table=table, name="<name>", order=0)
-    data_fixture.create_text_field(table=table, name="name", order=1)
-    data_fixture.create_text_field(table=table, name="Another name", order=2)
-    data_fixture.create_text_field(table=table, name="Another@name", order=3)
-    empty_1 = data_fixture.create_text_field(table=table, name="@", order=4)
-    empty_2 = data_fixture.create_text_field(table=table, name="", order=5)
-    data_fixture.create_text_field(table=table, name="1", order=6)
+def test_if_xml_duplicate_name_and_value_are_escaped(
+    storage_mock, premium_data_fixture
+):
+    user = premium_data_fixture.create_user(has_active_premium_license=True)
+    database = premium_data_fixture.create_database_application(user=user)
+    table = premium_data_fixture.create_database_table(database=database)
+    text = premium_data_fixture.create_text_field(table=table, name="<name>", order=0)
+    premium_data_fixture.create_text_field(table=table, name="name", order=1)
+    premium_data_fixture.create_text_field(table=table, name="Another name", order=2)
+    premium_data_fixture.create_text_field(table=table, name="Another@name", order=3)
+    empty_1 = premium_data_fixture.create_text_field(table=table, name="@", order=4)
+    empty_2 = premium_data_fixture.create_text_field(table=table, name="", order=5)
+    premium_data_fixture.create_text_field(table=table, name="1", order=6)
     row_handler = RowHandler()
     row_handler.create_row(
         user=user,
@@ -310,13 +330,24 @@ def test_if_xml_duplicate_name_and_value_are_escaped(storage_mock, data_fixture)
     )
 
 
+@pytest.mark.django_db
+@patch("baserow.contrib.database.export.handler.default_storage")
+def test_cannot_export_xml_without_premium_license(storage_mock, premium_data_fixture):
+    with pytest.raises(NoPremiumLicenseError):
+        run_export_over_interesting_test_table(
+            premium_data_fixture, storage_mock, {"exporter_type": "xml"}
+        )
+
+
 def strip_indents_and_newlines(xml):
     return "".join([line.strip() for line in xml.split("\n")])
 
 
-def run_export_over_interesting_test_table(data_fixture, storage_mock, options):
-    table, user, _, _ = setup_interesting_test_table(data_fixture)
-    grid_view = data_fixture.create_grid_view(table=table)
+def run_export_over_interesting_test_table(
+    premium_data_fixture, storage_mock, options, user_kwargs=None
+):
+    table, user, _, _ = setup_interesting_test_table(premium_data_fixture, user_kwargs)
+    grid_view = premium_data_fixture.create_grid_view(table=table)
     job, contents = run_export_job_with_mock_storage(
         table, grid_view, storage_mock, user, options
     )

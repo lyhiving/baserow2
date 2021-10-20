@@ -16,6 +16,8 @@ from baserow.contrib.database.rows.exceptions import RowDoesNotExist
 from baserow.contrib.database.table.exceptions import TableDoesNotExist
 from baserow.core.exceptions import UserNotInGroup
 from baserow_premium.row_comments.handler import RowCommentHandler
+from baserow_premium.license.handler import check_active_premium_license
+
 from .serializers import RowCommentSerializer, RowCommentCreateSerializer
 
 
@@ -85,6 +87,8 @@ class RowCommentView(APIView):
         }
     )
     def get(self, request, table_id, row_id):
+        check_active_premium_license(request.user)
+
         comments = RowCommentHandler.get_comments(request.user, table_id, row_id)
 
         if LimitOffsetPagination.limit_query_param in request.GET:
@@ -140,6 +144,8 @@ class RowCommentView(APIView):
     )
     @validate_body(RowCommentCreateSerializer)
     def post(self, request, table_id, row_id, data):
+        check_active_premium_license(request.user)
+
         new_row_comment = RowCommentHandler.create_comment(
             request.user, table_id, row_id, data["comment"]
         )
