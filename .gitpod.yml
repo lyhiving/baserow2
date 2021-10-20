@@ -1,8 +1,14 @@
-image:
-  file: .gitpod.Dockerfile
-
 tasks:
-  - command: python /workspace/baserow/backend/manage.py runserver 0.0.0.0:8000
+  - init: |
+      pip3 install --no-warn-script-location \
+        -r /workspace/baserow/backend/requirements/base.txt \
+        -r /workspace/baserow/backend/requirements/dev.txt
+      cp /workspace/baserow/premium/backend /workspace/baserow/backend/plugins/premium
+      export PYTHONUNBUFFERED=1
+      export PYTHONPATH=$PYTHONPATH:/workspace/baserow/backend/src:/workspace/baserow/backend/plugins/premium/src
+      export DJANGO_SETTINGS_MODULE='baserow.config.settings.dev'
+  - command: |
+      python /workspace/baserow/backend/manage.py runserver 0.0.0.0:8000
 
 ports:
   - port: 8000
