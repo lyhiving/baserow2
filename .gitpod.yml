@@ -1,5 +1,5 @@
 tasks:
-  - init: |
+  - before: |
       pip3 install --no-warn-script-location \
         -r /workspace/baserow/backend/requirements/base.txt \
         -r /workspace/baserow/backend/requirements/dev.txt
