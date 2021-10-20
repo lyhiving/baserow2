@@ -3,7 +3,8 @@ image:
 
 tasks:
   - init: |
-      psql -h localhost -d postgres -c "create database baserow; \
+      psql -h localhost -d postgres -c "SET AUTOCOMMIT = ON; \
+        create database baserow; \
         create user baserow with encrypted password 'baserow'; \
         grant all privileges on database baserow to baserow;"
       pip3 install --no-warn-script-location \
@@ -17,6 +18,8 @@ tasks:
       python3 /workspace/baserow/backend/src/baserow/manage.py runserver 0.0.0.0:8000
 
 ports:
+  - port: 5432
+    onOpen: ignore
   - port: 8000
     onOpen: ignore
 #  - port: 3000
