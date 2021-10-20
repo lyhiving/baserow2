@@ -3,10 +3,11 @@ image:
 
 tasks:
   - init: |
-      psql -h localhost -d postgres -c "SET AUTOCOMMIT = ON; \
-        create database baserow; \
-        create user baserow with encrypted password 'baserow'; \
-        grant all privileges on database baserow to baserow;"
+      psql -h localhost -d postgres << EOF
+        create database baserow;
+        create user baserow with encrypted password 'yourpassword';
+        grant all privileges on database baserow to baserow;
+      EOF
       pip3 install --no-warn-script-location \
         -r /workspace/baserow/backend/requirements/base.txt \
         -r /workspace/baserow/backend/requirements/dev.txt
