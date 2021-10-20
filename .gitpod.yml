@@ -1,9 +1,9 @@
 tasks:
-  - before: |
+  - init: |
       pip3 install --no-warn-script-location \
         -r /workspace/baserow/backend/requirements/base.txt \
         -r /workspace/baserow/backend/requirements/dev.txt
-  - command: |
+    command: |
       export PYTHONUNBUFFERED=1 &&
       export PYTHONPATH=$PYTHONPATH:/workspace/baserow/backend/src:/workspace/baserow/premium/backend/src &&
       export DJANGO_SETTINGS_MODULE='baserow.config.settings.dev' &&
