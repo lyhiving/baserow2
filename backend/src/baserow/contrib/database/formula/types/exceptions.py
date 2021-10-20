@@ -8,11 +8,10 @@ class InvalidFormulaType(BaserowFormulaException):
 
 
 class NoCircularReferencesError(BaserowFormulaException):
-    def __init__(self, visited_fields: List[str]):
+    def __init__(self):
         super().__init__(
             "it references another field, which eventually references back to this "
-            f"field causing an incalculable circular loop of "
-            f"{'->'.join(visited_fields)}"
+            f"field causing an incalculable circular loop."
         )
 
 

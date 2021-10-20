@@ -110,6 +110,12 @@ class Field(
 
         return name
 
+    def get_or_create_node(self):
+        if hasattr(self, "fieldnode"):
+            return self.fieldnode
+        else:
+            return FieldNode.objects.create(field=self, table=self.table)
+
 
 class AbstractSelectOption(ParentFieldTrashableModelMixin, models.Model):
     value = models.CharField(max_length=255, blank=True)
@@ -282,6 +288,7 @@ class PhoneNumberField(Field):
 
 class FormulaField(Field):
     formula = models.TextField()
+    internal_typed_formula = models.TextField(null=True, blank=True)
     old_formula_with_field_by_id = models.TextField(null=True, blank=True)
     error = models.TextField(null=True, blank=True)
 
@@ -324,6 +331,7 @@ class FormulaField(Field):
             and self.date_format == other.date_format
             and self.date_time_format == other.date_time_format
             and self.date_include_time == other.date_include_time
+            and self.internal_typed_formula == other.interal_typed_formula
         )
 
     def __str__(self):
@@ -362,6 +370,13 @@ class FieldNode(node_factory(FieldEdge)):
         Table,
         on_delete=models.CASCADE,
         related_name="nodes",
-        null=True,
-        blank=True,
     )
+
+    def is_reference_to_real_field(self):
+        return hasattr(self, "field")
+
+    def unique_name(self):
+        if self.is_reference_to_real_field():
+            return str(self.table_id) + "_" + self.field.name
+        else:
+            return str(self.table_id) + "_" + self.unresolved_field_name

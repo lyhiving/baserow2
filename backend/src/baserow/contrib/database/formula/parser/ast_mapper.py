@@ -31,16 +31,12 @@ from baserow.contrib.database.formula.types.formula_type import UnTyped
 from baserow.core.exceptions import InstanceTypeDoesNotExist
 
 
-def raw_formula_to_untyped_expression(
-    formula: str, field_name_to_db_column: Dict[str, str]
-) -> BaserowExpression[UnTyped]:
+def raw_formula_to_untyped_expression(formula: str) -> BaserowExpression[UnTyped]:
     """
     Takes a raw user input string, syntax checks it to see if it matches the syntax of
     a Baserow Formula (raises a BaserowFormulaSyntaxError if not) and converts it into
     an untyped BaserowExpression.
 
-    :param field_name_to_db_column: The field names which are valid for the formula to
-        reference.
     :param formula: A raw user supplied string possibly in the format of a Baserow
         Formula.
     :return: An untyped BaserowExpression which represents the provided raw formula.
@@ -49,7 +45,7 @@ def raw_formula_to_untyped_expression(
     """
 
     tree = get_parse_tree_for_formula(formula)
-    return BaserowFormulaToBaserowASTMapper(field_name_to_db_column).visit(tree)
+    return BaserowFormulaToBaserowASTMapper().visit(tree)
 
 
 class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
@@ -58,12 +54,9 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
 
     Raises an UnknownBinaryOperator if the formula contains an unknown binary operator.
 
-    Raises an UnknownFunctionDefintion if the formula has a function call to a function
+    Raises an UnknownFunctionDefinition if the formula has a function call to a function
     not in the registry.
     """
-
-    def __init__(self, field_name_to_db_column: Dict[str, str]):
-        self.field_name_to_db_column = field_name_to_db_column
 
     def visitRoot(self, ctx: BaserowFormula.RootContext):
         return ctx.expr().accept(self)
@@ -156,9 +149,7 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
         field_name = convert_string_literal_token_to_string(
             reference.getText(), reference.SINGLEQ_STRING_LITERAL()
         )
-        return BaserowFieldReference[UnTyped](
-            field_name, self.field_name_to_db_column.get(field_name, None), None
-        )
+        return BaserowFieldReference[UnTyped](field_name, None)
 
     def visitFieldByIdReference(self, ctx: BaserowFormula.FieldByIdReferenceContext):
         raise FieldByIdReferencesAreDeprecated()

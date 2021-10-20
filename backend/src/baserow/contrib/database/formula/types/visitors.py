@@ -1,5 +1,9 @@
-from typing import Any, List, Dict, Set
+from typing import Any, List, Dict, Set, Optional
 
+from django.core.exceptions import ValidationError
+
+from baserow.contrib.database.fields.models import FieldNode, Field, FormulaField
+from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
     BaserowStringLiteral,
@@ -11,25 +15,32 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionDefinition,
 )
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
-from baserow.contrib.database.formula.types.formula_types import (
-    BaserowFormulaTextType,
-    BaserowFormulaNumberType,
-    BaserowFormulaBooleanType,
+from baserow.contrib.database.formula.parser.ast_mapper import (
+    raw_formula_to_untyped_expression,
 )
+from baserow.contrib.database.formula.types import typer
+from baserow.contrib.database.formula.types.exceptions import NoCircularReferencesError
 from baserow.contrib.database.formula.types.formula_type import (
     UnTyped,
     BaserowFormulaType,
     BaserowFormulaValidType,
 )
-from baserow.contrib.database.formula.types import table_typer
+from baserow.contrib.database.formula.types.formula_types import (
+    BaserowFormulaTextType,
+    BaserowFormulaNumberType,
+    BaserowFormulaBooleanType,
+)
+from baserow.contrib.database.formula.types.typer import (
+    TypedFieldNode,
+    type_formula_field,
+)
 
 
-class FieldReferenceResolvingVisitor(BaserowFormulaASTVisitor[Any, List[str]]):
+class FieldReferenceResolvingVisitor(
+    BaserowFormulaASTVisitor[Any, List[BaserowFieldReference]]
+):
     def visit_field_reference(self, field_reference: BaserowFieldReference):
-        if field_reference.is_reference_to_valid_field():
-            return [field_reference.referenced_field_name]
-        else:
-            return []
+        return [field_reference]
 
     def visit_string_literal(self, string_literal: BaserowStringLiteral) -> List[str]:
         return []
@@ -89,27 +100,83 @@ class FunctionsUsedVisitor(
         return set()
 
 
+def _lookup_underlying_field_from_reference(
+    formula_field_node: FieldNode,
+    field_reference: BaserowFieldReference,
+    update_graph=True,
+    field_name_to_typed_node: Optional[Dict[str, TypedFieldNode]] = None,
+) -> TypedFieldNode:
+    table = formula_field_node.field.table
+    try:
+        referenced_field = table.field_set.get(
+            name=field_reference.referenced_field_name
+        ).specific
+        field_type = field_type_registry.get_by_model(referenced_field)
+        formula_type = field_type.to_baserow_formula_type(referenced_field)
+        if isinstance(referenced_field, FormulaField):
+            if referenced_field.internal_typed_formula is not None:
+                expr = raw_formula_to_untyped_expression(
+                    referenced_field.internal_typed_formula
+                ).with_type(formula_type)
+            else:
+                typed_node = type_formula_field(
+                    referenced_field, field_name_to_typed_node
+                )
+                expr = typed_node.typed_expression
+                referenced_field.internal_typed_formula = str(expr)
+                referenced_field.save()
+
+        else:
+            expr = field_reference.with_type(formula_type)
+        typed_field_node = TypedFieldNode(
+            expr,
+            FieldNode.objects.get_or_create(
+                field=referenced_field, defaults={table: referenced_field.table}
+            ),
+        )
+    except Field.DoesNotExist:
+        typed_field_node = TypedFieldNode(
+            field_reference.with_invalid_type(
+                f"Unknown or deleted field called "
+                f"{field_reference.referenced_field_name} referenced"
+            ),
+            FieldNode.objects.get_or_create(
+                table=table, unresolved_field_name=field_reference.referenced_field_name
+            ),
+        )
+    if update_graph:
+        try:
+            # TODO MAX DEPTH
+            typed_field_node.field_node.add_child(formula_field_node)
+        except ValidationError:
+            raise NoCircularReferencesError()
+    return typed_field_node
+
+
 class TypeAnnotatingASTVisitor(
     BaserowFormulaASTVisitor[UnTyped, BaserowExpression[BaserowFormulaType]]
 ):
-    def __init__(self, field_id_to_typed_field):
-        self.field_to_typed_expr: Dict[
-            str, "table_typer.TypedFieldWithReferences"
-        ] = field_id_to_typed_field
+    def __init__(self, field_node, field_name_to_typed_field_node, update_graph=True):
+        self.field_node = field_node
+        self.field_to_typed_node: Dict[
+            str, "typer.TypedFieldNode"
+        ] = field_name_to_typed_field_node
+        self.update_graph = update_graph
 
     def visit_field_reference(
         self, field_reference: BaserowFieldReference[UnTyped]
     ) -> BaserowExpression[BaserowFormulaType]:
-        field_name = field_reference.referenced_field_name
-        if field_name in self.field_to_typed_expr:
-            updated_typed_field = self.field_to_typed_expr[field_name]
-            return field_reference.with_type(
-                updated_typed_field.typed_expression.expression_type
-            )
+        unique_name = (
+            str(self.field_node.table_id) + "_" + field_reference.referenced_field_name
+        )
+        if unique_name in self.field_to_typed_node:
+            typed_node = self.field_to_typed_node[unique_name]
         else:
-            return field_reference.with_invalid_type(
-                f"references the deleted or unknown field {field_name}"
+            typed_node = _lookup_underlying_field_from_reference(
+                self.field_node, field_reference, update_graph=self.update_graph
             )
+            self.field_to_typed_node[unique_name] = typed_node
+        return typed_node.typed_expression
 
     def visit_string_literal(
         self, string_literal: BaserowStringLiteral[UnTyped]
@@ -153,7 +220,7 @@ class SubstituteFieldWithThatFieldsExpressionVisitor(
 ):
     def __init__(
         self,
-        field_name_to_typed_field: Dict[str, "table_typer.TypedFieldWithReferences"],
+        field_name_to_typed_field: Dict[str, "typer.TypedFieldWithReferences"],
     ):
         self.field_name_to_typed_field = field_name_to_typed_field
 

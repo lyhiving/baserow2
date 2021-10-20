@@ -716,21 +716,14 @@ class FieldType(
             f"A field of type {self.type} cannot be referenced in a Baserow formula."
         )
 
-    def add_related_fields_to_model(
-        self, typed_table, field, already_included_field_names
-    ):
+    def get_field_dependencies_in_same_table(self, field):
         """
-        Should return any fields related to this field which are not already present
-        in the already_included_field_ids set.
+        Should return any fields that field depends on directly in the same table to
+        calculate its result when it is added to a model.
 
-        :param typed_table: A TypedBaserowTable containing the formula types of all
-            fields in the fields table.
-        :param field: The specific instance of the field we want to know the related
-            fields for.
-        :param already_included_field_names: A set of already included field names
-            whose fields should not be included in the returned list.
-        :return: A list of field instances which relate to field but are not present in
-            already_included_field_ids.
+        :param field: The specific instance of the field we want to know the direct
+            same table dependency fields for.
+        :return: A list of field instances.
         """
 
         return []

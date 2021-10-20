@@ -88,6 +88,7 @@ from .models import (
     PhoneNumberField,
     FormulaField,
     Field,
+    FieldEdge,
 )
 from .registries import FieldType, field_type_registry
 
@@ -2184,17 +2185,19 @@ class FormulaFieldType(FieldType):
             connection, field_instance, to_field
         )
 
-    def add_related_fields_to_model(
-        self, typed_table, field, already_included_field_names
-    ):
-        # If we are building a model with some formula fields we need to
-        # establish the types fields and whether they depend on any other
-        # child fields to be calculated. These child fields then need to be
-        # included in the django model otherwise we cannot reference them.
-        # Allow passing in typer=False to disable any type checking.
-        if typed_table:
-            return typed_table.get_all_depended_on_fields(
-                field, already_included_field_names
-            )
+    def get_field_dependencies_in_same_table(self, field):
+        if hasattr(field, "fieldnode"):
+            dependant_fields = []
+            for dep in FieldEdge.objects.filter(child=field.fieldnode).all():
+                if dep.via:
+                    # The dependency points at a field in another table via the dep.via
+                    # field in this table, so we depend on the via but not the parent
+                    # field.
+                    dependant_fields.append(dep.via)
+                elif dep.parent.is_reference_to_real_field():
+                    dependant_fields.append(dep.parent.field)
         else:
             return []
+
+    def to_baserow_formula_type(self, field: FormulaField) -> BaserowFormulaType:
+        return construct_type_from_formula_field(field)

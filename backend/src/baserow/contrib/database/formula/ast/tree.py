@@ -11,6 +11,9 @@ from baserow.contrib.database.formula.ast.exceptions import (
     TooLargeStringLiteralProvided,
     InvalidIntLiteralProvided,
 )
+from baserow.contrib.database.formula.parser.parser import (
+    convert_string_to_string_literal_token,
+)
 from baserow.contrib.database.formula.types import formula_type
 from baserow.contrib.database.table import models
 from baserow.core.registry import Instance
@@ -133,7 +136,7 @@ class BaserowStringLiteral(BaserowExpression[A]):
         return visitor.visit_string_literal(self)
 
     def __str__(self):
-        return self.literal
+        return convert_string_to_string_literal_token(self.literal, True)
 
 
 class BaserowIntegerLiteral(BaserowExpression[A]):
@@ -187,7 +190,7 @@ class BaserowBooleanLiteral(BaserowExpression[A]):
         return visitor.visit_boolean_literal(self)
 
     def __str__(self):
-        return str(self.literal)
+        return "true" if self.literal else "false"
 
 
 class BaserowFieldReference(BaserowExpression[A]):
@@ -201,21 +204,19 @@ class BaserowFieldReference(BaserowExpression[A]):
     def __init__(
         self,
         referenced_field_name: str,
-        underlying_db_column: Optional[str],
         expression_type: A,
     ):
         super().__init__(expression_type)
         self.referenced_field_name = referenced_field_name
-        self.underlying_db_column = underlying_db_column
 
     def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
         return visitor.visit_field_reference(self)
 
-    def is_reference_to_valid_field(self):
-        return self.underlying_db_column is not None
-
     def __str__(self):
-        return f"field({self.referenced_field_name}, {self.underlying_db_column})"
+        escaped = convert_string_to_string_literal_token(
+            self.referenced_field_name, True
+        )
+        return f"field({escaped})"
 
 
 class ArgCountSpecifier(abc.ABC):
@@ -310,11 +311,8 @@ class BaserowFunctionCall(BaserowExpression[A]):
         return BaserowFunctionCall(self.function_def, new_args, self.expression_type)
 
     def __str__(self):
-        optional_type_annotation = (
-            f"::{self.expression_type}" if self.expression_type is not None else ""
-        )
         args_string = ",".join([str(a) for a in self.args])
-        return f"{self.function_def.type}({args_string}){optional_type_annotation}"
+        return f"{self.function_def.type}({args_string})"
 
 
 class BaserowFunctionDefinition(Instance, abc.ABC):

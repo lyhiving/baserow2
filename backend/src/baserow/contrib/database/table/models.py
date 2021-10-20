@@ -465,12 +465,10 @@ class Table(
             field_type = field_type_registry.get_by_model(field)
             field_name = field.db_column
 
-            if typed_table is None and field_type.requires_typing:
-                typed_table = type_table(self)
-
-            fields += field_type.add_related_fields_to_model(
-                typed_table, field, already_included_field_names
-            )
+            for field in field_type.get_field_dependencies_in_same_table(field):
+                if field.name not in already_included_field_names:
+                    fields.append(field)
+                    already_included_field_names.add(field.name)
 
             # If attribute_names is True we will not use 'field_{id}' as attribute name,
             # but we will rather use a name the user provided.
@@ -505,8 +503,6 @@ class Table(
             # model. All the kwargs that are passed to the `get_model_field`
             # method are going to be passed along to the model field.
             extra_kwargs = {}
-            if field_type.requires_typing:
-                extra_kwargs["typed_table"] = typed_table
             attrs[field_name] = field_type.get_model_field(
                 field,
                 db_column=field.db_column,
