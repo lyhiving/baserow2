@@ -36,7 +36,7 @@
 import context from '@baserow/modules/core/mixins/context'
 import ExportTableModal from '@baserow/modules/database/components/export/ExportTableModal'
 import DeleteViewModal from './DeleteViewModal'
-import WebhookModal from './WebhookModal'
+import WebhookModal from '@baserow/modules/database/components/webhook/WebhookModal.vue'
 
 export default {
   name: 'ViewContext',

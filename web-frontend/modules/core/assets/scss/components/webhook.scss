@@ -1,0 +1,96 @@
+.webhook-accordion {
+  background-color: $color-neutral-100;
+  border: 1px solid $color-neutral-200;
+  border-radius: 5px;
+  padding: 10px 15px;
+}
+
+.webhook-accordion__list {
+  display: flex;
+  flex-direction: column;
+
+  > div {
+    margin-bottom: 15px;
+  }
+}
+
+.webhook-accordion--open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-width: 0;
+}
+
+.webhook-accordion--deactivated {
+  background-color: $color-neutral-200;
+  border: 1px solid $color-neutral-300;
+  color: $color-neutral-400;
+}
+
+.webhook-accordion__header {
+  display: flex;
+  width: 100%;
+  font-size: 14px;
+}
+
+.webhook-accordion__header-column {
+  flex: 50%;
+}
+
+.webhook-accordion__header-name {
+  margin: 0;
+  color: $color-neutral-600;
+}
+
+.webhook-accordion__header-url-row {
+  display: flex;
+}
+
+.webhook-accordion__header-url {
+  margin-top: 0;
+  color: $color-neutral-400;
+}
+
+.webhook-accordion__header-details {
+  margin-top: 0;
+  margin-left: 5px;
+  color: $color-primary-400;
+  cursor: pointer;
+}
+
+.webhook-accordion__header-trigger-summary {
+  margin-top: 0;
+  color: $color-neutral-600;
+}
+
+.webhook-accordion__header-last-call {
+  margin-top: 0;
+  color: $color-neutral-400;
+}
+
+.webhook-accordion__body {
+  display: flex;
+  width: 100%;
+  font-size: 14px;
+  border: 1px solid $color-neutral-200;
+  padding: 20px;
+}
+
+.webhook-form__button {
+  display: block;
+  padding: 12px;
+  border: 1px solid;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.webhook-form__button--add {
+  background-color: $color-success-500;
+  color: $white;
+  border: 1px solid $color-success-500;
+}
+
+.webhook-form__button--remove {
+  background-color: $color-error-500;
+  color: $white;
+  border: 1px solid $color-error-500;
+}
