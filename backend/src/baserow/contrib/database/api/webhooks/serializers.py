@@ -7,6 +7,7 @@ from baserow.contrib.database.api.webhooks.validators import (
 
 from baserow.contrib.database.webhooks.models import (
     TableWebhook,
+    TableWebhookCall,
     TableWebhookEvents,
     TableWebhookHeader,
 )
@@ -22,7 +23,7 @@ class TableWebhookHeaderSerializer(serializers.ListField):
     value = serializers.CharField(required=True)
 
 
-class TableWebhookRequestSerializer(serializers.ModelSerializer):
+class TableWebhookCreateRequestSerializer(serializers.ModelSerializer):
     events = TableWebhookEventsSerializer(required=False)
     url = serializers.URLField(validators=[url_validation])
     headers = TableWebhookHeaderSerializer(
@@ -49,6 +50,10 @@ class TableWebhookRequestSerializer(serializers.ModelSerializer):
         return data
 
 
+class TableWebhookUpdateRequestSerializer(TableWebhookCreateRequestSerializer):
+    active = serializers.BooleanField()
+
+
 class TableWebhookEventsResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = TableWebhookEvents
@@ -67,4 +72,10 @@ class TableWebhookResultSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TableWebhook
+        fields = "__all__"
+
+
+class TableWebhookCallResponse(serializers.ModelSerializer):
+    class Meta:
+        model = TableWebhookCall
         fields = "__all__"
