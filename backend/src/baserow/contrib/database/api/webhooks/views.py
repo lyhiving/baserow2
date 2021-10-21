@@ -22,6 +22,7 @@ from .serializers import (
     TableWebhookCallResponse,
     TableWebhookCreateRequestSerializer,
     TableWebhookResultSerializer,
+    TableWebhookUpdateRequestSerializer,
 )
 from baserow.contrib.database.tokens.handler import TokenHandler
 from baserow.contrib.database.webhooks.handler import WebhookHandler
@@ -188,7 +189,7 @@ class TableWebhookView(APIView):
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
         },
     )
-    @validate_body(TableWebhookCreateRequestSerializer)
+    @validate_body(TableWebhookUpdateRequestSerializer)
     def patch(self, request, data, table_id, webhook_id):
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
