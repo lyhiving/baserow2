@@ -206,6 +206,15 @@ class WebhookHandler:
 
         return True
 
+    def get_call_events_per_webhook(self, webhook_id):
+        call_events = TableWebhookCall.objects.filter(webhook_id=webhook_id).order_by(
+            "called_time"
+        )[:10]
+        for item in call_events:
+            print("HALLO HIER BIN ICH: ", item)
+
+        return call_events
+
     def _create_or_update_webhook_call(
         self, webhook: TableWebhook, event_id: str, defaults: dict
     ):
