@@ -165,15 +165,21 @@ class BaserowFormulaType(abc.ABC):
         :param formula_field: The formula field to store the type information onto.
         """
 
-        formula_field.formula_type = self.type
-        for field_name in self.user_overridable_formatting_option_fields:
-            # Only set the calculated type formatting options if the user has not
-            # already set them.
-            if getattr(formula_field, field_name) is None:
-                setattr(formula_field, field_name, getattr(self, field_name))
+        from baserow.contrib.database.formula.types.formula_types import (
+            BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
+        )
 
-        for field_name in self.internal_fields:
-            setattr(formula_field, field_name, getattr(self, field_name))
+        formula_field.formula_type = self.type
+        for attr in BASEROW_FORMULA_TYPE_ALLOWED_FIELDS:
+            if attr in self.user_overridable_formatting_option_fields:
+                # Only set the calculated type formatting options if the user has not
+                # already set them.
+                if getattr(formula_field, attr) is None:
+                    setattr(formula_field, attr, getattr(self, attr))
+            elif attr in self.internal_fields:
+                setattr(formula_field, attr, getattr(self, attr))
+            else:
+                setattr(formula_field, attr, None)
 
     def get_baserow_field_instance_and_type(self):
         from baserow.contrib.database.fields.registries import field_type_registry

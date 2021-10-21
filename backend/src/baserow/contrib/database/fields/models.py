@@ -1,9 +1,6 @@
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models import Model, Q
-from django_ltree_field.fields import LTreeField
 from django_postgresql_dag.models import edge_factory, node_factory
-from treebeard.mp_tree import MP_Node
 
 from baserow.contrib.database.fields.mixins import (
     BaseDateMixin,
@@ -11,11 +8,14 @@ from baserow.contrib.database.fields.mixins import (
     DATE_FORMAT_CHOICES,
     DATE_TIME_FORMAT_CHOICES,
 )
+from baserow.contrib.database.formula.parser.ast_mapper import (
+    raw_formula_to_untyped_expression,
+)
 from baserow.contrib.database.formula.types.formula_types import (
     BASEROW_FORMULA_TYPE_CHOICES,
+    construct_type_from_formula_field,
 )
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
-from baserow.contrib.database.table.models import Table
 from baserow.core.mixins import (
     OrderableMixin,
     PolymorphicContentTypeMixin,
@@ -111,10 +111,14 @@ class Field(
         return name
 
     def get_or_create_node(self):
-        if hasattr(self, "fieldnode"):
-            return self.fieldnode
-        else:
-            return FieldNode.objects.create(field=self, table=self.table)
+        field, _ = FieldNode.objects.get_or_create(field=self, table=self.table)
+        return field
+
+    def get_node(self):
+        try:
+            return FieldNode.objects.get(field=self, table=self.table)
+        except FieldNode.DoesNotExist:
+            return None
 
 
 class AbstractSelectOption(ParentFieldTrashableModelMixin, models.Model):
@@ -322,6 +326,25 @@ class FormulaField(Field):
         help_text="24 (14:30) or 12 (02:30 PM)",
     )
 
+    def get_typed_expression(self, already_typed_fields=None):
+        from baserow.contrib.database.formula.types.typer import (
+            type_formula_field,
+            TypedBaserowFields,
+        )
+
+        if already_typed_fields is None:
+            already_typed_fields = TypedBaserowFields()
+        if self.internal_typed_formula is None:
+            typed_node = type_formula_field(self, already_typed_fields, True)
+            expr = typed_node.typed_expression
+            self.internal_typed_formula = str(expr)
+            self.save()
+        formula_type = construct_type_from_formula_field(self)
+        expr = raw_formula_to_untyped_expression(self.internal_typed_formula).with_type(
+            formula_type
+        )
+        return expr
+
     def same_as(self, other):
         return (
             self.formula == other.formula
@@ -331,13 +354,14 @@ class FormulaField(Field):
             and self.date_format == other.date_format
             and self.date_time_format == other.date_time_format
             and self.date_include_time == other.date_include_time
-            and self.internal_typed_formula == other.interal_typed_formula
+            and self.internal_typed_formula == other.internal_typed_formula
         )
 
     def __str__(self):
         return (
             "FormulaField(\n"
             + f"formula={self.formula},\n"
+            + f"internal_formula={self.internal_typed_formula},\n"
             + f"formula_type={self.formula_type},\n"
             + f"error={self.error},\n"
             + ")"
@@ -367,13 +391,16 @@ class FieldNode(node_factory(FieldEdge)):
         blank=True,
     )
     table = models.ForeignKey(
-        Table,
+        "Table",
         on_delete=models.CASCADE,
         related_name="nodes",
     )
 
+    def is_unused_invalid_ref(self):
+        return not self.is_reference_to_real_field() and self.children.count() == 0
+
     def is_reference_to_real_field(self):
-        return hasattr(self, "field")
+        return self.field is not None
 
     def unique_name(self):
         if self.is_reference_to_real_field():

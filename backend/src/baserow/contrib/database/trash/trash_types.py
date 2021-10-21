@@ -6,8 +6,8 @@ from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.fields.signals import field_restored
-from baserow.contrib.database.formula.types.typed_field_updater import (
-    type_table_and_update_fields_given_changed_field,
+from baserow.contrib.database.formula.types.typer import (
+    type_and_update_field,
     type_and_update_fields,
 )
 from baserow.contrib.database.rows.signals import row_created
@@ -95,19 +95,16 @@ class FieldTrashableItemType(TrashableItemType):
         trashed_item.name = trashed_item.name
         trashed_item.trashed = False
         trashed_item.save()
-        (
-            typed_updated_table,
-            trashed_item,
-        ) = type_table_and_update_fields_given_changed_field(
-            trashed_item.table, initial_field=trashed_item
+        typed_fields = type_and_update_field(
+            trashed_item, False, True, True, True, True, force_update=True
         )
         field_restored.send(
             self,
             field=trashed_item,
-            related_fields=typed_updated_table.updated_fields,
+            related_fields=typed_fields.updated_fields(exclude_field=trashed_item),
             user=None,
         )
-        typed_updated_table.update_values_for_all_updated_fields()
+        typed_fields.refresh_fields()
 
     def permanently_delete_item(
         self,
@@ -134,9 +131,16 @@ class FieldTrashableItemType(TrashableItemType):
             model_field = from_model._meta.get_field(field.db_column)
             schema_editor.remove_field(from_model, model_field)
 
-        table = field.table
+        dependants = []
+        node = field.get_node()
+        if node is not None:
+            dependants = [child.field.specific for child in node.children.all()]
+            node.field = None
+            node.unresolved_field_name = field.name
+            node.save()
         field.delete()
-        type_and_update_fields(table)
+
+        type_and_update_fields(dependants)
 
         # After the field is deleted we are going to to call the after_delete method of
         # the field type because some instance cleanup might need to happen.

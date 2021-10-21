@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Type
 
 from django.db.models import (
     Expression,
@@ -34,6 +34,7 @@ from baserow.contrib.database.formula.types.formula_type import (
 
 def baserow_expression_to_django_expression(
     baserow_expression: BaserowExpression[BaserowFormulaType],
+    model: Type[Model],
     model_instance: Optional[Model],
 ) -> Expression:
     """
@@ -61,14 +62,13 @@ def baserow_expression_to_django_expression(
             return Value(None)
         else:
             return baserow_expression.accept(
-                BaserowExpressionToDjangoExpressionGenerator(model_instance)
+                BaserowExpressionToDjangoExpressionGenerator(model, model_instance)
             )
     except RecursionError:
         raise MaximumFormulaSizeError()
 
 
 def _get_model_field_for_type(expression_type):
-
     (
         field_instance,
         baserow_field_type,
@@ -90,17 +90,18 @@ class BaserowExpressionToDjangoExpressionGenerator(
 
     def __init__(
         self,
+        model: Type[Model],
         model_instance: Optional[Model],
     ):
         self.model_instance = model_instance
+        self.model = model
 
     def visit_field_reference(
         self, field_reference: BaserowFieldReference[BaserowFormulaType]
     ):
-        db_column = field_reference.underlying_db_column
+        db_column = field_reference.referenced_field_name
 
-        expression_type = field_reference.expression_type
-        model_field = _get_model_field_for_type(expression_type)
+        model_field = self.model._meta.get_field(db_column)
         if self.model_instance is None:
             return ExpressionWrapper(F(db_column), output_field=model_field)
         elif not hasattr(self.model_instance, db_column):

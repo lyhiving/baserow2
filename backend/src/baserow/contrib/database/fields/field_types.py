@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint, sample
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Set
 
 import pytz
 from dateutil import parser
@@ -34,9 +34,6 @@ from baserow.contrib.database.api.fields.serializers import (
     FileFieldResponseSerializer,
 )
 from baserow.contrib.database.formula.exceptions import BaserowFormulaException
-from baserow.contrib.database.formula.expression_generator.generator import (
-    baserow_expression_to_django_expression,
-)
 from baserow.contrib.database.formula.types.formula_type import BaserowFormulaType
 from baserow.contrib.database.formula.types.formula_types import (
     BaserowFormulaTextType,
@@ -47,7 +44,6 @@ from baserow.contrib.database.formula.types.formula_types import (
     construct_type_from_formula_field,
     BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
 )
-from baserow.contrib.database.formula.types.table_typer import TypedBaserowTable
 from baserow.contrib.database.validators import UnicodeRegexValidator
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
@@ -91,6 +87,8 @@ from .models import (
     FieldEdge,
 )
 from .registries import FieldType, field_type_registry
+from ..formula.ast.tree import BaserowFunctionDefinition
+from ..formula.types.visitors import FunctionsUsedVisitor
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -2096,16 +2094,17 @@ class FormulaFieldType(FieldType):
         return field_type.get_serializer_field(field_instance, **kwargs)
 
     def get_model_field(self, instance: FormulaField, **kwargs):
-        typed_table: Union[TypedBaserowTable, bool] = kwargs.pop("typed_table")
         # When typed_table is False we are constructing a table model without
         # doing any type checking, we can't know what the expression is in this
         # case but we still want to generate a model field so the model can be
         # used to do SQL operations like dropping fields etc.
-        if typed_table and not (instance.error or instance.trashed):
-            typed_field = typed_table.get_typed_field(instance)
-            expression = typed_field.typed_expression
-            requires_refresh_after_insert = (
-                typed_field.expression_needs_refresh_on_insert
+        if not (instance.error or instance.trashed):
+            expression = instance.get_typed_expression()
+            funcs: Set[BaserowFunctionDefinition] = expression.accept(
+                FunctionsUsedVisitor()
+            )
+            requires_refresh_after_insert = any(
+                f.requires_refresh_after_insert for f in funcs
             )
         else:
             expression = None
@@ -2168,13 +2167,6 @@ class FormulaFieldType(FieldType):
             field_type,
         ) = self._get_field_instance_and_type_from_formula_field(field)
         return field_type.contains_query(field_name, value, model_field, field_instance)
-
-    def expression_to_update_field_after_related_field_changes(self, field, to_model):
-        if not (field.error or field.trashed):
-            f = to_model._meta.get_field(field.db_column)
-            return baserow_expression_to_django_expression(f.expression, None)
-        else:
-            return None
 
     def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
         (

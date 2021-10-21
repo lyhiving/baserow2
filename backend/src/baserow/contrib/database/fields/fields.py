@@ -172,6 +172,7 @@ class BaserowExpressionField(models.Field):
             # does not get angry and claim this is an unknown type.
             return Value(None)
         else:
-            return baserow_expression_to_django_expression(
-                self.expression, model_instance
+            result = baserow_expression_to_django_expression(
+                self.expression, type(model_instance), model_instance
             )
+            return result

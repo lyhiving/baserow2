@@ -1,5 +1,3 @@
-from typing import List
-
 from baserow.contrib.database.formula.exceptions import BaserowFormulaException
 
 
@@ -11,7 +9,7 @@ class NoCircularReferencesError(BaserowFormulaException):
     def __init__(self):
         super().__init__(
             "it references another field, which eventually references back to this "
-            f"field causing an incalculable circular loop."
+            f"field causing an incalculable circular loop"
         )
 
 

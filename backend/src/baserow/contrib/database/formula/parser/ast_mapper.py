@@ -1,5 +1,4 @@
 from decimal import Decimal
-from typing import Dict
 
 from baserow.contrib.database.formula.ast.tree import (
     BaserowStringLiteral,

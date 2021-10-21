@@ -9,9 +9,11 @@ from django.db.utils import ProgrammingError, DataError
 from baserow.contrib.database.db.schema import lenient_schema_editor
 from baserow.contrib.database.fields.constants import RESERVED_BASEROW_FIELD_NAMES
 from baserow.contrib.database.formula.types.typed_field_updater import (
-    type_table_and_update_fields_given_changed_field,
-    type_and_update_fields,
     update_other_fields_referencing_this_fields_name,
+)
+from baserow.contrib.database.formula.types.typer import (
+    type_and_update_field,
+    type_and_update_fields,
 )
 from baserow.contrib.database.table.models import Table
 from baserow.contrib.database.views.handler import ViewHandler
@@ -208,36 +210,33 @@ class FieldHandler:
             table=table, order=last_order, primary=primary, **field_values
         )
         instance.save()
-        (
-            typed_updated_table,
-            instance,
-        ) = type_table_and_update_fields_given_changed_field(
-            table,
-            initial_field=instance,
+        typed_fields = type_and_update_field(
+            instance, True, False, True, True, False, force_update=True
         )
 
         # Add the field to the table schema.
         with connection.schema_editor() as schema_editor:
-            to_model = typed_updated_table.model
+            to_model = instance.table.get_model(field_ids=[], fields=[instance])
             model_field = to_model._meta.get_field(instance.db_column)
 
             if do_schema_change:
                 schema_editor.add_field(to_model, model_field)
 
-        typed_updated_table.update_values_for_all_updated_fields()
+        typed_fields.refresh_fields()
 
         field_type.after_create(instance, to_model, user, connection, before)
 
+        updated_fields = typed_fields.updated_fields(exclude_field=instance)
         field_created.send(
             self,
             field=instance,
             user=user,
-            related_fields=typed_updated_table.updated_fields,
+            related_fields=updated_fields,
             type_name=type_name,
         )
 
         if return_updated_fields:
-            return instance, typed_updated_table.updated_fields
+            return instance, updated_fields
         else:
             return instance
 
@@ -316,14 +315,13 @@ class FieldHandler:
 
         field = set_allowed_attrs(field_values, allowed_fields, field)
         field.save()
-        typed_updated_table, field = type_table_and_update_fields_given_changed_field(
-            field.table,
-            initial_field=field,
+        typed_fields = type_and_update_field(
+            field, True, False, True, True, False, force_update=True
         )
         # If no converter is found we are going to convert to field using the
         # lenient schema editor which will alter the field's type and set the data
         # value to null if it can't be converted.
-        to_model = typed_updated_table.model
+        to_model = field.table.get_model(field_ids=[], fields=[field])
         from_model_field = from_model._meta.get_field(field.db_column)
         to_model_field = to_model._meta.get_field(field.db_column)
 
@@ -419,10 +417,11 @@ class FieldHandler:
             altered_column,
             before,
         )
-        typed_updated_table.update_values_for_all_updated_fields()
+        typed_fields.refresh_fields()
 
         merged_updated_fields = _merge_updated_fields(
-            typed_updated_table.updated_fields, fields_updated_due_to_name_change
+            typed_fields.updated_fields(exclude_field=field),
+            fields_updated_due_to_name_change,
         )
         field_updated.send(
             self,
@@ -461,17 +460,25 @@ class FieldHandler:
             )
 
         field = field.specific
-        dependants = field.dependants
+        dependants = []
+        node = field.get_node()
+        if node is not None:
+            dependants = [child.field.specific for child in node.children.all()]
+            node.field = None
+            node.unresolved_field_name = field.name
+            node.save()
         TrashHandler.trash(user, group, field.table.database, field)
-        typed_updated_table = type_and_update_fields(dependants)
+
+        typed_fields = type_and_update_fields(dependants)
+        updated_fields = typed_fields.updated_fields(exclude_field=field)
         field_deleted.send(
             self,
             field_id=field.id,
             field=field,
-            related_fields=typed_updated_table.updated_fields,
+            related_fields=updated_fields,
             user=user,
         )
-        return typed_updated_table.updated_fields
+        return updated_fields
 
     def update_field_select_options(self, user, field, select_options):
         """

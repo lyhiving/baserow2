@@ -1,8 +1,6 @@
 import pytest
-from django.core.exceptions import ValidationError
 
 from baserow.contrib.database.fields.handler import FieldHandler
-from baserow.contrib.database.fields.models import FieldNode
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaInvalidType,
@@ -270,22 +268,3 @@ def test_can_rename_field_preserving_whitespace(
     formula_field.refresh_from_db()
 
     assert formula_field.formula == f" field('b') \n"
-
-
-@pytest.mark.django_db(transaction=True)
-def test_treebeard(
-    data_fixture,
-    django_assert_num_queries,
-):
-    user = data_fixture.create_user()
-    table = data_fixture.create_database_table(user=user)
-    f = data_fixture.create_text_field(name=f"first", table=table)
-    first_node = FieldNode.objects.create()
-    prev = first_node
-    for i in range(100):
-        f = data_fixture.create_text_field(name=f"{i}", table=table)
-        node = FieldNode.objects.create(field=f)
-        node.add_parent(prev)
-        prev = node
-
-    assert list(prev.ancestors(max_depth="infinite").values_list("id", flat=True)) == []

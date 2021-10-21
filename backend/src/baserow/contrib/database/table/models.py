@@ -16,7 +16,6 @@ from baserow.contrib.database.fields.field_filters import (
 )
 from baserow.contrib.database.fields.field_sortings import AnnotatedOrder
 from baserow.contrib.database.fields.registries import field_type_registry
-from baserow.contrib.database.formula.types.table_typer import type_table
 from baserow.contrib.database.views.exceptions import ViewFilterTypeNotAllowedForField
 from baserow.contrib.database.views.registries import view_filter_type_registry
 from baserow.core.mixins import (
@@ -354,10 +353,6 @@ class Table(
             generated in order to generate that model. In order to prevent a
             recursion loop we cache the generated models and pass those along.
         :type manytomany_models: dict
-        :param typed_table: If the table has already been typed then it can be provided
-            here to prevent any retyping calculations. Or instead false can be provided
-            to prevent any automatic typing operations what so ever.
-        :type Union[bool, Optional[TypedBaserowTable]]
         :return: The generated model.
         :rtype: Model
         """
