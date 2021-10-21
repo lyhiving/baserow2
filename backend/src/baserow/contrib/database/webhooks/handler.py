@@ -129,8 +129,8 @@ class WebhookHandler:
                     f"The webhook with id {webhook_id} does not exist."
                 )
 
-            events = data.pop("events")
-            headers = data.pop("headers")
+            events = data.pop("events", None)
+            headers = data.pop("headers", None)
 
             for name, value in data.items():
                 setattr(webhook, name, value)
@@ -203,6 +203,7 @@ class WebhookHandler:
         webhook_call_defaults["status_code"] = response.status_code
         webhook_call_defaults["response"] = response.text
         self._create_or_update_webhook_call(webhook, event_id, webhook_call_defaults)
+        self._delete_webhook_calls(webhook)
 
         return True
 
@@ -210,8 +211,6 @@ class WebhookHandler:
         call_events = TableWebhookCall.objects.filter(webhook_id=webhook_id).order_by(
             "called_time"
         )[:10]
-        for item in call_events:
-            print("HALLO HIER BIN ICH: ", item)
 
         return call_events
 
@@ -221,6 +220,12 @@ class WebhookHandler:
         return TableWebhookCall.objects.update_or_create(
             event_id=event_id, webhook_id=webhook, defaults=defaults
         )
+
+    def _delete_webhook_calls(self, webhook: TableWebhook):
+        objects_to_keep = TableWebhookCall.objects.filter(
+            webhook_id=webhook.id
+        ).order_by("-called_time")[:10]
+        return TableWebhookCall.objects.exclude(pk__in=objects_to_keep).delete()
 
     def create_headers(self, id, event_id, event_type) -> dict:
         headers = TableWebhookHeader.objects.filter(webhook_id=id)

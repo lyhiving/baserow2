@@ -160,6 +160,13 @@ def test_update_webhook(data_fixture):
     assert headers[1].header == "Authorization"
     assert headers[1].value == "12345"
 
+    # it should be possible to deactivate a webhook
+    webhook_update_data["active"] = False
+    updated_webhook = webhook_handler.update_table_webhook(
+        webhook_id=webhook.id, table=table, user=user, data=dict(webhook_update_data)
+    )
+    assert updated_webhook.active is False
+
 
 @pytest.mark.django_db(transaction=True)
 def test_get_webhook(data_fixture):

@@ -13,7 +13,7 @@ from .tasks import call_webhook
 
 class WebhookEventType(Instance):
     """
-    A TrashableItemType specifies a baserow model which can be trashed.
+    @TODO docstring
     """
 
     def __init__(self):
