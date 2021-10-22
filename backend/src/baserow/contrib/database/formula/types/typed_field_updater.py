@@ -30,7 +30,7 @@ def _recreate_field_if_required(
     new_formula_field: FormulaField,
 ):
     if _check_if_formula_type_change_requires_drop_recreate(old_field, new_type):
-        model = table.get_model(fields=[new_formula_field], typed_table=False)
+        model = table.get_model(fields=[new_formula_field])
         field_converter_registry.get("formula").alter_field(
             old_field,
             new_formula_field,

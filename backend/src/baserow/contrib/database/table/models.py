@@ -328,7 +328,6 @@ class Table(
         field_names=None,
         attribute_names=False,
         manytomany_models=None,
-        typed_table=None,
     ) -> GeneratedTableModel:
         """
         Generates a temporary Django model based on available fields that belong to
@@ -356,6 +355,8 @@ class Table(
         :return: The generated model.
         :rtype: Model
         """
+
+        filtered = field_names is not None or field_ids is not None
 
         if not fields:
             fields = []
@@ -460,10 +461,11 @@ class Table(
             field_type = field_type_registry.get_by_model(field)
             field_name = field.db_column
 
-            for field in field_type.get_field_dependencies_in_same_table(field):
-                if field.name not in already_included_field_names:
-                    fields.append(field)
-                    already_included_field_names.add(field.name)
+            if filtered:
+                for field in field_type.get_field_dependencies_in_same_table(field):
+                    if field.name not in already_included_field_names:
+                        fields.append(field)
+                        already_included_field_names.add(field.name)
 
             # If attribute_names is True we will not use 'field_{id}' as attribute name,
             # but we will rather use a name the user provided.
