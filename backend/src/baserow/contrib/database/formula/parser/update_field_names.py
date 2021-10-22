@@ -57,7 +57,7 @@ class UpdateFieldNameFormulaVisitor(BaserowFormulaVisitor):
         return ctx.expr().accept(self)
 
     def visitFunctionCall(self, ctx: BaserowFormula.FunctionCallContext):
-        function_name = ctx.func_name().accept(self).lower()
+        function_name = ctx.func_name().getText()
         args = [expr.accept(self) for expr in (ctx.expr())]
         args_with_any_field_names_replaced = ",".join(args)
         return f"{function_name}({args_with_any_field_names_replaced})"
@@ -86,7 +86,8 @@ class UpdateFieldNameFormulaVisitor(BaserowFormulaVisitor):
             escaped_new_name = convert_string_to_string_literal_token(
                 new_name, is_single_quote_ref
             )
-            return f"field({escaped_new_name})"
+            field = ctx.FIELD().getText()
+            return f"{field}({escaped_new_name})"
         elif field_name in self.field_names_to_replace_with_id_refs:
             return (
                 f"field_by_id({self.field_names_to_replace_with_id_refs[field_name]})"

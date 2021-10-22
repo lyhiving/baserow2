@@ -36,6 +36,18 @@ def test_replace_field_reference_keeping_whitespace_and_comments():
     )
 
 
+def test_replace_field_reference_preserving_case():
+    new_formula = update_field_names(
+        "//my line comment \n\tADD(fIeLd('test'),1)  /*my block comment*/\n\t",
+        {"test": "new " "test"},
+    )
+
+    assert (
+        new_formula == "//my line comment \n\tADD(fIeLd('new test'),1)  /*my block "
+        "comment*/\n\t"
+    )
+
+
 def test_replace_binary_op_keeping_whitespace_and_comments():
     new_formula = update_field_names(
         "//my line comment \n\t1+1  /*my block comment*/\n\t",
@@ -137,6 +149,14 @@ def test_replaces_known_field_by_id():
         field_ids_to_replace_with_name_refs={1: "test", 2: "other_test"},
     )
     assert new_formula == "field('test')+concat(field('a'), field('other_test'))"
+
+
+def test_replaces_functions_preserving_case():
+    new_formula = update_field_names(
+        "field_by_id(1)+CONCAT(field('a'), field_by_id(2))",
+        field_ids_to_replace_with_name_refs={1: "test", 2: "other_test"},
+    )
+    assert new_formula == "field('test')+CONCAT(field('a'), field('other_test'))"
 
 
 def test_replaces_known_field_by_id_single_quotes():
