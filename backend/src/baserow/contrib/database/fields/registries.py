@@ -2,10 +2,6 @@ from typing import Any, List
 
 from django.db.models import Q
 
-from baserow.contrib.database.formula.types.formula_type import (
-    BaserowFormulaType,
-    BaserowFormulaInvalidType,
-)
 from baserow.core.registry import (
     Instance,
     Registry,
@@ -688,7 +684,7 @@ class FieldType(
 
         return None
 
-    def to_baserow_formula_type(self, field) -> BaserowFormulaType:
+    def to_baserow_formula_type(self, field):
         """
         Should return the Baserow Formula Type to use when referencing a field of this
         type in a formula.
@@ -697,6 +693,8 @@ class FieldType(
             be created for.
         :return: The Baserow Formula Type that represents this field in a formula.
         """
+
+        from baserow.contrib.database.formula import BaserowFormulaInvalidType
 
         return BaserowFormulaInvalidType(
             f"A field of type {self.type} cannot be referenced in a Baserow formula."
@@ -716,6 +714,26 @@ class FieldType(
             f"A field of type {self.type} cannot be referenced in a Baserow formula."
         )
 
+    def to_baserow_formula_expression(self, field, already_typed_fields):
+        """
+        Should return a Typed Baserow Formula Expression to use when referencing the
+        field in a formula.
+
+        :param field: The specific instance of the field that a typed formula
+            expression should be created for.
+        :param already_typed_fields: A collection of other fields which have already
+            had their typed expressions calculated which can be used to resolve any
+            recursive references.
+        :return: A typed baserow formula expression which when evaluated represents a
+            reference to field.
+        """
+
+        from baserow.contrib.database.formula import FormulaHandler
+
+        return FormulaHandler.get_db_field_reference(
+            field, self.to_baserow_formula_type(field)
+        )
+
     def get_field_dependencies_in_same_table(self, field):
         """
         Should return any fields that field depends on directly in the same table to
@@ -724,6 +742,39 @@ class FieldType(
         :param field: The specific instance of the field we want to know the direct
             same table dependency fields for.
         :return: A list of field instances.
+        """
+
+        return []
+
+    def after_direct_field_dependency_changed(
+        self,
+        field_instance,
+        changed_parent_field,
+        old_changed_parent_field,
+        rename_only=False,
+    ):
+        """
+        Called when a parent of field_instance has been updated, created, restored or
+        deleted. This method should do any appropriate updates to field_instance and
+        related data and return a list of field instance's which have changed as a
+        result.
+
+        :param old_changed_parent_field: If the parent field was updated this will be
+            the old instance prior whose attributes will be set to the values prior to
+            the update. If None then a new field has been created and set to be
+            field_instances parent.
+        :type old_changed_parent_field: Optional[Field]
+        :param changed_parent_field: The instance of the parent field with the new
+            changed values.
+        :type changed_parent_field: Field
+        :param field_instance: An instance of this FieldType whose parent has changed.
+        :type field_instance: Field
+        :param rename_only: True if the only change to the parent field is a
+            change in name.
+        :type rename_only: bool
+        :return: A list of updated field instances which changed as a result of the
+            dependency change.
+        :rtype: List[Field]
         """
 
         return []

@@ -21,11 +21,7 @@ from baserow.contrib.database.api.formula.serializers import (
 from baserow.contrib.database.fields.exceptions import FieldDoesNotExist
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import FormulaField
-from baserow.contrib.database.formula.exceptions import BaserowFormulaException
-from baserow.contrib.database.formula.types.typer import (
-    type_formula_field,
-    TypedBaserowFields,
-)
+from baserow.contrib.database.formula import BaserowFormulaException, FormulaHandler
 from baserow.core.exceptions import UserNotInGroup
 
 
@@ -79,11 +75,6 @@ class TypeFormulaView(APIView):
 
         field = field.specific
         field.formula = data["formula"]
-        typed_field_node = type_formula_field(
-            field, TypedBaserowFields(), update_graph=False
-        )
-        typed_field_node.typed_expression.expression_type.persist_onto_formula_field(
-            field
-        )
+        FormulaHandler.recalculate_type(field)
 
         return Response(TypeFormulaResultSerializer(field).data)

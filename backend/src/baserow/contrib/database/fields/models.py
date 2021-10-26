@@ -1,6 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django_postgresql_dag.models import edge_factory, node_factory
 
 from baserow.contrib.database.fields.mixins import (
     BaseDateMixin,
@@ -8,12 +7,14 @@ from baserow.contrib.database.fields.mixins import (
     DATE_FORMAT_CHOICES,
     DATE_TIME_FORMAT_CHOICES,
 )
-from baserow.contrib.database.formula.parser.ast_mapper import (
-    raw_formula_to_untyped_expression,
+from baserow.contrib.database.formula import BASEROW_FORMULA_TYPE_CHOICES
+from baserow.contrib.database.formula.expression_generator.generator import (
+    baserow_expression_to_django_expression,
 )
-from baserow.contrib.database.formula.types.formula_types import (
-    BASEROW_FORMULA_TYPE_CHOICES,
-    construct_type_from_formula_field,
+from baserow.contrib.database.formula.models import FieldDependencyNode
+from baserow.contrib.database.formula.types.typer import (
+    type_formula_field,
+    TypedBaserowFields,
 )
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
 from baserow.core.mixins import (
@@ -111,13 +112,19 @@ class Field(
         return name
 
     def get_or_create_node(self):
-        field, _ = FieldNode.objects.get_or_create(field=self, table=self.table)
-        return field
+        if hasattr(self, "fieldnode"):
+            return self.fieldnode
+        else:
+            field, _ = FieldDependencyNode.objects.get_or_create(
+                field=self, table=self.table
+            )
+            self.fieldnode = field
+            return field
 
     def get_node(self):
         try:
-            return FieldNode.objects.get(field=self, table=self.table)
-        except FieldNode.DoesNotExist:
+            return FieldDependencyNode.objects.get(field=self, table=self.table)
+        except FieldDependencyNode.DoesNotExist:
             return None
 
 
@@ -292,7 +299,8 @@ class PhoneNumberField(Field):
 
 class FormulaField(Field):
     formula = models.TextField()
-    internal_typed_formula = models.TextField(null=True, blank=True)
+    internal_formula = models.TextField(null=True, blank=True)
+    requires_refresh_after_insert = models.BooleanField(null=True, blank=True)
     old_formula_with_field_by_id = models.TextField(null=True, blank=True)
     error = models.TextField(null=True, blank=True)
 
@@ -326,24 +334,25 @@ class FormulaField(Field):
         help_text="24 (14:30) or 12 (02:30 PM)",
     )
 
-    def get_typed_expression(self, already_typed_fields=None):
-        from baserow.contrib.database.formula.types.typer import (
-            type_formula_field,
-            TypedBaserowFields,
-        )
+    def save(self, *args, **kwargs):
+        retype_field = kwargs.pop("retype_field", True)
+        if retype_field:
+            already_typed_fields = kwargs.pop(
+                "already_typed_fields", TypedBaserowFields()
+            )
+            self.retype_and_update(already_typed_fields)
+        super().save(*args, **kwargs)
 
-        if already_typed_fields is None:
-            already_typed_fields = TypedBaserowFields()
-        if self.internal_typed_formula is None:
-            typed_node = type_formula_field(self, already_typed_fields, True)
-            expr = typed_node.typed_expression
-            self.internal_typed_formula = str(expr)
-            self.save()
-        formula_type = construct_type_from_formula_field(self)
-        expr = raw_formula_to_untyped_expression(self.internal_typed_formula).with_type(
-            formula_type
-        )
-        return expr
+    def retype_and_update(self, already_typed_fields):
+        typed_formula_field_node = type_formula_field(self, already_typed_fields, True)
+        update_formula_field(typed_formula_field_node)
+        model = self.table.get_model()
+        if not (self.error or self.trashed):
+            expr = baserow_expression_to_django_expression(
+                typed_formula_field_node.typed_expression, model, None
+            )
+            # todo add an update cacher
+            model.objects_and_trash.update(**{self.db_column: expr})
 
     def same_as(self, other):
         return (
@@ -354,56 +363,15 @@ class FormulaField(Field):
             and self.date_format == other.date_format
             and self.date_time_format == other.date_time_format
             and self.date_include_time == other.date_include_time
-            and self.internal_typed_formula == other.internal_typed_formula
+            and self.internal_formula == other.internal_formula
         )
 
     def __str__(self):
         return (
             "FormulaField(\n"
             + f"formula={self.formula},\n"
-            + f"internal_formula={self.internal_typed_formula},\n"
+            + f"internal_formula={self.internal_formula},\n"
             + f"formula_type={self.formula_type},\n"
             + f"error={self.error},\n"
             + ")"
         )
-
-
-class FieldEdge(edge_factory("FieldNode", concrete=False)):
-    via = models.ForeignKey(
-        Field,
-        on_delete=models.CASCADE,
-        related_name="vias",
-        null=True,
-        blank=True,
-    )
-
-
-class FieldNode(node_factory(FieldEdge)):
-    field = models.OneToOneField(
-        Field,
-        on_delete=models.CASCADE,
-        related_name="nodes",
-        null=True,
-        blank=True,
-    )
-    unresolved_field_name = models.TextField(
-        null=True,
-        blank=True,
-    )
-    table = models.ForeignKey(
-        "Table",
-        on_delete=models.CASCADE,
-        related_name="nodes",
-    )
-
-    def is_unused_invalid_ref(self):
-        return not self.is_reference_to_real_field() and self.children.count() == 0
-
-    def is_reference_to_real_field(self):
-        return self.field is not None
-
-    def unique_name(self):
-        if self.is_reference_to_real_field():
-            return str(self.table_id) + "_" + self.field.name
-        else:
-            return str(self.table_id) + "_" + self.unresolved_field_name

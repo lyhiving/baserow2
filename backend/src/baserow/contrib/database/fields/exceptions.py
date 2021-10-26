@@ -1,4 +1,3 @@
-from baserow.contrib.database.fields.models import Field
 from baserow.core.exceptions import (
     InstanceTypeDoesNotExist,
     InstanceTypeAlreadyRegistered,
@@ -53,8 +52,8 @@ class MaxFieldLimitExceeded(Exception):
 class MaxFieldNameLengthExceeded(Exception):
     """Raised when the field name exceeds the max length."""
 
-    def __init__(self, *args, **kwargs):
-        self.max_field_name_length = Field.get_max_name_length()
+    def __init__(self, max_field_name_length, *args, **kwargs):
+        self.max_field_name_length = max_field_name_length
         super().__init__(*args, **kwargs)
 
 

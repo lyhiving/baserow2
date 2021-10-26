@@ -8,17 +8,11 @@ from django.db.utils import ProgrammingError, DataError
 
 from baserow.contrib.database.db.schema import lenient_schema_editor
 from baserow.contrib.database.fields.constants import RESERVED_BASEROW_FIELD_NAMES
-from baserow.contrib.database.formula.types.typed_field_updater import (
-    update_other_fields_referencing_this_fields_name,
-)
-from baserow.contrib.database.formula.types.typer import (
-    type_and_update_field,
-    type_and_update_fields,
-)
 from baserow.contrib.database.table.models import Table
 from baserow.contrib.database.views.handler import ViewHandler
 from baserow.core.trash.handler import TrashHandler
 from baserow.core.utils import extract_allowed, set_allowed_attrs
+from .dependencies.handler import FieldDependencyHandler
 from .exceptions import (
     PrimaryFieldAlreadyExists,
     CannotDeletePrimaryField,
@@ -70,7 +64,7 @@ def _validate_field_name(
 
     max_field_name_length = Field.get_max_name_length()
     if len(name) > max_field_name_length:
-        raise MaxFieldNameLengthExceeded()
+        raise MaxFieldNameLengthExceeded(max_field_name_length)
 
     if name.strip() == "":
         raise InvalidBaserowFieldName()
@@ -85,15 +79,6 @@ def _validate_field_name(
             f"A field named {name} cannot be created as it already exists as a "
             f"reserved Baserow field name."
         )
-
-
-def _merge_updated_fields(
-    updated_fields: List[Field], merged_sets: List[Field]
-) -> List[Field]:
-    updated_fields_set = set(updated_fields)
-    merged_sets = set(merged_sets)
-    merged_sets.update(updated_fields_set)
-    return list(merged_sets)
 
 
 class FieldHandler:
@@ -210,9 +195,6 @@ class FieldHandler:
             table=table, order=last_order, primary=primary, **field_values
         )
         instance.save()
-        typed_fields = type_and_update_field(
-            instance, True, False, True, True, False, force_update=True
-        )
 
         # Add the field to the table schema.
         with connection.schema_editor() as schema_editor:
@@ -222,11 +204,13 @@ class FieldHandler:
             if do_schema_change:
                 schema_editor.add_field(to_model, model_field)
 
-        typed_fields.refresh_fields()
-
         field_type.after_create(instance, to_model, user, connection, before)
 
-        updated_fields = typed_fields.updated_fields(exclude_field=instance)
+        updated_fields = (
+            FieldDependencyHandler.update_direct_dependencies_after_field_change(
+                instance, None
+            )
+        )
         field_created.send(
             self,
             field=instance,
@@ -308,16 +292,8 @@ class FieldHandler:
         field_values = field_type.prepare_values(field_values, user)
         before = field_type.before_update(old_field, field_values, user)
 
-        new_field_name = field_values.get("name", field.name)
-        fields_updated_due_to_name_change = (
-            update_other_fields_referencing_this_fields_name(field, new_field_name)
-        )
-
         field = set_allowed_attrs(field_values, allowed_fields, field)
         field.save()
-        typed_fields = type_and_update_field(
-            field, True, False, True, True, False, force_update=True
-        )
         # If no converter is found we are going to convert to field using the
         # lenient schema editor which will alter the field's type and set the data
         # value to null if it can't be converted.
@@ -417,21 +393,21 @@ class FieldHandler:
             altered_column,
             before,
         )
-        typed_fields.refresh_fields()
-
-        merged_updated_fields = _merge_updated_fields(
-            typed_fields.updated_fields(exclude_field=field),
-            fields_updated_due_to_name_change,
+        updated_fields = (
+            FieldDependencyHandler.update_direct_dependencies_after_field_change(
+                field, set(field_values.keys()) == {"name"}
+            )
         )
+
         field_updated.send(
             self,
             field=field,
-            related_fields=merged_updated_fields,
+            related_fields=updated_fields,
             user=user,
         )
 
         if return_updated_fields:
-            return field, merged_updated_fields
+            return field, updated_fields
         else:
             return field
 
@@ -460,17 +436,9 @@ class FieldHandler:
             )
 
         field = field.specific
-        dependants = []
-        node = field.get_node()
-        if node is not None:
-            dependants = [child.field.specific for child in node.children.all()]
-            node.field = None
-            node.unresolved_field_name = field.name
-            node.save()
-        TrashHandler.trash(user, group, field.table.database, field)
-
-        typed_fields = type_and_update_fields(dependants)
-        updated_fields = typed_fields.updated_fields(exclude_field=field)
+        updated_fields = FieldDependencyHandler.field_deleted(
+            field, lambda: TrashHandler.trash(user, group, field.table.database, field)
+        )
         field_deleted.send(
             self,
             field_id=field.id,

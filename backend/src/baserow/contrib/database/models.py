@@ -22,6 +22,7 @@ from .fields.models import (
     PhoneNumberField,
 )
 from .tokens.models import Token, TokenPermission
+from .formula.models import FieldDependencyEdge, FieldDependencyNode
 
 __all__ = [
     "Database",
@@ -44,6 +45,8 @@ __all__ = [
     "PhoneNumberField",
     "Token",
     "TokenPermission",
+    "FieldDependencyEdge",
+    "FieldDependencyNode",
 ]
 
 

@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import List, TypeVar, Generic, Tuple, Optional
 
 from django.conf import settings
-from django.db.models import Expression
+from django.db.models import Expression, Model
 
 from baserow.contrib.database.formula.ast import visitors
 from baserow.contrib.database.formula.ast.exceptions import (
@@ -15,7 +15,6 @@ from baserow.contrib.database.formula.parser.parser import (
     convert_string_to_string_literal_token,
 )
 from baserow.contrib.database.formula.types import formula_type
-from baserow.contrib.database.table import models
 from baserow.core.registry import Instance
 
 A = TypeVar("A")
@@ -289,14 +288,14 @@ class BaserowFunctionCall(BaserowExpression[A]):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
-        model_instance: Optional["models.GeneratedTableModel"],
+        model_instance: Optional[Model],
     ) -> Expression:
         return self.function_def.to_django_expression_given_args(args, model_instance)
 
     def check_arg_type_valid(
         self,
         i: int,
-        typed_arg: "BaserowExpression[" "formula_type.BaserowFormulaType]",
+        typed_arg: "BaserowExpression[formula_type.BaserowFormulaType]",
         all_typed_args: "List[BaserowExpression[formula_type.BaserowFormulaType]]",
     ) -> "BaserowExpression[formula_type.BaserowFormulaType]":
         return self.function_def.check_arg_type_valid(i, typed_arg, all_typed_args)
@@ -398,7 +397,7 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
-        model_instance: Optional["models.GeneratedTableModel"],
+        model_instance: Optional[Model],
     ) -> Expression:
         """
         Given the args already converted to Django Expressions should return a Django

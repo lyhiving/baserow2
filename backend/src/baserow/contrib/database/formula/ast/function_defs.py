@@ -11,6 +11,7 @@ from django.db.models import (
     Func,
     F,
     ExpressionWrapper,
+    Model,
 )
 from django.db.models.functions import (
     Upper,
@@ -66,7 +67,6 @@ from baserow.contrib.database.formula.types.formula_type import (
     UnTyped,
     BaserowArgumentTypeChecker,
 )
-from baserow.contrib.database.table.models import GeneratedTableModel
 
 
 def register_formula_functions(registry):
@@ -221,7 +221,7 @@ class BaserowConcat(BaserowFunctionDefinition):
         ).with_valid_type(BaserowFormulaTextType())
 
     def to_django_expression_given_args(
-        self, args: List[Expression], model_instance: Optional[GeneratedTableModel]
+        self, args: List[Expression], model_instance: Optional[Model]
     ) -> Expression:
         return Concat(*args, output_field=fields.TextField())
 
@@ -786,7 +786,7 @@ class BaserowRowId(ZeroArgumentBaserowFunction):
         pass
 
     def to_django_expression_given_args(
-        self, args: List[Expression], model_instance: Optional[GeneratedTableModel]
+        self, args: List[Expression], model_instance: Optional[Model]
     ) -> Expression:
         if model_instance is None:
             return ExpressionWrapper(

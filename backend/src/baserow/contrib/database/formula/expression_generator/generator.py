@@ -50,6 +50,7 @@ def baserow_expression_to_django_expression(
     initial defaults will be found and substituted in.
 
     :param baserow_expression: The BaserowExpression to convert.
+    :param model: The Django model that the expression is being generated for.
     :param model_instance: If provided the expression will calculate the result for
         this single instance. If not provided then the expression will use F() column
         references and will calculate the result for every row in the table.

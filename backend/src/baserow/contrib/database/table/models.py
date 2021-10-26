@@ -328,6 +328,7 @@ class Table(
         field_names=None,
         attribute_names=False,
         manytomany_models=None,
+        add_dependencies=True,
     ) -> GeneratedTableModel:
         """
         Generates a temporary Django model based on available fields that belong to
@@ -352,6 +353,9 @@ class Table(
             generated in order to generate that model. In order to prevent a
             recursion loop we cache the generated models and pass those along.
         :type manytomany_models: dict
+        :param add_dependencies: When True will ensure any direct field dependencies
+            are included in the model. Otherwise only the exact fields you specify will
+            be added to the model.
         :return: The generated model.
         :rtype: Model
         """
@@ -461,11 +465,11 @@ class Table(
             field_type = field_type_registry.get_by_model(field)
             field_name = field.db_column
 
-            if filtered:
-                for field in field_type.get_field_dependencies_in_same_table(field):
-                    if field.name not in already_included_field_names:
-                        fields.append(field)
-                        already_included_field_names.add(field.name)
+            if filtered and add_dependencies:
+                for f in field_type.get_field_dependencies_in_same_table(field):
+                    if f.name not in already_included_field_names:
+                        fields.append(f)
+                        already_included_field_names.add(f.name)
 
             # If attribute_names is True we will not use 'field_{id}' as attribute name,
             # but we will rather use a name the user provided.

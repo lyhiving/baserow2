@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint, sample
-from typing import Any, Callable, Dict, List, Tuple, Set
+from typing import Any, Callable, Dict, List, Tuple
 
 import pytz
 from dateutil import parser
@@ -33,21 +33,23 @@ from baserow.contrib.database.api.fields.serializers import (
     SelectOptionSerializer,
     FileFieldResponseSerializer,
 )
-from baserow.contrib.database.formula.exceptions import BaserowFormulaException
-from baserow.contrib.database.formula.types.formula_type import BaserowFormulaType
-from baserow.contrib.database.formula.types.formula_types import (
+from baserow.contrib.database.formula import (
+    BaserowExpression,
     BaserowFormulaTextType,
     BaserowFormulaNumberType,
     BaserowFormulaBooleanType,
     BaserowFormulaDateType,
     BaserowFormulaCharType,
-    construct_type_from_formula_field,
     BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
+    BaserowFormulaType,
+    BaserowFormulaException,
 )
+from baserow.contrib.database.formula import FormulaHandler
 from baserow.contrib.database.validators import UnicodeRegexValidator
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
 from baserow.core.user_files.handler import UserFileHandler
+from .dependencies.handler import FieldDependencyHandler
 from .exceptions import (
     LinkRowTableNotInSameDatabase,
     LinkRowTableNotProvided,
@@ -84,11 +86,12 @@ from .models import (
     PhoneNumberField,
     FormulaField,
     Field,
-    FieldEdge,
 )
 from .registries import FieldType, field_type_registry
-from ..formula.ast.tree import BaserowFunctionDefinition
-from ..formula.types.visitors import FunctionsUsedVisitor
+from ..formula.expression_generator.generator import (
+    baserow_expression_to_django_expression,
+)
+from ..formula.types.typer import type_formula_field, TypedBaserowFields
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -2064,15 +2067,17 @@ class FormulaFieldType(FieldType):
 
             field_type = field_type_registry.get_by_model(field.specific_class)
             if field_type.type == FormulaFieldType.type:
-                formula_type = construct_type_from_formula_field(field.specific)
+                formula_type = FormulaHandler.construct_type_from_formula_field(
+                    field.specific
+                )
                 return formula_type.type in compatible_formula_types
             else:
                 return False
 
         return checker
 
-    @staticmethod
     def _get_field_instance_and_type_from_formula_field(
+        self,
         formula_field_instance: FormulaField,
     ) -> Tuple[Field, FieldType]:
         """
@@ -2083,7 +2088,7 @@ class FormulaFieldType(FieldType):
         :return: The BaserowFormulaType of the formula field instance.
         """
 
-        formula_type = construct_type_from_formula_field(formula_field_instance)
+        formula_type = self.to_baserow_formula_type(formula_field_instance)
         return formula_type.get_baserow_field_instance_and_type()
 
     def get_serializer_field(self, instance: FormulaField, **kwargs):
@@ -2099,16 +2104,9 @@ class FormulaFieldType(FieldType):
         # case but we still want to generate a model field so the model can be
         # used to do SQL operations like dropping fields etc.
         if not (instance.error or instance.trashed):
-            expression = instance.get_typed_expression()
-            funcs: Set[BaserowFunctionDefinition] = expression.accept(
-                FunctionsUsedVisitor()
-            )
-            requires_refresh_after_insert = any(
-                f.requires_refresh_after_insert for f in funcs
-            )
+            expression = self.to_baserow_formula_expression(instance, None)
         else:
             expression = None
-            requires_refresh_after_insert = False
 
         (
             field_instance,
@@ -2121,7 +2119,7 @@ class FormulaFieldType(FieldType):
             blank=True,
             expression=expression,
             expression_field=expression_field_type,
-            requires_refresh_after_insert=requires_refresh_after_insert,
+            requires_refresh_after_insert=instance.requires_refresh_after_insert,
             **kwargs,
         )
 
@@ -2178,18 +2176,65 @@ class FormulaFieldType(FieldType):
         )
 
     def get_field_dependencies_in_same_table(self, field):
-        if hasattr(field, "fieldnode"):
-            dependant_fields = []
-            for dep in FieldEdge.objects.filter(child=field.fieldnode).all():
-                if dep.via:
-                    # The dependency points at a field in another table via the dep.via
-                    # field in this table, so we depend on the via but not the parent
-                    # field.
-                    dependant_fields.append(dep.via)
-                elif dep.parent.is_reference_to_real_field():
-                    dependant_fields.append(dep.parent.field)
-        else:
-            return []
+        return FormulaHandler.get_direct_same_table_field_dependencies(field)
 
     def to_baserow_formula_type(self, field: FormulaField) -> BaserowFormulaType:
-        return construct_type_from_formula_field(field)
+        return FormulaHandler.construct_type_from_formula_field(field)
+
+    def to_baserow_formula_expression(
+        self, field: FormulaField, already_typed_fields
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return FormulaHandler.lookup_formula_expression_from_db(
+            field, already_typed_fields
+        )
+
+    def after_update(
+        self,
+        from_field,
+        to_field,
+        from_model,
+        to_model,
+        user,
+        connection,
+        altered_column,
+        before,
+    ):
+        if not (to_field.error or to_field.trashed):
+            expr = baserow_expression_to_django_expression(
+                typed_formula_field_node.typed_expression, to_model, None
+            )
+            # todo add an update cacher
+            to_model.objects_and_trash.update(**{self.db_column: expr})
+
+    def after_direct_field_dependency_changed(
+        self,
+        field_instance,
+        changed_parent_field,
+        old_changed_parent_field,
+        rename_only=False,
+    ):
+        old_formula = field_instance.formula
+        if old_changed_parent_field is not None:
+            old_parent_name = old_changed_parent_field.name
+            new_parent_name = changed_parent_field.name
+            if old_parent_name != new_parent_name:
+                field_instance.formula = (
+                    FormulaHandler.rename_field_references_in_formula_string(
+                        old_formula, {old_parent_name: new_parent_name}
+                    )
+                )
+            if rename_only:
+                if old_formula != field_instance.formula:
+                    field_instance.save(retype_field=False)
+                    return [field_instance]
+                else:
+                    return []
+
+        field_instance.save()
+        updated_fields = (
+            FieldDependencyHandler.update_direct_dependencies_after_field_change(
+                field_instance, old_field
+            )
+        )
+        updated_fields.insert(0, field_instance)
+        return updated_fields

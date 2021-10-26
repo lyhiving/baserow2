@@ -8,13 +8,7 @@ from django.db.models.fields.related_descriptors import (
 )
 from django.utils.functional import cached_property
 
-from baserow.contrib.database.formula.ast.tree import BaserowExpression
-from baserow.contrib.database.formula.expression_generator.generator import (
-    baserow_expression_to_django_expression,
-)
-from baserow.contrib.database.formula.types.formula_type import (
-    BaserowFormulaInvalidType,
-)
+from baserow.contrib.database.formula import BaserowExpression, FormulaHandler
 
 
 class SingleSelectForwardManyToOneDescriptor(ForwardManyToOneDescriptor):
@@ -158,10 +152,7 @@ class BaserowExpressionField(models.Field):
         return name, path, args, kwargs
 
     def db_type(self, connection):
-        if isinstance(self.expression_field, BaserowFormulaInvalidType):
-            return "TEXT"
-        else:
-            return self.expression_field.db_type(connection)
+        return self.expression_field.db_type(connection)
 
     def get_prep_value(self, value):
         return self.expression_field.get_prep_value(value)
@@ -172,7 +163,7 @@ class BaserowExpressionField(models.Field):
             # does not get angry and claim this is an unknown type.
             return Value(None)
         else:
-            result = baserow_expression_to_django_expression(
+            result = FormulaHandler.baserow_expression_to_django_expression(
                 self.expression, type(model_instance), model_instance
             )
             return result

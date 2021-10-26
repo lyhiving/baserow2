@@ -6,10 +6,7 @@ from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.fields.signals import field_restored
-from baserow.contrib.database.formula.types.typer import (
-    type_and_update_field,
-    type_and_update_fields,
-)
+from baserow.contrib.database.formula.handler import FormulaHandler
 from baserow.contrib.database.rows.signals import row_created
 from baserow.contrib.database.table.models import Table, GeneratedTableModel
 from baserow.contrib.database.table.signals import table_created
@@ -95,9 +92,7 @@ class FieldTrashableItemType(TrashableItemType):
         trashed_item.name = trashed_item.name
         trashed_item.trashed = False
         trashed_item.save()
-        typed_fields = type_and_update_field(
-            trashed_item, False, True, True, True, True, force_update=True
-        )
+        typed_fields = FormulaHandler.field_created_or_updated(trashed_item)
         field_restored.send(
             self,
             field=trashed_item,
@@ -131,16 +126,8 @@ class FieldTrashableItemType(TrashableItemType):
             model_field = from_model._meta.get_field(field.db_column)
             schema_editor.remove_field(from_model, model_field)
 
-        dependants = []
-        node = field.get_node()
-        if node is not None:
-            dependants = [child.field.specific for child in node.children.all()]
-            node.field = None
-            node.unresolved_field_name = field.name
-            node.save()
         field.delete()
-
-        type_and_update_fields(dependants)
+        FormulaHandler.field_deleted(field)
 
         # After the field is deleted we are going to to call the after_delete method of
         # the field type because some instance cleanup might need to happen.

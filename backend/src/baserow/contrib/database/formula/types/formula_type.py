@@ -9,7 +9,6 @@ from typing import (
 
 from django.utils.functional import classproperty
 
-from baserow.contrib.database.fields import models
 from baserow.contrib.database.formula.ast import tree
 from baserow.contrib.database.formula.types.exceptions import (
     InvalidFormulaType,
@@ -114,9 +113,7 @@ class BaserowFormulaType(abc.ABC):
         pass
 
     @classmethod
-    def construct_type_from_formula_field(
-        cls: Type[T], formula_field: "models.FormulaField"
-    ) -> T:
+    def construct_type_from_formula_field(cls: Type[T], formula_field) -> T:
         """
         Creates a BaserowFormulaType instance based on what is set on the formula field.
         :param formula_field: The formula field to get type info from.
@@ -128,9 +125,7 @@ class BaserowFormulaType(abc.ABC):
             kwargs[field_name] = getattr(formula_field, field_name)
         return cls(**kwargs)
 
-    def new_type_with_user_and_calculated_options_merged(
-        self: T, formula_field: "models.FormulaField"
-    ):
+    def new_type_with_user_and_calculated_options_merged(self: T, formula_field):
         """
         Generates a new merged BaserowFormulaType instance from what has been set on the
         formula field and this instance of the type. Fields which are set on
@@ -155,7 +150,7 @@ class BaserowFormulaType(abc.ABC):
             kwargs[field_name] = getattr(self, field_name)
         return self.__class__(**kwargs)
 
-    def persist_onto_formula_field(self, formula_field: "models.FormulaField"):
+    def persist_onto_formula_field(self, formula_field):
         """
         Saves this type onto the provided formula_field instance for later retrieval.
         Sets the attributes on the formula_field required
