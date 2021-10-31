@@ -3,6 +3,376 @@
     <Notifications></Notifications>
     <div class="style-guide__wrapper">
       <div class="style-guide">
+        <div class="modal__box modal__box--tiny">
+          <div class="web-hook__test-title">Test web hook</div>
+          <div class="control">
+            <div class="control__label">Request</div>
+            <div class="control__elements">
+              <div class="web-hook__code-container">
+                <pre
+                  class="web-hook__code web-hook__code--small"
+                ><code>POST https://target-url.com/target-page
+Authorization: Some token
+Content-Type: application/json
+
+{
+    “id”: 1,
+    “type”: “row_deleted”,
+    “old_values”: {}
+}</code></pre>
+              </div>
+            </div>
+          </div>
+          <div class="control">
+            <div class="control__label">Response</div>
+            <div class="control__elements">
+              <div class="web-hook__code-container">
+                <pre
+                  class="web-hook__code web-hook__code--small"
+                ><div class="loading"></div></pre>
+              </div>
+            </div>
+          </div>
+          <div class="web-hook__test-state web-hook__test-state--error">
+            404 NOT FOUND
+          </div>
+          <div class="actions">
+            <a href="#">Cancel</a>
+            <div class="align-right">
+              <button class="button button--ghost">Retry</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal__box">
+          <a class="modal__close">
+            <i class="fas fa-times"></i>
+          </a>
+          <h2 class="box__title">Web hooks Bram's group</h2>
+          <div class="align-right">
+            <a href="#" class="button">
+              Create web hook
+              <i class="fas fa-plus"></i>
+            </a>
+          </div>
+          <div class="web-hook web-hook--open">
+            <div class="web-hook__head">
+              <div class="web-hook__head-left">
+                <div class="web-hook__head-name">
+                  Name of the web hook with a very long name
+                </div>
+                <div class="web-hook__head-details">
+                  <div class="web-hook__head-details-target">
+                    https://baserow.io/test-test/test-/test/te-test
+                  </div>
+                  <a href="#" class="web-hook__head-toggle">
+                    details
+                    <i
+                      class="fas fa-chevron-down web-hook__head-toggle-icon"
+                    ></i>
+                  </a>
+                </div>
+              </div>
+              <div class="web-hook__head-right">
+                <div class="web-hook__head-trigger">
+                  Triggers when a row is created that is very long and doesn't
+                  fit
+                </div>
+                <div class="web-hook__head-call">
+                  <div class="web-hook__head-date">
+                    Last call: 2021-01-01 12:00
+                  </div>
+                  <span
+                    class="
+                      web-hook__head-call-state web-hook__head-call-state--ok
+                    "
+                    >200 OK</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="web-hook__body">
+              <ul class="tabs">
+                <li class="tabs__item">
+                  <a href="#" class="tabs__link">Edit</a>
+                </li>
+                <li class="tabs__item tabs__item--active">
+                  <a href="#" class="tabs__link">Call log</a>
+                </li>
+              </ul>
+              <div class="web-hook__call web-hook__call--open">
+                <div class="web-hook__call-head">
+                  <div class="web-hook__call-name">
+                    <div class="web-hook__call-type">Row created</div>
+                    <div class="web-hook__call-target">
+                      https://target-url.com/target-page
+                    </div>
+                  </div>
+                  <div class="web-hook__call-description">
+                    <div class="web-hook__call-info">
+                      POST - 2021-01-01 12:00:00
+                    </div>
+                    <a href="#" class="web-hook__call-toggle">
+                      <div
+                        class="
+                          web-hook__call-state web-hook__head-call-state--ok
+                        "
+                      >
+                        200 OK
+                      </div>
+                      <i class="fas fa-chevron-down"></i>
+                    </a>
+                  </div>
+                </div>
+                <div class="web-hook__call-body">
+                  <div class="web-hook__call-body-content">
+                    <div class="web-hook__call-body-label">Request</div>
+                    <div class="web-hook__code-container">
+                      <pre
+                        class="web-hook__code web-hook__code--small"
+                      ><code>POST https://target-url.com/target-page
+Authorization: Some token
+Content-Type: application/json
+
+{
+    “id”: 1,
+    “type”: “row_deleted”,
+    “old_values”: {}
+}</code></pre>
+                    </div>
+                  </div>
+                  <div class="web-hook__call-body-content">
+                    <div class="web-hook__call-body-label">Response</div>
+                    <div class="web-hook__code-container">
+                      <pre
+                        class="web-hook__code web-hook__code--small"
+                      ><code>HTTP/2.0 404 NOT FOUND
+Connection: Keep-Alive
+Content-Type: text/html; charset=utf=8
+Server: NGINX
+
+{
+    "error": "not_found"
+}</code></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="web-hook__call">
+                <div class="web-hook__call-head">
+                  <div class="web-hook__call-name">
+                    <div class="web-hook__call-type">Row created</div>
+                    <div class="web-hook__call-target">
+                      https://target-url.com/target-page
+                    </div>
+                  </div>
+                  <div class="web-hook__call-description">
+                    <div class="web-hook__call-info">
+                      POST - 2021-01-01 12:00:00
+                    </div>
+                    <a href="#" class="web-hook__call-toggle">
+                      <div
+                        class="
+                          web-hook__call-state web-hook__head-call-state--error
+                        "
+                      >
+                        400 NOT OK
+                      </div>
+                      <i class="fas fa-chevron-down"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal__box">
+          <a class="modal__close">
+            <i class="fas fa-times"></i>
+          </a>
+          <h2 class="box__title">Web hooks Bram's group</h2>
+          <div class="align-right">
+            <a href="#" class="button">
+              Create web hook
+              <i class="fas fa-plus"></i>
+            </a>
+          </div>
+          <div class="web-hook web-hook--open">
+            <div class="web-hook__head">
+              <div class="web-hook__head-left">
+                <div class="web-hook__head-name">
+                  Name of the web hook with a very long name
+                </div>
+                <div class="web-hook__head-details">
+                  <div class="web-hook__head-details-target">
+                    https://baserow.io/test-test/test-/test/te-test
+                  </div>
+                  <a href="#" class="web-hook__head-toggle">
+                    details
+                    <i
+                      class="fas fa-chevron-down web-hook__head-toggle-icon"
+                    ></i>
+                  </a>
+                </div>
+              </div>
+              <div class="web-hook__head-right">
+                <div class="web-hook__head-trigger">
+                  Triggers when a row is created that is very long and doesn't
+                  fit
+                </div>
+                <div class="web-hook__head-call">
+                  <div class="web-hook__head-date">
+                    Last call: 2021-01-01 12:00
+                  </div>
+                  <span
+                    class="
+                      web-hook__head-call-state web-hook__head-call-state--ok
+                    "
+                    >200 OK</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="web-hook__body">
+              <ul class="tabs">
+                <li class="tabs__item tabs__item--active">
+                  <a href="#" class="tabs__link">Edit</a>
+                </li>
+                <li class="tabs__item">
+                  <a href="#" class="tabs__link">Call log</a>
+                </li>
+              </ul>
+              <div class="row">
+                <div class="col col-12">
+                  <div class="control">
+                    <div class="control__label">Name</div>
+                    <div class="control__elements">
+                      <input class="input" />
+                    </div>
+                  </div>
+                </div>
+                <div class="col col-4">
+                  <div class="control">
+                    <div class="control__label">Method</div>
+                    <div class="control__elements">
+                      <Dropdown value="POST">
+                        <DropdownItem name="GET" value=""></DropdownItem>
+                        <DropdownItem name="POST" value=""></DropdownItem>
+                        <DropdownItem name="PATCH" value=""></DropdownItem>
+                        <DropdownItem name="PUT" value=""></DropdownItem>
+                        <DropdownItem name="DELETE" value=""></DropdownItem>
+                      </Dropdown>
+                    </div>
+                  </div>
+                </div>
+                <div class="col col-8">
+                  <div class="control">
+                    <div class="control__label">URL</div>
+                    <div class="control__elements">
+                      <input class="input" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="control">
+                <div class="control__label">
+                  Which events should trigger this webhook?
+                </div>
+                <div class="control__elements">
+                  <Radio v-model="radio" value="all">Send me everything</Radio>
+                  <Radio v-model="radio" value="custom">
+                    Let me select individual events
+                  </Radio>
+                  <div class="web-hook__types">
+                    <Checkbox class="web-hook__type"
+                      >When a row is created</Checkbox
+                    >
+                    <Checkbox class="web-hook__type"
+                      >When a row is updated</Checkbox
+                    >
+                    <Checkbox class="web-hook__type"
+                      >When a row is deleted</Checkbox
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="control">
+                <div class="control__label">Additional headers</div>
+                <div class="control__elements">
+                  <div class="web-hook__header">
+                    <input
+                      class="input web-hook__header-key"
+                      placeholder="Name"
+                    />
+                    <input
+                      class="input web-hook__header-value"
+                      placeholder="Value"
+                    />
+                    <a
+                      href="#"
+                      class="button button--error web-hook__header-delete"
+                    >
+                      <i class="fas fa-trash button__icon"></i>
+                    </a>
+                  </div>
+                  <div class="web-hook__header">
+                    <input
+                      class="input web-hook__header-key"
+                      placeholder="Name"
+                    />
+                    <input
+                      class="input web-hook__header-value"
+                      placeholder="Value"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="control">
+                <div class="control__label">Example payload</div>
+                <div class="control__elements">
+                  <div class="web-hook__code-container">
+                    <div class="web-hook__code-dropdown">
+                      <Dropdown value="created" class="dropdown--floating-left">
+                        <DropdownItem
+                          name="When a row is created"
+                          value="created"
+                        ></DropdownItem>
+                        <DropdownItem
+                          name="When a row is updated"
+                          value="updated"
+                        ></DropdownItem>
+                        <DropdownItem
+                          name="When a row is deleted"
+                          value="deleted"
+                        ></DropdownItem>
+                      </Dropdown>
+                    </div>
+                    <pre class="web-hook__code"><code>{
+    “table_id”: 1,
+    “row_id”: 1,
+    “type”: “row_created”,
+    “values”: {
+        “Name”: “string”,
+        “Price”: 10.00,
+        “comments”: “string”
+    }
+}</code></pre>
+                  </div>
+                </div>
+              </div>
+              <div class="actions">
+                <a href="#" class="button button--ghost"
+                  >Trigger test webhook</a
+                >
+                <div class="align-right">
+                  <button class="button button--primary">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="margin-bottom-3">
           <h1>&lt;h1&gt;Heading 1&lt;/h1&gt;</h1>
           <h2>&lt;h2&gt;Heading 2&lt;/h2&gt;</h2>
@@ -128,6 +498,19 @@
               <br />
               <Checkbox v-model="checkbox"></Checkbox>
               <Checkbox v-model="checkbox">With text</Checkbox>
+            </div>
+          </div>
+          <div class="control">
+            <label class="control__label">Radio field</label>
+            <div class="control__elements">
+              value: {{ radio }}
+              <br />
+              <br />
+              <Radio v-model="radio" value=""></Radio>
+              <Radio v-model="radio" value="a">Option A</Radio>
+              <Radio v-model="radio" value="b">Option B</Radio>
+              <Radio v-model="radio" value="c">Option C</Radio>
+              <Radio v-model="radio" value="d" :disabled="true">Option D</Radio>
             </div>
           </div>
           <div class="control">
@@ -1116,6 +1499,7 @@ export default {
   data() {
     return {
       checkbox: false,
+      radio: 'a',
       switchValue: false,
       switchUnknown: 2,
       dropdown: '',
