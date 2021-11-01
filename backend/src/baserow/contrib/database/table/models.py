@@ -4,6 +4,7 @@ from typing import Dict, Any, Union
 from django.db import models
 from django.db.models import Q, F
 
+from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
 from baserow.contrib.database.fields.exceptions import (
     OrderByFieldNotFound,
     OrderByFieldNotPossible,
@@ -466,7 +467,12 @@ class Table(
             field_name = field.db_column
 
             if filtered and add_dependencies:
-                for f in field_type.get_field_dependencies_in_same_table(field):
+                direct_dependencies = (
+                    FieldDependencyHandler.get_direct_same_table_field_dependencies(
+                        field
+                    )
+                )
+                for f in direct_dependencies:
                     if f.name not in already_included_field_names:
                         fields.append(f)
                         already_included_field_names.add(f.name)

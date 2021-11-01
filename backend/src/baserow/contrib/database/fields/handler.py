@@ -395,7 +395,7 @@ class FieldHandler:
         )
         updated_fields = (
             FieldDependencyHandler.update_direct_dependencies_after_field_change(
-                field, set(field_values.keys()) == {"name"}
+                field, old_field, set(field_values.keys()) == {"name"}
             )
         )
 

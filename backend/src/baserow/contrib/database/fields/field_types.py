@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from copy import deepcopy
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint, sample
@@ -2104,7 +2105,7 @@ class FormulaFieldType(FieldType):
         # case but we still want to generate a model field so the model can be
         # used to do SQL operations like dropping fields etc.
         if not (instance.error or instance.trashed):
-            expression = self.to_baserow_formula_expression(instance, None)
+            expression = self.to_baserow_formula_expression(instance)
         else:
             expression = None
 
@@ -2175,18 +2176,13 @@ class FormulaFieldType(FieldType):
             connection, field_instance, to_field
         )
 
-    def get_field_dependencies_in_same_table(self, field):
-        return FormulaHandler.get_direct_same_table_field_dependencies(field)
-
     def to_baserow_formula_type(self, field: FormulaField) -> BaserowFormulaType:
         return FormulaHandler.construct_type_from_formula_field(field)
 
     def to_baserow_formula_expression(
-        self, field: FormulaField, already_typed_fields
+        self, field: FormulaField
     ) -> BaserowExpression[BaserowFormulaType]:
-        return FormulaHandler.lookup_formula_expression_from_db(
-            field, already_typed_fields
-        )
+        return FormulaHandler.lookup_formula_expression_from_db(field)
 
     def after_update(
         self,
@@ -2208,23 +2204,23 @@ class FormulaFieldType(FieldType):
 
     def after_direct_field_dependency_changed(
         self,
-        field_instance,
+        field_instance: FormulaField,
         changed_parent_field,
         old_changed_parent_field,
         rename_only=False,
     ):
-        old_formula = field_instance.formula
+        old_field = deepcopy(field_instance)
         if old_changed_parent_field is not None:
             old_parent_name = old_changed_parent_field.name
             new_parent_name = changed_parent_field.name
             if old_parent_name != new_parent_name:
                 field_instance.formula = (
                     FormulaHandler.rename_field_references_in_formula_string(
-                        old_formula, {old_parent_name: new_parent_name}
+                        old_field.formula, {old_parent_name: new_parent_name}
                     )
                 )
             if rename_only:
-                if old_formula != field_instance.formula:
+                if old_field.formula != field_instance.formula:
                     field_instance.save(retype_field=False)
                     return [field_instance]
                 else:

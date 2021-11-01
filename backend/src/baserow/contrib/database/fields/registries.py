@@ -714,16 +714,13 @@ class FieldType(
             f"A field of type {self.type} cannot be referenced in a Baserow formula."
         )
 
-    def to_baserow_formula_expression(self, field, already_typed_fields):
+    def to_baserow_formula_expression(self, field):
         """
         Should return a Typed Baserow Formula Expression to use when referencing the
         field in a formula.
 
         :param field: The specific instance of the field that a typed formula
             expression should be created for.
-        :param already_typed_fields: A collection of other fields which have already
-            had their typed expressions calculated which can be used to resolve any
-            recursive references.
         :return: A typed baserow formula expression which when evaluated represents a
             reference to field.
         """
@@ -733,18 +730,6 @@ class FieldType(
         return FormulaHandler.get_db_field_reference(
             field, self.to_baserow_formula_type(field)
         )
-
-    def get_field_dependencies_in_same_table(self, field):
-        """
-        Should return any fields that field depends on directly in the same table to
-        calculate its result when it is added to a model.
-
-        :param field: The specific instance of the field we want to know the direct
-            same table dependency fields for.
-        :return: A list of field instances.
-        """
-
-        return []
 
     def after_direct_field_dependency_changed(
         self,

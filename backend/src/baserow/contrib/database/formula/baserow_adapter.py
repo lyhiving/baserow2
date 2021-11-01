@@ -3,7 +3,6 @@ from typing import Set
 
 from django.db import connection
 
-from baserow.contrib.database.fields.registries import field_converter_registry
 from baserow.contrib.database.formula import (
     BaserowFunctionDefinition,
     BaserowFormulaType,
@@ -16,7 +15,6 @@ from baserow.contrib.database.formula.types.formula_types import (
 )
 from baserow.contrib.database.formula.types.typer import TypedBaserowFields
 from baserow.contrib.database.formula.types.visitors import FunctionsUsedVisitor
-from baserow.contrib.database.views.handler import ViewHandler
 
 
 def update_formula_field(typed_field):
@@ -34,6 +32,9 @@ def update_formula_field(typed_field):
     expression_type.persist_onto_formula_field(formula_field)
     formula_field.internal_formula = str(expression)
     if not original.same_as(formula_field):
+        # TODO
+        from baserow.contrib.database.views.handler import ViewHandler
+
         ViewHandler().field_type_changed(formula_field)
         if formula_field.pk:
             _recreate_field_if_required(
@@ -92,6 +93,8 @@ def _recreate_field_if_required(
 ):
     if _check_if_formula_type_change_requires_drop_recreate(old_field, new_type):
         model = table.get_model(fields=[new_formula_field], add_dependencies=False)
+        from baserow.contrib.database.fields.registries import field_converter_registry
+
         field_converter_registry.get("formula").alter_field(
             old_field,
             new_formula_field,

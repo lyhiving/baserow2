@@ -37,16 +37,17 @@ from baserow.contrib.database.formula.types.formula_types import (
 from baserow.contrib.database.table import models
 
 
-class TypedFieldDependencyNode:
+class TypedField:
     def __init__(
         self,
         typed_expression: BaserowExpression[BaserowFormulaType],
-        field_node: FieldDependencyNode,
         field,
     ):
         self.typed_expression = typed_expression
-        self.field_node = field_node
         self.field = field
+
+    def name(self):
+        return str(self.field.table.id) + "_" + self.field.name
 
 
 class TypedBaserowFields:
@@ -57,31 +58,16 @@ class TypedBaserowFields:
     """
 
     def __init__(self):
-        self.typed_fields: Dict[str, TypedFieldDependencyNode] = {}
-        self.fields_needing_values_refresh: List[TypedFieldDependencyNode] = []
-        self.fields_needing_save: List[TypedFieldDependencyNode] = []
+        self.typed_fields: Dict[str, TypedField] = {}
+        self.fields_needing_values_refresh: List[TypedField] = []
+        self.fields_needing_save: List[TypedField] = []
 
     def _unique_name_for_table_and_field_name(
         self, table: "models.Table", field_name: str
     ):
         return f"{str(table.id)}_{field_name}"
 
-    def _unique_name_for_node(
-        self, node: Union[TypedFieldDependencyNode, FieldDependencyNode]
-    ):
-        if isinstance(node, TypedFieldDependencyNode):
-            node = node.field_node
-        table = node.table
-        if node.is_reference_to_real_field():
-            return self._unique_name_for_table_and_field_name(table, node.field.name)
-        else:
-            return self._unique_name_for_table_and_field_name(
-                table, node.broken_reference_field_name
-            )
-
-    def add_typed_field_node(
-        self, typed_node: TypedFieldDependencyNode, values_refresh_needed=False
-    ):
+    def add_typed_field_node(self, typed_node: TypedField, values_refresh_needed=False):
         unique_name = self._unique_name_for_node(typed_node)
         if unique_name in self.typed_fields:
             raise Exception(f"Already have {unique_name}?")
@@ -131,7 +117,7 @@ def type_and_update_field(
             typed_formula_field_node, values_refresh_needed=True
         )
 
-    _fix_invalid_refs(field)
+    # _fix_invalid_refs(field)
 
     fields_needing_update = field.get_or_create_node().descendants(max_depth=1)
     for direct_descendant in fields_needing_update:
@@ -140,23 +126,6 @@ def type_and_update_field(
             already_typed_fields,
         )
     return already_typed_fields
-
-
-def _fix_invalid_refs(field):
-    try:
-        invalid_node_with_our_name = FieldDependencyNode.objects.get(
-            table=field.table,
-            field__isnull=True,
-            broken_reference_field_name=field.name,
-        )
-        new_children = FieldDependencyEdge.objects.filter(
-            parent=invalid_node_with_our_name
-        )
-        new_children.update(parent=field.get_or_create_node())
-        invalid_node_with_our_name.delete()
-        return True
-    except FieldDependencyNode.DoesNotExist:
-        return False
 
 
 def type_formula_field(
@@ -188,7 +157,7 @@ def type_formula_field(
             )
         )
 
-        return TypedFieldDependencyNode(
+        return TypedField(
             wrapped_typed_expr, formula_field.get_or_create_node(), formula_field
         )
     except RecursionError:
@@ -208,21 +177,46 @@ def type_and_optionally_graph_formula_field(
     already_typed_fields: TypedBaserowFields,
     update_graph: bool,
 ) -> BaserowExpression[BaserowFormulaType]:
-    field_node = formula_field.get_or_create_node()
-    if update_graph:
-        # Delete all existing dependencies this formula_field has as we are about
-        # to recreate them
-        parent_edges = FieldDependencyEdge.objects.filter(child=field_node)
-        # We might have deleted the last edge of an invalid reference. So check
-        # and delete it if so.
-        for edge in parent_edges.all():
-            if edge.parent.is_broken_reference_with_no_dependencies():
-                edge.parent.delete()
-        parent_edges.delete()
+    # Set field dependencies to
 
     return untyped_expression.accept(
         TypingAndGraphingVisitor(field_node, already_typed_fields, update_graph)
     )
+
+
+class FieldReferenceExtractingVisitor(BaserowFormulaASTVisitor[UnTyped, List[str]]):
+    def visit_field_reference(
+        self, field_reference: BaserowFieldReference[UnTyped]
+    ) -> List[str]:
+        return [field_reference.referenced_field_name]
+
+    def visit_string_literal(
+        self, string_literal: BaserowStringLiteral[UnTyped]
+    ) -> List[str]:
+        return []
+
+    def visit_function_call(
+        self, function_call: BaserowFunctionCall[UnTyped]
+    ) -> List[str]:
+        field_references: List[str] = []
+        for expr in function_call.args:
+            field_references.append(expr.accept(self))
+        return field_references
+
+    def visit_int_literal(
+        self, int_literal: BaserowIntegerLiteral[UnTyped]
+    ) -> List[str]:
+        return []
+
+    def visit_decimal_literal(
+        self, decimal_literal: BaserowDecimalLiteral[UnTyped]
+    ) -> List[str]:
+        return []
+
+    def visit_boolean_literal(
+        self, boolean_literal: BaserowBooleanLiteral[UnTyped]
+    ) -> List[str]:
+        return []
 
 
 class TypingAndGraphingVisitor(
@@ -232,17 +226,13 @@ class TypingAndGraphingVisitor(
         self,
         field_node_being_typed,
         already_typed_fields: TypedBaserowFields,
-        update_graph: bool,
     ):
         self.field_node_being_typed = field_node_being_typed
         self.already_typed_fields = already_typed_fields
-        self.update_graph = update_graph
 
     def visit_field_reference(
         self, field_reference: BaserowFieldReference[UnTyped]
     ) -> BaserowExpression[BaserowFormulaType]:
-
-        self._raise_if_self_reference(field_reference)
 
         typed_node = _calculate_expression_and_node_from_field_reference(
             self.field_node_being_typed.table,
@@ -250,31 +240,7 @@ class TypingAndGraphingVisitor(
             self.already_typed_fields,
         )
 
-        self._optionally_add_graph_dependency_raising_if_circular(typed_node)
-
         return typed_node.typed_expression
-
-    def _optionally_add_graph_dependency_raising_if_circular(
-        self, typed_node: TypedFieldDependencyNode
-    ):
-        referenced_field_dependency_node = typed_node.field_node
-        if (
-            self.field_node_being_typed
-            not in referenced_field_dependency_node.self_and_ancestors(
-                max_depth=settings.MAX_FIELD_REFERENCE_DEPTH
-            )
-        ):
-            if self.update_graph:
-                referenced_field_dependency_node.add_child(
-                    self.field_node_being_typed, disable_circular_check=True
-                )
-        else:
-            raise NoCircularReferencesError()
-
-    def _raise_if_self_reference(self, field_reference):
-        field_name = self.field_node_being_typed.field.name
-        if field_name == field_reference.referenced_field_name:
-            raise NoSelfReferencesError()
 
     def visit_string_literal(
         self, string_literal: BaserowStringLiteral[UnTyped]
@@ -315,7 +281,7 @@ class TypingAndGraphingVisitor(
 
 def _calculate_expression_and_node_from_field_reference(
     table, field_reference, already_typed_fields
-) -> TypedFieldDependencyNode:
+) -> TypedField:
     # TODO
     from baserow.contrib.database.fields.models import Field
 
@@ -325,7 +291,7 @@ def _calculate_expression_and_node_from_field_reference(
     if typed_field_node is None:
         try:
             typed_field_node = _lookup_expression_and_node_from_db(
-                already_typed_fields, referenced_field_name, table
+                referenced_field_name, table
             )
         except Field.DoesNotExist:
             typed_field_node = _construct_broken_reference_node(
@@ -336,32 +302,13 @@ def _calculate_expression_and_node_from_field_reference(
     return typed_field_node
 
 
-def _construct_broken_reference_node(field_reference, referenced_field_name, table):
-    node, _ = FieldDependencyNode.objects.get_or_create(
-        table=table,
-        broken_reference_field_name=referenced_field_name,
-    )
-    return TypedFieldDependencyNode(
-        field_reference.with_invalid_type(
-            f"references the deleted or unknown field "
-            f"{field_reference.referenced_field_name}"
-        ),
-        node,
-        None,
-    )
-
-
-def _lookup_expression_and_node_from_db(
-    already_typed_fields, referenced_field_name, table
-):
+def _lookup_expression_and_node_from_db(referenced_field_name, table):
     from baserow.contrib.database.fields.registries import field_type_registry
 
     referenced_field = table.field_set.get(name=referenced_field_name).specific
     field_type = field_type_registry.get_by_model(referenced_field)
-    expr = field_type.to_baserow_formula_expression(
-        referenced_field, already_typed_fields
-    )
-    typed_field_node = TypedFieldDependencyNode(
+    expr = field_type.to_baserow_formula_expression(referenced_field)
+    typed_field_node = TypedField(
         expr, referenced_field.get_or_create_node(), referenced_field
     )
     return typed_field_node

@@ -8,6 +8,7 @@ from baserow.contrib.database.fields.mixins import (
     DATE_TIME_FORMAT_CHOICES,
 )
 from baserow.contrib.database.formula import BASEROW_FORMULA_TYPE_CHOICES
+from baserow.contrib.database.formula.baserow_adapter import update_formula_field
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
@@ -299,8 +300,8 @@ class PhoneNumberField(Field):
 
 class FormulaField(Field):
     formula = models.TextField()
-    internal_formula = models.TextField(null=True, blank=True)
-    requires_refresh_after_insert = models.BooleanField(null=True, blank=True)
+    internal_formula = models.TextField()
+    requires_refresh_after_insert = models.BooleanField()
     old_formula_with_field_by_id = models.TextField(null=True, blank=True)
     error = models.TextField(null=True, blank=True)
 
