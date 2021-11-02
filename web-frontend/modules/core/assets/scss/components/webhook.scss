@@ -1,96 +1,300 @@
-.webhook-accordion {
-  background-color: $color-neutral-100;
-  border: 1px solid $color-neutral-200;
-  border-radius: 5px;
-  padding: 10px 15px;
+.webhook {
+  border: solid 1px $color-neutral-200;
+  border-radius: 6px;
+  margin: 20px 0;
+  overflow: hidden;
 }
 
-.webhook-accordion__list {
+.webhook__list {
   display: flex;
   flex-direction: column;
-
-  > div {
-    margin-bottom: 15px;
-  }
 }
 
-.webhook-accordion--open {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  border-bottom-width: 0;
-}
-
-.webhook-accordion--deactivated {
-  background-color: $color-neutral-200;
-  border: 1px solid $color-neutral-300;
-  color: $color-neutral-400;
-}
-
-.webhook-accordion__header {
+.webhook__head {
   display: flex;
   width: 100%;
-  font-size: 14px;
-}
-
-.webhook-accordion__header-column {
-  flex: 50%;
-}
-
-.webhook-accordion__header-name {
-  margin: 0;
-  color: $color-neutral-600;
-}
-
-.webhook-accordion__header-url-row {
-  display: flex;
-}
-
-.webhook-accordion__header-url {
-  margin-top: 0;
-  color: $color-neutral-400;
-}
-
-.webhook-accordion__header-details {
-  margin-top: 0;
-  margin-left: 5px;
-  color: $color-primary-400;
-  cursor: pointer;
-}
-
-.webhook-accordion__header-trigger-summary {
-  margin-top: 0;
-  color: $color-neutral-600;
-}
-
-.webhook-accordion__header-last-call {
-  margin-top: 0;
-  color: $color-neutral-400;
-}
-
-.webhook-accordion__body {
-  display: flex;
-  width: 100%;
-  font-size: 14px;
-  border: 1px solid $color-neutral-200;
+  background-color: $color-neutral-100;
   padding: 20px;
 }
 
-.webhook-form__button {
-  display: block;
-  padding: 12px;
-  border: 1px solid;
-  cursor: pointer;
-  border-radius: 3px;
+.webhook__head-left {
+  flex-basis: 50%;
+  min-width: 0;
 }
 
-.webhook-form__button--add {
-  background-color: $color-success-500;
-  color: $white;
-  border: 1px solid $color-success-500;
+.webhook__head-right {
+  flex-basis: 50%;
+  margin-left: 5%;
+  min-width: 0;
 }
 
-.webhook-form__button--remove {
-  background-color: $color-error-500;
-  color: $white;
-  border: 1px solid $color-error-500;
+.webhook__head-name {
+  @extend %ellipsis;
+
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 16px;
+  margin-bottom: 10px;
+}
+
+.webhook__head-details {
+  display: flex;
+}
+
+.webhook__head-details-target {
+  @extend %ellipsis;
+
+  color: $color-neutral-600;
+  font-size: 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.webhook__head-toggle {
+  flex: 0 0;
+  white-space: nowrap;
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+.webhook__head-toggle-icon {
+  margin-left: 4px;
+  font-size: 11px;
+}
+
+.webhook__head-trigger {
+  @extend %ellipsis;
+
+  font-size: 12px;
+  line-height: 16px;
+  margin-bottom: 10px;
+}
+
+.webhook__head-call {
+  display: flex;
+  color: $color-neutral-400;
+  font-size: 12px;
+}
+
+.webhook__head-date {
+  @extend %ellipsis;
+}
+
+.webhook__head-call-state {
+  flex: 0 0;
+  font-family: monospace;
+  white-space: nowrap;
+  margin-left: 10px;
+
+  &.webhook__head-call-state--ok {
+    color: $color-success-500;
+  }
+
+  &.webhook__head-call-state--error {
+    color: $color-error-500;
+  }
+}
+
+.webhook__body {
+  display: none;
+  padding: 20px;
+
+  .webhook--open & {
+    display: block;
+  }
+}
+
+.webhook__types {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 6px 0 0 24px;
+}
+
+.webhook__type {
+  flex: 0 0 33.33%;
+}
+
+.webhook__header {
+  position: relative;
+  display: flex;
+  width: 100%;
+  padding-right: 88px;
+
+  &:not(:last-child) {
+    margin-bottom: 10px;
+  }
+}
+
+.webhook__header-key {
+  flex-basis: 40%;
+  margin-right: 10px;
+}
+
+.webhook__header-value {
+  flex-basis: 60%;
+}
+
+.webhook__header-delete {
+  width: 32px;
+  padding: 0 0;
+
+  @include absolute(0, 0, 0, auto);
+}
+
+.webhook__header-add {
+  width: 32px;
+  padding: 0 0;
+
+  @include absolute(0, 42px, 0, auto);
+}
+
+.webhook__code-container {
+  position: relative;
+  padding: 10px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  background-color: $color-neutral-100;
+  overflow: auto;
+}
+
+.webhook__code-dropdown {
+  @include absolute(20px, 20px, auto, auto);
+}
+
+.webhook__code {
+  margin: 0;
+  line-height: 21px;
+  color: $color-primary-900;
+  font-size: 13px;
+  font-family: monospace;
+
+  &.webhook__code--small {
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+
+.webhook__call {
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.webhook__call-head {
+  // nothing
+}
+
+.webhook__call-name {
+  display: flex;
+  margin-bottom: 6px;
+  line-height: 16px;
+}
+
+.webhook__call-type {
+  white-space: nowrap;
+  font-weight: 600;
+  margin-right: 10px;
+}
+
+.webhook__call-target {
+  @extend %ellipsis;
+
+  min-width: 0;
+}
+
+.webhook__call-description {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.webhook__call-info {
+  @extend %ellipsis;
+
+  min-width: 0;
+  padding-top: 2px;
+  color: $color-neutral-700;
+  font-size: 12px;
+}
+
+.webhook__call-toggle {
+  display: flex;
+  flex: 0 0;
+  line-height: 16px;
+  text-align: center;
+  color: $color-neutral-600;
+  align-content: center;
+  margin-left: 16px;
+
+  &:hover {
+    color: $color-primary-900;
+    text-decoration: none;
+  }
+}
+
+.webhook__call-state {
+  font-family: monospace;
+  white-space: nowrap;
+  margin-right: 10px;
+
+  &.webhook__head-call-state--ok {
+    color: $color-success-500;
+  }
+
+  &.webhook__head-call-state--error {
+    color: $color-error-500;
+  }
+}
+
+.webhook__call-toggle-icon {
+  font-size: 14px;
+}
+
+.webhook__call-body {
+  display: none;
+  width: 100%;
+  padding: 16px 0 24px 0;
+  max-height: 280px;
+
+  .webhook__call--open & {
+    display: flex;
+  }
+}
+
+.webhook__call-body-content {
+  flex: 0 0 calc(50% - 8px);
+  min-width: 0;
+
+  &:not(:last-child) {
+    margin-right: 16px;
+  }
+}
+
+.webhook__call-body-label {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.webhook__test-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.webhook__test-state {
+  font-family: monospace;
+  white-space: nowrap;
+  text-align: right;
+
+  &.webhook__test-state--ok {
+    color: $color-success-500;
+  }
+
+  &.webhook__test-state--error {
+    color: $color-error-500;
+  }
 }

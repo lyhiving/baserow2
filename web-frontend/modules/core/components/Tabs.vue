@@ -1,13 +1,16 @@
 <template lang="html">
   <div>
-    <ul class="tabs__header">
+    <ul class="tabs">
       <li
         v-for="(tab, index) in tabs"
         :key="tab.title"
-        :class="{ 'tab--selected': index == selectedIndex }"
+        class="tabs_item"
+        :class="{ 'tabs__item--active': index == selectedIndex }"
         @click="selectTab(index)"
       >
-        {{ tab.title }}
+        <a href="#" class="tabs__link">
+          {{ tab.title }}
+        </a>
       </li>
     </ul>
     <slot></slot>

@@ -4,13 +4,13 @@
     <div class="style-guide__wrapper">
       <div class="style-guide">
         <div class="modal__box modal__box--tiny">
-          <div class="web-hook__test-title">Test web hook</div>
+          <div class="webhook__test-title">Test web hook</div>
           <div class="control">
             <div class="control__label">Request</div>
             <div class="control__elements">
-              <div class="web-hook__code-container">
+              <div class="webhook__code-container">
                 <pre
-                  class="web-hook__code web-hook__code--small"
+                  class="webhook__code webhook__code--small"
                 ><code>POST https://target-url.com/target-page
 Authorization: Some token
 Content-Type: application/json
@@ -26,14 +26,14 @@ Content-Type: application/json
           <div class="control">
             <div class="control__label">Response</div>
             <div class="control__elements">
-              <div class="web-hook__code-container">
+              <div class="webhook__code-container">
                 <pre
-                  class="web-hook__code web-hook__code--small"
+                  class="webhook__code webhook__code--small"
                 ><div class="loading"></div></pre>
               </div>
             </div>
           </div>
-          <div class="web-hook__test-state web-hook__test-state--error">
+          <div class="webhook__test-state webhook__test-state--error">
             404 NOT FOUND
           </div>
           <div class="actions">
@@ -55,43 +55,43 @@ Content-Type: application/json
               <i class="fas fa-plus"></i>
             </a>
           </div>
-          <div class="web-hook web-hook--open">
-            <div class="web-hook__head">
-              <div class="web-hook__head-left">
-                <div class="web-hook__head-name">
+          <div class="webhook webhook--open">
+            <div class="webhook__head">
+              <div class="webhook__head-left">
+                <div class="webhook__head-name">
                   Name of the web hook with a very long name
                 </div>
-                <div class="web-hook__head-details">
-                  <div class="web-hook__head-details-target">
+                <div class="webhook__head-details">
+                  <div class="webhook__head-details-target">
                     https://baserow.io/test-test/test-/test/te-test
                   </div>
-                  <a href="#" class="web-hook__head-toggle">
+                  <a href="#" class="webhook__head-toggle">
                     details
                     <i
-                      class="fas fa-chevron-down web-hook__head-toggle-icon"
+                      class="fas fa-chevron-down webhook__head-toggle-icon"
                     ></i>
                   </a>
                 </div>
               </div>
-              <div class="web-hook__head-right">
-                <div class="web-hook__head-trigger">
+              <div class="webhook__head-right">
+                <div class="webhook__head-trigger">
                   Triggers when a row is created that is very long and doesn't
                   fit
                 </div>
-                <div class="web-hook__head-call">
-                  <div class="web-hook__head-date">
+                <div class="webhook__head-call">
+                  <div class="webhook__head-date">
                     Last call: 2021-01-01 12:00
                   </div>
                   <span
                     class="
-                      web-hook__head-call-state web-hook__head-call-state--ok
+                      webhook__head-call-state webhook__head-call-state--ok
                     "
                     >200 OK</span
                   >
                 </div>
               </div>
             </div>
-            <div class="web-hook__body">
+            <div class="webhook__body">
               <ul class="tabs">
                 <li class="tabs__item">
                   <a href="#" class="tabs__link">Edit</a>
@@ -100,23 +100,21 @@ Content-Type: application/json
                   <a href="#" class="tabs__link">Call log</a>
                 </li>
               </ul>
-              <div class="web-hook__call web-hook__call--open">
-                <div class="web-hook__call-head">
-                  <div class="web-hook__call-name">
-                    <div class="web-hook__call-type">Row created</div>
-                    <div class="web-hook__call-target">
+              <div class="webhook__call webhook__call--open">
+                <div class="webhook__call-head">
+                  <div class="webhook__call-name">
+                    <div class="webhook__call-type">Row created</div>
+                    <div class="webhook__call-target">
                       https://target-url.com/target-page
                     </div>
                   </div>
-                  <div class="web-hook__call-description">
-                    <div class="web-hook__call-info">
+                  <div class="webhook__call-description">
+                    <div class="webhook__call-info">
                       POST - 2021-01-01 12:00:00
                     </div>
-                    <a href="#" class="web-hook__call-toggle">
+                    <a href="#" class="webhook__call-toggle">
                       <div
-                        class="
-                          web-hook__call-state web-hook__head-call-state--ok
-                        "
+                        class="webhook__call-state webhook__head-call-state--ok"
                       >
                         200 OK
                       </div>
@@ -124,12 +122,12 @@ Content-Type: application/json
                     </a>
                   </div>
                 </div>
-                <div class="web-hook__call-body">
-                  <div class="web-hook__call-body-content">
-                    <div class="web-hook__call-body-label">Request</div>
-                    <div class="web-hook__code-container">
+                <div class="webhook__call-body">
+                  <div class="webhook__call-body-content">
+                    <div class="webhook__call-body-label">Request</div>
+                    <div class="webhook__code-container">
                       <pre
-                        class="web-hook__code web-hook__code--small"
+                        class="webhook__code webhook__code--small"
                       ><code>POST https://target-url.com/target-page
 Authorization: Some token
 Content-Type: application/json
@@ -141,11 +139,11 @@ Content-Type: application/json
 }</code></pre>
                     </div>
                   </div>
-                  <div class="web-hook__call-body-content">
-                    <div class="web-hook__call-body-label">Response</div>
-                    <div class="web-hook__code-container">
+                  <div class="webhook__call-body-content">
+                    <div class="webhook__call-body-label">Response</div>
+                    <div class="webhook__code-container">
                       <pre
-                        class="web-hook__code web-hook__code--small"
+                        class="webhook__code webhook__code--small"
                       ><code>HTTP/2.0 404 NOT FOUND
 Connection: Keep-Alive
 Content-Type: text/html; charset=utf=8
@@ -158,22 +156,22 @@ Server: NGINX
                   </div>
                 </div>
               </div>
-              <div class="web-hook__call">
-                <div class="web-hook__call-head">
-                  <div class="web-hook__call-name">
-                    <div class="web-hook__call-type">Row created</div>
-                    <div class="web-hook__call-target">
+              <div class="webhook__call">
+                <div class="webhook__call-head">
+                  <div class="webhook__call-name">
+                    <div class="webhook__call-type">Row created</div>
+                    <div class="webhook__call-target">
                       https://target-url.com/target-page
                     </div>
                   </div>
-                  <div class="web-hook__call-description">
-                    <div class="web-hook__call-info">
+                  <div class="webhook__call-description">
+                    <div class="webhook__call-info">
                       POST - 2021-01-01 12:00:00
                     </div>
-                    <a href="#" class="web-hook__call-toggle">
+                    <a href="#" class="webhook__call-toggle">
                       <div
                         class="
-                          web-hook__call-state web-hook__head-call-state--error
+                          webhook__call-state webhook__head-call-state--error
                         "
                       >
                         400 NOT OK
@@ -198,43 +196,43 @@ Server: NGINX
               <i class="fas fa-plus"></i>
             </a>
           </div>
-          <div class="web-hook web-hook--open">
-            <div class="web-hook__head">
-              <div class="web-hook__head-left">
-                <div class="web-hook__head-name">
+          <div class="webhook webhook--open">
+            <div class="webhook__head">
+              <div class="webhook__head-left">
+                <div class="webhook__head-name">
                   Name of the web hook with a very long name
                 </div>
-                <div class="web-hook__head-details">
-                  <div class="web-hook__head-details-target">
+                <div class="webhook__head-details">
+                  <div class="webhook__head-details-target">
                     https://baserow.io/test-test/test-/test/te-test
                   </div>
-                  <a href="#" class="web-hook__head-toggle">
+                  <a href="#" class="webhook__head-toggle">
                     details
                     <i
-                      class="fas fa-chevron-down web-hook__head-toggle-icon"
+                      class="fas fa-chevron-down webhook__head-toggle-icon"
                     ></i>
                   </a>
                 </div>
               </div>
-              <div class="web-hook__head-right">
-                <div class="web-hook__head-trigger">
+              <div class="webhook__head-right">
+                <div class="webhook__head-trigger">
                   Triggers when a row is created that is very long and doesn't
                   fit
                 </div>
-                <div class="web-hook__head-call">
-                  <div class="web-hook__head-date">
+                <div class="webhook__head-call">
+                  <div class="webhook__head-date">
                     Last call: 2021-01-01 12:00
                   </div>
                   <span
                     class="
-                      web-hook__head-call-state web-hook__head-call-state--ok
+                      webhook__head-call-state webhook__head-call-state--ok
                     "
                     >200 OK</span
                   >
                 </div>
               </div>
             </div>
-            <div class="web-hook__body">
+            <div class="webhook__body">
               <ul class="tabs">
                 <li class="tabs__item tabs__item--active">
                   <a href="#" class="tabs__link">Edit</a>
@@ -284,14 +282,14 @@ Server: NGINX
                   <Radio v-model="radio" value="custom">
                     Let me select individual events
                   </Radio>
-                  <div class="web-hook__types">
-                    <Checkbox class="web-hook__type"
+                  <div class="webhook__types">
+                    <Checkbox class="webhook__type"
                       >When a row is created</Checkbox
                     >
-                    <Checkbox class="web-hook__type"
+                    <Checkbox class="webhook__type"
                       >When a row is updated</Checkbox
                     >
-                    <Checkbox class="web-hook__type"
+                    <Checkbox class="webhook__type"
                       >When a row is deleted</Checkbox
                     >
                   </div>
@@ -300,29 +298,29 @@ Server: NGINX
               <div class="control">
                 <div class="control__label">Additional headers</div>
                 <div class="control__elements">
-                  <div class="web-hook__header">
+                  <div class="webhook__header">
                     <input
-                      class="input web-hook__header-key"
+                      class="input webhook__header-key"
                       placeholder="Name"
                     />
                     <input
-                      class="input web-hook__header-value"
+                      class="input webhook__header-value"
                       placeholder="Value"
                     />
                     <a
                       href="#"
-                      class="button button--error web-hook__header-delete"
+                      class="button button--error webhook__header-delete"
                     >
                       <i class="fas fa-trash button__icon"></i>
                     </a>
                   </div>
-                  <div class="web-hook__header">
+                  <div class="webhook__header">
                     <input
-                      class="input web-hook__header-key"
+                      class="input webhook__header-key"
                       placeholder="Name"
                     />
                     <input
-                      class="input web-hook__header-value"
+                      class="input webhook__header-value"
                       placeholder="Value"
                     />
                   </div>
@@ -331,8 +329,8 @@ Server: NGINX
               <div class="control">
                 <div class="control__label">Example payload</div>
                 <div class="control__elements">
-                  <div class="web-hook__code-container">
-                    <div class="web-hook__code-dropdown">
+                  <div class="webhook__code-container">
+                    <div class="webhook__code-dropdown">
                       <Dropdown value="created" class="dropdown--floating-left">
                         <DropdownItem
                           name="When a row is created"
@@ -348,7 +346,7 @@ Server: NGINX
                         ></DropdownItem>
                       </Dropdown>
                     </div>
-                    <pre class="web-hook__code"><code>{
+                    <pre class="webhook__code"><code>{
     “table_id”: 1,
     “row_id”: 1,
     “type”: “row_created”,

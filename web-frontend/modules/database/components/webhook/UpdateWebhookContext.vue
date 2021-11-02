@@ -5,14 +5,17 @@
     :default-values="webhook"
     @submitted="submit"
   >
-    <div class="context__form-actions">
-      <button
-        class="button"
-        :class="{ 'button--loading': loading }"
-        :disabled="loading"
-      >
-        {{ $t('action.change') }}
-      </button>
+    <div class="actions">
+      <a href="#" class="button button--ghost">Trigger test webhook</a>
+      <div class="align-right">
+        <button
+          class="button button--primary"
+          :class="{ 'button--loading': loading }"
+          :disabled="loading"
+        >
+          Save
+        </button>
+      </div>
     </div>
   </webhook-form>
 </template>
