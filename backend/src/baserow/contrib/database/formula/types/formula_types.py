@@ -340,23 +340,6 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
         return f"{date_or_datetime}({self.date_format}{optional_time_format})"
 
 
-def construct_type_from_formula_field(
-    formula_field: "models.FormulaField",
-) -> BaserowFormulaType:
-    """
-    Gets the BaserowFormulaType the provided formula field currently has. This will
-    vary depending on the formula of the field.
-
-    :param formula_field: An instance of a formula field.
-    :return: The BaserowFormulaType of the formula field instance.
-    """
-
-    for formula_type in BASEROW_FORMULA_TYPES:
-        if formula_field.formula_type == formula_type.type:
-            return formula_type.construct_type_from_formula_field(formula_field)
-    raise UnknownFormulaType(formula_field.formula_type)
-
-
 BASEROW_FORMULA_TYPES = [
     BaserowFormulaInvalidType,
     BaserowFormulaTextType,

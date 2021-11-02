@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint, sample
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Optional
 
 import pytz
 from dateutil import parser
@@ -2068,9 +2068,7 @@ class FormulaFieldType(FieldType):
 
             field_type = field_type_registry.get_by_model(field.specific_class)
             if field_type.type == FormulaFieldType.type:
-                formula_type = FormulaHandler.construct_type_from_formula_field(
-                    field.specific
-                )
+                formula_type = field.specific.calculated_formula_type
                 return formula_type.type in compatible_formula_types
             else:
                 return False
@@ -2177,36 +2175,19 @@ class FormulaFieldType(FieldType):
         )
 
     def to_baserow_formula_type(self, field: FormulaField) -> BaserowFormulaType:
-        return FormulaHandler.construct_type_from_formula_field(field)
+        return field.constructed_formula_type
 
     def to_baserow_formula_expression(
         self, field: FormulaField
     ) -> BaserowExpression[BaserowFormulaType]:
-        return FormulaHandler.lookup_formula_expression_from_db(field)
-
-    def after_update(
-        self,
-        from_field,
-        to_field,
-        from_model,
-        to_model,
-        user,
-        connection,
-        altered_column,
-        before,
-    ):
-        if not (to_field.error or to_field.trashed):
-            expr = baserow_expression_to_django_expression(
-                typed_formula_field_node.typed_expression, to_model, None
-            )
-            # todo add an update cacher
-            to_model.objects_and_trash.update(**{self.db_column: expr})
+        return field.typed_expression
 
     def after_direct_field_dependency_changed(
         self,
         field_instance: FormulaField,
         changed_parent_field,
         old_changed_parent_field,
+        updated_fields,
         rename_only=False,
     ):
         old_field = deepcopy(field_instance)
@@ -2222,15 +2203,14 @@ class FormulaFieldType(FieldType):
             if rename_only:
                 if old_field.formula != field_instance.formula:
                     field_instance.save(retype_field=False)
-                    return [field_instance]
-                else:
-                    return []
+                    updated_fields.add_field(field_instance)
+                return
 
         field_instance.save()
-        updated_fields = (
-            FieldDependencyHandler.update_direct_dependencies_after_field_change(
-                field_instance, old_field
-            )
+        updated_fields.add_field(field_instance, old_field)
+        FieldDependencyHandler.update_field_after_change(
+            field_instance, None, updated_fields=updated_fields
         )
-        updated_fields.insert(0, field_instance)
-        return updated_fields
+
+    def get_direct_field_name_dependencies(self, field_instance) -> Optional[List[str]]:
+        return FormulaHandler.get_direct_field_name_dependencies(field_instance)

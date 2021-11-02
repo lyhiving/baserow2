@@ -1,6 +1,6 @@
-from typing import Dict, Optional, List, Union
+from typing import List
 
-from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 
 from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
@@ -12,18 +12,10 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowBooleanLiteral,
 )
 from baserow.contrib.database.formula.ast.visitors import BaserowFormulaASTVisitor
-from baserow.contrib.database.formula.models import (
-    FieldDependencyEdge,
-    FieldDependencyNode,
-)
 from baserow.contrib.database.formula.parser.ast_mapper import (
     raw_formula_to_untyped_expression,
 )
 from baserow.contrib.database.formula.parser.exceptions import MaximumFormulaSizeError
-from baserow.contrib.database.formula.types.exceptions import (
-    NoCircularReferencesError,
-    NoSelfReferencesError,
-)
 from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaType,
     UnTyped,
@@ -34,7 +26,6 @@ from baserow.contrib.database.formula.types.formula_types import (
     BaserowFormulaNumberType,
     BaserowFormulaBooleanType,
 )
-from baserow.contrib.database.table import models
 
 
 class TypedField:
@@ -50,104 +41,25 @@ class TypedField:
         return str(self.field.table.id) + "_" + self.field.name
 
 
-class TypedBaserowFields:
-    """
-    A collection of Fields which have been typed. Some of the fields may need a values
-    refresh due to a change in a dependant field which can be triggered by calling
-    refresh_fields.
-    """
-
-    def __init__(self):
-        self.typed_fields: Dict[str, TypedField] = {}
-        self.fields_needing_values_refresh: List[TypedField] = []
-        self.fields_needing_save: List[TypedField] = []
-
-    def _unique_name_for_table_and_field_name(
-        self, table: "models.Table", field_name: str
-    ):
-        return f"{str(table.id)}_{field_name}"
-
-    def add_typed_field_node(self, typed_node: TypedField, values_refresh_needed=False):
-        unique_name = self._unique_name_for_node(typed_node)
-        if unique_name in self.typed_fields:
-            raise Exception(f"Already have {unique_name}?")
-        self.typed_fields[unique_name] = typed_node
-        if values_refresh_needed:
-            self.fields_needing_values_refresh.append(typed_node)
-
-    def updated_fields(self, exclude_field=None):
-        return [
-            typed_field.field
-            for typed_field in self.fields_needing_values_refresh
-            if exclude_field is not None and typed_field.field != exclude_field
-        ]
-
-    def refresh_fields(self, starting_field):
-        fields = self.fields_needing_values_refresh
-
-    def get_field(self, table: "models.Table", field_name: str):
-        unique_name = self._unique_name_for_table_and_field_name(table, field_name)
-        try:
-            return self.typed_fields[unique_name]
-        except KeyError:
-            return None
-
-    def already_has_field(self, field):
-        return (
-            self._unique_name_for_node(field.get_or_create_node()) in self.typed_fields
-        )
-
-
-def type_and_update_field(
-    field,
-    already_typed_fields: Optional[TypedBaserowFields] = None,
-):
-    from baserow.contrib.database.fields.registries import field_type_registry
-
-    if already_typed_fields is None:
-        already_typed_fields = TypedBaserowFields()
-
-    if already_typed_fields.already_has_field(field):
-        return
-
-    field_type = field_type_registry.get_by_model(field)
-    if field_type.type == "formula":
-        typed_formula_field_node = type_formula_field(field, already_typed_fields, True)
-        already_typed_fields.add_typed_field_node(
-            typed_formula_field_node, values_refresh_needed=True
-        )
-
-    # _fix_invalid_refs(field)
-
-    fields_needing_update = field.get_or_create_node().descendants(max_depth=1)
-    for direct_descendant in fields_needing_update:
-        type_and_update_field(
-            direct_descendant.field.specific,
-            already_typed_fields,
-        )
-    return already_typed_fields
-
-
 def type_formula_field(
     formula_field,
-    already_typed_fields: TypedBaserowFields,
-    update_graph: bool,
 ):
     try:
         untyped_expression = raw_formula_to_untyped_expression(formula_field.formula)
 
-        typed_expr = type_and_optionally_graph_formula_field(
-            formula_field, untyped_expression, already_typed_fields, update_graph
+        typed_expression = untyped_expression.accept(
+            FormulaTypingVisitor(formula_field)
         )
 
+        expression_type = typed_expression.expression_type
         merged_expression_type = (
-            typed_expr.expression_type.new_type_with_user_and_calculated_options_merged(
+            expression_type.new_type_with_user_and_calculated_options_merged(
                 formula_field
             )
         )
 
         # Take into account any user set formatting options on this formula field.
-        typed_expr_merged_with_user_options = typed_expr.with_type(
+        typed_expr_merged_with_user_options = typed_expression.with_type(
             merged_expression_type
         )
 
@@ -157,31 +69,9 @@ def type_formula_field(
             )
         )
 
-        return TypedField(
-            wrapped_typed_expr, formula_field.get_or_create_node(), formula_field
-        )
+        return TypedField(wrapped_typed_expr, formula_field)
     except RecursionError:
         raise MaximumFormulaSizeError()
-
-
-def type_and_update_fields(fields):
-    typed_fields = TypedBaserowFields()
-    for f in fields:
-        type_and_update_field(f, typed_fields)
-    return typed_fields
-
-
-def type_and_optionally_graph_formula_field(
-    formula_field,
-    untyped_expression: BaserowExpression[UnTyped],
-    already_typed_fields: TypedBaserowFields,
-    update_graph: bool,
-) -> BaserowExpression[BaserowFormulaType]:
-    # Set field dependencies to
-
-    return untyped_expression.accept(
-        TypingAndGraphingVisitor(field_node, already_typed_fields, update_graph)
-    )
 
 
 class FieldReferenceExtractingVisitor(BaserowFormulaASTVisitor[UnTyped, List[str]]):
@@ -219,28 +109,32 @@ class FieldReferenceExtractingVisitor(BaserowFormulaASTVisitor[UnTyped, List[str
         return []
 
 
-class TypingAndGraphingVisitor(
+class FormulaTypingVisitor(
     BaserowFormulaASTVisitor[UnTyped, BaserowExpression[BaserowFormulaType]]
 ):
     def __init__(
         self,
-        field_node_being_typed,
-        already_typed_fields: TypedBaserowFields,
+        field_being_typed,
     ):
-        self.field_node_being_typed = field_node_being_typed
-        self.already_typed_fields = already_typed_fields
+        self.field_being_typed = field_being_typed
 
     def visit_field_reference(
         self, field_reference: BaserowFieldReference[UnTyped]
     ) -> BaserowExpression[BaserowFormulaType]:
 
-        typed_node = _calculate_expression_and_node_from_field_reference(
-            self.field_node_being_typed.table,
-            field_reference,
-            self.already_typed_fields,
-        )
+        referenced_field_name = field_reference.referenced_field_name
+        from baserow.contrib.database.fields.registries import field_type_registry
 
-        return typed_node.typed_expression
+        try:
+            referenced_field = self.field_being_typed.table.field_set.get(
+                name=referenced_field_name
+            ).specific
+            field_type = field_type_registry.get_by_model(referenced_field)
+            return field_type.to_baserow_formula_expression(referenced_field)
+        except ObjectDoesNotExist:
+            return field_reference.with_invalid_type(
+                f"unknown field {field_reference.referenced_field_name}"
+            )
 
     def visit_string_literal(
         self, string_literal: BaserowStringLiteral[UnTyped]
@@ -277,38 +171,3 @@ class TypingAndGraphingVisitor(
         self, boolean_literal: BaserowBooleanLiteral[UnTyped]
     ) -> BaserowExpression[BaserowFormulaType]:
         return boolean_literal.with_valid_type(BaserowFormulaBooleanType())
-
-
-def _calculate_expression_and_node_from_field_reference(
-    table, field_reference, already_typed_fields
-) -> TypedField:
-    # TODO
-    from baserow.contrib.database.fields.models import Field
-
-    referenced_field_name = field_reference.referenced_field_name
-    typed_field_node = already_typed_fields.get_field(table, referenced_field_name)
-
-    if typed_field_node is None:
-        try:
-            typed_field_node = _lookup_expression_and_node_from_db(
-                referenced_field_name, table
-            )
-        except Field.DoesNotExist:
-            typed_field_node = _construct_broken_reference_node(
-                field_reference, referenced_field_name, table
-            )
-        already_typed_fields.add_typed_field_node(typed_field_node)
-
-    return typed_field_node
-
-
-def _lookup_expression_and_node_from_db(referenced_field_name, table):
-    from baserow.contrib.database.fields.registries import field_type_registry
-
-    referenced_field = table.field_set.get(name=referenced_field_name).specific
-    field_type = field_type_registry.get_by_model(referenced_field)
-    expr = field_type.to_baserow_formula_expression(referenced_field)
-    typed_field_node = TypedField(
-        expr, referenced_field.get_or_create_node(), referenced_field
-    )
-    return typed_field_node

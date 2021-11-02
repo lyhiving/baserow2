@@ -1,5 +1,9 @@
+from copy import deepcopy
+from typing import Set
+
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.utils.functional import cached_property
 
 from baserow.contrib.database.fields.mixins import (
     BaseDateMixin,
@@ -7,16 +11,29 @@ from baserow.contrib.database.fields.mixins import (
     DATE_FORMAT_CHOICES,
     DATE_TIME_FORMAT_CHOICES,
 )
-from baserow.contrib.database.formula import BASEROW_FORMULA_TYPE_CHOICES
-from baserow.contrib.database.formula.baserow_adapter import update_formula_field
+from baserow.contrib.database.formula import (
+    BASEROW_FORMULA_TYPE_CHOICES,
+    FormulaHandler,
+    BaserowFunctionDefinition,
+)
+from baserow.contrib.database.formula.baserow_adapter import (
+    update_formula_field,
+    _recreate_field_if_required,
+)
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
 from baserow.contrib.database.formula.models import FieldDependencyNode
+from baserow.contrib.database.formula.parser.ast_mapper import (
+    raw_formula_to_untyped_expression,
+)
+from baserow.contrib.database.formula.types.exceptions import UnknownFormulaType
+from baserow.contrib.database.formula.types.formula_types import BASEROW_FORMULA_TYPES
 from baserow.contrib.database.formula.types.typer import (
     type_formula_field,
     TypedBaserowFields,
 )
+from baserow.contrib.database.formula.types.visitors import FunctionsUsedVisitor
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
 from baserow.core.mixins import (
     OrderableMixin,
@@ -344,16 +361,34 @@ class FormulaField(Field):
             self.retype_and_update(already_typed_fields)
         super().save(*args, **kwargs)
 
-    def retype_and_update(self, already_typed_fields):
-        typed_formula_field_node = type_formula_field(self, already_typed_fields, True)
-        update_formula_field(typed_formula_field_node)
-        model = self.table.get_model()
-        if not (self.error or self.trashed):
-            expr = baserow_expression_to_django_expression(
-                typed_formula_field_node.typed_expression, model, None
-            )
-            # todo add an update cacher
-            model.objects_and_trash.update(**{self.db_column: expr})
+    @cached_property
+    def typed_expression(self):
+        untyped_internal_expr = raw_formula_to_untyped_expression(self.internal_formula)
+        return untyped_internal_expr.with_type(self.constructed_formula_type)
+
+    @cached_property
+    def constructed_formula_type(self):
+        for formula_type in BASEROW_FORMULA_TYPES:
+            if self.formula_type == formula_type.type:
+                return formula_type.construct_type_from_formula_field(self)
+        raise UnknownFormulaType(self.formula_type)
+
+    def retype_and_update(self):
+        typed_formula_field = type_formula_field(self)
+        expression = typed_formula_field.typed_expression
+        expression_type = expression.expression_type
+        expression_type.raise_if_invalid()
+        functions_used: Set[BaserowFunctionDefinition] = expression.accept(
+            FunctionsUsedVisitor()
+        )
+        self.requires_refresh_after_insert = any(
+            f.requires_refresh_after_insert for f in functions_used
+        )
+        expression_type.persist_onto_formula_field(self)
+        self.internal_formula = str(expression)
+        # Update the cached properties
+        setattr(self, "typed_expression", expression)
+        setattr(self, "constructed_formula_type", expression_type)
 
     def same_as(self, other):
         return (

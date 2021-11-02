@@ -10,9 +10,6 @@ from baserow.contrib.database.formula import (
 from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_django_expression,
 )
-from baserow.contrib.database.formula.types.formula_types import (
-    construct_type_from_formula_field,
-)
 from baserow.contrib.database.formula.types.typer import TypedBaserowFields
 from baserow.contrib.database.formula.types.visitors import FunctionsUsedVisitor
 
@@ -76,32 +73,3 @@ def _refresh_field_values(current_table, latest_table_query, model_cache, typed_
     if expr is not None and not (field.error or field.trashed):
         latest_table_query[field.db_column] = expr
     return current_table, latest_table_query
-
-
-def _check_if_formula_type_change_requires_drop_recreate(
-    old_formula_field, new_type: BaserowFormulaType
-):
-    old_type = construct_type_from_formula_field(old_formula_field)
-    return new_type.should_recreate_when_old_type_was(old_type)
-
-
-def _recreate_field_if_required(
-    table: "models.Table",
-    old_field,
-    new_type: BaserowFormulaType,
-    new_formula_field,
-):
-    if _check_if_formula_type_change_requires_drop_recreate(old_field, new_type):
-        model = table.get_model(fields=[new_formula_field], add_dependencies=False)
-        from baserow.contrib.database.fields.registries import field_converter_registry
-
-        field_converter_registry.get("formula").alter_field(
-            old_field,
-            new_formula_field,
-            model,
-            model,
-            model._meta.get_field(old_field.db_column),
-            model._meta.get_field(new_formula_field.db_column),
-            None,
-            connection,
-        )

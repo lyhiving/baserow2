@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 
 from django.db.models import Q
 
@@ -736,6 +736,7 @@ class FieldType(
         field_instance,
         changed_parent_field,
         old_changed_parent_field,
+        update_collector,
         rename_only=False,
     ):
         """
@@ -762,7 +763,10 @@ class FieldType(
         :rtype: List[Field]
         """
 
-        return []
+        return None
+
+    def get_direct_field_name_dependencies(self, field_instance) -> Optional[List[str]]:
+        return None
 
 
 class FieldTypeRegistry(

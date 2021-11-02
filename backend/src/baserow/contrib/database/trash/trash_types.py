@@ -2,6 +2,7 @@ from typing import Optional, Any, List
 
 from django.db import connection
 
+from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
@@ -16,7 +17,6 @@ from baserow.core.trash.registries import TrashableItemType
 
 
 class TableTrashableItemType(TrashableItemType):
-
     type = "table"
     model_class = Table
 
@@ -69,7 +69,6 @@ class TableTrashableItemType(TrashableItemType):
 
 
 class FieldTrashableItemType(TrashableItemType):
-
     type = "field"
     model_class = Field
 
@@ -92,14 +91,18 @@ class FieldTrashableItemType(TrashableItemType):
         trashed_item.name = trashed_item.name
         trashed_item.trashed = False
         trashed_item.save()
-        typed_fields = FormulaHandler.field_created_or_updated(trashed_item)
+        FieldDependencyHandler.setup_field_dependencies(trashed_item)
+        updated_fields = (
+            FieldDependencyHandler.update_direct_dependencies_after_field_change(
+                trashed_item, None
+            )
+        )
         field_restored.send(
             self,
             field=trashed_item,
-            related_fields=typed_fields.updated_fields(exclude_field=trashed_item),
+            related_fields=updated_fields,
             user=None,
         )
-        typed_fields.refresh_fields()
 
     def permanently_delete_item(
         self,
@@ -146,7 +149,6 @@ class FieldTrashableItemType(TrashableItemType):
 
 
 class RowTrashableItemType(TrashableItemType):
-
     type = "row"
     model_class = GeneratedTableModel
 

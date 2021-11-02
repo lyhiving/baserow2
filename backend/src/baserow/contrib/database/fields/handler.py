@@ -393,21 +393,20 @@ class FieldHandler:
             altered_column,
             before,
         )
-        updated_fields = (
-            FieldDependencyHandler.update_direct_dependencies_after_field_change(
-                field, old_field, set(field_values.keys()) == {"name"}
-            )
+        updated_fields = FieldDependencyHandler.update_field_after_change(
+            field, old_field, set(field_values.keys()) == {"name"}
         )
 
-        field_updated.send(
-            self,
-            field=field,
-            related_fields=updated_fields,
-            user=user,
-        )
+        for table_id, fields in updated_fields.updated_fields_per_table:
+            field_updated.send(
+                self,
+                field=fields[0],
+                related_fields=fields[1:],
+                user=user,
+            )
 
         if return_updated_fields:
-            return field, updated_fields
+            return field, updated_fields.for_table(field.table)
         else:
             return field
 
@@ -436,9 +435,7 @@ class FieldHandler:
             )
 
         field = field.specific
-        updated_fields = FieldDependencyHandler.field_deleted(
-            field, lambda: TrashHandler.trash(user, group, field.table.database, field)
-        )
+        FieldDependencyHandler.trash_and_update_dependencies(user, group, field)
         field_deleted.send(
             self,
             field_id=field.id,
