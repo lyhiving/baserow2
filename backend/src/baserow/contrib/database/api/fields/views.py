@@ -51,7 +51,7 @@ from .serializers import (
     FieldSerializerWithRelatedFields,
     RelatedFieldsSerializer,
 )
-from ...fields.dependencies.exceptions import (
+from baserow.contrib.database.fields.dependencies.exceptions import (
     SelfReferenceFieldDependencyError,
     CircularFieldDependencyError,
 )

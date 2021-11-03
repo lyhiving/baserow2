@@ -8,7 +8,6 @@
   env variable. If using MEDIA_PORT you now need to set MEDIA_URL also.
 * **Breaking Change**: Baserow's `docker-compose.yml` container names have changed to
   no longer be hardcoded to prevent naming clashes.
-* Deprecate internal formula field function field_by_id.
 * Added a licensing system for the premium version.
 * Fixed bug where it was possible to create duplicate trash entries. 
 * Fixed propType validation error when converting from a date field to a boolean field.

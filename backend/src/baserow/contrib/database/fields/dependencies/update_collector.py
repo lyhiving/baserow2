@@ -4,26 +4,6 @@ from typing import Optional
 from django.core.exceptions import ObjectDoesNotExist
 
 
-class LookupFieldByIdCache:
-    def __init__(self):
-        self.cached_field_by_id = {}
-
-    def cache_field(self, field):
-        if not field.trashed:
-            self.cached_field_by_id[field.id] = field
-
-    def lookup(self, table, field_name: str):
-        try:
-            return self.cached_field_by_name_per_table[table.id][field_name]
-        except KeyError:
-            try:
-                field = table.field_set.get(name=field_name).specific
-                self.cache_field(field)
-                return field
-            except ObjectDoesNotExist:
-                return None
-
-
 class LookupFieldByNameCache:
     def __init__(self, existing_cache: Optional["LookupFieldByNameCache"] = None):
         if existing_cache is not None:
