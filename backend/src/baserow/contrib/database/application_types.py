@@ -192,9 +192,7 @@ class DatabaseApplicationType(ApplicationType):
             # We want to insert the rows in bulk because there could potentially be
             # hundreds of thousands of rows in there and this will result in better
             # performance.
-            print("bulk creating")
             model.objects.bulk_create(rows_to_be_inserted)
-            print("done bulking")
 
             # When the rows are inserted we keep the provide the old ids and because of
             # that the auto increment is still set at `1`. This needs to be set to the
