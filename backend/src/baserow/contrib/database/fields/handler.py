@@ -196,7 +196,7 @@ class FieldHandler:
             table=table, order=last_order, primary=primary, **field_values
         )
         field_lookup_cache = LookupFieldByNameCache()
-        instance.save(field_lookup_cache=field_lookup_cache)
+        instance.save(field_lookup_cache=field_lookup_cache, raise_if_invalid=True)
 
         # Add the field to the table schema.
         with connection.schema_editor() as schema_editor:
@@ -295,7 +295,7 @@ class FieldHandler:
 
         field = set_allowed_attrs(field_values, allowed_fields, field)
         field_lookup_cache = LookupFieldByNameCache()
-        field.save(field_lookup_cache=field_lookup_cache)
+        field.save(field_lookup_cache=field_lookup_cache, raise_if_invalid=True)
         # If no converter is found we are going to convert to field using the
         # lenient schema editor which will alter the field's type and set the data
         # value to null if it can't be converted.
@@ -625,7 +625,7 @@ class FieldHandler:
             field.name = field.name
             field.trashed = False
             field_lookup_cache = LookupFieldByNameCache()
-            field.save(field_lookup_cache=field_lookup_cache, raise_if_invalid=False)
+            field.save(field_lookup_cache=field_lookup_cache)
 
             updated_fields = FieldDependencyHandler.update_field_dependency_graph(
                 field, None, field_lookup_cache=field_lookup_cache

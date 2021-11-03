@@ -2206,7 +2206,7 @@ class FormulaFieldType(FieldType):
                 updated_fields.add_field(field_instance, old_field)
                 return None, None
 
-        field_instance.save(raise_if_invalid=False, field_lookup_cache=updated_fields)
+        field_instance.save(field_lookup_cache=updated_fields)
         return field_instance, old_field
 
     def get_direct_field_name_dependencies(self, field_instance) -> Optional[List[str]]:

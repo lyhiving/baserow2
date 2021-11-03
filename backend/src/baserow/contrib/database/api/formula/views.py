@@ -90,9 +90,7 @@ class TypeFormulaView(APIView):
         field = field.specific
         field.formula = data["formula"]
         field_lookup_cache = LookupFieldByNameCache()
-        field.recalculate_internal_fields(
-            raise_if_invalid=False, field_lookup_cache=field_lookup_cache
-        )
+        field.recalculate_internal_fields(field_lookup_cache=field_lookup_cache)
         FieldDependencyHandler.raise_if_any_circular_references(
             field, field_lookup_cache
         )

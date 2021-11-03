@@ -549,7 +549,7 @@ class FieldType(
             else []
         )
         field = self.model_class(table=table, **serialized_copy)
-        field.save(raise_if_invalid=False)
+        field.save()
 
         id_mapping["database_fields"][field_id] = field.id
 

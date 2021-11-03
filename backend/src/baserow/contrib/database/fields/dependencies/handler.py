@@ -118,6 +118,7 @@ def _get_direct_descendants_and_break_node(field):
         children = [child for child in node.children.all()]
         node.field = None
         node.broken_reference_field_name = field.name
+        FieldDependencyEdge.objects.filter(child=node).delete()
         node.save()
     else:
         children = []

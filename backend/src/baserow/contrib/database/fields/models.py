@@ -354,7 +354,7 @@ class FormulaField(Field):
         return formula_type.construct_type_from_formula_field(self)
 
     def recalculate_internal_fields(
-        self, raise_if_invalid=True, field_lookup_cache=None
+        self, raise_if_invalid=False, field_lookup_cache=None
     ):
         if hasattr(self, "cached_untyped_expression"):
             # noinspection PyPropertyAccess
@@ -377,7 +377,7 @@ class FormulaField(Field):
     def save(self, *args, **kwargs):
         recalculate = kwargs.pop("recalculate", not self.trashed)
         field_lookup_cache = kwargs.pop("field_lookup_cache", None)
-        raise_if_invalid = kwargs.pop("raise_if_invalid", True)
+        raise_if_invalid = kwargs.pop("raise_if_invalid", False)
         if recalculate:
             self.recalculate_internal_fields(
                 field_lookup_cache=field_lookup_cache, raise_if_invalid=raise_if_invalid
