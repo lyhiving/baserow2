@@ -6,8 +6,6 @@ from baserow.contrib.database.fields.dependencies.handler import FieldDependency
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
-from baserow.contrib.database.fields.signals import field_restored
-from baserow.contrib.database.formula.handler import FormulaHandler
 from baserow.contrib.database.rows.signals import row_created
 from baserow.contrib.database.table.models import Table, GeneratedTableModel
 from baserow.contrib.database.table.signals import table_created
@@ -79,30 +77,7 @@ class FieldTrashableItemType(TrashableItemType):
         return trashed_item.name
 
     def trashed_item_restored(self, trashed_item: Field, trash_entry: TrashEntry):
-        trashed_item.name = FieldHandler().find_next_unused_field_name(
-            trashed_item.table,
-            [trashed_item.name, f"{trashed_item.name} (Restored)"],
-            [trashed_item.id],  # Ignore the field itself from the check.
-        )
-        # We need to set the specific field's name also so when the field_restored
-        # serializer switches to serializing the specific instance it picks up and uses
-        # the new name set here rather than the name currently in the DB.
-        trashed_item = trashed_item.specific
-        trashed_item.name = trashed_item.name
-        trashed_item.trashed = False
-        trashed_item.save()
-        FieldDependencyHandler.setup_field_dependencies(trashed_item)
-        updated_fields = (
-            FieldDependencyHandler.update_direct_dependencies_after_field_change(
-                trashed_item, None
-            )
-        )
-        field_restored.send(
-            self,
-            field=trashed_item,
-            related_fields=updated_fields,
-            user=None,
-        )
+        FieldHandler().restore_field(trashed_item)
 
     def permanently_delete_item(
         self,
@@ -129,8 +104,7 @@ class FieldTrashableItemType(TrashableItemType):
             model_field = from_model._meta.get_field(field.db_column)
             schema_editor.remove_field(from_model, model_field)
 
-        field.delete()
-        FormulaHandler.field_deleted(field)
+        FieldDependencyHandler.permanently_delete_and_update_dependencies(field)
 
         # After the field is deleted we are going to to call the after_delete method of
         # the field type because some instance cleanup might need to happen.

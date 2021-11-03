@@ -552,7 +552,8 @@ class FieldType(
             if self.can_have_select_options
             else []
         )
-        field = self.model_class.objects.create(table=table, **serialized_copy)
+        field = self.model_class(table=table, **serialized_copy)
+        field.save(raise_if_invalid=False)
 
         id_mapping["database_fields"][field_id] = field.id
 
@@ -727,7 +728,7 @@ class FieldType(
 
         from baserow.contrib.database.formula import FormulaHandler
 
-        return FormulaHandler.get_db_field_reference(
+        return FormulaHandler.get_normal_field_reference_expression(
             field, self.to_baserow_formula_type(field)
         )
 
@@ -736,7 +737,7 @@ class FieldType(
         field_instance,
         changed_parent_field,
         old_changed_parent_field,
-        update_collector,
+        updated_fields,
         rename_only=False,
     ):
         """
@@ -755,18 +756,26 @@ class FieldType(
         :type changed_parent_field: Field
         :param field_instance: An instance of this FieldType whose parent has changed.
         :type field_instance: Field
+        :param updated_fields: A collector object which all updated fields should be
+            registered with.
+        :type updated_fields: FieldUpdateCollector
         :param rename_only: True if the only change to the parent field is a
             change in name.
         :type rename_only: bool
         :return: A list of updated field instances which changed as a result of the
             dependency change.
-        :rtype: List[Field]
+        :rtype: A tuple containing the updated field instance and a copy of its old
+            instance before the update. None,None if no further recursion into the
+            descendants is desired for this particular field_instance.
         """
 
-        return None
+        return None, None
 
     def get_direct_field_name_dependencies(self, field_instance) -> Optional[List[str]]:
         return None
+
+    def restore_failed(self, field_instance, restore_exception):
+        return False
 
 
 class FieldTypeRegistry(

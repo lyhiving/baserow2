@@ -3,6 +3,7 @@ from typing import List
 from unittest.mock import patch
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
@@ -47,6 +48,9 @@ def _parse_datetime(datetime):
 
 def _parse_date(date):
     return parse_date(date)
+
+
+User = get_user_model()
 
 
 @pytest.mark.django_db

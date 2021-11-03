@@ -170,7 +170,13 @@ export default {
       return s + '.'
     },
     handleErrorByForm(error) {
-      if (error.handler.code === 'ERROR_WITH_FORMULA') {
+      if (
+        [
+          'ERROR_WITH_FORMULA',
+          'ERROR_FIELD_SELF_REFERENCE',
+          'ERROR_FIELD_CIRCULAR_REFERENCE',
+        ].includes(error.handler.code)
+      ) {
         this.errorFromServer = error.handler.detail
         return true
       } else {

@@ -611,7 +611,9 @@ class LinkRowHasViewFilterType(ManyToManyHasBaseViewFilter):
             field = view_filter.field.specific
             table = field.link_row_table
             primary_field = table.field_set.get(primary=True)
-            model = table.get_model(field_ids=[], fields=[primary_field])
+            model = table.get_model(
+                field_ids=[], fields=[primary_field], add_dependencies=False
+            )
 
             try:
                 name = str(model.objects.get(pk=related_row_id))

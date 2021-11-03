@@ -159,11 +159,8 @@ class BaserowExpressionField(models.Field):
 
     def pre_save(self, model_instance, add):
         if self.expression is None:
-            # We need to cast and be super explicit this is a text field so postgres
-            # does not get angry and claim this is an unknown type.
             return Value(None)
         else:
-            result = FormulaHandler.baserow_expression_to_django_expression(
-                self.expression, type(model_instance), model_instance
+            return FormulaHandler.baserow_expression_to_insert_django_expression(
+                self.expression, model_instance
             )
-            return result

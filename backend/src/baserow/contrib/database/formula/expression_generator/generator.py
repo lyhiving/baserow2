@@ -32,7 +32,23 @@ from baserow.contrib.database.formula.types.formula_type import (
 )
 
 
-def baserow_expression_to_django_expression(
+def baserow_expression_to_update_django_expression(
+    baserow_expression: BaserowExpression[BaserowFormulaType],
+    model: Type[Model],
+):
+    return _baserow_expression_to_django_expression(baserow_expression, model, None)
+
+
+def baserow_expression_to_insert_django_expression(
+    baserow_expression: BaserowExpression[BaserowFormulaType],
+    model_instance: Model,
+):
+    return _baserow_expression_to_django_expression(
+        baserow_expression, type(model_instance), model_instance
+    )
+
+
+def _baserow_expression_to_django_expression(
     baserow_expression: BaserowExpression[BaserowFormulaType],
     model: Type[Model],
     model_instance: Optional[Model],

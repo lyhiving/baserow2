@@ -3,6 +3,8 @@ from django.db import connection
 from django.urls import path, include
 
 from baserow.contrib.database.api.serializers import DatabaseSerializer
+from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
+from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.models import Database, Table
 from baserow.contrib.database.views.registries import view_type_registry
@@ -132,6 +134,10 @@ class DatabaseApplicationType(ApplicationType):
 
                 if field_object:
                     table["_field_objects"].append(field_object)
+
+        FieldDependencyHandler.rebuild_graph(
+            Field.objects.filter(table__database=database)
+        )
 
         # Now that the all tables and fields exist, we can create the views and create
         # the table schema in the database.

@@ -521,11 +521,7 @@ def test_cant_make_self_reference(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json == {
-        "detail": "Error with formula: it references itself which is impossible to "
-        "calculate a result for.",
-        "error": "ERROR_WITH_FORMULA",
-    }
+    assert response_json["error"] == "ERROR_FIELD_SELF_REFERENCE"
 
 
 @pytest.mark.django_db
@@ -562,12 +558,7 @@ def test_cant_make_circular_reference(api_client, data_fixture):
     )
     response_json = response.json()
     assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json == {
-        "detail": "Error with formula: it references another field, which eventually "
-        "references back to this field causing an incalculable circular "
-        "loop.",
-        "error": "ERROR_WITH_FORMULA",
-    }
+    assert response_json["error"] == "ERROR_FIELD_CIRCULAR_REFERENCE"
 
 
 @pytest.mark.django_db

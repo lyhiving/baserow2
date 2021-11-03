@@ -1,7 +1,7 @@
-from contextlib import contextmanager
 from typing import List
 
 from django.conf import settings
+from django.db import transaction
 
 from baserow.contrib.database.fields.dependencies.exceptions import (
     CircularFieldDependencyError,
@@ -9,8 +9,10 @@ from baserow.contrib.database.fields.dependencies.exceptions import (
 )
 from baserow.contrib.database.fields.dependencies.update_collector import (
     FieldUpdateCollector,
+    LookupFieldByNameCache,
 )
 from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.contrib.database.formula import FormulaHandler
 from baserow.contrib.database.formula.models import (
     FieldDependencyNode,
     FieldDependencyEdge,
@@ -18,11 +20,13 @@ from baserow.contrib.database.formula.models import (
 from baserow.core.trash.handler import TrashHandler
 
 
-def _add_graph_dependency_raising_if_circular(field, referenced_field_name):
+def _add_graph_dependency_raising_if_circular(
+    field, referenced_field_name, field_lookup_cache
+):
     table = field.table
     field_node = field.get_or_create_node()
     referenced_field_dependency_node = _get_or_create_node_from_name(
-        referenced_field_name, table
+        referenced_field_name, table, field_lookup_cache
     )
     # Check for no circular references
     if field_node not in referenced_field_dependency_node.self_and_ancestors(
@@ -43,18 +47,16 @@ def _construct_broken_reference_node(referenced_field_name, table):
     return node
 
 
-def _get_or_create_node_from_name(referenced_field_name, table):
-    from baserow.contrib.database.fields.models import Field
-
-    try:
-        referenced_field = table.field_set.get(name=referenced_field_name).specific
+def _get_or_create_node_from_name(referenced_field_name, table, field_lookup_cache):
+    referenced_field = field_lookup_cache.lookup(table, referenced_field_name)
+    if referenced_field is not None:
         referenced_field_dependency_node = referenced_field.get_or_create_node()
         return referenced_field_dependency_node
-    except Field.DoesNotExist:
+    else:
         return _construct_broken_reference_node(referenced_field_name, table)
 
 
-def _fix_invalid_refs(field):
+def _update_fields_with_broken_references(field):
     try:
         invalid_node_with_our_name = FieldDependencyNode.objects.get(
             table=field.table,
@@ -71,77 +73,138 @@ def _fix_invalid_refs(field):
         return False
 
 
-def _set_field_dependencies_to(field, dependency_field_names: List[str]):
-    field_node = field.get_or_create_node()
-    # Delete all existing dependencies this formula_field has as we are about
-    # to recreate them
-    parent_edges = FieldDependencyEdge.objects.filter(child=field_node)
-    # We might have deleted the last edge of an invalid reference. So check
-    # and delete it if so.
-    for edge in parent_edges.all():
-        if edge.parent.is_broken_reference_with_no_dependencies():
-            edge.parent.delete()
-    parent_edges.delete()
+def _recursively_update_all_descendants(
+    children,
+    field_lookup_cache=None,
+    changed_parent=None,
+    old_changed_parent=None,
+    rename_only=False,
+    updated_fields=None,
+):
+    if updated_fields is None:
+        updated_fields = FieldUpdateCollector(field_lookup_cache)
 
-    for new_dependency_field_name in dependency_field_names:
-        if field.name == new_dependency_field_name:
-            raise SelfReferenceFieldDependencyError()
-        _add_graph_dependency_raising_if_circular(field, new_dependency_field_name)
+    changed_children = []
+    for child in children:
+        other_field = child.field.specific
+        other_field_type = field_type_registry.get_by_model(other_field)
+        (
+            optionally_changed_child_field,
+            old_child_field,
+        ) = other_field_type.after_direct_field_dependency_changed(
+            other_field,
+            changed_parent,
+            old_changed_parent,
+            updated_fields,
+            rename_only,
+        )
+        if optionally_changed_child_field is not None:
+            changed_children.append((optionally_changed_child_field, old_child_field))
+
+    # Recursively continue down the field dependency graph now updating all the children
+    # of the children which changed this time.
+    for optionally_changed_child_field, old_child_field in changed_children:
+        FieldDependencyHandler.update_direct_dependencies_after_field_change(
+            optionally_changed_child_field,
+            old_child_field,
+            updated_fields=updated_fields,
+        )
+    return updated_fields
+
+
+def _get_direct_descendants_and_break_node(field):
+    node = field.get_node_or_none()
+    if node is not None:
+        children = [child for child in node.children.all()]
+        node.field = None
+        node.broken_reference_field_name = field.name
+        node.save()
+    else:
+        children = []
+    return children
+
+
+def _after_field_dependency_graph_update(updated_fields):
+    FormulaHandler.recreate_and_refresh_formula_fields(updated_fields)
+
+
+def _update_graph_after_delete(direct_descendants, field, add_field):
+    updated_fields = FieldUpdateCollector()
+    if add_field:
+        updated_fields.add_field(field, None)
+    _recursively_update_all_descendants(
+        direct_descendants, updated_fields=updated_fields
+    )
+    _after_field_dependency_graph_update(updated_fields)
+    return updated_fields
 
 
 class FieldDependencyHandler:
     @classmethod
+    def permanently_delete_and_update_dependencies(cls, field):
+        direct_descendants = _get_direct_descendants_and_break_node(field)
+
+        field.delete()
+
+        return _update_graph_after_delete(direct_descendants, field, False)
+
+    @classmethod
     def trash_and_update_dependencies(cls, user, group, field):
-        node = field.get_node()
-        if node is not None:
-            dependants = [child.field.specific for child in node.children.all()]
-            node.field = None
-            node.broken_reference_field_name = field.name
-            node.save()
-        else:
-            dependants = []
+        direct_descendants = _get_direct_descendants_and_break_node(field)
 
         TrashHandler.trash(user, group, field.table.database, field)
 
-        updated_fields = FieldUpdateCollector()
-        for other_field_node in dependants:
-            other_field = other_field_node.field.specific
-            other_field_type = field_type_registry.get_by_model(other_field)
-            other_field_type.after_direct_field_dependency_changed(
-                other_field, None, updated_fields
-            )
-        return updated_fields
+        return _update_graph_after_delete(direct_descendants, field, True)
 
     @classmethod
-    def update_field_after_change(
-        cls, field, old_field, rename_only=False, updated_fields=None
+    def update_field_dependency_graph(
+        cls,
+        field,
+        old_field,
+        rename_only=False,
+        updated_fields=None,
+        field_lookup_cache=None,
     ):
+        if updated_fields is None:
+            updated_fields = FieldUpdateCollector(field_lookup_cache)
+
         field_type = field_type_registry.get_by_model(field)
-        _fix_invalid_refs(field)
-        cls.setup_field_dependencies(field, field_type)
-        return cls.update_direct_dependencies_after_field_change(
+        fixed_some_fields = _update_fields_with_broken_references(field)
+
+        if fixed_some_fields:
+            rename_only = False
+
+        dependent_field_names = field_type.get_direct_field_name_dependencies(field)
+        if dependent_field_names is not None:
+            cls.reset_field_dependencies_to(
+                field, dependent_field_names, updated_fields
+            )
+
+        cls.update_direct_dependencies_after_field_change(
             field, old_field, rename_only, updated_fields
         )
+        _after_field_dependency_graph_update(updated_fields)
+        return updated_fields
 
     @classmethod
     def update_direct_dependencies_after_field_change(
         cls, field, old_field, rename_only=False, updated_fields=None
     ):
-        if updated_fields is None:
-            updated_fields = FieldUpdateCollector()
         updated_fields.add_field(field, old_field)
         node = field.get_or_create_node()
-        for other_field_node in node.children.all():
-            other_field = other_field_node.field.specific
-            other_field_type = field_type_registry.get_by_model(other_field)
-            updated_fields += other_field_type.after_direct_field_dependency_changed(
-                other_field, field, old_field, updated_fields, rename_only
-            )
-        return updated_fields
+        _recursively_update_all_descendants(
+            node.children.all(),
+            changed_parent=field,
+            old_changed_parent=old_field,
+            rename_only=rename_only,
+            updated_fields=updated_fields,
+        )
 
     @classmethod
     def get_direct_same_table_field_dependencies(cls, field):
-        node = field.get_or_create_node()
+        node = field.get_node_or_none()
+        if node is None:
+            return []
         direct_field_dependencies = []
         for dep in FieldDependencyEdge.objects.filter(child=node).all():
             if dep.via:
@@ -154,7 +217,72 @@ class FieldDependencyHandler:
         return direct_field_dependencies
 
     @classmethod
-    def setup_field_dependencies(cls, field, field_type):
+    def reset_field_dependencies_to(
+        cls,
+        field,
+        dependency_field_names: List[str],
+        field_lookup_cache,
+        rollback=False,
+    ):
+        # Ensure that a circular/self reference being thrown resets any changes to the
+        # field dependency graph.
+        with transaction.atomic():
+            field_node = field.get_or_create_node()
+            # Delete all existing dependencies this formula_field has as we are about
+            # to recreate them
+            parent_edges = FieldDependencyEdge.objects.filter(child=field_node)
+            # We might have deleted the last edge of an invalid reference. So check
+            # and delete it if so.
+            for edge in parent_edges.all():
+                if edge.parent.is_broken_reference_with_no_dependencies():
+                    edge.parent.delete()
+            parent_edges.delete()
+
+            for new_dependency_field_name in dependency_field_names:
+                if field.name == new_dependency_field_name:
+                    raise SelfReferenceFieldDependencyError()
+                _add_graph_dependency_raising_if_circular(
+                    field, new_dependency_field_name, field_lookup_cache
+                )
+            if rollback:
+                transaction.set_rollback(True)
+
+    @classmethod
+    def raise_if_any_circular_references(cls, field, field_lookup_cache):
+        field_type = field_type_registry.get_by_model(field)
         dependent_field_names = field_type.get_direct_field_name_dependencies(field)
         if dependent_field_names is not None:
-            _set_field_dependencies_to(field, dependent_field_names)
+            cls.reset_field_dependencies_to(
+                field, dependent_field_names, field_lookup_cache, rollback=True
+            )
+
+    @classmethod
+    def rebuild_graph(cls, fields):
+        field_lookup_cache = LookupFieldByNameCache()
+        for field in fields:
+            specific_field = field.specific
+            field_type = field_type_registry.get_by_model(specific_field)
+            dependency_field_names = field_type.get_direct_field_name_dependencies(
+                specific_field
+            )
+            if dependency_field_names is not None:
+                cls.reset_field_dependencies_to(
+                    specific_field,
+                    dependency_field_names,
+                    field_lookup_cache=field_lookup_cache,
+                )
+        recalculated_already = set()
+        for field in fields:
+            specific_field = field.specific
+            if specific_field not in recalculated_already:
+                for (
+                    ancestor
+                ) in specific_field.get_or_create_node().ancestors_and_self():
+                    if ancestor.is_reference_to_real_field():
+                        real_field = ancestor.field.specific
+                        if real_field not in recalculated_already:
+                            real_field.save(
+                                raise_if_invalid=False,
+                                field_lookup_cache=field_lookup_cache,
+                            )
+                            recalculated_already.add(real_field)

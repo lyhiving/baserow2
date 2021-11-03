@@ -44,13 +44,17 @@ from baserow.contrib.database.formula import (
     BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
     BaserowFormulaType,
     BaserowFormulaException,
+    BaserowFormulaInvalidType,
 )
 from baserow.contrib.database.formula import FormulaHandler
 from baserow.contrib.database.validators import UnicodeRegexValidator
 from baserow.core.models import UserFile
 from baserow.core.user_files.exceptions import UserFileDoesNotExist
 from baserow.core.user_files.handler import UserFileHandler
-from .dependencies.handler import FieldDependencyHandler
+from .dependencies.exceptions import (
+    SelfReferenceFieldDependencyError,
+    CircularFieldDependencyError,
+)
 from .exceptions import (
     LinkRowTableNotInSameDatabase,
     LinkRowTableNotProvided,
@@ -89,10 +93,6 @@ from .models import (
     Field,
 )
 from .registries import FieldType, field_type_registry
-from ..formula.expression_generator.generator import (
-    baserow_expression_to_django_expression,
-)
-from ..formula.types.typer import type_formula_field, TypedBaserowFields
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -2068,7 +2068,7 @@ class FormulaFieldType(FieldType):
 
             field_type = field_type_registry.get_by_model(field.specific_class)
             if field_type.type == FormulaFieldType.type:
-                formula_type = field.specific.calculated_formula_type
+                formula_type = field.specific.cached_formula_type
                 return formula_type.type in compatible_formula_types
             else:
                 return False
@@ -2175,12 +2175,12 @@ class FormulaFieldType(FieldType):
         )
 
     def to_baserow_formula_type(self, field: FormulaField) -> BaserowFormulaType:
-        return field.constructed_formula_type
+        return field.cached_formula_type
 
     def to_baserow_formula_expression(
         self, field: FormulaField
     ) -> BaserowExpression[BaserowFormulaType]:
-        return field.typed_expression
+        return field.cached_typed_internal_expression
 
     def after_direct_field_dependency_changed(
         self,
@@ -2201,16 +2201,30 @@ class FormulaFieldType(FieldType):
                     )
                 )
             if rename_only:
-                if old_field.formula != field_instance.formula:
-                    field_instance.save(retype_field=False)
-                    updated_fields.add_field(field_instance)
-                return
+                # No need to recursively update this fields dependencies also if
+                # our parent field has only changed it's name.
+                field_instance.save(recalculate=False)
+                updated_fields.add_field(field_instance, old_field)
+                return None, None
 
-        field_instance.save()
-        updated_fields.add_field(field_instance, old_field)
-        FieldDependencyHandler.update_field_after_change(
-            field_instance, None, updated_fields=updated_fields
-        )
+        field_instance.save(raise_if_invalid=False, field_lookup_cache=updated_fields)
+        return field_instance, old_field
 
     def get_direct_field_name_dependencies(self, field_instance) -> Optional[List[str]]:
         return FormulaHandler.get_direct_field_name_dependencies(field_instance)
+
+    def restore_failed(self, field_instance, restore_exception):
+        if isinstance(restore_exception, SelfReferenceFieldDependencyError):
+            BaserowFormulaInvalidType(
+                "Cannot reference self"
+            ).persist_onto_formula_field(field_instance)
+            field_instance.save(recalculate=False)
+            return True
+        elif isinstance(restore_exception, CircularFieldDependencyError):
+            BaserowFormulaInvalidType(
+                "Causes a circular reference"
+            ).persist_onto_formula_field(field_instance)
+            field_instance.save(recalculate=False)
+            return True
+        else:
+            return False

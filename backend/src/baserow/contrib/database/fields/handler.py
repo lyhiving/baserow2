@@ -13,6 +13,7 @@ from baserow.contrib.database.views.handler import ViewHandler
 from baserow.core.trash.handler import TrashHandler
 from baserow.core.utils import extract_allowed, set_allowed_attrs
 from .dependencies.handler import FieldDependencyHandler
+from .dependencies.update_collector import LookupFieldByNameCache
 from .exceptions import (
     PrimaryFieldAlreadyExists,
     CannotDeletePrimaryField,
@@ -27,7 +28,7 @@ from .exceptions import (
 )
 from .models import Field, SelectOption
 from .registries import field_type_registry, field_converter_registry
-from .signals import field_created, field_updated, field_deleted
+from .signals import field_created, field_updated, field_deleted, field_restored
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +195,8 @@ class FieldHandler:
         instance = model_class(
             table=table, order=last_order, primary=primary, **field_values
         )
-        instance.save()
+        field_lookup_cache = LookupFieldByNameCache()
+        instance.save(field_lookup_cache=field_lookup_cache)
 
         # Add the field to the table schema.
         with connection.schema_editor() as schema_editor:
@@ -206,21 +208,20 @@ class FieldHandler:
 
         field_type.after_create(instance, to_model, user, connection, before)
 
-        updated_fields = (
-            FieldDependencyHandler.update_direct_dependencies_after_field_change(
-                instance, None
+        updated_fields = FieldDependencyHandler.update_field_dependency_graph(
+            instance, None, field_lookup_cache=field_lookup_cache
+        )
+        for field, related_fields in updated_fields.get_updated_fields_per_table():
+            field_created.send(
+                self,
+                field=field,
+                user=user,
+                related_fields=related_fields,
+                type_name=type_name,
             )
-        )
-        field_created.send(
-            self,
-            field=instance,
-            user=user,
-            related_fields=updated_fields,
-            type_name=type_name,
-        )
 
         if return_updated_fields:
-            return instance, updated_fields
+            return instance, updated_fields.for_table(instance.table)
         else:
             return instance
 
@@ -293,7 +294,8 @@ class FieldHandler:
         before = field_type.before_update(old_field, field_values, user)
 
         field = set_allowed_attrs(field_values, allowed_fields, field)
-        field.save()
+        field_lookup_cache = LookupFieldByNameCache()
+        field.save(field_lookup_cache=field_lookup_cache)
         # If no converter is found we are going to convert to field using the
         # lenient schema editor which will alter the field's type and set the data
         # value to null if it can't be converted.
@@ -393,15 +395,18 @@ class FieldHandler:
             altered_column,
             before,
         )
-        updated_fields = FieldDependencyHandler.update_field_after_change(
-            field, old_field, set(field_values.keys()) == {"name"}
+        updated_fields = FieldDependencyHandler.update_field_dependency_graph(
+            field,
+            old_field,
+            set(field_values.keys()) == {"name"},
+            field_lookup_cache=field_lookup_cache,
         )
 
-        for table_id, fields in updated_fields.updated_fields_per_table:
+        for field, related_fields in updated_fields.get_updated_fields_per_table():
             field_updated.send(
                 self,
-                field=fields[0],
-                related_fields=fields[1:],
+                field=field,
+                related_fields=related_fields,
                 user=user,
             )
 
@@ -435,15 +440,19 @@ class FieldHandler:
             )
 
         field = field.specific
-        FieldDependencyHandler.trash_and_update_dependencies(user, group, field)
-        field_deleted.send(
-            self,
-            field_id=field.id,
-            field=field,
-            related_fields=updated_fields,
-            user=user,
+        updated_fields = FieldDependencyHandler.trash_and_update_dependencies(
+            user, group, field
         )
-        return updated_fields
+        for field, related_fields in updated_fields.get_updated_fields_per_table():
+            field_deleted.send(
+                self,
+                field_id=field.id,
+                field=field,
+                related_fields=related_fields,
+                user=user,
+            )
+
+        return updated_fields.for_table(field.table)
 
     def update_field_select_options(self, user, field, select_options):
         """
@@ -600,3 +609,37 @@ class FieldHandler:
             i += 1
             if field_name not in existing_field_name_collisions:
                 return field_name
+
+    def restore_field(self, field):
+        field_type = field_type_registry.get_by_model(field)
+        try:
+            field.name = self.find_next_unused_field_name(
+                field.table,
+                [field.name, f"{field.name} (Restored)"],
+                [field.id],  # Ignore the field itself from the check.
+            )
+            # We need to set the specific field's name also so when the field_restored
+            # serializer switches to serializing the specific instance it picks up and
+            # uses the new name set here rather than the name currently in the DB.
+            field = field.specific
+            field.name = field.name
+            field.trashed = False
+            field_lookup_cache = LookupFieldByNameCache()
+            field.save(field_lookup_cache=field_lookup_cache, raise_if_invalid=False)
+
+            updated_fields = FieldDependencyHandler.update_field_dependency_graph(
+                field, None, field_lookup_cache=field_lookup_cache
+            )
+            for field, related_fields in updated_fields.get_updated_fields_per_table():
+                field_restored.send(
+                    self, field=field, user=None, related_fields=related_fields
+                )
+        except Exception as e:
+            # Restoring a field could result in various errors such as a circular
+            # dependency appearing in the field dep graph. Allow the field type to
+            # handle any errors which occur for such situations.
+            exception_handled = field_type.restore_failed(field, e)
+            if exception_handled:
+                field_restored.send(self, field=field, user=None, related_fields=[])
+            else:
+                raise e

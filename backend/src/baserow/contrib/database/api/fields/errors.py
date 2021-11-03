@@ -74,3 +74,13 @@ ERROR_TOO_DEEPLY_NESTED_FORMULA = (
     HTTP_400_BAD_REQUEST,
     "The formula is too deeply nested.",
 )
+ERROR_FIELD_SELF_REFERENCE = (
+    "ERROR_FIELD_SELF_REFERENCE",
+    HTTP_400_BAD_REQUEST,
+    "Fields cannot reference themselves.",
+)
+ERROR_FIELD_CIRCULAR_REFERENCE = (
+    "ERROR_FIELD_CIRCULAR_REFERENCE",
+    HTTP_400_BAD_REQUEST,
+    "Fields cannot reference each other resulting in a circular chain of references.",
+)

@@ -14,6 +14,7 @@ from baserow.contrib.database.formula.parser.exceptions import (
     BaserowFormulaSyntaxError,
     UnknownOperator,
     FieldByIdReferencesAreDeprecated,
+    MaximumFormulaSizeError,
 )
 from baserow.contrib.database.formula.parser.generated.BaserowFormula import (
     BaserowFormula,
@@ -30,7 +31,9 @@ from baserow.contrib.database.formula.types.formula_type import UnTyped
 from baserow.core.exceptions import InstanceTypeDoesNotExist
 
 
-def raw_formula_to_untyped_expression(formula: str) -> BaserowExpression[UnTyped]:
+def raw_formula_to_untyped_expression(
+    formula: str,
+) -> BaserowExpression[UnTyped]:
     """
     Takes a raw user input string, syntax checks it to see if it matches the syntax of
     a Baserow Formula (raises a BaserowFormulaSyntaxError if not) and converts it into
@@ -43,8 +46,11 @@ def raw_formula_to_untyped_expression(formula: str) -> BaserowExpression[UnTyped
         of the Baserow Formula language.
     """
 
-    tree = get_parse_tree_for_formula(formula)
-    return BaserowFormulaToBaserowASTMapper().visit(tree)
+    try:
+        tree = get_parse_tree_for_formula(formula)
+        return BaserowFormulaToBaserowASTMapper().visit(tree)
+    except RecursionError:
+        raise MaximumFormulaSizeError()
 
 
 class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):

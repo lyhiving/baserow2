@@ -16,7 +16,6 @@ from baserow.contrib.database.formula.ast.tree import (
 from baserow.contrib.database.formula.registries import (
     formula_function_registry,
 )
-from baserow.contrib.database.formula.types.exceptions import UnknownFormulaType
 from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaValidType,
     UnTyped,

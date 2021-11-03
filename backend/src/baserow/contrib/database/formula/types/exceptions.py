@@ -5,21 +5,6 @@ class InvalidFormulaType(BaserowFormulaException):
     pass
 
 
-class NoCircularReferencesError(BaserowFormulaException):
-    def __init__(self):
-        super().__init__(
-            "it references another field, which eventually references back to this "
-            f"field causing an incalculable circular loop"
-        )
-
-
-class NoSelfReferencesError(BaserowFormulaException):
-    def __init__(self):
-        super().__init__(
-            "it references itself which is impossible to calculate a result for"
-        )
-
-
 class UnknownFormulaType(BaserowFormulaException):
     def __init__(self, unknown_formula_type):
         super().__init__(

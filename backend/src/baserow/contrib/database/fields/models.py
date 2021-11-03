@@ -1,6 +1,3 @@
-from copy import deepcopy
-from typing import Set
-
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.functional import cached_property
@@ -14,26 +11,8 @@ from baserow.contrib.database.fields.mixins import (
 from baserow.contrib.database.formula import (
     BASEROW_FORMULA_TYPE_CHOICES,
     FormulaHandler,
-    BaserowFunctionDefinition,
-)
-from baserow.contrib.database.formula.baserow_adapter import (
-    update_formula_field,
-    _recreate_field_if_required,
-)
-from baserow.contrib.database.formula.expression_generator.generator import (
-    baserow_expression_to_django_expression,
 )
 from baserow.contrib.database.formula.models import FieldDependencyNode
-from baserow.contrib.database.formula.parser.ast_mapper import (
-    raw_formula_to_untyped_expression,
-)
-from baserow.contrib.database.formula.types.exceptions import UnknownFormulaType
-from baserow.contrib.database.formula.types.formula_types import BASEROW_FORMULA_TYPES
-from baserow.contrib.database.formula.types.typer import (
-    type_formula_field,
-    TypedBaserowFields,
-)
-from baserow.contrib.database.formula.types.visitors import FunctionsUsedVisitor
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
 from baserow.core.mixins import (
     OrderableMixin,
@@ -129,6 +108,12 @@ class Field(
 
         return name
 
+    def save(self, *args, **kwargs):
+        kwargs.pop("field_lookup_cache", None)
+        kwargs.pop("raise_if_invalid", None)
+        kwargs.pop("recalculate", None)
+        super().save(*args, **kwargs)
+
     def get_or_create_node(self):
         if hasattr(self, "fieldnode"):
             return self.fieldnode
@@ -139,7 +124,7 @@ class Field(
             self.fieldnode = field
             return field
 
-    def get_node(self):
+    def get_node_or_none(self):
         try:
             return FieldDependencyNode.objects.get(field=self, table=self.table)
         except FieldDependencyNode.DoesNotExist:
@@ -352,55 +337,52 @@ class FormulaField(Field):
         help_text="24 (14:30) or 12 (02:30 PM)",
     )
 
-    def save(self, *args, **kwargs):
-        retype_field = kwargs.pop("retype_field", True)
-        if retype_field:
-            already_typed_fields = kwargs.pop(
-                "already_typed_fields", TypedBaserowFields()
-            )
-            self.retype_and_update(already_typed_fields)
-        super().save(*args, **kwargs)
+    @cached_property
+    def cached_untyped_expression(self):
+        return FormulaHandler.raw_formula_to_untyped_expression(self.formula)
 
     @cached_property
-    def typed_expression(self):
-        untyped_internal_expr = raw_formula_to_untyped_expression(self.internal_formula)
-        return untyped_internal_expr.with_type(self.constructed_formula_type)
+    def cached_typed_internal_expression(self):
+        untyped_internal_expr = FormulaHandler.raw_formula_to_untyped_expression(
+            self.internal_formula
+        )
+        return untyped_internal_expr.with_type(self.cached_formula_type)
 
     @cached_property
-    def constructed_formula_type(self):
-        for formula_type in BASEROW_FORMULA_TYPES:
-            if self.formula_type == formula_type.type:
-                return formula_type.construct_type_from_formula_field(self)
-        raise UnknownFormulaType(self.formula_type)
+    def cached_formula_type(self):
+        formula_type = FormulaHandler.get_type(self.formula_type)
+        return formula_type.construct_type_from_formula_field(self)
 
-    def retype_and_update(self):
-        typed_formula_field = type_formula_field(self)
-        expression = typed_formula_field.typed_expression
+    def recalculate_internal_fields(
+        self, raise_if_invalid=True, field_lookup_cache=None
+    ):
+        if hasattr(self, "cached_untyped_expression"):
+            # noinspection PyPropertyAccess
+            del self.cached_untyped_expression
+        expression = FormulaHandler.calculate_typed_expression(self, field_lookup_cache)
         expression_type = expression.expression_type
-        expression_type.raise_if_invalid()
-        functions_used: Set[BaserowFunctionDefinition] = expression.accept(
-            FunctionsUsedVisitor()
-        )
-        self.requires_refresh_after_insert = any(
-            f.requires_refresh_after_insert for f in functions_used
-        )
-        expression_type.persist_onto_formula_field(self)
-        self.internal_formula = str(expression)
-        # Update the cached properties
-        setattr(self, "typed_expression", expression)
-        setattr(self, "constructed_formula_type", expression_type)
 
-    def same_as(self, other):
-        return (
-            self.formula == other.formula
-            and self.error == other.error
-            and self.formula_type == other.formula_type
-            and self.number_decimal_places == other.number_decimal_places
-            and self.date_format == other.date_format
-            and self.date_time_format == other.date_time_format
-            and self.date_include_time == other.date_include_time
-            and self.internal_formula == other.internal_formula
+        self.internal_formula = str(expression)
+        expression_type.persist_onto_formula_field(self)
+        self.requires_refresh_after_insert = (
+            FormulaHandler.formula_requires_refresh_on_insert(expression)
         )
+        # Update the cached properties
+        setattr(self, "cached_typed_internal_expression", expression)
+        setattr(self, "cached_formula_type", expression_type)
+
+        if raise_if_invalid:
+            expression_type.raise_if_invalid()
+
+    def save(self, *args, **kwargs):
+        recalculate = kwargs.pop("recalculate", not self.trashed)
+        field_lookup_cache = kwargs.pop("field_lookup_cache", None)
+        raise_if_invalid = kwargs.pop("raise_if_invalid", True)
+        if recalculate:
+            self.recalculate_internal_fields(
+                field_lookup_cache=field_lookup_cache, raise_if_invalid=raise_if_invalid
+            )
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return (

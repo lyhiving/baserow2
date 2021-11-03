@@ -23,7 +23,7 @@ from baserow.contrib.database.fields.models import (
 class FieldFixtures:
     def create_model_field(self, table, field):
         with connection.schema_editor() as schema_editor:
-            to_model = table.get_model(field_ids=[field.id])
+            to_model = table.get_model(field_ids=[field.id], add_dependencies=False)
             model_field = to_model._meta.get_field(field.db_column)
             schema_editor.add_field(to_model, model_field)
 
@@ -310,6 +310,12 @@ class FieldFixtures:
 
         if "formula_type" not in kwargs:
             kwargs["formula_type"] = "text"
+
+        if "internal_formula" not in kwargs:
+            kwargs["internal_formula"] = kwargs["formula"]
+
+        if "requires_refresh_after_insert" not in kwargs:
+            kwargs["requires_refresh_after_insert"] = False
 
         field = FormulaField.objects.create(**kwargs)
 
