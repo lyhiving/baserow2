@@ -151,6 +151,14 @@ class WebhookHandler:
                     f"The webhook with id {webhook_id} does not exist."
                 )
 
+            # if the webhook is not active and a user sets the webhook to active
+            # we want to make sure to reset the failed_triggers counter
+            is_webhook_active = webhook.active
+            if "active" in data:
+                is_active_new = data.get("active")
+                if not is_webhook_active and is_active_new:
+                    webhook.failed_triggers = 0
+
             events = data.pop("events", None)
             headers = data.pop("headers", None)
 
@@ -163,6 +171,9 @@ class WebhookHandler:
                         event_type=event,
                         webhook_id=webhook,
                     )
+
+            if data["include_all_events"]:
+                TableWebhookEvents.objects.filter(webhook_id=webhook_id).delete()
 
             # default header
             default_headers = self._get_default_headers()
@@ -231,12 +242,12 @@ class WebhookHandler:
             webhook, event_id, event_type, webhook_call_defaults
         )
 
+        self._delete_webhook_calls(webhook)
         if response.status_code != 200 and response.status_code != 201:
             # we raise the exception here so that the task calling this method
             # will know to retry the webhook call.
             raise TableWebhookCannotBeCalled
 
-        self._delete_webhook_calls(webhook)
         return True
 
     def test_call(self, webhook_id: int, example_payload: dict):

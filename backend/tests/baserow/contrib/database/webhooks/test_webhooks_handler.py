@@ -6,6 +6,7 @@ import responses
 from django.test import override_settings
 from baserow.contrib.database.webhooks.exceptions import (
     TableWebhookAlreadyExists,
+    TableWebhookCannotBeCalled,
     TableWebhookDoesNotExist,
     TableWebhookMaxAllowedCountExceeded,
 )
@@ -147,6 +148,15 @@ def test_update_webhook(data_fixture):
     events = updated_webhook.events.all()
     assert len(events) == 1
     assert events[0].event_type == "row.created"
+
+    # after activating "include_all_events" again, we expect the added events to be
+    # removed
+    webhook_update_data["include_all_events"] = True
+    updated_webhook = webhook_handler.update_table_webhook(
+        webhook_id=webhook.id, table=table, user=user, data=dict(webhook_update_data)
+    )
+    events = updated_webhook.events.all()
+    assert len(events) == 0
 
     webhook_update_data["headers"] = [{"header": "Authorization", "value": "12345"}]
     updated_webhook = webhook_handler.update_table_webhook(
@@ -359,7 +369,9 @@ def test_calling_webhook(data_fixture):
     responses.add(responses.POST, webhook_data["url"], json=response, status=200)
 
     event_id = uuid.uuid4()
-    webhook_handler.call(webhook.id, request_payload, str(event_id), "row_created")
+
+    with pytest.raises(TableWebhookCannotBeCalled):
+        webhook_handler.call(webhook.id, request_payload, str(event_id), "row_created")
 
     call = TableWebhookCall.objects.filter(webhook_id=webhook, event_id=event_id)
 

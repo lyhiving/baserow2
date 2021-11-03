@@ -23,7 +23,9 @@ def call_webhook(self, **kwargs):
                 < settings.WEBHOOKS_MAX_CONSECUTIVE_TRIGGER_FAILURES
             ):
                 webhook_handler.increment_failed_trigger(webhook_id)
+                return
             else:
                 webhook_handler.deactivate_webhook(webhook_id)
+                return
 
     webhook_handler.reset_failed_trigger(webhook_id)
