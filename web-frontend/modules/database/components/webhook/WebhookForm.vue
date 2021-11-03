@@ -112,16 +112,16 @@
             This field is required.
           </div>
           <a
-            href="#"
             v-if="lastHeaderElement(index)"
+            href="#"
             class="button button--success webhook__header-add"
             @click="addHeaderField()"
           >
             <i class="fas fa-plus button__icon"></i>
           </a>
           <a
-            href="#"
             v-if="lastHeaderElement(index) && !firstHeaderElement(index)"
+            href="#"
             class="button button--error webhook__header-delete"
             @click="removeHeaderField()"
           >
@@ -135,7 +135,7 @@
 </template>
 
 <script>
-import { required, url } from 'vuelidate/lib/validators'
+import { required } from 'vuelidate/lib/validators'
 
 import form from '@baserow/modules/core/mixins/form'
 import Checkbox from '@baserow/modules/core/components/Checkbox.vue'
@@ -210,7 +210,7 @@ export default {
   validations: {
     values: {
       name: { required },
-      url: { required, url },
+      url: { required },
       headers: {
         $each: {
           header: { required },

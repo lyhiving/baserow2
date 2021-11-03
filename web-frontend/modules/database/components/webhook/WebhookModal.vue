@@ -32,16 +32,16 @@ export default {
   name: 'WebhookModal',
   components: { WebhookAccordion, CreateWebhookContext },
   mixins: [modal, error],
-  data() {
-    return {
-      renderList: true,
-    }
-  },
   props: {
     table: {
       type: Object,
       required: true,
     },
+  },
+  data() {
+    return {
+      renderList: true,
+    }
   },
   computed: mapState({
     // arrow functions can make the code very succinct!
