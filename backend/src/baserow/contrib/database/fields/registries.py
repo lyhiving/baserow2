@@ -69,10 +69,6 @@ class FieldType(
     """Indicates whether the field allows inserting/updating row values or if it is
     read only."""
 
-    requires_typing = False
-    """Indicates whether the field needs extra typing information to calculate its
-    various methods correctly."""
-
     def prepare_value_for_db(self, instance, value):
         """
         When a row is created or updated all the values are going to be prepared for the

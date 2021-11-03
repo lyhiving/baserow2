@@ -1,5 +1,10 @@
 from django.db import models
-from django_postgresql_dag.models import edge_factory, node_factory
+from django_postgresql_dag.models import edge_factory, node_factory, NodeManager
+
+
+class AlwaysSelectingFieldManager(NodeManager):
+    def get_queryset(self):
+        return super().get_queryset().select_related("field")
 
 
 class FieldDependencyEdge(edge_factory("FieldDependencyNode", concrete=False)):
@@ -49,6 +54,8 @@ class FieldDependencyNode(node_factory(FieldDependencyEdge)):
        depends on Field C.
 
     """
+
+    objects = AlwaysSelectingFieldManager()
 
     field = models.OneToOneField(
         "database.Field",

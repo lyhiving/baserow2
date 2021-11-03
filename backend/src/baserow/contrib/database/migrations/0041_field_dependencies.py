@@ -14,7 +14,9 @@ def reverse(apps, schema_editor):
 def forward(apps, schema_editor):
     FormulaField = apps.get_model("database", "FormulaField")
 
-    FieldDependencyHandler.rebuild_graph(FormulaField.objects.all())
+    FieldDependencyHandler.rebuild_graph(
+        [f.specific for f in FormulaField.objects.all()]
+    )
 
 
 class Migration(migrations.Migration):

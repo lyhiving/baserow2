@@ -29,6 +29,7 @@ def test_forwards_migration(data_fixture, transactional_db):
         formula=f"field_by_id({text_field.id})",
         content_type_id=content_type_id,
         order=0,
+        name="a",
     )
     unknown_field_by_id = FormulaField.objects.create(
         table_id=table.id,
@@ -36,6 +37,7 @@ def test_forwards_migration(data_fixture, transactional_db):
         formula=f"field_by_id(9999)",
         content_type_id=content_type_id,
         order=0,
+        name="b",
     )
 
     new_state = migrate(migrate_to)
@@ -77,6 +79,7 @@ def test_backwards_migration(data_fixture, transactional_db):
         formula=f"field('text')",
         content_type_id=content_type_id,
         order=0,
+        name="a",
     )
     unknown_field = FormulaField.objects.create(
         table_id=table.id,
@@ -84,6 +87,7 @@ def test_backwards_migration(data_fixture, transactional_db):
         formula=f"field('unknown')",
         content_type_id=content_type_id,
         order=0,
+        name="b",
     )
 
     new_state = migrate(migrate_to)

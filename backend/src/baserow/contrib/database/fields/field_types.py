@@ -2030,7 +2030,6 @@ class FormulaFieldType(FieldType):
     type = "formula"
     model_class = FormulaField
 
-    requires_typing = True
     read_only = True
 
     can_be_primary_field = False

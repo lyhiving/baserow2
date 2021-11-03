@@ -4,7 +4,6 @@ from django.urls import path, include
 
 from baserow.contrib.database.api.serializers import DatabaseSerializer
 from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
-from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.models import Database, Table
 from baserow.contrib.database.views.registries import view_type_registry
@@ -125,6 +124,7 @@ class DatabaseApplicationType(ApplicationType):
 
         # Because view properties might depend on fields, we first want to create all
         # the fields.
+        all_fields = []
         for table in tables:
             for field in table["fields"]:
                 field_type = field_type_registry.get(field["type"])
@@ -134,10 +134,9 @@ class DatabaseApplicationType(ApplicationType):
 
                 if field_object:
                     table["_field_objects"].append(field_object)
+                    all_fields.append(field_object)
 
-        FieldDependencyHandler.rebuild_graph(
-            Field.objects.filter(table__database=database)
-        )
+        FieldDependencyHandler.rebuild_graph(all_fields)
 
         # Now that the all tables and fields exist, we can create the views and create
         # the table schema in the database.
@@ -151,7 +150,10 @@ class DatabaseApplicationType(ApplicationType):
             # We don't need to create all the fields individually because the schema
             # editor can handle the creation of the table schema in one go.
             with connection.schema_editor() as schema_editor:
-                model = table["_object"].get_model()
+                model = table["_object"].get_model(
+                    fields=table["_field_objects"],
+                    field_ids=[],
+                )
                 table["_model"] = model
                 schema_editor.create_model(model)
 
@@ -190,7 +192,9 @@ class DatabaseApplicationType(ApplicationType):
             # We want to insert the rows in bulk because there could potentially be
             # hundreds of thousands of rows in there and this will result in better
             # performance.
+            print("bulk creating")
             model.objects.bulk_create(rows_to_be_inserted)
+            print("done bulking")
 
             # When the rows are inserted we keep the provide the old ids and because of
             # that the auto increment is still set at `1`. This needs to be set to the

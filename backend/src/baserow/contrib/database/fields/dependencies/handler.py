@@ -139,6 +139,24 @@ def _update_graph_after_delete(direct_descendants, field, add_field):
     return updated_fields
 
 
+def _recursively_recalculate_fields(
+    field_lookup_cache, recalculated_already, specific_field
+):
+    node = specific_field.get_or_create_node()
+    for ancestor in node.parents.select_related("field"):
+        if ancestor.is_reference_to_real_field():
+            real_field = field_lookup_cache.lookup(ancestor.table, ancestor.field.name)
+            _recursively_recalculate_fields(
+                field_lookup_cache, recalculated_already, real_field
+            )
+    if specific_field not in recalculated_already:
+        field_type = field_type_registry.get_by_model(specific_field)
+        field_type.after_direct_field_dependency_changed(
+            specific_field, None, None, field_lookup_cache
+        )
+        recalculated_already.add(specific_field)
+
+
 class FieldDependencyHandler:
     @classmethod
     def permanently_delete_and_update_dependencies(cls, field):
@@ -259,8 +277,7 @@ class FieldDependencyHandler:
     @classmethod
     def rebuild_graph(cls, fields):
         field_lookup_cache = LookupFieldByNameCache()
-        for field in fields:
-            specific_field = field.specific
+        for specific_field in fields:
             field_type = field_type_registry.get_by_model(specific_field)
             dependency_field_names = field_type.get_direct_field_name_dependencies(
                 specific_field
@@ -271,18 +288,10 @@ class FieldDependencyHandler:
                     dependency_field_names,
                     field_lookup_cache=field_lookup_cache,
                 )
+            field_lookup_cache.cache_field(specific_field)
         recalculated_already = set()
-        for field in fields:
-            specific_field = field.specific
+        for specific_field in fields:
             if specific_field not in recalculated_already:
-                for (
-                    ancestor
-                ) in specific_field.get_or_create_node().ancestors_and_self():
-                    if ancestor.is_reference_to_real_field():
-                        real_field = ancestor.field.specific
-                        if real_field not in recalculated_already:
-                            real_field.save(
-                                raise_if_invalid=False,
-                                field_lookup_cache=field_lookup_cache,
-                            )
-                            recalculated_already.add(real_field)
+                _recursively_recalculate_fields(
+                    field_lookup_cache, recalculated_already, specific_field
+                )
