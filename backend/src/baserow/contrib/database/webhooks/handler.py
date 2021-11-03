@@ -221,7 +221,7 @@ class WebhookHandler:
             # RequestException catches ConnectionError, HTTPError, Timeout or
             # TooManyRedirects
             self._create_or_update_webhook_call(
-                webhook, event_id, webhook_call_defaults
+                webhook, event_id, event_type, webhook_call_defaults
             )
             raise TableWebhookCannotBeCalled
 
@@ -231,8 +231,12 @@ class WebhookHandler:
             webhook, event_id, event_type, webhook_call_defaults
         )
 
-        self._delete_webhook_calls(webhook)
+        if response.status_code != 200 and response.status_code != 201:
+            # we raise the exception here so that the task calling this method
+            # will know to retry the webhook call.
+            raise TableWebhookCannotBeCalled
 
+        self._delete_webhook_calls(webhook)
         return True
 
     def test_call(self, webhook_id: int, example_payload: dict):
