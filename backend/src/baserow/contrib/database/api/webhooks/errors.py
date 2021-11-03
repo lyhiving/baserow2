@@ -14,3 +14,9 @@ ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED = (
     f"The maximally allowed webhooks per table has been exceeded. You can provide "
     f"a maximum of {settings.WEBHOOKS_MAX_PER_TABLE} webhooks.",
 )
+
+ERROR_TABLE_WEBHOOK_CANNOT_BE_CALLED = (
+    "ERROR_TABLE_WEBHOOK_CANNOT_BE_CALLED",
+    HTTP_400_BAD_REQUEST,
+    "The table webhook cannot be called.",
+)

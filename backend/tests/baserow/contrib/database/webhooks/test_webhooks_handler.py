@@ -6,7 +6,6 @@ import responses
 from django.test import override_settings
 from baserow.contrib.database.webhooks.exceptions import (
     TableWebhookAlreadyExists,
-    TableWebhookCannotBeCalled,
     TableWebhookDoesNotExist,
     TableWebhookMaxAllowedCountExceeded,
 )
@@ -65,7 +64,7 @@ def test_create_webhook(data_fixture):
 
     # if "include_all_events" is True and we pass in events that are not empty
     # the handler will not create the entry in the events table.
-    webhook_data["events"] = ["row.Created"]
+    webhook_data["events"] = ["row.created"]
 
     webhook = webhook_handler.create_table_webhook(
         table=table, user=user, data=dict(webhook_data)
@@ -85,7 +84,7 @@ def test_create_webhook(data_fixture):
 
     events = webhook.events.all()
     assert len(events) == 1
-    assert events[0].event_type == "row.Created"
+    assert events[0].event_type == "row.created"
 
     # check that we can't create more than "MAX_ALLOWED_WEBHOOKS" per table
     webhook_data["include_all_events"] = True
@@ -360,8 +359,7 @@ def test_calling_webhook(data_fixture):
     responses.add(responses.POST, webhook_data["url"], json=response, status=200)
 
     event_id = uuid.uuid4()
-    with pytest.raises(TableWebhookCannotBeCalled):
-        webhook_handler.call(webhook.id, request_payload, str(event_id), "row_created")
+    webhook_handler.call(webhook.id, request_payload, str(event_id), "row_created")
 
     call = TableWebhookCall.objects.filter(webhook_id=webhook, event_id=event_id)
 

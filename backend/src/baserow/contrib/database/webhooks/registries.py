@@ -7,6 +7,10 @@ from baserow.core.registry import (
     Registry,
     Instance,
 )
+from baserow.contrib.database.api.rows.serializers import (
+    RowSerializer,
+    get_row_serializer_class,
+)
 
 from .tasks import call_webhook
 
@@ -25,6 +29,32 @@ class WebhookEventType(Instance):
 
     def connect_to_signal(self):
         self.signal.connect(self.listener)
+
+    def get_example_payload(self, **kwargs):
+        example = {
+            "table_id": 60,
+            "row_id": 39,
+            "values": {
+                "id": 39,
+                "order": "10.00000000000000000000",
+                "field_492": "",
+                "field_493": "",
+                "field_495": False,
+                "field_529": "",
+            },
+        }
+        return example
+
+    def get_payload(self, **kwargs):
+        model = kwargs.get("model")
+        table = kwargs.get("table")
+        row = kwargs.get("row")
+        serialized_row = get_row_serializer_class(
+            model, RowSerializer, is_response=True
+        )(row).data
+        payload = {"table_id": table.id, "row_id": row.id, "values": serialized_row}
+
+        return payload
 
     def listener(self, **kwargs):
         payload = self.get_payload(**kwargs)
