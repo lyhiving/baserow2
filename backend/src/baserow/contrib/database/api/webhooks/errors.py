@@ -20,3 +20,9 @@ ERROR_TABLE_WEBHOOK_CANNOT_BE_CALLED = (
     HTTP_400_BAD_REQUEST,
     "The table webhook cannot be called.",
 )
+
+ERROR_TABLE_WEBHOOK_ALREADY_EXISTS = (
+    "ERROR_TABLE_WEBHOOK_ALREADY_EXISTS",
+    HTTP_400_BAD_REQUEST,
+    "A table webhook with the given url and request method already exists.",
+)

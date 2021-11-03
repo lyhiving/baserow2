@@ -9,17 +9,19 @@ from baserow.api.schemas import get_error_schema
 from baserow.contrib.database.api.tables.errors import ERROR_TABLE_DOES_NOT_EXIST
 from baserow.contrib.database.api.tokens.authentications import TokenAuthentication
 from baserow.contrib.database.api.webhooks.errors import (
+    ERROR_TABLE_WEBHOOK_ALREADY_EXISTS,
     ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED,
     ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST,
     ERROR_TABLE_WEBHOOK_CANNOT_BE_CALLED,
 )
 from baserow.contrib.database.table.exceptions import TableDoesNotExist
 from baserow.contrib.database.webhooks.exceptions import (
+    TableWebhookAlreadyExists,
     TableWebhookDoesNotExist,
     TableWebhookMaxAllowedCountExceeded,
+    TableWebhookCannotBeCalled,
 )
 from baserow.core.exceptions import UserNotInGroup
-from src.baserow.contrib.database.webhooks.exceptions import TableWebhookCannotBeCalled
 from .serializers import (
     TableWebhookCallResponse,
     TableWebhookCreateRequestSerializer,
@@ -107,6 +109,7 @@ class TableWebhooksView(APIView):
             NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
             TableWebhookMaxAllowedCountExceeded: ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED,
+            TableWebhookAlreadyExists: ERROR_TABLE_WEBHOOK_ALREADY_EXISTS,
         }
     )
     @validate_body(TableWebhookCreateRequestSerializer)

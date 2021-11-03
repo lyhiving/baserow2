@@ -172,7 +172,7 @@ class WebhookHandler:
                         webhook_id=webhook,
                     )
 
-            if data["include_all_events"]:
+            if "include_all_events" in data and data["include_all_events"]:
                 TableWebhookEvents.objects.filter(webhook_id=webhook_id).delete()
 
             # default header
@@ -265,15 +265,21 @@ class WebhookHandler:
             call = TableWebhookCall.objects.get(event_id=event_id)
             return {"response": call.response, "status": call.status_code}
         except Exception:
-            raise TableWebhookCannotBeCalled
+            call = TableWebhookCall.objects.get(event_id=event_id)
+            res = {
+                "error": "TableWebhookCannotBeCalled",
+                "server_response": call.response,
+            }
+            return {"response": res, "status": call.status_code}
 
     def get_call_events_per_webhook(self, webhook_id: int):
         """
         Returns every call log entry for a given webhook.
+        Orders by called_time, returns the last call first.
         """
 
         return TableWebhookCall.objects.filter(webhook_id=webhook_id).order_by(
-            "called_time"
+            "-called_time"
         )
 
     def _create_or_update_webhook_call(
