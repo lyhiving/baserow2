@@ -23,6 +23,7 @@
 
 <script>
 import WebhookForm from '@baserow/modules/database/components/webhook/WebhookForm'
+import { notifyIf } from '@baserow/modules/core/utils/error'
 
 export default {
   name: 'CreateWebhookContext',
@@ -31,6 +32,10 @@ export default {
     table: {
       type: Object,
       required: true,
+    },
+    webhook: {
+      type: Object,
+      required: false,
     },
   },
   data() {
@@ -50,12 +55,15 @@ export default {
   },
   methods: {
     async submit(values) {
+      this.loading = true
       const table = this.table
       try {
         await this.$store.dispatch('webhook/create', { table, values })
+        this.loading = false
         this.$emit('created')
-      } catch {
-        console.log('LEIDER NICHT')
+      } catch (error) {
+        this.loading = false
+        notifyIf(error, 'webhook')
       }
     },
   },
