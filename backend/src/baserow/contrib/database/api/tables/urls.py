@@ -12,7 +12,7 @@ app_name = "baserow.contrib.database.api.tables"
 
 urlpatterns = [
     re_path(
-        r"(?P<table_id>[0-9]+)/webhooks/(?P<webhook_id>[0-9]+)/call$",
+        r"(?P<table_id>[0-9]+)/webhooks/(?P<webhook_id>[0-9]+)/call/$",
         TableWebhookCallView.as_view(),
         name="call_webhook",
     ),

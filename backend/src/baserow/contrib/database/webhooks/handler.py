@@ -1,8 +1,10 @@
 import json
+import uuid
 from django.db import transaction
 from django.conf import settings
 from django.db.models.query import QuerySet
-from requests import request, ConnectionError
+from requests import request, RequestException
+from advocate import request as advocate_request
 from django.db.models import Q, F
 
 from .models import (
@@ -18,6 +20,11 @@ from .exceptions import (
     TableWebhookCannotBeCalled,
 )
 from baserow.contrib.database.table.models import GeneratedTableModel
+
+if settings.DEBUG is True:
+    request_module = request
+else:
+    request_module = advocate_request
 
 
 class WebhookHandler:
@@ -58,16 +65,28 @@ class WebhookHandler:
         return webhook
 
     def get_all_table_webhooks(self, table: GeneratedTableModel, user: any) -> QuerySet:
+        """
+        Gets all the webhooks for a specific table.
+        """
+
         group = table.database.group
         group.has_user(user, raise_error=True)
-        return TableWebhook.objects.filter(table_id=table.id)
+        return TableWebhook.objects.filter(table_id=table.id).order_by("-id")
 
     def _get_default_headers(self):
+        """
+        Internal helper function, responsible for providing default http headers. For
+        now we will always set the content-type to "application/json".
+        """
+
         return [{"header": "Content-type", "value": "application/json"}]
 
     def create_table_webhook(
         self, table: GeneratedTableModel, user: any, data: any
     ) -> TableWebhook:
+        """
+        Creates a new webhook for a given table.
+        """
 
         group = table.database.group
         group.has_user(user, raise_error=True)
@@ -117,6 +136,9 @@ class WebhookHandler:
     def update_table_webhook(
         self, webhook_id: int, table: GeneratedTableModel, user: any, data: any
     ) -> TableWebhook:
+        """
+        Updates a specific table webhook.
+        """
 
         group = table.database.group
         group.has_user(user, raise_error=True)
@@ -163,15 +185,24 @@ class WebhookHandler:
     def delete_table_webhook(
         self, webhook_id: int, table: GeneratedTableModel, user: any
     ) -> None:
+        """
+        Deletes a specific table webhook.
+        """
 
         group = table.database.group
         group.has_user(user, raise_error=True)
 
         TableWebhook.objects.filter(id=webhook_id).delete()
 
-    def call(self, id, payload, event_id, event_type):
-        headers = self.create_headers(id, event_id, event_type)
-        webhook = TableWebhook.objects.get(id=id)
+    def call(self, webhook_id: int, payload: dict, event_id: str, event_type: str):
+        """
+        Calls a specific webhook and stores the result in the database. This function
+        is to be used from a celery task. After each call it will also call a call log
+        cleanup function.
+        """
+
+        headers = self.create_headers(webhook_id, event_id, event_type)
+        webhook = TableWebhook.objects.get(id=webhook_id)
         webhook_call_defaults = dict(
             status_code=500,
             request=json.dumps(payload),
@@ -179,22 +210,16 @@ class WebhookHandler:
             response="",
         )
         try:
-            response = request(
+            response = request_module(
                 webhook.request_method,
                 webhook.url,
                 headers=headers,
                 json=payload,
                 timeout=5,
             )
-        except ConnectionError:
-            self._create_or_update_webhook_call(
-                webhook, event_id, webhook_call_defaults
-            )
-            raise TableWebhookCannotBeCalled
-
-        if not response.status_code == 200 and not response.status_code == 201:
-            webhook_call_defaults["status_code"] = response.status_code
-            webhook_call_defaults["response"] = response.text
+        except RequestException:
+            # RequestException catches ConnectionError, HTTPError, Timeout or
+            # TooManyRedirects
             self._create_or_update_webhook_call(
                 webhook, event_id, webhook_call_defaults
             )
@@ -202,33 +227,59 @@ class WebhookHandler:
 
         webhook_call_defaults["status_code"] = response.status_code
         webhook_call_defaults["response"] = response.text
-        self._create_or_update_webhook_call(webhook, event_id, webhook_call_defaults)
+        self._create_or_update_webhook_call(
+            webhook, event_id, event_type, webhook_call_defaults
+        )
+
         self._delete_webhook_calls(webhook)
 
         return True
 
-    def get_call_events_per_webhook(self, webhook_id):
-        call_events = TableWebhookCall.objects.filter(webhook_id=webhook_id).order_by(
-            "called_time"
-        )[:10]
+    def test_call(self, webhook_id: int, example_payload: dict):
+        """
+        Helps with running a manual test call triggered by the user. It will generate
+        an event_id, as well as uses a "manual.call" event type to indicate that this
+        was a user generated call.
+        """
 
-        return call_events
+        event_id = str(uuid.uuid4())
+        event_type = "manual.call"
+
+        try:
+            self.call(webhook_id, example_payload, event_id, event_type)
+            call = TableWebhookCall.objects.get(event_id=event_id)
+            return {"response": call.response, "status": call.status_code}
+        except Exception:
+            raise TableWebhookCannotBeCalled
+
+    def get_call_events_per_webhook(self, webhook_id: int):
+        """
+        Returns every call log entry for a given webhook.
+        """
+
+        return TableWebhookCall.objects.filter(webhook_id=webhook_id).order_by(
+            "called_time"
+        )
 
     def _create_or_update_webhook_call(
-        self, webhook: TableWebhook, event_id: str, defaults: dict
+        self, webhook: TableWebhook, event_id: str, event_type: str, defaults: dict
     ):
         return TableWebhookCall.objects.update_or_create(
-            event_id=event_id, webhook_id=webhook, defaults=defaults
+            event_id=event_id,
+            event_type=event_type,
+            webhook_id=webhook,
+            defaults=defaults,
         )
 
     def _delete_webhook_calls(self, webhook: TableWebhook):
+        retain = settings.WEBHOOKS_MAX_CALL_LOG_ENTRIES
         objects_to_keep = TableWebhookCall.objects.filter(
             webhook_id=webhook.id
-        ).order_by("-called_time")[:10]
+        ).order_by("-called_time")[:retain]
         return TableWebhookCall.objects.exclude(pk__in=objects_to_keep).delete()
 
-    def create_headers(self, id, event_id, event_type) -> dict:
-        headers = TableWebhookHeader.objects.filter(webhook_id=id)
+    def create_headers(self, webhook_id: int, event_id: str, event_type: str) -> dict:
+        headers = TableWebhookHeader.objects.filter(webhook_id=webhook_id)
         headers_dict = {}
         for header in headers:
             headers_dict[header.header] = header.value
@@ -240,15 +291,15 @@ class WebhookHandler:
     def reset_failed_trigger(self, webhook_id: int) -> None:
         return TableWebhook.objects.filter(id=webhook_id).update(failed_triggers=0)
 
-    def increment_failed_trigger(self, id):
-        return TableWebhook.objects.filter(id=id).update(
+    def increment_failed_trigger(self, webhook_id: int) -> None:
+        return TableWebhook.objects.filter(id=webhook_id).update(
             failed_triggers=F("failed_triggers") + 1
         )
 
-    def deactivate_webhook(self, id):
-        return TableWebhook.objects.filter(id=id).update(active=False)
+    def deactivate_webhook(self, webhook_id: int) -> None:
+        return TableWebhook.objects.filter(id=webhook_id).update(active=False)
 
-    def get_trigger_count(self, webhook_id) -> int:
+    def get_trigger_count(self, webhook_id: int) -> int:
         try:
             webhook = TableWebhook.objects.get(id=webhook_id)
         except TableWebhook.DoesNotExist:

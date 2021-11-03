@@ -1,4 +1,11 @@
 from rest_framework import serializers
+from django.conf import settings
+from advocate.connection import (
+    validating_create_connection,
+    UnacceptableAddressException,
+)
+from advocate.addrvalidator import AddrValidator
+from urllib.parse import urlparse
 
 
 def validate_events_data(data):
@@ -7,6 +14,7 @@ def validate_events_data(data):
     dictionary and it is 'False' there needs to be an events dictionary also present.
     Raises DRF ValidationError it the events dictionary is not present.
     """
+
     data_dict = dict(data)
     data_keys = data.keys()
     include_all_events = data_dict.get("include_all_events", None)
@@ -22,14 +30,35 @@ def validate_events_data(data):
 
 
 def url_validation(value):
-    # sess = Session()
+    """
+    This is a custom url validation, needed in order to make sure that users will not
+    enter a url which could be in the network of where baserow is running.
+    It makes use of the advocate libraries own address validation.
+    """
 
-    # try:
-    #    sess.get(value)
-    # except UnacceptableAddressException:
-    #    raise serializers.ValidationError(detail="Not a valid url", code="invalid_url")
+    # in case we run the develop server we want to allowe every url.
+    if settings.DEBUG is True:
+        return value
 
-    return value
+    url = urlparse(value)
+
+    # in case the user does not provide a port we assume 80 if it is a
+    # http url or 443 otherwise.
+    if url.port is None:
+        if url.scheme == "http":
+            port = 80
+        else:
+            port = 443
+    else:
+        port = url.port
+
+    addr_validator = AddrValidator()
+
+    try:
+        validating_create_connection((url.hostname, port), validator=addr_validator)
+        return value
+    except UnacceptableAddressException:
+        raise serializers.ValidationError(detail="Not a valid url", code="invalid_url")
 
 
 def http_header_validation(value):

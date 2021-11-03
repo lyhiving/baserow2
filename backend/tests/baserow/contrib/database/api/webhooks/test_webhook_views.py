@@ -1,4 +1,6 @@
+import json
 import pytest
+import responses
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_404_NOT_FOUND,
@@ -243,3 +245,60 @@ def test_delete_webhooks(api_client, data_fixture):
     )
 
     assert response.status_code == HTTP_200_OK
+
+
+@pytest.mark.django_db
+@responses.activate
+def test_call_webhooks(api_client, data_fixture):
+    user, jwt_token = data_fixture.create_user_and_token(
+        email="test@test.nl", password="password", first_name="Test1"
+    )
+    table = data_fixture.create_database_table(user=user)
+
+    webhook_create_data = {
+        "url": "https://mydomain.com/endpoint",
+        "name": "My Webhook",
+        "include_all_events": True,
+    }
+    response = api_client.post(
+        reverse("api:database:tables:list_webhooks", kwargs={"table_id": table.id}),
+        dict(webhook_create_data),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {jwt_token}",
+    )
+    response_json = response.json()
+    webhook_id = response_json["id"]
+    assert response.status_code == HTTP_200_OK
+
+    # mocked responses
+    mocked_response = {"is_response": True}
+    responses.add(
+        responses.POST, webhook_create_data["url"], json=mocked_response, status=400
+    )
+    responses.add(
+        responses.POST, webhook_create_data["url"], json=mocked_response, status=200
+    )
+
+    response = api_client.post(
+        reverse(
+            "api:database:tables:call_webhook",
+            kwargs={"table_id": table.id, "webhook_id": webhook_id},
+        ),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {jwt_token}",
+    )
+
+    assert response.status_code == 400
+    assert response.data == json.dumps(mocked_response)
+
+    response = api_client.post(
+        reverse(
+            "api:database:tables:call_webhook",
+            kwargs={"table_id": table.id, "webhook_id": webhook_id},
+        ),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {jwt_token}",
+    )
+
+    assert response.status_code == 200
+    assert response.data == json.dumps(mocked_response)
