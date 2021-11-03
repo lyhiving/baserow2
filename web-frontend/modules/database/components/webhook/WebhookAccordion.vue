@@ -24,13 +24,15 @@
         </div>
         <div class="webhook__head-right">
           <div class="webhook__head-trigger">
-            {{ webhook.name }}
+            {{ webhookTriggerDescription }}
           </div>
           <div class="webhook__head-call">
-            <div class="webhook__head-date">Last call: 2021-01-01 12:00</div>
-            <span class="webhook__head-call-state webhook__head-call-state--ok"
-              >200 OK</span
-            >
+            <div class="webhook__head-date">
+              {{ `Last call: ${lastCall}` }}
+            </div>
+            <span class="webhook__head-call-state" :class="lastStatusClass">{{
+              lastStatus
+            }}</span>
           </div>
         </div>
       </div>
@@ -51,6 +53,7 @@
 </template>
 
 <script>
+import moment from '@baserow/modules/core/moment'
 import Tabs from '@baserow/modules/core/components/Tabs.vue'
 import Tab from '@baserow/modules/core/components/Tab.vue'
 import UpdateWebhookContext from './UpdateWebhookContext.vue'
@@ -75,6 +78,48 @@ export default {
       isExpanded: false,
       webhookCalls: [],
     }
+  },
+  computed: {
+    lastCall() {
+      if (this.webhookCalls.length > 0) {
+        return moment(this.webhookCalls[0].called_time).format(
+          'YYYY-MM-DD hh:mm:ss'
+        )
+      } else {
+        return 'Not called yet'
+      }
+    },
+    lastStatus() {
+      if (this.webhookCalls.length > 0) {
+        return this.webhookCalls[0].status_code
+      } else {
+        return 'No status'
+      }
+    },
+    lastStatusClass() {
+      if (this.webhookCalls.length > 0) {
+        if (
+          this.webhookCalls[0].status_code >= 200 &&
+          this.webhookCalls[0].status_code <= 299
+        ) {
+          return 'webhook__head-call-state--ok'
+        } else {
+          return 'webhook__head-call-state--error'
+        }
+      } else {
+        return ''
+      }
+    },
+    webhookTriggerDescription() {
+      if (this.$props.webhook.include_all_events) {
+        return 'Sends on every event'
+      } else {
+        const numberOfEvents = this.$props.webhook.events.length
+        return `Sends on ${numberOfEvents} ${
+          numberOfEvents <= 1 ? 'event' : 'events'
+        }`
+      }
+    },
   },
   async created() {
     const data = await WebhookService(this.$client).fetchAllCalls(

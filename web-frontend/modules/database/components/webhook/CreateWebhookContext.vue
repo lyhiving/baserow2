@@ -7,7 +7,6 @@
     @submitted="submit"
   >
     <div class="actions">
-      <a href="#" class="button button--ghost">Trigger test webhook</a>
       <div class="align-right">
         <button
           class="button button--primary"

@@ -2,15 +2,15 @@
   <div class="webhook__call" :class="{ 'webhook__call--open': isExpanded }">
     <div class="webhook__call-head">
       <div class="webhook__call-name">
-        <div class="webhook__call-type">Row created</div>
+        <div class="webhook__call-type">{{ call.event_type }}</div>
         <div class="webhook__call-target">
           {{ call.called_url }}
         </div>
       </div>
       <div class="webhook__call-description">
-        <div class="webhook__call-info">{{ call.called_time }}</div>
+        <div class="webhook__call-info">{{ lastCall }}</div>
         <a href="#" class="webhook__call-toggle" @click="toggleExpand()">
-          <div class="webhook__call-state webhook__head-call-state--ok">
+          <div class="webhook__call-state" :class="lastStatusClass">
             {{ call.status_code }}
           </div>
           <i class="fas fa-chevron-down"></i>
@@ -23,7 +23,7 @@
         <div class="webhook__code-container">
           <pre
             class="webhook__code webhook__code--small"
-          ><code>{{ call.request }}</code></pre>
+          ><code>{{ JSON.stringify(JSON.parse(call.request), null, 4) }}</code></pre>
         </div>
       </div>
       <div class="webhook__call-body-content">
@@ -39,6 +39,7 @@
 </template>
 
 <script>
+import moment from '@baserow/modules/core/moment'
 export default {
   name: 'WebhookCall',
   props: {
@@ -51,6 +52,19 @@ export default {
     return {
       isExpanded: false,
     }
+  },
+  computed: {
+    lastCall() {
+      return moment(this.$props.call.called_time).format('YYYY-MM-DD hh:mm:ss')
+    },
+    lastStatusClass() {
+      const statusCode = this.$props.call.status_code
+      if (statusCode >= 200 && statusCode <= 299) {
+        return 'webhook__head-call-state--ok'
+      } else {
+        return 'webhook__head-call-state--error'
+      }
+    },
   },
   methods: {
     toggleExpand() {

@@ -80,7 +80,12 @@
     </div>
     <div class="control">
       <div class="control__label">Additional headers</div>
-      <div class="control__elements">
+      <div v-if="values.headers.length === 0">
+        <a href="#" @click="addHeaderField()" class="button button--ghost"
+          >Add additional headers</a
+        >
+      </div>
+      <div v-if="values.headers.length > 0" class="control__elements">
         <div
           v-for="(input, index) in values.headers"
           :key="`headerInput-${index}`"
@@ -120,7 +125,6 @@
             <i class="fas fa-plus button__icon"></i>
           </a>
           <a
-            v-if="lastHeaderElement(index) && !firstHeaderElement(index)"
             href="#"
             class="button button--error webhook__header-delete"
             @click="removeHeaderField()"
@@ -129,6 +133,9 @@
           </a>
         </div>
       </div>
+    </div>
+    <div class="control">
+      <webhook-example />
     </div>
     <slot></slot>
   </form>
@@ -140,12 +147,14 @@ import { required } from 'vuelidate/lib/validators'
 import form from '@baserow/modules/core/mixins/form'
 import Checkbox from '@baserow/modules/core/components/Checkbox.vue'
 import Radio from '@baserow/modules/core/components/Radio.vue'
+import WebhookExample from './WebhookExample.vue'
 
 export default {
   name: 'WebhookForm',
   components: {
     Checkbox,
     Radio,
+    WebhookExample,
   },
   mixins: [form],
   props: {
@@ -175,8 +184,7 @@ export default {
         active: true,
         url: '',
         request_method: 'POST',
-        include_all_events: true,
-        headers: [{ header: '', value: '' }],
+        headers: [],
       },
       radio: 'all',
       events: {
@@ -262,9 +270,10 @@ export default {
     getFormValues() {
       if (this.radio === 'custom') {
         const events = this.createEventsList()
-        return { ...this.values, events }
+        return { ...this.values, include_all_events: false, events }
+      } else {
+        return { ...this.values, include_all_events: true }
       }
-      return this.values
     },
   },
 }
