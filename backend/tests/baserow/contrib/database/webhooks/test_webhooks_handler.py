@@ -392,3 +392,40 @@ def test_calling_webhook(data_fixture):
     assert call[0].status_code == 200
     assert call[0].request == json.dumps(request_payload)
     assert call[0].response == json.dumps(response)
+
+
+@pytest.mark.django_db()
+def test_webhook_example_payload(data_fixture):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    webhook_handler = WebhookHandler()
+    text_field = data_fixture.create_text_field(
+        table=table, name="Text", text_default="Text default"
+    )
+    number_field = data_fixture.create_number_field(table=table, name="Number")
+    bool_field = data_fixture.create_boolean_field(table=table, name="Bool")
+
+    webhook_data = {
+        "url": "https://avaliddomain.de/endpoint",
+        "name": "My Webhook",
+        "include_all_events": True,
+        "request_method": "POST",
+        "events": [],
+        "headers": [],
+    }
+
+    webhook_handler.create_table_webhook(
+        table=table, user=user, data=dict(webhook_data)
+    )
+    payload = webhook_handler.get_example_payload(table)
+
+    assert "table_id" in payload
+    assert "row_id" in payload
+    assert "event_type" in payload
+    assert "values" in payload
+
+    values = payload["values"]
+
+    assert f"field_{text_field.id}" in values
+    assert f"field_{number_field.id}" in values
+    assert f"field_{bool_field.id}" in values
