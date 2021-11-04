@@ -33,7 +33,6 @@ from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaType,
     BaserowFormulaInvalidType,
 )
-from baserow.contrib.database.formula.types.formula_types import BaserowFormulaArrayType
 
 
 def baserow_expression_to_update_django_expression(
@@ -146,8 +145,12 @@ class BaserowExpressionToDjangoExpressionGenerator(
         lookup_ref = field_reference.referenced_lookup_field
         is_lookup = lookup_ref is not None
         if is_lookup:
-            other_model = self.model._meta.get_field(db_column).remote_field.model
-            model_field = other_model._meta.get_field(lookup_ref)
+            # TODO
+            path = lookup_ref.split("__")
+            other_model = self.model
+            for step in [db_column] + path[:-1]:
+                other_model = other_model._meta.get_field(step).remote_field.model
+            model_field = other_model._meta.get_field(path[-1])
             db_column += f"__{lookup_ref}"
         else:
             model_field = self.model._meta.get_field(db_column)

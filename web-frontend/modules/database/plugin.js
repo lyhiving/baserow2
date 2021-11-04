@@ -93,6 +93,17 @@ import {
   BaserowLength,
   BaserowNotEqual,
 } from '@baserow/modules/database/formula/functions'
+import {
+  BaserowFormulaArrayType,
+  BaserowFormulaBooleanType,
+  BaserowFormulaCharType,
+  BaserowFormulaDateIntervalType,
+  BaserowFormulaDateType,
+  BaserowFormulaInvalidType,
+  BaserowFormulaNumberType,
+  BaserowFormulaSpecialType,
+  BaserowFormulaTextType,
+} from '@/modules/database/formula/types'
 
 export default (context) => {
   const { store, app } = context
@@ -212,6 +223,17 @@ export default (context) => {
   app.$registry.register('formula_function', new BaserowMinus())
   app.$registry.register('formula_function', new BaserowField())
   app.$registry.register('formula_function', new BaserowRowId())
+
+  // Formula Types
+  app.$registry.register('formula_type', new BaserowFormulaTextType())
+  app.$registry.register('formula_type', new BaserowFormulaCharType())
+  app.$registry.register('formula_type', new BaserowFormulaBooleanType())
+  app.$registry.register('formula_type', new BaserowFormulaDateType())
+  app.$registry.register('formula_type', new BaserowFormulaDateIntervalType())
+  app.$registry.register('formula_type', new BaserowFormulaNumberType())
+  app.$registry.register('formula_type', new BaserowFormulaArrayType())
+  app.$registry.register('formula_type', new BaserowFormulaSpecialType())
+  app.$registry.register('formula_type', new BaserowFormulaInvalidType())
 
   registerRealtimeEvents(app.$realtime)
 }

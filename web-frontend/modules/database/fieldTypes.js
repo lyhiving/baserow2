@@ -445,6 +445,14 @@ export class FieldType extends Registerable {
   getIsReadOnly() {
     return false
   }
+
+  /**
+   * Override and return true if the field type can be referenced by a formula field.
+   * @return {boolean}
+   */
+  canBeReferencedByFormulaField() {
+    return false
+  }
 }
 
 export class TextFieldType extends FieldType {
@@ -507,6 +515,10 @@ export class TextFieldType extends FieldType {
   getContainsFilterFunction() {
     return genericContainsFilter
   }
+
+  canBeReferencedByFormulaField() {
+    return true
+  }
 }
 
 export class LongTextFieldType extends FieldType {
@@ -564,6 +576,10 @@ export class LongTextFieldType extends FieldType {
 
   getContainsFilterFunction() {
     return genericContainsFilter
+  }
+
+  canBeReferencedByFormulaField() {
+    return true
   }
 }
 
@@ -674,6 +690,10 @@ export class LinkRowFieldType extends FieldType {
         value: 'string',
       },
     ]
+  }
+
+  canBeReferencedByFormulaField() {
+    return true
   }
 }
 
@@ -829,6 +849,10 @@ export class NumberFieldType extends FieldType {
   getContainsFilterFunction() {
     return genericContainsFilter
   }
+
+  canBeReferencedByFormulaField() {
+    return true
+  }
 }
 
 export class BooleanFieldType extends FieldType {
@@ -891,6 +915,10 @@ export class BooleanFieldType extends FieldType {
   }
 
   getDocsRequestExample(field) {
+    return true
+  }
+
+  canBeReferencedByFormulaField() {
     return true
   }
 }
@@ -984,6 +1012,10 @@ class BaseDateFieldType extends FieldType {
 
   getContainsFilterFunction() {
     return genericContainsFilter
+  }
+
+  canBeReferencedByFormulaField() {
+    return true
   }
 }
 
@@ -1299,6 +1331,10 @@ export class EmailFieldType extends FieldType {
 
   getContainsFilterFunction() {
     return genericContainsFilter
+  }
+
+  canBeReferencedByFormulaField() {
+    return true
   }
 }
 
@@ -1756,6 +1792,10 @@ export class PhoneNumberFieldType extends FieldType {
   getContainsFilterFunction() {
     return genericContainsFilter
   }
+
+  canBeReferencedByFormulaField() {
+    return true
+  }
 }
 
 export class FormulaFieldType extends FieldType {
@@ -1793,16 +1833,8 @@ export class FormulaFieldType extends FieldType {
     return RowEditFieldFormula
   }
 
-  _mapFormulaTypeToFieldType(formulaType) {
-    return {
-      invalid: TextFieldType.getType(),
-      text: TextFieldType.getType(),
-      char: TextFieldType.getType(),
-      number: NumberFieldType.getType(),
-      date: DateFieldType.getType(),
-      boolean: BooleanFieldType.getType(),
-      date_interval: DateFieldType.getType(),
-    }[formulaType]
+  _mapFormulaTypeToFieldType(formulaType, $registry) {
+    return $registry.get('formula_type', formulaType).getFieldType()
   }
 
   getSort(name, order, field, $registry) {
@@ -1832,7 +1864,7 @@ export class FormulaFieldType extends FieldType {
   getContainsFilterFunction(field, $registry) {
     const underlyingFieldType = $registry.get(
       'field',
-      this._mapFormulaTypeToFieldType(field.formula_type)
+      this._mapFormulaTypeToFieldType(field.formula_type, $registry)
     )
     return underlyingFieldType.getContainsFilterFunction()
   }
@@ -1840,7 +1872,7 @@ export class FormulaFieldType extends FieldType {
   getSortIndicator(field, $registry) {
     const underlyingFieldType = $registry.get(
       'field',
-      this._mapFormulaTypeToFieldType(field.formula_type)
+      this._mapFormulaTypeToFieldType(field.formula_type, $registry)
     )
     return underlyingFieldType.getSortIndicator()
   }
@@ -1863,5 +1895,9 @@ export class FormulaFieldType extends FieldType {
 
   getCanBePrimaryField() {
     return false
+  }
+
+  canBeReferencedByFormulaField() {
+    return true
   }
 }

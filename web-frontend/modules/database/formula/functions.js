@@ -877,3 +877,25 @@ export class BaserowNotEqual extends BaserowFunctionDefinition {
     return '!='
   }
 }
+
+export class BaserowCount extends BaserowFunctionDefinition {
+  static getType() {
+    return 'count'
+  }
+
+  getDescription() {
+    return 'Returns the number of items in its first argument.'
+  }
+
+  getSyntaxUsage() {
+    return ['count(array)']
+  }
+
+  getExamples() {
+    return ["count(field('my link row field'))"]
+  }
+
+  getFormulaType() {
+    return 'array'
+  }
+}

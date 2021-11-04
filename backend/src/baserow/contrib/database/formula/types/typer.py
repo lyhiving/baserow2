@@ -10,10 +10,6 @@ def calculate_typed_expression(formula_field, field_lookup_cache):
             FormulaTypingVisitor(formula_field, field_lookup_cache)
         )
         if typed_expression.many:
-            from baserow.contrib.database.formula.registries import (
-                formula_function_registry,
-            )
-
             de_many_expr = typed_expression.expression_type.collapse_many(
                 typed_expression
             )

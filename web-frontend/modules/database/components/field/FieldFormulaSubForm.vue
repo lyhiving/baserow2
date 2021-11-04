@@ -38,12 +38,6 @@ import FieldFormulaInitialSubForm from '@baserow/modules/database/components/for
 import FormulaAdvancedEditContext from '@baserow/modules/database/components/formula/FormulaAdvancedEditContext'
 import FormulaService from '@baserow/modules/database/services/formula'
 import parseBaserowFormula from '@baserow/modules/database/formula/parser/parser'
-import {
-  FileFieldType,
-  LinkRowFieldType,
-  MultipleSelectFieldType,
-  SingleSelectFieldType,
-} from '@baserow/modules/database/fieldTypes'
 
 export default {
   name: 'FieldFormulaSubForm',
@@ -79,13 +73,10 @@ export default {
     fieldsUsableInFormula() {
       return this.rawFields.filter((f) => {
         const isNotThisField = f.id !== this.defaultValues.id
-        const isInvalidFieldType = [
-          LinkRowFieldType.getType(),
-          FileFieldType.getType(),
-          SingleSelectFieldType.getType(),
-          MultipleSelectFieldType.getType(),
-        ].includes(f.type)
-        return isNotThisField && !isInvalidFieldType
+        const canBeReferencedByFormulaField = this.$registry
+          .get('field', f.type)
+          .canBeReferencedByFormulaField()
+        return isNotThisField && canBeReferencedByFormulaField
       })
     },
     localOrServerError() {

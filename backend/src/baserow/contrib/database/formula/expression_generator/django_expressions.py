@@ -21,6 +21,11 @@ class NotEqualsExpr(BinaryOpExpr):
 
 
 # noinspection PyAbstractClass
+class IsNotExpr(BinaryOpExpr):
+    arg_joiner = " is not "
+
+
+# noinspection PyAbstractClass
 class GreaterThanExpr(BinaryOpExpr):
     arg_joiner = ">"
 

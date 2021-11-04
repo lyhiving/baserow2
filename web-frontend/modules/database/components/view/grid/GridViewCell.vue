@@ -25,6 +25,7 @@
       :value="props.row['field_' + props.field.id]"
       :state="props.state"
       :read-only="props.readOnly"
+      :registry="parent.$registry"
     />
     <component
       :is="$options.methods.getComponent(parent, props)"

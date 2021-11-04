@@ -54,6 +54,7 @@ from baserow.contrib.database.formula.expression_generator.django_expressions im
     LessThanEqualOrExpr,
     AndExpr,
     OrExpr,
+    IsNotExpr,
 )
 from baserow.contrib.database.formula.types.formula_types import (
     BaserowFormulaTextType,
@@ -862,7 +863,7 @@ class BaserowArrayAgg(OneArgumentBaserowFunction):
         return expr
 
     def to_django_expression(self, arg: Expression) -> Expression:
-        return ArrayAgg(arg)
+        return ArrayAgg(arg, filter=IsNotExpr(arg, Value(None)))
 
 
 class Baserow2dArrayAgg(OneArgumentBaserowFunction):

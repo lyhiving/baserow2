@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint, sample
-from typing import Any, Callable, Dict, List, Tuple, Optional
+from typing import Any, Callable, Dict, List, Tuple
 
 import pytz
 from dateutil import parser
@@ -2224,9 +2224,11 @@ class FormulaFieldType(FieldType):
         return field_instance, old_field
 
     def get_direct_field_name_dependencies(
-        self, field_instance
+        self, field_instance, field_lookup_cache
     ) -> OptionalFieldDependencies:
-        return FormulaHandler.get_direct_field_name_dependencies(field_instance)
+        return FormulaHandler.get_direct_field_name_dependencies(
+            field_instance, field_lookup_cache
+        )
 
     def restore_failed(self, field_instance, restore_exception):
         if isinstance(restore_exception, SelfReferenceFieldDependencyError):

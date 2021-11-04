@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List
 
 from django.db.models import Q
 
@@ -767,7 +767,7 @@ class FieldType(
 
         return None, None
 
-    def get_direct_field_name_dependencies(self, field_instance):
+    def get_direct_field_name_dependencies(self, field_instance, field_lookup_cache):
         return None
 
     def restore_failed(self, field_instance, restore_exception):

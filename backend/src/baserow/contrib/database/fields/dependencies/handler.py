@@ -238,7 +238,9 @@ class FieldDependencyHandler:
         if fixed_some_fields:
             rename_only = False
 
-        dependent_field_names = field_type.get_direct_field_name_dependencies(field)
+        dependent_field_names = field_type.get_direct_field_name_dependencies(
+            field, updated_fields
+        )
         if dependent_field_names is not None:
             cls.reset_field_dependencies_to(
                 field, dependent_field_names, updated_fields
@@ -331,7 +333,9 @@ class FieldDependencyHandler:
     @classmethod
     def raise_if_any_circular_references(cls, field, field_lookup_cache):
         field_type = field_type_registry.get_by_model(field)
-        dependent_field_names = field_type.get_direct_field_name_dependencies(field)
+        dependent_field_names = field_type.get_direct_field_name_dependencies(
+            field, field_lookup_cache
+        )
         if dependent_field_names is not None:
             cls.reset_field_dependencies_to(
                 field, dependent_field_names, field_lookup_cache, rollback=True
@@ -343,7 +347,7 @@ class FieldDependencyHandler:
         for specific_field in fields:
             field_type = field_type_registry.get_by_model(specific_field)
             dependency_field_names = field_type.get_direct_field_name_dependencies(
-                specific_field
+                specific_field, field_lookup_cache
             )
             if dependency_field_names is not None:
                 cls.reset_field_dependencies_to(

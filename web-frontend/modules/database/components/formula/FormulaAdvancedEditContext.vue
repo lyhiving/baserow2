@@ -137,16 +137,9 @@ export default {
       return `fa-${fieldType.getIconClass()}`
     },
     funcTypeToIconClass(func) {
-      const formulaType = func.getFormulaType()
-      return {
-        text: 'fa-font',
-        char: 'fa-font',
-        number: 'fa-hashtag',
-        boolean: 'fa-check-square',
-        date: 'fa-calendar-alt',
-        date_interval: 'fa-history',
-        special: 'fa-square-root-alt',
-      }[formulaType]
+      const formulaTypeValue = func.getFormulaType()
+      const formulaType = this.$registry.get('formula_type', formulaTypeValue)
+      return `fa-${formulaType.getIconClass()}`
     },
     resetFilters() {
       this.filteredFunctions = this.functions

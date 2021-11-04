@@ -2,10 +2,10 @@ from decimal import Decimal
 
 import pytest
 from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from pyinstrument import Profiler
 from rest_framework.status import HTTP_200_OK
-from django.test.utils import CaptureQueriesContext
 
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.management.commands.fill_table import fill_table
@@ -291,6 +291,7 @@ def add_fan_out_of(
 
 
 @pytest.mark.django_db
+@pytest.mark.slow
 def test_fanout_one_off(data_fixture, api_client, django_assert_num_queries):
     user, token = data_fixture.create_user_and_token()
     p = Profiler()
@@ -302,7 +303,7 @@ def test_fanout_one_off(data_fixture, api_client, django_assert_num_queries):
     profiler = Profiler()
     profiler.start()
     with CaptureQueriesContext(connection) as captured:
-        response = api_client.get(
+        api_client.get(
             url,
             format="json",
             HTTP_AUTHORIZATION=f"JWT {token}",
@@ -315,6 +316,7 @@ def test_fanout_one_off(data_fixture, api_client, django_assert_num_queries):
 
 
 @pytest.mark.django_db
+@pytest.mark.slow
 def test_fanout(data_fixture, api_client, django_assert_num_queries):
     results = [
         [
@@ -346,7 +348,7 @@ def test_fanout(data_fixture, api_client, django_assert_num_queries):
             profiler = Profiler()
             profiler.start()
             with CaptureQueriesContext(connection) as captured:
-                response = api_client.get(
+                api_client.get(
                     url,
                     format="json",
                     HTTP_AUTHORIZATION=f"JWT {token}",

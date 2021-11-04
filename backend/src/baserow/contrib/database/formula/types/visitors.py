@@ -66,10 +66,27 @@ class FunctionsUsedVisitor(
 class FieldReferenceExtractingVisitor(
     BaserowFormulaASTVisitor[UnTyped, "dep_handler.FieldDependencies"]
 ):
+    def __init__(self, table, field_lookup_cache):
+        self.field_lookup_cache = field_lookup_cache
+        self.table = table
+
     def visit_field_reference(
         self, field_reference: BaserowFieldReference[UnTyped]
     ) -> "dep_handler.FieldDependencies":
         if field_reference.referenced_lookup_field is None:
+            field = self.field_lookup_cache.lookup(
+                self.table, field_reference.referenced_field_name
+            )
+            from baserow.contrib.database.fields.models import LinkRowField
+
+            if field is not None and isinstance(field, LinkRowField):
+                return [
+                    (
+                        field_reference.referenced_field_name,
+                        field.get_related_primary_field().name,
+                    )
+                ]
+
             return [field_reference.referenced_field_name]
         else:
             return [
@@ -157,8 +174,16 @@ class FormulaTypingVisitor(
                     formula_type = lookup_field_type.to_baserow_formula_type(
                         lookup_field
                     )
+                    if isinstance(lookup_field, LinkRowField):
+                        col = (
+                            lookup_field.db_column
+                            + "__"
+                            + lookup_field.get_related_primary_field().db_column
+                        )
+                    else:
+                        col = lookup_field.db_column
                     return BaserowFieldReference(
-                        referenced_field.db_column, lookup_field.db_column, formula_type
+                        referenced_field.db_column, col, formula_type
                     )
             # check the lookup field
             return field_type.to_baserow_formula_expression(referenced_field)
