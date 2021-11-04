@@ -56,3 +56,4 @@ class TableWebhookCall(models.Model):
     status_code = models.IntegerField()
     request = models.TextField(null=True)
     response = models.TextField(null=True)
+    error = models.TextField(null=True)

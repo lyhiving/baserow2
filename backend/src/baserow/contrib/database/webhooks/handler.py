@@ -244,6 +244,7 @@ class WebhookHandler:
             request=json.dumps(payload),
             called_url=webhook.url,
             response="",
+            error="",
         )
         try:
             response = request_module(
@@ -253,9 +254,10 @@ class WebhookHandler:
                 json=payload,
                 timeout=5,
             )
-        except RequestException:
+        except RequestException as e:
             # RequestException catches ConnectionError, HTTPError, Timeout or
             # TooManyRedirects
+            webhook_call_defaults["error"] = repr(e)
             self._create_or_update_webhook_call(
                 webhook, event_id, event_type, webhook_call_defaults
             )

@@ -66,11 +66,13 @@ class TableWebhookUpdateRequestSerializer(serializers.ModelSerializer):
             "headers",
             "name",
             "active",
+            "use_user_field_names",
         )
         extra_kwargs = {
             "url": {"required": False},
             "name": {"required": False},
             "active": {"required": False},
+            "use_user_field_names": {"required": False},
             "request_method": {"required": False},
         }
 
@@ -90,16 +92,17 @@ class TableWebhookHeaderResponseSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class TableWebhookResultSerializer(serializers.ModelSerializer):
-    events = TableWebhookEventsResponseSerializer(many=True)
-    headers = TableWebhookHeaderResponseSerializer(many=True)
-
+class TableWebhookCallResponseSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TableWebhook
+        model = TableWebhookCall
         fields = "__all__"
 
 
-class TableWebhookCallResponse(serializers.ModelSerializer):
+class TableWebhookResultSerializer(serializers.ModelSerializer):
+    events = TableWebhookEventsResponseSerializer(many=True)
+    headers = TableWebhookHeaderResponseSerializer(many=True)
+    calls = TableWebhookCallResponseSerializer(many=True)
+
     class Meta:
-        model = TableWebhookCall
+        model = TableWebhook
         fields = "__all__"
