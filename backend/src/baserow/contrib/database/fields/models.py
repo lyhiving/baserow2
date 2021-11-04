@@ -111,7 +111,6 @@ class Field(
     def save(self, *args, **kwargs):
         kwargs.pop("field_lookup_cache", None)
         kwargs.pop("raise_if_invalid", None)
-        kwargs.pop("recalculate", None)
         super().save(*args, **kwargs)
 
     def get_or_create_node(self):
