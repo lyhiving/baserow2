@@ -6,6 +6,7 @@ from baserow.core.models import CreatedAndUpdatedOnMixin
 class TableWebhook(CreatedAndUpdatedOnMixin, models.Model):
     table_id = models.IntegerField()
     active = models.BooleanField(default=True)
+    use_user_field_names = models.BooleanField(default=True)
     url = models.URLField()
 
     class RequestMethod(models.TextChoices):

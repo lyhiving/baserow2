@@ -30,7 +30,6 @@ from .serializers import (
 )
 from baserow.contrib.database.tokens.handler import TokenHandler
 from baserow.contrib.database.webhooks.handler import WebhookHandler
-from baserow.contrib.database.webhooks.registries import webhook_event_type_registry
 from baserow.contrib.database.table.handler import TableHandler
 from baserow.contrib.database.tokens.exceptions import NoPermissionToTable
 from baserow.contrib.database.api.tokens.errors import ERROR_NO_PERMISSION_TO_TABLE
@@ -296,9 +295,7 @@ class TableWebhookCallView(APIView):
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
         TokenHandler().check_table_permissions(request, "create", table, False)
-        webhook_event = webhook_event_type_registry.get("row.created")
-        payload = webhook_event.get_example_payload()
-        data = webhook_handler.test_call(webhook_id, payload)
+        data = webhook_handler.test_call(webhook_id, table, request.user)
         return Response(data=data["response"], status=data["status"])
 
     @extend_schema(

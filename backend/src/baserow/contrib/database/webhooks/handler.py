@@ -6,7 +6,6 @@ from django.db.models.query import QuerySet
 from requests import request, RequestException
 from advocate import request as advocate_request
 from django.db.models import Q, F
-from faker import Faker
 
 from .models import (
     TableWebhook,
@@ -20,8 +19,11 @@ from .exceptions import (
     TableWebhookMaxAllowedCountExceeded,
     TableWebhookCannotBeCalled,
 )
-from baserow.contrib.database.table.models import GeneratedTableModel
-from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.contrib.database.table.models import Table
+from baserow.contrib.database.api.rows.serializers import (
+    get_row_serializer_class,
+    RowSerializer,
+)
 
 if settings.DEBUG is True:
     request_module = request
@@ -30,23 +32,28 @@ else:
 
 
 class WebhookHandler:
-    def get_example_payload(self, table: GeneratedTableModel, event_type="row.created"):
-        fake = Faker()
-        table_fields = table.field_set(manager="objects").all()
-        values = {}
-        fields = [field for field in table_fields]
-        for field in fields:
-            field_id = f"field_{field.id}"
-            field_type = field_type_registry.get_by_model(field.specific)
-            random_value = field_type.random_value(field.specific, fake, {})
-            values[field_id] = random_value
+    def get_example_payload(
+        self, webhook: TableWebhook, table: Table, event_type="row.created"
+    ):
+        model = table.get_model()
+        serializer = get_row_serializer_class(
+            model, RowSerializer, user_field_names=webhook.use_user_field_names
+        )
+        serialized_data = serializer().data
+        types_mapping = {
+            "row.created": {"values": serialized_data},
+            "row.updated": {"values": serialized_data, "old_values": serialized_data},
+            "row.deleted": {},
+        }
+        event_specific_payload = types_mapping[event_type]
 
-        payload = {
+        payload_base = {
             "table_id": table.id,
             "row_id": 1,
             "event_type": event_type,
-            "values": values,
         }
+
+        payload = {**payload_base, **event_specific_payload}
 
         return payload
 
@@ -66,7 +73,7 @@ class WebhookHandler:
         return TableWebhook.objects.filter(filter)
 
     def get_table_webhook(
-        self, webhook_id: int, table: GeneratedTableModel, user: any
+        self, webhook_id: int, table: Table, user: any
     ) -> TableWebhook:
         """
         Gets a single webhook for the provided webhookd ID. Raises a
@@ -86,7 +93,7 @@ class WebhookHandler:
 
         return webhook
 
-    def get_all_table_webhooks(self, table: GeneratedTableModel, user: any) -> QuerySet:
+    def get_all_table_webhooks(self, table: Table, user: any) -> QuerySet:
         """
         Gets all the webhooks for a specific table.
         """
@@ -103,9 +110,7 @@ class WebhookHandler:
 
         return [{"header": "Content-type", "value": "application/json"}]
 
-    def create_table_webhook(
-        self, table: GeneratedTableModel, user: any, data: any
-    ) -> TableWebhook:
+    def create_table_webhook(self, table: Table, user: any, data: any) -> TableWebhook:
         """
         Creates a new webhook for a given table.
         """
@@ -156,7 +161,7 @@ class WebhookHandler:
         return webhook
 
     def update_table_webhook(
-        self, webhook_id: int, table: GeneratedTableModel, user: any, data: any
+        self, webhook_id: int, table: Table, user: any, data: any
     ) -> TableWebhook:
         """
         Updates a specific table webhook.
@@ -215,9 +220,7 @@ class WebhookHandler:
             webhook.save()
         return webhook
 
-    def delete_table_webhook(
-        self, webhook_id: int, table: GeneratedTableModel, user: any
-    ) -> None:
+    def delete_table_webhook(self, webhook_id: int, table: Table, user: any) -> None:
         """
         Deletes a specific table webhook.
         """
@@ -272,15 +275,20 @@ class WebhookHandler:
 
         return True
 
-    def test_call(self, webhook_id: int, example_payload: dict):
+    def test_call(self, webhook_id: int, table: Table, user: any):
         """
         Helps with running a manual test call triggered by the user. It will generate
         an event_id, as well as uses a "manual.call" event type to indicate that this
         was a user generated call.
         """
 
+        group = table.database.group
+        group.has_user(user, raise_error=True)
+
+        webhook = self.get_table_webhook(webhook_id, table, user)
         event_id = str(uuid.uuid4())
         event_type = "manual.call"
+        example_payload = self.get_example_payload(webhook, table)
 
         try:
             self.call(webhook_id, example_payload, event_id, event_type)
