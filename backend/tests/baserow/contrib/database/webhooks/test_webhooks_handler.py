@@ -414,10 +414,30 @@ def test_webhook_example_payload(data_fixture):
         "headers": [],
     }
 
-    webhook_handler.create_table_webhook(
+    webhook = webhook_handler.create_table_webhook(
         table=table, user=user, data=dict(webhook_data)
     )
-    payload = webhook_handler.get_example_payload(table)
+    payload = webhook_handler.get_example_payload(webhook, table)
+
+    assert "table_id" in payload
+    assert "row_id" in payload
+    assert "event_type" in payload
+    assert "values" in payload
+
+    values = payload["values"]
+
+    assert text_field.name in values
+    assert number_field.name in values
+    assert bool_field.name in values
+
+    # deactivating user_field_names will correctly show the field ids
+    webhook_data["use_user_field_names"] = False
+    webhook_handler.update_table_webhook(webhook.id, table, user, dict(webhook_data))
+
+    webhook.refresh_from_db()
+    assert webhook.use_user_field_names is False
+
+    payload = webhook_handler.get_example_payload(webhook, table)
 
     assert "table_id" in payload
     assert "row_id" in payload
