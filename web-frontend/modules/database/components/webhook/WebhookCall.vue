@@ -55,7 +55,7 @@ export default {
   },
   computed: {
     lastCall() {
-      return moment(this.$props.call.called_time).format('YYYY-MM-DD hh:mm:ss')
+      return moment(this.$props.call.called_time).format('YYYY-MM-DD HH:mm:ss')
     },
     lastStatusClass() {
       const statusCode = this.$props.call.status_code

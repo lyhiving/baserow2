@@ -17,6 +17,12 @@ export const mutations = {
     const index = state.items.findIndex((item) => item.id === id)
     state.items.splice(index, 1, { id, ...values })
   },
+  DELETE_WEBHOOK(state, id) {
+    const index = state.items.findIndex((item) => item.id === id)
+    if (index > -1) {
+      state.items.splice(index, 1)
+    }
+  },
   SET_LOADING(state, value) {
     state.loading = value
   },
@@ -26,10 +32,6 @@ export const mutations = {
 }
 
 export const actions = {
-  /**
-   * Fetches all the fields of a given table. The is mostly called when the user
-   * selects a different table.
-   */
   async fetchAll({ commit, getters, dispatch }, table) {
     commit('SET_LOADING', true)
     commit('SET_LOADED', false)
@@ -81,6 +83,21 @@ export const actions = {
     } catch (error) {
       commit('SET_LOADING', false)
 
+      throw error
+    }
+  },
+  async delete({ commit, getters, dispatch }, { table, webhook }) {
+    commit('SET_LOADING', true)
+    commit('SET_LOADED', false)
+
+    try {
+      await WebhookService(this.$client).delete(table.id, webhook.id)
+      commit('DELETE_WEBHOOK', webhook.id)
+      commit('SET_LOADING', false)
+      commit('SET_LOADED', true)
+    } catch (error) {
+      commit('SET_LOADING', false)
+      commit('SET_LOADED', true)
       throw error
     }
   },

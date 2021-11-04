@@ -39,7 +39,11 @@
       <div class="webhook__body">
         <Tabs>
           <Tab title="Edit">
-            <update-webhook-context :webhook="webhook" :table="table" />
+            <update-webhook-context
+              :webhook="webhook"
+              :table="table"
+              @triggerWebhook="$emit('triggerWebhook')"
+            />
           </Tab>
           <Tab title="Call log">
             <div v-for="call in webhookCalls" :key="call.id">
@@ -61,7 +65,7 @@ import WebhookCall from './WebhookCall.vue'
 import WebhookService from '@baserow/modules/database/services/webhook'
 
 export default {
-  name: 'WebhookAccordion',
+  name: 'Webhook',
   components: { Tabs, Tab, UpdateWebhookContext, WebhookCall },
   props: {
     webhook: {
@@ -83,7 +87,7 @@ export default {
     lastCall() {
       if (this.webhookCalls.length > 0) {
         return moment(this.webhookCalls[0].called_time).format(
-          'YYYY-MM-DD hh:mm:ss'
+          'YYYY-MM-DD HH:mm:ss'
         )
       } else {
         return 'Not called yet'

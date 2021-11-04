@@ -6,8 +6,21 @@
     @submitted="submit"
   >
     <div class="actions">
-      <a href="#" class="button button--ghost">Trigger test webhook</a>
+      <button
+        class="button button--primary button--error"
+        @click="deleteWebhook()"
+        :class="{ 'button--loading': loading }"
+        :disabled="loading"
+      >
+        Delete
+      </button>
       <div class="align-right">
+        <a
+          href="#"
+          class="button button--ghost"
+          @click="$emit('triggerWebhook')"
+          >Trigger test webhook</a
+        >
         <button
           class="button button--primary"
           :class="{ 'button--loading': loading }"
@@ -17,16 +30,22 @@
         </button>
       </div>
     </div>
+    <delete-webhook-modal
+      ref="deleteWebhookModal"
+      :webhook="webhook"
+      :table="table"
+    />
   </webhook-form>
 </template>
 
 <script>
 import WebhookForm from '@baserow/modules/database/components/webhook/WebhookForm'
+import DeleteWebhookModal from './DeleteWebhookModal.vue'
 import { notifyIf } from '@baserow/modules/core/utils/error'
 
 export default {
   name: 'UpdateWebhookContext',
-  components: { WebhookForm },
+  components: { WebhookForm, DeleteWebhookModal },
   props: {
     table: {
       type: Object,
@@ -43,7 +62,7 @@ export default {
     }
   },
   watch: {
-    field() {
+    webhook() {
       // If the field values are updated via an outside source, think of real time
       // collaboration or via the modal, we want to reset the form so that it contains
       // the correct base values.
@@ -53,6 +72,9 @@ export default {
     },
   },
   methods: {
+    deleteWebhook() {
+      this.$refs.deleteWebhookModal.show()
+    },
     async submit(values) {
       this.loading = true
       const table = this.table

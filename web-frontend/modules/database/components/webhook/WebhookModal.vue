@@ -12,25 +12,31 @@
     </div>
     <div v-if="renderList" class="webhook__list">
       <div v-for="webhook in webhooks" :key="webhook.id">
-        <webhook-accordion :webhook="webhook" :table="table" />
+        <webhook
+          :webhook="webhook"
+          :table="table"
+          @triggerWebhook="triggerWebhook()"
+        />
       </div>
     </div>
     <div v-if="!renderList" class="webhook__list">
       <create-webhook-context :table="table" @created="toggleCreate()" />
     </div>
+    <trigger-webhook-modal ref="triggerWebhookModal" />
   </Modal>
 </template>
 
 <script>
 import { mapState } from 'vuex'
-import WebhookAccordion from './WebhookAccordion.vue'
+import Webhook from './Webhook.vue'
 import CreateWebhookContext from './CreateWebhookContext.vue'
+import TriggerWebhookModal from './TriggerWebhookModal.vue'
 import modal from '@baserow/modules/core/mixins/modal'
 import error from '@baserow/modules/core/mixins/error'
 
 export default {
   name: 'WebhookModal',
-  components: { WebhookAccordion, CreateWebhookContext },
+  components: { Webhook, CreateWebhookContext, TriggerWebhookModal },
   mixins: [modal, error],
   props: {
     table: {
@@ -48,6 +54,10 @@ export default {
     webhooks: (state) => state.webhook.items,
   }),
   methods: {
+    triggerWebhook() {
+      console.log('trying to run, right?', this.$refs)
+      this.$refs.triggerWebhookModal.show()
+    },
     toggleCreate() {
       this.renderList = !this.renderList
     },
