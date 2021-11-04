@@ -52,7 +52,12 @@ class WebhookEventType(Instance):
         serialized_row = get_row_serializer_class(
             model, RowSerializer, is_response=True
         )(row).data
-        payload = {"table_id": table.id, "row_id": row.id, "values": serialized_row}
+        payload = {
+            "table_id": table.id,
+            "row_id": row.id,
+            "event_type": self.type,
+            "values": serialized_row,
+        }
 
         return payload
 

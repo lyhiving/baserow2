@@ -6,6 +6,7 @@ from django.db.models.query import QuerySet
 from requests import request, RequestException
 from advocate import request as advocate_request
 from django.db.models import Q, F
+from faker import Faker
 
 from .models import (
     TableWebhook,
@@ -20,6 +21,7 @@ from .exceptions import (
     TableWebhookCannotBeCalled,
 )
 from baserow.contrib.database.table.models import GeneratedTableModel
+from baserow.contrib.database.fields.registries import field_type_registry
 
 if settings.DEBUG is True:
     request_module = request
@@ -28,6 +30,26 @@ else:
 
 
 class WebhookHandler:
+    def get_example_payload(self, table: GeneratedTableModel, event_type="row.created"):
+        fake = Faker()
+        table_fields = table.field_set(manager="objects").all()
+        values = {}
+        fields = [field for field in table_fields]
+        for field in fields:
+            field_id = f"field_{field.id}"
+            field_type = field_type_registry.get_by_model(field.specific)
+            random_value = field_type.random_value(field.specific, fake, {})
+            values[field_id] = random_value
+
+        payload = {
+            "table_id": table.id,
+            "row_id": 1,
+            "event_type": event_type,
+            "values": values,
+        }
+
+        return payload
+
     def find_webhooks_to_call(self, table_id: int, event_type: str) -> QuerySet:
         """
         This function is responsible for finding all the webhooks related to a table
