@@ -4,7 +4,7 @@ from math import floor, ceil
 
 from dateutil import parser
 from dateutil.parser import ParserError
-from django.contrib.postgres.fields import JSONField
+from django.contrib.postgres.fields import JSONField, ArrayField
 from django.contrib.postgres.aggregates.general import ArrayAgg
 from django.db.models import Q, IntegerField, BooleanField, DateTimeField, DurationField
 from django.db.models.functions import Cast
@@ -690,10 +690,9 @@ class EmptyViewFilterType(ViewFilterType):
     ]
 
     def get_filter(self, field_name, value, model_field, field):
+        fs = [ManyToManyField, ForeignKey, DurationField, ArrayField]
         # If the model_field is a ManyToMany field we only have to check if it is None.
-        if isinstance(model_field, ManyToManyField) or isinstance(
-            model_field, ForeignKey
-        ):
+        if any(isinstance(model_field, f) for f in fs):
             return Q(**{f"{field_name}": None})
 
         if isinstance(model_field, BooleanField):
@@ -705,9 +704,6 @@ class EmptyViewFilterType(ViewFilterType):
         if isinstance(model_field, JSONField):
             q.add(Q(**{f"{field_name}": []}), Q.OR)
             q.add(Q(**{f"{field_name}": {}}), Q.OR)
-
-        if isinstance(model_field, DurationField):
-            return Q(**{f"{field_name}": None})
 
         # If the model field accepts an empty string as value we are going to add
         # that to the or statement.

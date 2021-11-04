@@ -503,8 +503,9 @@ class RowHandler:
             row.refresh_from_db(fields=model.fields_requiring_refresh_after_update())
 
             updated_fields = [
-                model._field_objects[int(i.split("_")[1])]["field"]
-                for i in values.keys()
+                field["field"]
+                for field_id, field in model._field_objects.items()
+                if field_id in values or field["name"] in values
             ]
             other_table_connections = (
                 FieldDependencyHandler.recursively_find_connections_to_other_tables(

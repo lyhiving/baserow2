@@ -1840,7 +1840,7 @@ export class FormulaFieldType extends FieldType {
   getSort(name, order, field, $registry) {
     const underlyingFieldType = $registry.get(
       'field',
-      this._mapFormulaTypeToFieldType(field.formula_type)
+      this._mapFormulaTypeToFieldType(field.formula_type, $registry)
     )
     return underlyingFieldType.getSort(name, order)
   }

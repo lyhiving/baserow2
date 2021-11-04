@@ -90,6 +90,12 @@ class FormulaHandler:
         return update_field_names(formula_to_update, field_renames)
 
     @classmethod
+    def get_direct_field_name_dependencies_from_expression(cls, table, expr):
+        return expr.accept(
+            FieldReferenceExtractingVisitor(table, LookupFieldByNameCache())
+        )
+
+    @classmethod
     def get_direct_field_name_dependencies(cls, formula_field, field_lookup_cache):
         return formula_field.cached_untyped_expression.accept(
             FieldReferenceExtractingVisitor(formula_field.table, field_lookup_cache)
@@ -104,6 +110,10 @@ class FormulaHandler:
     @classmethod
     def raw_formula_to_untyped_expression(cls, formula_string):
         return raw_formula_to_untyped_expression(formula_string)
+
+    @classmethod
+    def recalculate_formula_field(cls, formula_field):
+        return
 
     @classmethod
     def get_type(cls, formula_type_string: str):
