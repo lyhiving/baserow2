@@ -53,13 +53,28 @@ def forward(apps, schema_editor):
     FormulaField = apps.get_model("database", "FormulaField")
     FieldDependencyEdge = apps.get_model("database", "FieldDependencyEdge")
     FieldDependencyNode = apps.get_model("database", "FieldDependencyNode")
+    LinkRowField = apps.get_model("database", "LinkRowField")
 
-    _build_graph_from_scratch(FieldDependencyEdge, FieldDependencyNode, FormulaField)
+    _build_graph_from_scratch(
+        FieldDependencyEdge, FieldDependencyNode, FormulaField, LinkRowField
+    )
     _calculate_all_formula_internal_fields_in_order(FormulaField, FieldDependencyNode)
 
 
 # noinspection PyPep8Naming
-def _build_graph_from_scratch(FieldDependencyEdge, FieldDependencyNode, FormulaField):
+def _build_graph_from_scratch(
+    FieldDependencyEdge, FieldDependencyNode, FormulaField, LinkRowField
+):
+    for link_row in LinkRowField.objects.all():
+        link_row_node = get_or_create_node(link_row, FieldDependencyNode)
+        related_primary_field = next(
+            f for f in link_row.link_row_table.field_set.all() if f.primary
+        )
+        primary_node = get_or_create_node(related_primary_field, FieldDependencyNode)
+        FieldDependencyEdge.objects.create(
+            parent=primary_node, via=link_row, child=link_row_node
+        )
+
     for formula in FormulaField.objects.all():
         expr = FormulaHandler.raw_formula_to_untyped_expression(formula.formula)
         dependency_field_names = (

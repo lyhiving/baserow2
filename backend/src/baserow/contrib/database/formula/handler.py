@@ -1,4 +1,4 @@
-from typing import Type, Dict, Set
+from typing import Type, Dict, Set, Optional
 
 from django.db.models import Model
 
@@ -85,9 +85,12 @@ class FormulaHandler:
 
     @classmethod
     def rename_field_references_in_formula_string(
-        cls, formula_to_update: str, field_renames: Dict[str, str]
+        cls,
+        formula_to_update: str,
+        field_renames: Dict[str, str],
+        via_field: Optional[str],
     ) -> str:
-        return update_field_names(formula_to_update, field_renames)
+        return update_field_names(formula_to_update, field_renames, via_field=via_field)
 
     @classmethod
     def get_direct_field_name_dependencies_from_expression(cls, table, expr):

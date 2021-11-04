@@ -205,3 +205,17 @@ def test_replaces_field_with_double_quotes_with_id():
         field_names_to_replace_with_id_refs={'test with " "': 1, "other_test": 2},
     )
     assert new_formula == "field_by_id(1)"
+
+
+def test_replaces_lookup():
+    new_formula = update_field_names(
+        "lookup('a', 'b')", field_names_to_update={"a": "c"}
+    )
+    assert new_formula == "lookup('c', 'b')"
+
+
+def test_replaces_lookup_when_via_changes():
+    new_formula = update_field_names(
+        "lookup('a', 'b')+field('b')", field_names_to_update={"b": "c"}, via_field="a"
+    )
+    assert new_formula == "lookup('a', 'c')+field('b')"

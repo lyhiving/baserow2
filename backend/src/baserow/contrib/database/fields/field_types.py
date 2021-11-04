@@ -1302,6 +1302,25 @@ class LinkRowFieldType(FieldType):
             field, primary_field, self.to_baserow_formula_type(field)
         )
 
+    def get_direct_field_name_dependencies(self, field_instance, field_lookup_cache):
+        try:
+            return [
+                (field_instance.name, field_instance.get_related_primary_field().name)
+            ]
+        except StopIteration:
+            return []
+
+    def after_direct_field_dependency_changed(
+        self,
+        field_instance: FormulaField,
+        changed_parent_field,
+        old_changed_parent_field,
+        updated_fields,
+        via_field,
+        rename_only=False,
+    ):
+        return field_instance, field_instance
+
 
 class EmailFieldType(CharFieldMatchingRegexFieldType):
     type = "email"
@@ -2201,6 +2220,7 @@ class FormulaFieldType(FieldType):
         changed_parent_field,
         old_changed_parent_field,
         updated_fields,
+        via_field,
         rename_only=False,
     ):
         old_field = deepcopy(field_instance)
@@ -2210,7 +2230,9 @@ class FormulaFieldType(FieldType):
             if old_parent_name != new_parent_name:
                 field_instance.formula = (
                     FormulaHandler.rename_field_references_in_formula_string(
-                        old_field.formula, {old_parent_name: new_parent_name}
+                        old_field.formula,
+                        {old_parent_name: new_parent_name},
+                        via_field.name if via_field is not None else None,
                     )
                 )
             if rename_only:

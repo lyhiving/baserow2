@@ -378,6 +378,35 @@ export class BaserowField extends BaserowFunctionDefinition {
   }
 }
 
+export class BaserowLookup extends BaserowFunctionDefinition {
+  static getType() {
+    return 'lookup'
+  }
+
+  getDescription() {
+    return (
+      'Looks up the values from a field in another table for rows in a link row' +
+      ' field. The first argument should be the name of a link row field in the' +
+      ' current table and the second should be the name of a field in the linked' +
+      ' table.'
+    )
+  }
+
+  getSyntaxUsage() {
+    return ["lookup('a link row field name', 'field name in other the table')"]
+  }
+
+  getExamples() {
+    return [
+      "lookup('link row field', 'first name') = lookup('link row field', 'last name')",
+    ]
+  }
+
+  getFormulaType() {
+    return 'special'
+  }
+}
+
 export class BaserowIsBlank extends BaserowFunctionDefinition {
   static getType() {
     return 'isblank'

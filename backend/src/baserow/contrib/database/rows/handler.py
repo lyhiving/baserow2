@@ -24,37 +24,28 @@ from ..formula import FormulaHandler
 def _recursively_update(row_id, connections, path):
     for edge in connections:
         child = edge.child
-        field = child.field
-        model = field.table.get_model(field_ids=[field.id])
-        this_path = "__".join(path + [edge.via.db_column]) + "__id"
+        child_field = child.field
+        child_model = child_field.table.get_model(field_ids=[child_field.id])
+        this_path = "__".join([edge.via.db_column] + path) + "__id"
         update_query = {}
-        for field_object in model._field_objects.values():
+        for field_object in child_model._field_objects.values():
             field = field_object["field"]
             if isinstance(field, FormulaField):
                 update_query[
                     field.db_column
                 ] = FormulaHandler.baserow_expression_to_update_django_expression(
-                    field.cached_typed_internal_expression, model
+                    field.cached_typed_internal_expression, child_model
                 )
 
-        model.objects.filter(**{this_path: row_id}).update(**update_query)
+        child_model.objects.filter(**{this_path: row_id}).update(**update_query)
     for edge in connections:
         more_connections = (
             FieldDependencyHandler.recursively_find_connections_to_other_tables(
                 edge.child.table, [edge.child.field]
             )
         )
-        _recursively_update(row_id, more_connections, path + [edge.via.db_column])
-    # fields_by_table = {}
-    # for field in other_table_fields:
-    #     l = fields_by_table.setdefault(field.table_id, [])
-    #     l.append(field)
-    #
-    # for table_id, fields in fields_by_table.items():
-    #
-    #     model = fields[0].table.get_model(fields=fields)
-    #     model.objects.filter()
-    #     pass
+        path = [edge.via.db_column] + path
+        _recursively_update(row_id, more_connections, path)
 
 
 class RowHandler:

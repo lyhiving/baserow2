@@ -734,6 +734,7 @@ class FieldType(
         changed_parent_field,
         old_changed_parent_field,
         updated_fields,
+        via_field,
         rename_only=False,
     ):
         """

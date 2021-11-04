@@ -92,6 +92,7 @@ import {
   BaserowReverse,
   BaserowLength,
   BaserowNotEqual,
+  BaserowLookup,
 } from '@baserow/modules/database/formula/functions'
 import {
   BaserowFormulaArrayType,
@@ -222,6 +223,7 @@ export default (context) => {
   app.$registry.register('formula_function', new BaserowAdd())
   app.$registry.register('formula_function', new BaserowMinus())
   app.$registry.register('formula_function', new BaserowField())
+  app.$registry.register('formula_function', new BaserowLookup())
   app.$registry.register('formula_function', new BaserowRowId())
 
   // Formula Types

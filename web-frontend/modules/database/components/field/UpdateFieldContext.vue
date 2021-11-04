@@ -50,7 +50,9 @@ export default {
       // collaboration or via the modal, we want to reset the form so that it contains
       // the correct base values.
       this.$nextTick(() => {
-        this.$refs.form.reset()
+        if (this.$refs.form) {
+          this.$refs.form.reset()
+        }
       })
     },
   },
@@ -74,7 +76,9 @@ export default {
         // callback must still be called.
         const callback = async () => {
           await forceUpdateCallback()
-          this.$refs.form.reset()
+          if (this.$refs.form) {
+            this.$refs.form.reset()
+          }
           this.loading = false
           this.hide()
           this.$emit('updated')
@@ -82,7 +86,11 @@ export default {
         this.$emit('update', { callback })
       } catch (error) {
         this.loading = false
-        const handledByForm = this.$refs.form.handleErrorByForm(error)
+        let handledByForm = false
+        if (this.$refs.form) {
+          this.$refs.form.reset()
+          handledByForm = this.$refs.form.handleErrorByForm(error)
+        }
         if (!handledByForm) {
           notifyIf(error, 'field')
         }

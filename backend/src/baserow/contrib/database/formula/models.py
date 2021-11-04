@@ -28,9 +28,12 @@ class FieldDependencyEdge(edge_factory("FieldDependencyNode", concrete=False)):
 
     def __str__(self):
         if self.via is not None:
-            return f"{self.child} depends via field {self.via} on {self.parent}"
+            return (
+                f"Edge({self.child} depends via field {self.via.name} on"
+                f" {self.parent})"
+            )
         else:
-            return f"{self.child} depends on {self.parent}"
+            return f"Edge({self.child} depends on {self.parent})"
 
 
 class FieldDependencyNode(node_factory(FieldDependencyEdge)):
