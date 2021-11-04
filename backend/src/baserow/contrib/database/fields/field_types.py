@@ -55,6 +55,7 @@ from .dependencies.exceptions import (
     SelfReferenceFieldDependencyError,
     CircularFieldDependencyError,
 )
+from .dependencies.handler import OptionalFieldDependencies
 from .exceptions import (
     LinkRowTableNotInSameDatabase,
     LinkRowTableNotProvided,
@@ -1288,6 +1289,19 @@ class LinkRowFieldType(FieldType):
     def get_related_items_to_trash(self, field) -> List[Any]:
         return [field.link_row_related_field]
 
+    def to_baserow_formula_type(self, field) -> BaserowFormulaType:
+        primary_field = field.get_related_primary_field()
+        related_field_type = field_type_registry.get_by_model(primary_field)
+        return related_field_type.to_baserow_formula_type(primary_field)
+
+    def to_baserow_formula_expression(
+        self, field
+    ) -> BaserowExpression[BaserowFormulaType]:
+        primary_field = field.get_related_primary_field()
+        return FormulaHandler.get_lookup_field_reference_expression(
+            field, primary_field, self.to_baserow_formula_type(field)
+        )
+
 
 class EmailFieldType(CharFieldMatchingRegexFieldType):
     type = "email"
@@ -2209,7 +2223,9 @@ class FormulaFieldType(FieldType):
         field_instance.save(field_lookup_cache=updated_fields)
         return field_instance, old_field
 
-    def get_direct_field_name_dependencies(self, field_instance) -> Optional[List[str]]:
+    def get_direct_field_name_dependencies(
+        self, field_instance
+    ) -> OptionalFieldDependencies:
         return FormulaHandler.get_direct_field_name_dependencies(field_instance)
 
     def restore_failed(self, field_instance, restore_exception):

@@ -267,6 +267,11 @@ class LinkRowField(Field):
         )
         return last_id + 1
 
+    def get_related_primary_field(self):
+        return next(
+            f for f in self.link_row_table.field_set.all() if f.primary
+        ).specific
+
 
 class EmailField(Field):
     pass
@@ -309,6 +314,11 @@ class FormulaField(Field):
     formula_type = models.TextField(
         choices=BASEROW_FORMULA_TYPE_CHOICES,
         default="invalid",
+    )
+    array_formula_type = models.TextField(
+        choices=BASEROW_FORMULA_TYPE_CHOICES.copy().remove(("array", "array")),
+        default=None,
+        null=True,
     )
     number_decimal_places = models.IntegerField(
         choices=[(0, "1")] + NUMBER_DECIMAL_PLACES_CHOICES,

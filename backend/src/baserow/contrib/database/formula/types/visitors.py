@@ -3,6 +3,7 @@ from typing import Any, Set, List
 from baserow.contrib.database.fields.dependencies.exceptions import (
     SelfReferenceFieldDependencyError,
 )
+from baserow.contrib.database.fields.dependencies import handler as dep_handler
 from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
     BaserowStringLiteral,
@@ -62,38 +63,48 @@ class FunctionsUsedVisitor(
         return set()
 
 
-class FieldReferenceExtractingVisitor(BaserowFormulaASTVisitor[UnTyped, List[str]]):
+class FieldReferenceExtractingVisitor(
+    BaserowFormulaASTVisitor[UnTyped, "dep_handler.FieldDependencies"]
+):
     def visit_field_reference(
         self, field_reference: BaserowFieldReference[UnTyped]
-    ) -> List[str]:
-        return [field_reference.referenced_field_name]
+    ) -> "dep_handler.FieldDependencies":
+        if field_reference.referenced_lookup_field is None:
+            return [field_reference.referenced_field_name]
+        else:
+            return [
+                (
+                    field_reference.referenced_field_name,
+                    field_reference.referenced_lookup_field,
+                )
+            ]
 
     def visit_string_literal(
         self, string_literal: BaserowStringLiteral[UnTyped]
-    ) -> List[str]:
+    ) -> "dep_handler.FieldDependencies":
         return []
 
     def visit_function_call(
         self, function_call: BaserowFunctionCall[UnTyped]
-    ) -> List[str]:
-        field_references: List[str] = []
+    ) -> "dep_handler.FieldDependencies":
+        field_references: "dep_handler.FieldDependencies" = []
         for expr in function_call.args:
             field_references += expr.accept(self)
         return field_references
 
     def visit_int_literal(
         self, int_literal: BaserowIntegerLiteral[UnTyped]
-    ) -> List[str]:
+    ) -> "dep_handler.FieldDependencies":
         return []
 
     def visit_decimal_literal(
         self, decimal_literal: BaserowDecimalLiteral[UnTyped]
-    ) -> List[str]:
+    ) -> "dep_handler.FieldDependencies":
         return []
 
     def visit_boolean_literal(
         self, boolean_literal: BaserowBooleanLiteral[UnTyped]
-    ) -> List[str]:
+    ) -> "dep_handler.FieldDependencies":
         return []
 
 
@@ -122,6 +133,34 @@ class FormulaTypingVisitor(
             )
         else:
             field_type = field_type_registry.get_by_model(referenced_field)
+            lookup_field = field_reference.referenced_lookup_field
+            if lookup_field is not None:
+                from baserow.contrib.database.fields.models import LinkRowField
+
+                if not isinstance(referenced_field, LinkRowField):
+                    return field_reference.with_invalid_type(
+                        "first lookup function argument must be a link row field"
+                    )
+                target_table = referenced_field.link_row_table
+
+                lookup_field = self.field_lookup_cache.lookup(
+                    target_table, lookup_field
+                )
+                if lookup_field is None:
+                    return field_reference.with_invalid_type(
+                        f"references the deleted or unknown lookup field"
+                        f" {field_reference.referenced_lookup_field} in table "
+                        f"{target_table.name}"
+                    )
+                else:
+                    lookup_field_type = field_type_registry.get_by_model(lookup_field)
+                    formula_type = lookup_field_type.to_baserow_formula_type(
+                        lookup_field
+                    )
+                    return BaserowFieldReference(
+                        referenced_field.db_column, lookup_field.db_column, formula_type
+                    )
+            # check the lookup field
             return field_type.to_baserow_formula_expression(referenced_field)
 
     def visit_string_literal(

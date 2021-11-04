@@ -1,4 +1,6 @@
 import pytest
+from django.urls import reverse
+from rest_framework.status import HTTP_200_OK
 
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.registries import field_type_registry
@@ -268,3 +270,200 @@ def test_can_rename_field_preserving_whitespace(
     formula_field.refresh_from_db()
 
     assert formula_field.formula == f" field('b') \n"
+
+
+@pytest.mark.django_db
+def test_lookup_field4(data_fixture, api_client, django_assert_num_queries):
+
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    table2 = data_fixture.create_database_table(user=user, database=table.database)
+    table_primary_field = data_fixture.create_text_field(
+        name="p", table=table, primary=True
+    )
+    data_fixture.create_text_field(name="primaryfield", table=table2, primary=True)
+    lookupfield = data_fixture.create_date_field(
+        name="lookupfield",
+        table=table2,
+        date_include_time=False,
+        date_format="US",
+    )
+
+    linkrowfield = FieldHandler().create_field(
+        user,
+        table,
+        "link_row",
+        name="linkrowfield",
+        link_row_table=table2,
+    )
+
+    table2_model = table2.get_model(attribute_names=True)
+    a = table2_model.objects.create(lookupfield=f"2021-02-01", primaryfield="primary a")
+    b = table2_model.objects.create(lookupfield=f"2022-02-03", primaryfield="primary b")
+
+    table_model = table.get_model(attribute_names=True)
+
+    table_row = table_model.objects.create()
+    table_row.linkrowfield.add(a.id)
+    table_row.linkrowfield.add(b.id)
+    table_row.save()
+
+    formulafield = FieldHandler().create_field(
+        user,
+        table,
+        "formula",
+        name="formulafield",
+        formula=f"IF(datetime_format(lookup('{linkrowfield.name}',"
+        f"'{lookupfield.name}'), "
+        f"'YYYY')='2021', 'yes', 'no')",
+    )
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.json() == {
+        "count": 1,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                f"field_{table_primary_field.id}": None,
+                f"field_{linkrowfield.id}": [
+                    {"id": a.id, "value": "primary a"},
+                    {"id": b.id, "value": "primary b"},
+                ],
+                f"field_{formulafield.id}": ["yes", "no"],
+                "id": table_row.id,
+                "order": "1.00000000000000000000",
+            }
+        ],
+    }
+    response = api_client.patch(
+        reverse(
+            "api:database:rows:item",
+            kwargs={"table_id": table.id, "row_id": table_row.id},
+        ),
+        {f"field_{table_primary_field.id}": "test"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_200_OK
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.json() == {
+        "count": 1,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                f"field_{table_primary_field.id}": "test",
+                f"field_{linkrowfield.id}": [
+                    {"id": a.id, "value": "primary a"},
+                    {"id": b.id, "value": "primary b"},
+                ],
+                f"field_{formulafield.id}": ["yes", "no"],
+                "id": table_row.id,
+                "order": "1.00000000000000000000",
+            }
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_nested_lookup_with_formula(
+    data_fixture, api_client, django_assert_num_queries
+):
+    do_big_test(api_client, data_fixture, django_assert_num_queries)
+
+
+def do_big_test(api_client, data_fixture, django_assert_num_queries):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    table2 = data_fixture.create_database_table(user=user, database=table.database)
+    table3 = data_fixture.create_database_table(user=user, database=table.database)
+    table_primary_field = data_fixture.create_text_field(
+        name="p", table=table, primary=True
+    )
+    table3_primary_field = data_fixture.create_text_field(
+        name="p", table=table3, primary=True
+    )
+    data_fixture.create_text_field(name="p", table=table2, primary=True)
+    lookupfield = data_fixture.create_text_field(name="lookupfield", table=table2)
+    linkrowfield = FieldHandler().create_field(
+        user,
+        table,
+        "link_row",
+        name="linkrowfield",
+        link_row_table=table2,
+    )
+    linkrowfield2 = FieldHandler().create_field(
+        user,
+        table2,
+        "link_row",
+        name="linkrowfield",
+        link_row_table=table3,
+    )
+    table3_model = table3.get_model(attribute_names=True)
+    table3_a = table3_model.objects.create(p="table3 a")
+    table3_b = table3_model.objects.create(p="table3 b")
+    table3_c = table3_model.objects.create(p="table3 c")
+    table3_d = table3_model.objects.create(p="table3 d")
+    table2_model = table2.get_model(attribute_names=True)
+    table2_1 = table2_model.objects.create(lookupfield=f"lookup 1", p=f"primary 1")
+    table2_1.linkrowfield.add(table3_a.id)
+    table2_1.save()
+    table2_2 = table2_model.objects.create(lookupfield=f"lookup 2", p=f"primary 2")
+    table2_3 = table2_model.objects.create(lookupfield=f"lookup 3", p=f"primary 3")
+    table2_3.linkrowfield.add(table3_c.id)
+    table2_3.linkrowfield.add(table3_d.id)
+    table2_3.save()
+    table_model = table.get_model(attribute_names=True)
+    table1_x = table_model.objects.create(p="table1 x")
+    table1_x.linkrowfield.add(table2_1.id)
+    table1_x.linkrowfield.add(table2_2.id)
+    table1_x.save()
+    table1_y = table_model.objects.create(p="table1 y")
+    table1_y.linkrowfield.add(table2_3.id)
+    table1_y.save()
+    lookup_field_prefetch = FieldHandler().create_field(
+        user,
+        table,
+        type_name="formula",
+        name="formula",
+        formula=f"lookup('{linkrowfield.name}','{linkrowfield2.name}')",
+    )
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.json() == {
+        "count": 2,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                f"field_{table_primary_field.id}": table1_x.p,
+                f"field_{linkrowfield.id}": [
+                    {"id": table2_1.id, "value": table2_1.p},
+                    {"id": table2_2.id, "value": table2_2.p},
+                ],
+                f"field_{lookup_field_prefetch.id}": [
+                    table3_a.p,
+                ],
+                "id": table1_x.id,
+                "order": "1.00000000000000000000",
+            },
+            {
+                f"field_{table_primary_field.id}": table1_y.p,
+                f"field_{linkrowfield.id}": [{"id": table2_3.id, "value": table2_3.p}],
+                f"field_{lookup_field_prefetch.id}": [table3_c.p, table3_d.p],
+                "id": table1_y.id,
+                "order": "1.00000000000000000000",
+            },
+        ],
+    }

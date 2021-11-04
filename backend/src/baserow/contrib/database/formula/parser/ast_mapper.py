@@ -154,7 +154,20 @@ class BaserowFormulaToBaserowASTMapper(BaserowFormulaVisitor):
         field_name = convert_string_literal_token_to_string(
             reference.getText(), reference.SINGLEQ_STRING_LITERAL()
         )
-        return BaserowFieldReference[UnTyped](field_name, None)
+        return BaserowFieldReference[UnTyped](field_name, None, None)
+
+    def visitLookupFieldReference(
+        self, ctx: BaserowFormula.LookupFieldReferenceContext
+    ):
+        reference = ctx.field_reference(0)
+        field_name = convert_string_literal_token_to_string(
+            reference.getText(), reference.SINGLEQ_STRING_LITERAL()
+        )
+        lookup = ctx.field_reference(1)
+        lookup_name = convert_string_literal_token_to_string(
+            lookup.getText(), reference.SINGLEQ_STRING_LITERAL()
+        )
+        return BaserowFieldReference[UnTyped](field_name, lookup_name, None)
 
     def visitFieldByIdReference(self, ctx: BaserowFormula.FieldByIdReferenceContext):
         raise FieldByIdReferencesAreDeprecated()

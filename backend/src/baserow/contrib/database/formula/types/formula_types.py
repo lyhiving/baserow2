@@ -1,5 +1,6 @@
 from typing import List, Type, Optional, Any
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Q
 from rest_framework import serializers
@@ -339,6 +340,74 @@ class BaserowFormulaDateType(BaserowFormulaValidType):
         return f"{date_or_datetime}({self.date_format}{optional_time_format})"
 
 
+class BaserowFormulaArrayType(BaserowFormulaValidType):
+    type = "array"
+    user_overridable_formatting_option_fields = [
+        "array_formula_type",
+    ]
+
+    def __init__(self, array_formula_type: BaserowFormulaValidType):
+        if isinstance(array_formula_type, BaserowFormulaArrayType):
+            raise Exception("Cannot have an array of arrays")
+        self.array_formula_type = array_formula_type
+
+    def collapse_many(self, expr: "BaserowExpression[BaserowFormulaType]"):
+        func = formula_function_registry.get("2darray_agg")
+        return func.call_and_type_with(expr)
+
+    @property
+    def baserow_field_type(self) -> str:
+        return "unknown"
+
+    @property
+    def comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return []
+
+    @property
+    def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
+        return []
+
+    def get_baserow_field_instance_and_type(self):
+        # Until Baserow has a array field type implement the required methods below
+        return self, self
+
+    def get_model_field(self, instance, **kwargs) -> models.Field:
+        (
+            instance,
+            field_type,
+        ) = BaserowFormulaTextType().get_baserow_field_instance_and_type()
+        return ArrayField(
+            base_field=field_type.get_model_field(instance, **kwargs), **kwargs
+        )
+
+    def get_serializer_field(self, instance, **kwargs) -> Optional[Field]:
+        required = kwargs.get("required", False)
+
+        (
+            instance,
+            field_type,
+        ) = BaserowFormulaTextType().get_baserow_field_instance_and_type()
+        return serializers.ListSerializer(
+            **{
+                "required": required,
+                "allow_null": not required,
+                "child": field_type.get_serializer_field(instance, **kwargs),
+            }
+        )
+
+    def get_export_value(self, value, field_object) -> Any:
+        return value
+
+    def contains_query(self, field_name, value, model_field, field):
+        return Q()
+
+    def get_alter_column_prepare_old_value(self, connection, from_field, to_field):
+        return None
+
+    def __str__(self) -> str:
+        return f"array()"
+
+
 BASEROW_FORMULA_TYPES = [
     BaserowFormulaInvalidType,
     BaserowFormulaTextType,
@@ -347,6 +416,7 @@ BASEROW_FORMULA_TYPES = [
     BaserowFormulaDateType,
     BaserowFormulaBooleanType,
     BaserowFormulaNumberType,
+    BaserowFormulaArrayType,
 ]
 
 BASEROW_FORMULA_TYPE_ALLOWED_FIELDS = [

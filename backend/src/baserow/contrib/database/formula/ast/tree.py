@@ -95,8 +95,10 @@ class BaserowExpression(abc.ABC, Generic[A]):
     ```
     """
 
-    def __init__(self, expression_type: A):
+    def __init__(self, expression_type: A, aggregate=False, many=False):
         self.expression_type: A = expression_type
+        self.aggregate = aggregate
+        self.many = many
 
     @abc.abstractmethod
     def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
@@ -194,28 +196,35 @@ class BaserowBooleanLiteral(BaserowExpression[A]):
 
 class BaserowFieldReference(BaserowExpression[A]):
     """
-    Represents a reference to a field with the same name as the referenced_field_name.
-    If it is a valid reference to a real column then underlying_db_column will contain
-    the name of that column. Otherwise if a reference to an unknown or invalid field
-    underlying_db_column will be None.
+    Represents a reference to a field with the same name as the referenced_field_name
+    if it exists in the table.
     """
 
     def __init__(
         self,
         referenced_field_name: str,
+        referenced_lookup_field: Optional[str],
         expression_type: A,
     ):
-        super().__init__(expression_type)
+        many = referenced_lookup_field is not None
+        super().__init__(expression_type, many=many, aggregate=many)
         self.referenced_field_name = referenced_field_name
+        self.referenced_lookup_field = referenced_lookup_field
 
     def accept(self, visitor: "visitors.BaserowFormulaASTVisitor[A, T]") -> T:
         return visitor.visit_field_reference(self)
 
     def __str__(self):
-        escaped = convert_string_to_string_literal_token(
+        escaped_name = convert_string_to_string_literal_token(
             self.referenced_field_name, True
         )
-        return f"field({escaped})"
+        if self.referenced_lookup_field is None:
+            return f"field({escaped_name})"
+        else:
+            escaped_lookup = convert_string_to_string_literal_token(
+                self.referenced_lookup_field, True
+            )
+            return f"lookup({escaped_name},{escaped_lookup})"
 
 
 class ArgCountSpecifier(abc.ABC):
@@ -261,7 +270,9 @@ class BaserowFunctionCall(BaserowExpression[A]):
         args: List[BaserowExpression[A]],
         expression_type: A,
     ):
-        super().__init__(expression_type)
+        many = any(a.many for a in args)
+        aggregate = any(a.aggregate for a in args)
+        super().__init__(expression_type, many=many, aggregate=aggregate)
 
         self.function_def = function_def
         self.args = args

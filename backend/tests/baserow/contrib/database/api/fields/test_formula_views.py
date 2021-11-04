@@ -1007,6 +1007,7 @@ def test_can_type_a_valid_formula_field(
         "error": None,
         "formula": "1+1",
         "formula_type": "number",
+        "array_formula_type": None,
         "number_decimal_places": 0,
     }
 

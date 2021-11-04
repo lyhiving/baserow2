@@ -71,7 +71,17 @@ class FormulaHandler:
     def get_normal_field_reference_expression(
         cls, field, formula_type: BaserowFormulaType
     ):
-        return BaserowFieldReference[BaserowFormulaType](field.db_column, formula_type)
+        return BaserowFieldReference[BaserowFormulaType](
+            field.db_column, None, formula_type
+        )
+
+    @classmethod
+    def get_lookup_field_reference_expression(
+        cls, through_field, lookup_field, formula_type: BaserowFormulaType
+    ):
+        return BaserowFieldReference[BaserowFormulaType](
+            through_field.db_column, lookup_field.db_column, formula_type
+        )
 
     @classmethod
     def rename_field_references_in_formula_string(

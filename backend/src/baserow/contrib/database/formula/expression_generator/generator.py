@@ -8,6 +8,9 @@ from django.db.models import (
     BooleanField,
     fields,
     ExpressionWrapper,
+    Subquery,
+    OuterRef,
+    Func,
     Model,
 )
 from django.db.models.functions import Cast
@@ -30,6 +33,7 @@ from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaType,
     BaserowFormulaInvalidType,
 )
+from baserow.contrib.database.formula.types.formula_types import BaserowFormulaArrayType
 
 
 def baserow_expression_to_update_django_expression(
@@ -78,9 +82,30 @@ def _baserow_expression_to_django_expression(
         if isinstance(baserow_expression.expression_type, BaserowFormulaInvalidType):
             return Value(None)
         else:
-            return baserow_expression.accept(
-                BaserowExpressionToDjangoExpressionGenerator(model, model_instance)
+            generator = BaserowExpressionToDjangoExpressionGenerator(
+                model, model_instance
             )
+            expr = baserow_expression.accept(generator)
+            if baserow_expression.aggregate and model is not None:
+                if model_instance is not None and model_instance.pk is None:
+                    return Value(None)
+                values = (
+                    model.objects.filter(id=OuterRef("id"))
+                    .annotate(result=expr)
+                    .values("result")
+                )
+                if (
+                    isinstance(expr, Func)
+                    and "function" in expr.extra
+                    and expr.extra["function"] == "unnest"
+                ):
+                    subquery = Subquery(values.distinct())
+                    expr = Func(subquery, function="array")
+                else:
+                    subquery = Subquery(values)
+                    expr = subquery
+
+            return expr
     except RecursionError:
         raise MaximumFormulaSizeError()
 
@@ -118,8 +143,15 @@ class BaserowExpressionToDjangoExpressionGenerator(
     ):
         db_column = field_reference.referenced_field_name
 
-        model_field = self.model._meta.get_field(db_column)
-        if self.model_instance is None:
+        lookup_ref = field_reference.referenced_lookup_field
+        is_lookup = lookup_ref is not None
+        if is_lookup:
+            other_model = self.model._meta.get_field(db_column).remote_field.model
+            model_field = other_model._meta.get_field(lookup_ref)
+            db_column += f"__{lookup_ref}"
+        else:
+            model_field = self.model._meta.get_field(db_column)
+        if self.model_instance is None or is_lookup:
             return ExpressionWrapper(F(db_column), output_field=model_field)
         elif not hasattr(self.model_instance, db_column):
             raise UnknownFieldReference(db_column)

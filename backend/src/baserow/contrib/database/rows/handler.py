@@ -17,6 +17,33 @@ from .signals import (
     row_updated,
     row_deleted,
 )
+from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
+
+
+def _recursively_update(row_id, connections, path):
+    for edge in connections:
+        child = edge.child
+        field = child.field
+        model = field.table.get_model(field_ids=[field.id])
+        this_path = "__".join(path + [edge.via.db_column]) + "__id"
+        model.objects.filter(**{this_path: row_id}).update()
+    for edge in connections:
+        more_connections = (
+            FieldDependencyHandler.recursively_find_connections_to_other_tables(
+                edge.child.table, [edge.child.field]
+            )
+        )
+        _recursively_update(row_id, more_connections, path + [edge.via.db_column])
+    # fields_by_table = {}
+    # for field in other_table_fields:
+    #     l = fields_by_table.setdefault(field.table_id, [])
+    #     l.append(field)
+    #
+    # for table_id, fields in fields_by_table.items():
+    #
+    #     model = fields[0].table.get_model(fields=fields)
+    #     model.objects.filter()
+    #     pass
 
 
 class RowHandler:
@@ -460,6 +487,17 @@ class RowHandler:
             # updated. Django does not support UPDATE .... RETURNING and so we need to
             # query for the rows updated values instead.
             row.refresh_from_db(fields=model.fields_requiring_refresh_after_update())
+
+            updated_fields = [
+                model._field_objects[int(i.split("_")[1])]["field"]
+                for i in values.keys()
+            ]
+            other_table_connections = (
+                FieldDependencyHandler.recursively_find_connections_to_other_tables(
+                    table, updated_fields
+                )
+            )
+            _recursively_update(row.id, other_table_connections, [])
 
             for name, value in manytomany_values.items():
                 getattr(row, name).set(value)

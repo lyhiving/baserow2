@@ -2,6 +2,7 @@ from abc import ABC
 from decimal import Decimal
 from typing import List, Optional
 
+from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import (
     Expression,
     Value,
@@ -12,6 +13,7 @@ from django.db.models import (
     F,
     ExpressionWrapper,
     Model,
+    Count,
 )
 from django.db.models.functions import (
     Upper,
@@ -60,6 +62,7 @@ from baserow.contrib.database.formula.types.formula_types import (
     BaserowFormulaBooleanType,
     calculate_number_type,
     BaserowFormulaDateIntervalType,
+    BaserowFormulaArrayType,
 )
 from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaType,
@@ -109,6 +112,13 @@ def register_formula_functions(registry):
     registry.register(BaserowMinus())
     registry.register(BaserowErrorToNull())
     registry.register(BaserowRowId())
+    # Array
+    registry.register(BaserowArrayAgg())
+    registry.register(Baserow2dArrayAgg())
+    registry.register(BaserowAggOr())
+    registry.register(BaserowCount())
+    registry.register(BaserowAggJoin())
+    registry.register(BaserowStdDev())
 
 
 class BaserowUpper(OneArgumentBaserowFunction):
@@ -834,3 +844,125 @@ class BaserowReverse(OneArgumentBaserowFunction):
 
     def to_django_expression(self, arg: Expression) -> Expression:
         return Reverse(arg)
+
+
+class BaserowArrayAgg(OneArgumentBaserowFunction):
+    type = "array_agg"
+    arg_type = [BaserowFormulaValidType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        if not arg.many:
+            func_call.with_invalid_type("Must be many")
+        expr = func_call.with_valid_type(BaserowFormulaArrayType(arg.expression_type))
+        expr.many = False
+        return expr
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return ArrayAgg(arg)
+
+
+class Baserow2dArrayAgg(OneArgumentBaserowFunction):
+    type = "2darray_agg"
+    arg_type = [BaserowFormulaArrayType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaArrayType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        if not arg.many:
+            func_call.with_invalid_type("Must be many")
+        expr = func_call.with_valid_type(
+            BaserowFormulaArrayType(arg.expression_type.array_formula_type)
+        )
+        expr.many = False
+        return expr
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Func(ArrayAgg(arg), function="unnest")
+
+
+class BaserowCount(OneArgumentBaserowFunction):
+    type = "count"
+    arg_type = [BaserowFormulaValidType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        if not arg.many:
+            func_call.with_invalid_type("Must be many")
+        expr = func_call.with_valid_type(
+            BaserowFormulaNumberType(number_decimal_places=0)
+        )
+        expr.many = False
+        return expr
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Count(arg)
+
+
+class BaserowAggOr(OneArgumentBaserowFunction):
+    type = "at_least_one"
+    arg_type = [BaserowFormulaBooleanType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        if not arg.many:
+            func_call.with_invalid_type("Must be many")
+        expr = func_call.with_valid_type(arg.expression_type)
+        expr.many = False
+        return expr
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Func(arg, function="bool_or")
+
+
+class BaserowStdDev(OneArgumentBaserowFunction):
+    type = "std_dev"
+    arg_type = [BaserowFormulaNumberType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        if not arg.many:
+            func_call.with_invalid_type("Must be many")
+        expr = func_call.with_valid_type(arg.expression_type)
+        expr.many = False
+        return expr
+
+    def to_django_expression(self, arg: Expression) -> Expression:
+        return Func(arg, function="stddev_pop")
+
+
+class BaserowAggJoin(TwoArgumentBaserowFunction):
+    type = "join"
+    arg1_type = [BaserowFormulaTextType]
+    arg2_type = [BaserowFormulaTextType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg1: BaserowExpression[BaserowFormulaValidType],
+        arg2: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        if not arg1.many:
+            func_call.with_invalid_type("Must be many")
+        if arg2.many:
+            func_call.with_invalid_type("Must not be many")
+        expr = func_call.with_valid_type(arg1.expression_type)
+        expr.many = False
+        return expr
+
+    def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
+        return Func(arg1, arg2, function="string_agg")

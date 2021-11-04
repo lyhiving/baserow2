@@ -767,7 +767,7 @@ class FieldType(
 
         return None, None
 
-    def get_direct_field_name_dependencies(self, field_instance) -> Optional[List[str]]:
+    def get_direct_field_name_dependencies(self, field_instance):
         return None
 
     def restore_failed(self, field_instance, restore_exception):

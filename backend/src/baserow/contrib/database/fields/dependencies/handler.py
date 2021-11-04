@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple, Union, Optional
 
 from django.conf import settings
 from django.db import transaction
@@ -19,21 +19,46 @@ from baserow.contrib.database.formula.models import (
 )
 from baserow.core.trash.handler import TrashHandler
 
+FieldDependencies = List[Union[str, Tuple[str, str]]]
+OptionalFieldDependencies = Optional[FieldDependencies]
+
 
 def _add_graph_dependency_raising_if_circular(
-    field, referenced_field_name, field_lookup_cache
+    field, referenced_field_name, field_lookup_cache, via_field_name=None
 ):
     table = field.table
     field_node = field.get_or_create_node()
-    referenced_field_dependency_node = _get_or_create_node_from_name(
-        referenced_field_name, table, field_lookup_cache
-    )
+    if via_field_name is None:
+        referenced_field_dependency_node = _get_or_create_node_from_name(
+            referenced_field_name, table, field_lookup_cache
+        )
+        _add_dep(field_node, referenced_field_dependency_node)
+    else:
+        via_field = field_lookup_cache.lookup(table, via_field_name)
+        if via_field is None:
+            broken_node = _construct_broken_reference_node(via_field_name, table)
+            _add_dep(field_node, broken_node)
+        else:
+            from baserow.contrib.database.fields.models import LinkRowField
+
+            if not isinstance(via_field, LinkRowField):
+                # TODO is this right??
+                _add_dep(field_node, via_field)
+            else:
+                target_table = via_field.link_row_table
+                lookup_field_node = _get_or_create_node_from_name(
+                    referenced_field_name, target_table, field_lookup_cache
+                )
+                _add_dep(field_node, lookup_field_node, via_field=via_field)
+
+
+def _add_dep(from_node, to_node, via_field=None):
     # Check for no circular references
-    if field_node not in referenced_field_dependency_node.self_and_ancestors(
+    if from_node not in to_node.self_and_ancestors(
         max_depth=settings.MAX_FIELD_REFERENCE_DEPTH
     ):
-        referenced_field_dependency_node.add_child(
-            field_node, disable_circular_check=True
+        FieldDependencyEdge.objects.create(
+            parent=to_node, child=from_node, via=via_field
         )
     else:
         raise CircularFieldDependencyError()
@@ -158,6 +183,26 @@ def _recursively_recalculate_fields(
         recalculated_already.add(specific_field)
 
 
+def _find_connections(starting_table, f, already_checked_nodes):
+    if not isinstance(f, FieldDependencyNode):
+        node = f.get_node_or_none()
+    else:
+        node = f
+    connections = set()
+    if node is not None and node not in already_checked_nodes:
+        already_checked_nodes.add(node)
+        for edge in FieldDependencyEdge.objects.filter(parent=node):
+            child = edge.child
+            if child.is_reference_to_real_field():
+                if child.table != starting_table and edge.via is not None:
+                    connections.add(edge)
+                else:
+                    connections.update(
+                        _find_connections(starting_table, child, already_checked_nodes)
+                    )
+    return connections
+
+
 class FieldDependencyHandler:
     @classmethod
     def permanently_delete_and_update_dependencies(cls, field):
@@ -239,7 +284,7 @@ class FieldDependencyHandler:
     def reset_field_dependencies_to(
         cls,
         field,
-        dependency_field_names: List[str],
+        dependency_field_names: FieldDependencies,
         field_lookup_cache,
         rollback=False,
     ):
@@ -258,11 +303,28 @@ class FieldDependencyHandler:
             parent_edges.delete()
 
             for new_dependency_field_name in dependency_field_names:
-                if field.name == new_dependency_field_name:
-                    raise SelfReferenceFieldDependencyError()
-                _add_graph_dependency_raising_if_circular(
-                    field, new_dependency_field_name, field_lookup_cache
-                )
+                if isinstance(new_dependency_field_name, Tuple):
+                    (
+                        via_field_name,
+                        new_dependency_field_name,
+                    ) = new_dependency_field_name
+                    if (
+                        field.name == new_dependency_field_name
+                        or via_field_name == field.name
+                    ):
+                        raise SelfReferenceFieldDependencyError()
+                    _add_graph_dependency_raising_if_circular(
+                        field,
+                        new_dependency_field_name,
+                        field_lookup_cache,
+                        via_field_name=via_field_name,
+                    )
+                else:
+                    if field.name == new_dependency_field_name:
+                        raise SelfReferenceFieldDependencyError()
+                    _add_graph_dependency_raising_if_circular(
+                        field, new_dependency_field_name, field_lookup_cache
+                    )
             if rollback:
                 transaction.set_rollback(True)
 
@@ -296,3 +358,11 @@ class FieldDependencyHandler:
                 _recursively_recalculate_fields(
                     field_lookup_cache, recalculated_already, specific_field
                 )
+
+    @classmethod
+    def recursively_find_connections_to_other_tables(cls, table, updated_fields):
+        already_checked_fields = set()
+        connections = set()
+        for f in updated_fields:
+            connections.update(_find_connections(table, f, already_checked_fields))
+        return connections

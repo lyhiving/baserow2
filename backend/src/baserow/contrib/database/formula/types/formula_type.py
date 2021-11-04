@@ -204,6 +204,17 @@ class BaserowFormulaType(abc.ABC):
 
         return expr
 
+    def collapse_many(self, expr: "tree.BaserowExpression[BaserowFormulaType]"):
+        """
+        TODO
+
+        :param expr: The calculated and typed expression of this type.
+        :return: A new expression with any required extra calculations done at the top
+            field level.
+        """
+
+        return expr
+
     def add(
         self,
         add_func_call: "tree.BaserowFunctionCall[UnTyped]",
@@ -255,6 +266,14 @@ class BaserowFormulaValidType(BaserowFormulaType, abc.ABC):
     @abc.abstractmethod
     def limit_comparable_types(self) -> List[Type["BaserowFormulaValidType"]]:
         pass
+
+    def collapse_many(self, expr: "tree.BaserowExpression[BaserowFormulaType]"):
+        from baserow.contrib.database.formula.registries import (
+            formula_function_registry,
+        )
+
+        func = formula_function_registry.get("array_agg")
+        return func.call_and_type_with(expr)
 
     def raise_if_invalid(self):
         pass
