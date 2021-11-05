@@ -6,6 +6,7 @@ from baserow.contrib.database.fields.dependencies.handler import FieldDependency
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.contrib.database.rows.handler import _recursively_update
 from baserow.contrib.database.rows.signals import row_created
 from baserow.contrib.database.table.models import Table, GeneratedTableModel
 from baserow.contrib.database.table.signals import table_created
@@ -151,6 +152,12 @@ class RowTrashableItemType(TrashableItemType):
         table = self.get_parent(trashed_item, trash_entry.parent_trash_item_id)
 
         model = table.get_model()
+        other_table_connections = (
+            FieldDependencyHandler.recursively_find_connections_to_other_tables(
+                table, [f["field"] for f in model._field_objects.values()]
+            )
+        )
+        _recursively_update(trashed_item.id, other_table_connections, [])
         row_created.send(
             self,
             row=trashed_item,

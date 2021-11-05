@@ -24,7 +24,6 @@ from baserow.contrib.database.formula import FormulaHandler
 
 def _recursively_update(row_id, connections, path):
     for edge in connections:
-        print(f"Checking {edge}")
         child = edge.child
         child_field = child.field
         child_model = child_field.table.get_model(field_ids=[child_field.id])
@@ -36,15 +35,12 @@ def _recursively_update(row_id, connections, path):
                 update_query[
                     field.db_column
                 ] = FormulaHandler.baserow_expression_to_update_django_expression(
-                    field.cached_typed_internal_expression, child_model
-                )
-                print(
-                    f"update for {field.name} is {field.cached_typed_internal_expression}"
+                    field.cached_typed_internal_expression,
+                    child_field.table.get_model(),
                 )
 
         queryset = child_model.objects_and_trash.filter(**{this_path: row_id})
-        for x in queryset:
-            print(f"Found {x}")
+        # queryset = child_model.objects_and_trash
         queryset.update(**update_query)
     for edge in connections:
         more_connections = (
@@ -52,8 +48,8 @@ def _recursively_update(row_id, connections, path):
                 edge.child.table, [edge.child.field]
             )
         )
-        path = [edge.via.db_column] + path
-        _recursively_update(row_id, more_connections, path)
+        new_path = [edge.via.db_column] + path
+        _recursively_update(row_id, more_connections, new_path)
 
 
 class RowHandler:
@@ -501,10 +497,6 @@ class RowHandler:
                 getattr(row, name).set(value)
 
             row.save()
-            # We need to refresh here as ExpressionFields might have had their values
-            # updated. Django does not support UPDATE .... RETURNING and so we need to
-            # query for the rows updated values instead.
-            row.refresh_from_db(fields=model.fields_requiring_refresh_after_update())
 
             other_table_connections = (
                 FieldDependencyHandler.recursively_find_connections_to_other_tables(
@@ -514,6 +506,11 @@ class RowHandler:
             print(f"Top connections for {row} {values}")
             print(other_table_connections)
             _recursively_update(row.id, other_table_connections, [])
+
+            # We need to refresh here as ExpressionFields might have had their values
+            # updated. Django does not support UPDATE .... RETURNING and so we need to
+            # query for the rows updated values instead.
+            row.refresh_from_db(fields=model.fields_requiring_refresh_after_update())
 
         row_updated.send(
             self,

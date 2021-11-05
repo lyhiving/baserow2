@@ -75,6 +75,9 @@ export default {
       this.resizeTextArea()
     },
   },
+  mounted() {
+    this.resizeTextArea()
+  },
   methods: {
     resizeTextArea() {
       this.$nextTick(() => {

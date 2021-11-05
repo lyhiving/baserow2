@@ -539,11 +539,151 @@ def test_can_delete_lookup_field_value(
             }
         ],
     }
+    response = api_client.delete(
+        reverse(
+            "api:database:rows:item",
+            kwargs={"table_id": table2.id, "row_id": a.id},
+        ),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_204_NO_CONTENT
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.json() == {
+        "count": 1,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                f"field_{table_primary_field.id}": "table row 1",
+                f"field_{linkrowfield.id}": [
+                    {"id": b.id, "value": "primary b"},
+                ],
+                f"field_{formulafield.id}": ["no"],
+                "id": table_row.id,
+                "order": "1.00000000000000000000",
+            }
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_can_delete_double_link_lookup_field_value(
+    data_fixture, api_client, django_assert_num_queries
+):
+
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    table2 = data_fixture.create_database_table(user=user, database=table.database)
+    table3 = data_fixture.create_database_table(user=user, database=table.database)
+    table_primary_field = data_fixture.create_text_field(
+        name="p", table=table, primary=True
+    )
+    data_fixture.create_text_field(name="primaryfield", table=table2, primary=True)
+    data_fixture.create_text_field(name="primaryfield", table=table3, primary=True)
+    table2_linkrowfield = FieldHandler().create_field(
+        user,
+        table2,
+        "link_row",
+        name="linkrowfield",
+        link_row_table=table3,
+    )
+    table3_model = table3.get_model(attribute_names=True)
+    table3_1 = table3_model.objects.create(primaryfield="table 3 row 1")
+    table3_2 = table3_model.objects.create(primaryfield="table 3 row 2")
+
+    linkrowfield = FieldHandler().create_field(
+        user,
+        table,
+        "link_row",
+        name="linkrowfield",
+        link_row_table=table2,
+    )
+
+    table2_model = table2.get_model(attribute_names=True)
+    table2_a = table2_model.objects.create(primaryfield="primary a")
+    table2_a.linkrowfield.add(table3_1.id)
+    table2_a.save()
+    table2_b = table2_model.objects.create(primaryfield="primary b")
+    table2_b.linkrowfield.add(table3_2.id)
+    table2_b.save()
+
+    table_model = table.get_model(attribute_names=True)
+
+    table_row = table_model.objects.create(p="table row 1")
+    table_row.linkrowfield.add(table2_a.id)
+    table_row.linkrowfield.add(table2_b.id)
+    table_row.save()
+
+    formulafield = FieldHandler().create_field(
+        user,
+        table,
+        "formula",
+        name="formulafield",
+        formula=f"lookup('{linkrowfield.name}','{table2_linkrowfield.name}')",
+    )
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.json() == {
+        "count": 1,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                f"field_{table_primary_field.id}": "table row 1",
+                f"field_{linkrowfield.id}": [
+                    {"id": table2_a.id, "value": "primary a"},
+                    {"id": table2_b.id, "value": "primary b"},
+                ],
+                f"field_{formulafield.id}": ["table 3 row 1", "table 3 row 2"],
+                "id": table_row.id,
+                "order": "1.00000000000000000000",
+            }
+        ],
+    }
+    response = api_client.delete(
+        reverse(
+            "api:database:rows:item",
+            kwargs={"table_id": table2.id, "row_id": table2_a.id},
+        ),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == HTTP_204_NO_CONTENT
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.json() == {
+        "count": 1,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                f"field_{table_primary_field.id}": "table row 1",
+                f"field_{linkrowfield.id}": [
+                    {"id": table2_b.id, "value": "primary b"},
+                ],
+                f"field_{formulafield.id}": ["table 3 row 2"],
+                "id": table_row.id,
+                "order": "1.00000000000000000000",
+            }
+        ],
+    }
+
     with django_assert_num_queries(1):
         response = api_client.delete(
             reverse(
                 "api:database:rows:item",
-                kwargs={"table_id": table2.id, "row_id": a.id},
+                kwargs={"table_id": table3.id, "row_id": table3_2.id},
             ),
             format="json",
             HTTP_AUTHORIZATION=f"JWT {token}",
@@ -562,9 +702,9 @@ def test_can_delete_lookup_field_value(
             {
                 f"field_{table_primary_field.id}": "table row 1",
                 f"field_{linkrowfield.id}": [
-                    {"id": b.id, "value": "primary b"},
+                    {"id": table2_b.id, "value": "primary b"},
                 ],
-                f"field_{formulafield.id}": ["no"],
+                f"field_{formulafield.id}": None,
                 "id": table_row.id,
                 "order": "1.00000000000000000000",
             }
