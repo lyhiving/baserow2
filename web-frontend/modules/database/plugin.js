@@ -104,7 +104,7 @@ import {
   BaserowFormulaNumberType,
   BaserowFormulaSpecialType,
   BaserowFormulaTextType,
-} from '@/modules/database/formula/types'
+} from '@baserow/modules/database/formula/types'
 
 export default (context) => {
   const { store, app } = context
