@@ -402,3 +402,12 @@ class FormulaField(Field):
             + f"error={self.error},\n"
             + ")"
         )
+
+
+class LookupField(FormulaField):
+    through_field = models.ForeignKey(
+        Field, on_delete=models.CASCADE, related_name="lookup_fields_used_by"
+    )
+    target_field = models.ForeignKey(
+        Field, on_delete=models.CASCADE, related_name="targetting_lookup_fields"
+    )

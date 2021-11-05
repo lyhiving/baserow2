@@ -160,8 +160,9 @@ def _get_direct_descendants_and_break_node(field):
     return edges
 
 
-def _after_field_dependency_graph_update(updated_fields):
-    FormulaHandler.recreate_and_refresh_formula_fields(updated_fields)
+def _after_field_dependency_graph_update(updated_fields, rename_only):
+    if not rename_only:
+        FormulaHandler.recreate_and_refresh_formula_fields(updated_fields)
 
 
 def _update_graph_after_delete(edges, field, add_field):
@@ -263,7 +264,7 @@ class FieldDependencyHandler:
         cls.update_direct_dependencies_after_field_change(
             field, old_field, rename_only, updated_fields
         )
-        _after_field_dependency_graph_update(updated_fields)
+        _after_field_dependency_graph_update(updated_fields, rename_only)
         return updated_fields
 
     @classmethod

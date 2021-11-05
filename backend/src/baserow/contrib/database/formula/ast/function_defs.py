@@ -29,6 +29,7 @@ from django.db.models.functions import (
     Length,
     Reverse,
 )
+from sql_util.aggregates import SubquerySum
 
 from baserow.contrib.database.fields.models import (
     NUMBER_MAX_DECIMAL_PLACES,
@@ -57,6 +58,12 @@ from baserow.contrib.database.formula.expression_generator.django_expressions im
     OrExpr,
     IsNotExpr,
 )
+from baserow.contrib.database.formula.types.formula_type import (
+    BaserowFormulaType,
+    BaserowFormulaValidType,
+    UnTyped,
+    BaserowArgumentTypeChecker,
+)
 from baserow.contrib.database.formula.types.formula_types import (
     BaserowFormulaTextType,
     BaserowFormulaDateType,
@@ -65,12 +72,6 @@ from baserow.contrib.database.formula.types.formula_types import (
     calculate_number_type,
     BaserowFormulaDateIntervalType,
     BaserowFormulaArrayType,
-)
-from baserow.contrib.database.formula.types.formula_type import (
-    BaserowFormulaType,
-    BaserowFormulaValidType,
-    UnTyped,
-    BaserowArgumentTypeChecker,
 )
 
 
@@ -121,6 +122,7 @@ def register_formula_functions(registry):
     registry.register(BaserowCount())
     registry.register(BaserowAggJoin())
     registry.register(BaserowStdDev())
+    registry.register(BaserowSum())
 
 
 class BaserowUpper(OneArgumentBaserowFunction):
@@ -983,3 +985,36 @@ class BaserowAggJoin(TwoArgumentBaserowFunction):
 
     def to_django_expression(self, arg1: Expression, arg2: Expression) -> Expression:
         return Func(arg1, arg2, function="string_agg")
+
+
+class BaserowSum(OneArgumentBaserowFunction):
+    def to_django_expression(self, arg: Expression) -> Expression:
+        pass
+
+    type = "sum"
+    arg_type = [BaserowFormulaNumberType]
+
+    def type_function(
+        self,
+        func_call: BaserowFunctionCall[UnTyped],
+        arg: BaserowExpression[BaserowFormulaValidType],
+    ) -> BaserowExpression[BaserowFormulaType]:
+        if not arg.many:
+            func_call.with_invalid_type("Must be many")
+        expr = func_call.with_valid_type(arg.expression_type)
+        expr.many = False
+        return expr
+
+    def to_django_expression_given_args(
+        self,
+        args: List[Expression],
+        model_instance: Optional[Model],
+        aggregate_filters: List[Q],
+    ) -> Expression:
+        starting = Q()
+        for a in aggregate_filters:
+            starting = starting & a
+        aggregate_filters.clear()
+        return ExpressionWrapper(
+            SubquerySum(*args, filter=starting), output_field=args[0].output_field
+        )

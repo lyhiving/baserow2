@@ -100,6 +100,7 @@ def _baserow_expression_to_django_expression(
                     .annotate(**generator.pre_annotations)
                     .filter(**filters)
                     .annotate(result=expr)
+                    .order_by()
                     .values("result")
                 )
                 if (
@@ -166,45 +167,45 @@ class BaserowExpressionToDjangoExpressionGenerator(
         else:
             model_field = self.model._meta.get_field(db_column)
         if self.model_instance is None or is_lookup:
-            if is_lookup:
-                path = lookup_ref.split("__")
+            inner_join_mode = False
+            if inner_join_mode:
+                if is_lookup:
+                    path = lookup_ref.split("__")
 
-                path_to_row_trashed = (
-                    [field_reference.referenced_field_name] + path[:-1] + ["trashed"]
-                )
-                row_trashed_ref = "__".join(path_to_row_trashed)
-                path_to_row = "__".join(path_to_row_trashed[:-1])
-                row_not_trashed_filter_dict = {
-                    row_trashed_ref: False,
-                    f"{path_to_row}__isnull": False,
-                }
-                if len(path) > 1:
-                    path_to_middle_link = "__".join(path_to_row_trashed[:-2])
-                    not_trashed_middle_linkt = path_to_middle_link + "__trashed"
-                    row_not_trashed_filter_dict[not_trashed_middle_linkt] = False
-                relation = FilteredRelation(
-                    path_to_row, condition=Q(**row_not_trashed_filter_dict)
-                )
-                unique_preannotation_name = (
-                    f"not_trashed_{'_'.join(path_to_row_trashed[:-1])}"
-                )
-                self.pre_annotations[unique_preannotation_name] = relation
-                return ExpressionWrapper(
-                    F(f"{unique_preannotation_name}__{path[-1]}"),
-                    output_field=model_field,
-                )
+                    path_to_row_trashed = (
+                        [field_reference.referenced_field_name]
+                        + path[:-1]
+                        + ["trashed"]
+                    )
+                    row_trashed_ref = "__".join(path_to_row_trashed)
+                    path_to_row = "__".join(path_to_row_trashed[:-1])
+                    row_not_trashed_filter_dict = {
+                        row_trashed_ref: False,
+                        f"{path_to_row}__isnull": False,
+                    }
+                    if len(path) > 1:
+                        path_to_middle_link = "__".join(path_to_row_trashed[:-2])
+                        not_trashed_middle_linkt = path_to_middle_link + "__trashed"
+                        row_not_trashed_filter_dict[not_trashed_middle_linkt] = False
+                    relation = FilteredRelation(
+                        path_to_row, condition=Q(**row_not_trashed_filter_dict)
+                    )
+                    unique_preannotation_name = (
+                        f"not_trashed_{'_'.join(path_to_row_trashed[:-1])}"
+                    )
+                    self.pre_annotations[unique_preannotation_name] = relation
+                    self._add_aggs(field_reference, lookup_ref)
+                    return ExpressionWrapper(
+                        F(f"{unique_preannotation_name}__{path[-1]}"),
+                        output_field=model_field,
+                    )
+                else:
+                    return ExpressionWrapper(F(db_column), output_field=model_field)
             else:
-                return ExpressionWrapper(F(db_column), output_field=model_field)
-            # if is_lookup:
-            #     path = lookup_ref.split("__")
-            #     col = [field_reference.referenced_field_name] + path[:-1] + ["trashed"]
-            #     notnull = [field_reference.referenced_field_name] + path + ["isnull"]
-            #     c = "__".join(col)
-            #     d = "__".join(notnull)
-            #     self.aggregate_filters.append(Q(**{c: False}))
-            #     self.aggregate_filters.append(Q(**{d: False}))
+                if is_lookup:
+                    self._add_aggs(field_reference, lookup_ref)
 
-            # return ExpressionWrapper(F(db_column), output_field=model_field)
+                return ExpressionWrapper(F(db_column), output_field=model_field)
         elif not hasattr(self.model_instance, db_column):
             raise UnknownFieldReference(db_column)
         else:
@@ -216,6 +217,15 @@ class BaserowExpressionToDjangoExpressionGenerator(
                 ),
                 output_field=model_field,
             )
+
+    def _add_aggs(self, field_reference, lookup_ref):
+        path = lookup_ref.split("__")
+        col = [field_reference.referenced_field_name] + path[:-1] + ["trashed"]
+        notnull = [field_reference.referenced_field_name] + path + ["isnull"]
+        c = "__".join(col)
+        d = "__".join(notnull)
+        self.aggregate_filters.append(Q(**{c: False}))
+        self.aggregate_filters.append(Q(**{d: False}))
 
     def visit_function_call(
         self, function_call: BaserowFunctionCall[BaserowFormulaType]

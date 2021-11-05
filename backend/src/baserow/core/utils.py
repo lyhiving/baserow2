@@ -11,6 +11,7 @@ from typing import List
 
 from django.db.models import ForeignKey
 from django.db.models.fields import NOT_PROVIDED
+from pyinstrument import Profiler
 
 
 def extract_allowed(values, allowed_fields):
@@ -300,3 +301,24 @@ def get_model_reference_field_name(lookup_model, target_model):
                 return field.name
 
     return None
+
+
+class RequestProfilingMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # One-time configuration and initialization.
+
+    def __call__(self, request):
+        # Code to be executed for each request before
+        # the view (and later middleware) are called.
+
+        profiler = Profiler()
+        profiler.start()
+        response = self.get_response(request)
+        profiler.stop()
+        print(profiler.output_text(unicode=True, color=True))
+
+        # Code to be executed for each request/response after
+        # the view is called.
+
+        return response

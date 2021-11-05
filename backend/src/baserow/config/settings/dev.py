@@ -8,3 +8,8 @@ try:
     from .local import *  # noqa: F403, F401
 except ImportError:
     pass
+
+MIDDLEWARE += [
+    "silk.middleware.SilkyMiddleware",
+]
+INSTALLED_APPS += ["silk"]

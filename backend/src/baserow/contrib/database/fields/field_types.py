@@ -2273,6 +2273,21 @@ class LookupFieldType(FormulaFieldType):
     type = "lookup"
     model_class = FormulaField
 
+    allowed_fields = BASEROW_FORMULA_TYPE_ALLOWED_FIELDS + [
+        "through_field",
+        "target_field",
+        "formula_type",
+    ]
+    serializer_field_names = BASEROW_FORMULA_TYPE_ALLOWED_FIELDS + [
+        "through_field",
+        "target_field",
+        "formula_type",
+    ]
+
+    def prepare_values(self, values, user):
+        # values["formula"] =
+        return super().prepare_values(values, user)
+
     def to_baserow_formula_expression(
         self, field: FormulaField
     ) -> BaserowExpression[BaserowFormulaType]:

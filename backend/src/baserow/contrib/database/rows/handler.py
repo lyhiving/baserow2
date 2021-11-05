@@ -503,8 +503,6 @@ class RowHandler:
                     table, updated_fields
                 )
             )
-            print(f"Top connections for {row} {values}")
-            print(other_table_connections)
             _recursively_update(row.id, other_table_connections, [])
 
             # We need to refresh here as ExpressionFields might have had their values
