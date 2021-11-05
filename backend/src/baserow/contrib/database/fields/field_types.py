@@ -2267,3 +2267,13 @@ class FormulaFieldType(FieldType):
             return True
         else:
             return False
+
+
+class LookupFieldType(FormulaFieldType):
+    type = "lookup"
+    model_class = FormulaField
+
+    def to_baserow_formula_expression(
+        self, field: FormulaField
+    ) -> BaserowExpression[BaserowFormulaType]:
+        return field.cached_typed_internal_expression

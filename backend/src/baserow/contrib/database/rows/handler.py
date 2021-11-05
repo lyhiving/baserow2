@@ -7,6 +7,7 @@ from django.db.models.fields.related import ManyToManyField
 from math import floor, ceil
 
 from baserow.contrib.database.fields.models import Field, FormulaField
+from baserow.core.models import TrashEntry
 from baserow.core.trash.handler import TrashHandler
 from baserow.core.utils import split_comma_separated_string
 from .exceptions import RowDoesNotExist
@@ -18,11 +19,12 @@ from .signals import (
     row_deleted,
 )
 from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
-from ..formula import FormulaHandler
+from baserow.contrib.database.formula import FormulaHandler
 
 
 def _recursively_update(row_id, connections, path):
     for edge in connections:
+        print(f"Checking {edge}")
         child = edge.child
         child_field = child.field
         child_model = child_field.table.get_model(field_ids=[child_field.id])
@@ -36,8 +38,14 @@ def _recursively_update(row_id, connections, path):
                 ] = FormulaHandler.baserow_expression_to_update_django_expression(
                     field.cached_typed_internal_expression, child_model
                 )
+                print(
+                    f"update for {field.name} is {field.cached_typed_internal_expression}"
+                )
 
-        child_model.objects.filter(**{this_path: row_id}).update(**update_query)
+        queryset = child_model.objects_and_trash.filter(**{this_path: row_id})
+        for x in queryset:
+            print(f"Found {x}")
+        queryset.update(**update_query)
     for edge in connections:
         more_connections = (
             FieldDependencyHandler.recursively_find_connections_to_other_tables(
@@ -478,6 +486,11 @@ class RowHandler:
                 values = self.map_user_field_name_dict_to_internal(
                     model._field_objects, values
                 )
+            updated_fields = [
+                field["field"]
+                for field_id, field in model._field_objects.items()
+                if field_id in values or field["name"] in values
+            ]
             values = self.prepare_values(model._field_objects, values)
             values, manytomany_values = self.extract_manytomany_values(values, model)
 
@@ -493,16 +506,13 @@ class RowHandler:
             # query for the rows updated values instead.
             row.refresh_from_db(fields=model.fields_requiring_refresh_after_update())
 
-            updated_fields = [
-                field["field"]
-                for field_id, field in model._field_objects.items()
-                if field_id in values or field["name"] in values
-            ]
             other_table_connections = (
                 FieldDependencyHandler.recursively_find_connections_to_other_tables(
                     table, updated_fields
                 )
             )
+            print(f"Top connections for {row} {values}")
+            print(other_table_connections)
             _recursively_update(row.id, other_table_connections, [])
 
         row_updated.send(
@@ -598,6 +608,13 @@ class RowHandler:
         row_id = row.id
 
         TrashHandler.trash(user, group, table.database, row, parent_id=table.id)
+        updated_fields = [field["field"] for field in model._field_objects.values()]
+        other_table_connections = (
+            FieldDependencyHandler.recursively_find_connections_to_other_tables(
+                table, updated_fields
+            )
+        )
+        _recursively_update(row.id, other_table_connections, [])
 
         row_deleted.send(
             self,

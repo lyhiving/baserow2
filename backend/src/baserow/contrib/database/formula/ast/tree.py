@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import List, TypeVar, Generic, Tuple, Optional
 
 from django.conf import settings
-from django.db.models import Expression, Model
+from django.db.models import Expression, Model, Q
 
 from baserow.contrib.database.formula.ast import visitors
 from baserow.contrib.database.formula.ast.exceptions import (
@@ -300,8 +300,11 @@ class BaserowFunctionCall(BaserowExpression[A]):
         self,
         args: List[Expression],
         model_instance: Optional[Model],
+        aggregate_filters: List[Q],
     ) -> Expression:
-        return self.function_def.to_django_expression_given_args(args, model_instance)
+        return self.function_def.to_django_expression_given_args(
+            args, model_instance, aggregate_filters
+        )
 
     def check_arg_type_valid(
         self,
@@ -409,6 +412,7 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         self,
         args: List[Expression],
         model_instance: Optional[Model],
+        aggregate_filters: List[Q],
     ) -> Expression:
         """
         Given the args already converted to Django Expressions should return a Django

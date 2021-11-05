@@ -1,6 +1,6 @@
 import pytest
 from django.urls import reverse
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.registries import field_type_registry
@@ -466,5 +466,107 @@ def do_big_test(api_client, data_fixture, django_assert_num_queries):
                 "id": table1_y.id,
                 "order": "1.00000000000000000000",
             },
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_can_delete_lookup_field_value(
+    data_fixture, api_client, django_assert_num_queries
+):
+
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    table2 = data_fixture.create_database_table(user=user, database=table.database)
+    table_primary_field = data_fixture.create_text_field(
+        name="p", table=table, primary=True
+    )
+    data_fixture.create_text_field(name="primaryfield", table=table2, primary=True)
+    looked_up_field = data_fixture.create_date_field(
+        name="lookupfield",
+        table=table2,
+        date_include_time=False,
+        date_format="US",
+    )
+
+    linkrowfield = FieldHandler().create_field(
+        user,
+        table,
+        "link_row",
+        name="linkrowfield",
+        link_row_table=table2,
+    )
+
+    table2_model = table2.get_model(attribute_names=True)
+    a = table2_model.objects.create(lookupfield=f"2021-02-01", primaryfield="primary a")
+    b = table2_model.objects.create(lookupfield=f"2022-02-03", primaryfield="primary b")
+
+    table_model = table.get_model(attribute_names=True)
+
+    table_row = table_model.objects.create(p="table row 1")
+    table_row.linkrowfield.add(a.id)
+    table_row.linkrowfield.add(b.id)
+    table_row.save()
+
+    formulafield = FieldHandler().create_field(
+        user,
+        table,
+        "formula",
+        name="formulafield",
+        formula=f"IF(datetime_format(lookup('{linkrowfield.name}',"
+        f"'{looked_up_field.name}'), "
+        f"'YYYY')='2021', 'yes', 'no')",
+    )
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.json() == {
+        "count": 1,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                f"field_{table_primary_field.id}": "table row 1",
+                f"field_{linkrowfield.id}": [
+                    {"id": a.id, "value": "primary a"},
+                    {"id": b.id, "value": "primary b"},
+                ],
+                f"field_{formulafield.id}": ["yes", "no"],
+                "id": table_row.id,
+                "order": "1.00000000000000000000",
+            }
+        ],
+    }
+    with django_assert_num_queries(1):
+        response = api_client.delete(
+            reverse(
+                "api:database:rows:item",
+                kwargs={"table_id": table2.id, "row_id": a.id},
+            ),
+            format="json",
+            HTTP_AUTHORIZATION=f"JWT {token}",
+        )
+    assert response.status_code == HTTP_204_NO_CONTENT
+    response = api_client.get(
+        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.json() == {
+        "count": 1,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                f"field_{table_primary_field.id}": "table row 1",
+                f"field_{linkrowfield.id}": [
+                    {"id": b.id, "value": "primary b"},
+                ],
+                f"field_{formulafield.id}": ["no"],
+                "id": table_row.id,
+                "order": "1.00000000000000000000",
+            }
         ],
     }

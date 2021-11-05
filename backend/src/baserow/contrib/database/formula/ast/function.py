@@ -1,7 +1,7 @@
 import abc
 from typing import List, Optional
 
-from django.db.models import Expression, Model
+from django.db.models import Expression, Model, Q
 
 from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
@@ -100,7 +100,10 @@ class ZeroArgumentBaserowFunction(BaserowFunctionDefinition):
         return self.type_function(func_call)
 
     def to_django_expression_given_args(
-        self, args: List[Expression], model_instance: Optional[Model]
+        self,
+        args: List[Expression],
+        model_instance: Optional[Model],
+        aggregate_filters: List[Q],
     ) -> Expression:
         return self.to_django_expression()
 
@@ -190,7 +193,10 @@ class OneArgumentBaserowFunction(BaserowFunctionDefinition):
         return self.type_function(func_call, args[0])
 
     def to_django_expression_given_args(
-        self, args: List[Expression], model_instance: Optional[Model]
+        self,
+        args: List[Expression],
+        model_instance: Optional[Model],
+        aggregate_filters: List[Q],
     ) -> Expression:
         return self.to_django_expression(args[0])
 
@@ -299,7 +305,10 @@ class TwoArgumentBaserowFunction(BaserowFunctionDefinition):
         return self.type_function(func_call, args[0], args[1])
 
     def to_django_expression_given_args(
-        self, args: List[Expression], model_instance: Optional[Model]
+        self,
+        args: List[Expression],
+        model_instance: Optional[Model],
+        aggregate_filters: List[Q],
     ) -> Expression:
         return self.to_django_expression(args[0], args[1])
 
@@ -424,7 +433,10 @@ class ThreeArgumentBaserowFunction(BaserowFunctionDefinition):
         return self.type_function(func_call, args[0], args[1], args[2])
 
     def to_django_expression_given_args(
-        self, args: List[Expression], model_instance: Optional[Model]
+        self,
+        args: List[Expression],
+        model_instance: Optional[Model],
+        aggregate_filters: List[Q],
     ) -> Expression:
         return self.to_django_expression(args[0], args[1], args[2])
 

@@ -14,6 +14,7 @@ from django.db.models import (
     ExpressionWrapper,
     Model,
     Count,
+    Q,
 )
 from django.db.models.functions import (
     Upper,
@@ -232,7 +233,10 @@ class BaserowConcat(BaserowFunctionDefinition):
         ).with_valid_type(BaserowFormulaTextType())
 
     def to_django_expression_given_args(
-        self, args: List[Expression], model_instance: Optional[Model]
+        self,
+        args: List[Expression],
+        model_instance: Optional[Model],
+        aggregate_filters: List[Q],
     ) -> Expression:
         return Concat(*args, output_field=fields.TextField())
 
@@ -864,6 +868,18 @@ class BaserowArrayAgg(OneArgumentBaserowFunction):
 
     def to_django_expression(self, arg: Expression) -> Expression:
         return ArrayAgg(arg, filter=IsNotExpr(arg, Value(None)))
+
+    def to_django_expression_given_args(
+        self,
+        args: List[Expression],
+        model_instance: Optional[Model],
+        aggregate_filters: List[Q],
+    ) -> Expression:
+        starting = Q()
+        for a in aggregate_filters:
+            starting = starting & a
+        aggregate_filters.clear()
+        return ArrayAgg(*args, filter=starting)
 
 
 class Baserow2dArrayAgg(OneArgumentBaserowFunction):

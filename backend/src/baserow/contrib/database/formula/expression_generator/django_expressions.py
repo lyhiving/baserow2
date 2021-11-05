@@ -1,10 +1,19 @@
-from django.db.models import Transform
+from django.db.models import Transform, ForeignObject
 
 
 # noinspection PyAbstractClass
 class BinaryOpExpr(Transform):
     template = "(%(expressions)s)"
     arity = 2
+
+
+# noinspection PyAbstractClass
+class NotTrashed(Transform):
+    lookup_name = "nottrashed"
+    template = "(%(expressions)s.trashed=False)"
+
+
+ForeignObject.register_lookup(NotTrashed)
 
 
 # Django provides no way of doing a SQL equals expression with an arbitrary Django

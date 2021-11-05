@@ -12,6 +12,10 @@ from django.db.models import (
     OuterRef,
     Func,
     Model,
+    Case,
+    When,
+    Q,
+    FilteredRelation,
 )
 from django.db.models.functions import Cast
 
@@ -89,7 +93,8 @@ def _baserow_expression_to_django_expression(
                 if model_instance is not None and model_instance.pk is None:
                     return Value(None)
                 values = (
-                    model.objects.filter(id=OuterRef("id"))
+                    model.objects_and_trash.filter(id=OuterRef("id"))
+                    .annotate(**generator.pre_annotations)
                     .annotate(result=expr)
                     .values("result")
                 )
@@ -136,6 +141,8 @@ class BaserowExpressionToDjangoExpressionGenerator(
     ):
         self.model_instance = model_instance
         self.model = model
+        self.pre_annotations = {}
+        self.aggregate_filters = []
 
     def visit_field_reference(
         self, field_reference: BaserowFieldReference[BaserowFormulaType]
@@ -155,6 +162,28 @@ class BaserowExpressionToDjangoExpressionGenerator(
         else:
             model_field = self.model._meta.get_field(db_column)
         if self.model_instance is None or is_lookup:
+            # if is_lookup:
+            #     path = lookup_ref.split("__")
+            #     col = [field_reference.referenced_field_name] + path[:-1] + ["trashed"]
+            #     c = "__".join(col)
+            #     b = "__".join(col[:-1])
+            #     relation = FilteredRelation(b, condition=Q(**{c: False}))
+            #     self.pre_annotations[f"not_trashed_{b}"] = relation
+            #     return ExpressionWrapper(
+            #         F(f"not_trashed_{b}__{path[-1]}"),
+            #         output_field=model_field,
+            #     )
+            # else:
+            #     return ExpressionWrapper(F(db_column), output_field=model_field)
+            if is_lookup:
+                path = lookup_ref.split("__")
+                col = [field_reference.referenced_field_name] + path[:-1] + ["trashed"]
+                notnull = [field_reference.referenced_field_name] + path + ["isnull"]
+                c = "__".join(col)
+                d = "__".join(notnull)
+                self.aggregate_filters.append(Q(**{c: False}))
+                self.aggregate_filters.append(Q(**{d: False}))
+
             return ExpressionWrapper(F(db_column), output_field=model_field)
         elif not hasattr(self.model_instance, db_column):
             raise UnknownFieldReference(db_column)
@@ -172,7 +201,9 @@ class BaserowExpressionToDjangoExpressionGenerator(
         self, function_call: BaserowFunctionCall[BaserowFormulaType]
     ) -> Expression:
         args = [expr.accept(self) for expr in function_call.args]
-        return function_call.to_django_expression_given_args(args, self.model_instance)
+        return function_call.to_django_expression_given_args(
+            args, self.model_instance, self.aggregate_filters
+        )
 
     def visit_string_literal(
         self, string_literal: BaserowStringLiteral[BaserowFormulaType]
