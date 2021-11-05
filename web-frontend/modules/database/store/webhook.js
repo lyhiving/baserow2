@@ -31,6 +31,16 @@ export const mutations = {
   },
 }
 
+const cleanHeaders = (data) => {
+  data.forEach((item) => {
+    const contentTypeIndex = item.headers.findIndex(
+      (item) => item.header === 'Content-type'
+    )
+    item.headers.splice(contentTypeIndex, 1)
+    item.headers.push({ header: '', value: '' })
+  })
+}
+
 export const actions = {
   async fetchAll({ commit, getters, dispatch }, table) {
     commit('SET_LOADING', true)
@@ -38,6 +48,7 @@ export const actions = {
 
     try {
       const { data } = await WebhookService(this.$client).fetchAll(table.id)
+      cleanHeaders(data)
       commit('SET_ITEMS', data)
       commit('SET_LOADING', false)
       commit('SET_LOADED', true)
@@ -57,6 +68,7 @@ export const actions = {
         table.id,
         values
       )
+      cleanHeaders(data)
       commit('ADD_WEBHOOK', data)
       commit('SET_LOADING', false)
       commit('SET_LOADED', true)
@@ -77,6 +89,7 @@ export const actions = {
         webhook.id,
         values
       )
+      cleanHeaders(data)
       commit('UPDATE_WEBHOOK', data)
       commit('SET_LOADING', false)
       commit('SET_LOADED', true)

@@ -8,9 +8,9 @@
     <div class="actions">
       <button
         class="button button--primary button--error"
-        @click="deleteWebhook()"
         :class="{ 'button--loading': loading }"
         :disabled="loading"
+        @click="deleteWebhook()"
       >
         Delete
       </button>

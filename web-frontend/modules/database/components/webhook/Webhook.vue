@@ -46,7 +46,7 @@
             />
           </Tab>
           <Tab title="Call log">
-            <div v-for="call in webhookCalls" :key="call.id">
+            <div v-for="call in webhook.calls" :key="call.id">
               <webhook-call :call="call" />
             </div>
           </Tab>
@@ -62,7 +62,6 @@ import Tabs from '@baserow/modules/core/components/Tabs.vue'
 import Tab from '@baserow/modules/core/components/Tab.vue'
 import UpdateWebhookContext from './UpdateWebhookContext.vue'
 import WebhookCall from './WebhookCall.vue'
-import WebhookService from '@baserow/modules/database/services/webhook'
 
 export default {
   name: 'Webhook',
@@ -80,32 +79,29 @@ export default {
   data() {
     return {
       isExpanded: false,
-      webhookCalls: [],
     }
   },
   computed: {
     lastCall() {
-      if (this.webhookCalls.length > 0) {
-        return moment(this.webhookCalls[0].called_time).format(
-          'YYYY-MM-DD HH:mm:ss'
-        )
+      const calls = this.$props.webhook.calls
+      if (calls.length > 0) {
+        return moment(calls[0].called_time).format('YYYY-MM-DD HH:mm:ss')
       } else {
         return 'Not called yet'
       }
     },
     lastStatus() {
-      if (this.webhookCalls.length > 0) {
-        return this.webhookCalls[0].status_code
+      const calls = this.$props.webhook.calls
+      if (calls.length > 0) {
+        return calls[0].status_code
       } else {
         return 'No status'
       }
     },
     lastStatusClass() {
-      if (this.webhookCalls.length > 0) {
-        if (
-          this.webhookCalls[0].status_code >= 200 &&
-          this.webhookCalls[0].status_code <= 299
-        ) {
+      const calls = this.$props.webhook.calls
+      if (calls.length > 0) {
+        if (calls[0].status_code >= 200 && calls[0].status_code <= 299) {
           return 'webhook__head-call-state--ok'
         } else {
           return 'webhook__head-call-state--error'
@@ -124,13 +120,6 @@ export default {
         }`
       }
     },
-  },
-  async created() {
-    const data = await WebhookService(this.$client).fetchAllCalls(
-      this.$props.table.id,
-      this.$props.webhook.id
-    )
-    this.webhookCalls = data.data
   },
   methods: {
     toggleExpand() {

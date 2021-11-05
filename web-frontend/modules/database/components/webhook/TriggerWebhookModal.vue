@@ -48,16 +48,6 @@ import error from '@baserow/modules/core/mixins/error'
 export default {
   name: 'TriggerWebhookModal',
   mixins: [modal, error],
-  props: {
-    webhook: {
-      type: Object,
-      required: true,
-    },
-    table: {
-      type: Object,
-      required: true,
-    },
-  },
   data() {
     return {
       loading: false,

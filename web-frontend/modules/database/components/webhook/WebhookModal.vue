@@ -10,15 +10,11 @@
         </a>
       </div>
     </div>
-    <div v-if="renderList" class="webhook__list">
-      <div v-for="webhook in webhooks" :key="webhook.id">
-        <webhook
-          :webhook="webhook"
-          :table="table"
-          @triggerWebhook="triggerWebhook()"
-        />
-      </div>
-    </div>
+    <webhook-list
+      :table="table"
+      :render-list="renderList"
+      @triggerWebhook="triggerWebhook()"
+    />
     <div v-if="!renderList" class="webhook__list">
       <create-webhook-context :table="table" @created="toggleCreate()" />
     </div>
@@ -27,8 +23,7 @@
 </template>
 
 <script>
-import { mapState } from 'vuex'
-import Webhook from './Webhook.vue'
+import WebhookList from './WebhookList.vue'
 import CreateWebhookContext from './CreateWebhookContext.vue'
 import TriggerWebhookModal from './TriggerWebhookModal.vue'
 import modal from '@baserow/modules/core/mixins/modal'
@@ -36,7 +31,11 @@ import error from '@baserow/modules/core/mixins/error'
 
 export default {
   name: 'WebhookModal',
-  components: { Webhook, CreateWebhookContext, TriggerWebhookModal },
+  components: {
+    CreateWebhookContext,
+    TriggerWebhookModal,
+    WebhookList,
+  },
   mixins: [modal, error],
   props: {
     table: {
@@ -49,10 +48,6 @@ export default {
       renderList: true,
     }
   },
-  computed: mapState({
-    // arrow functions can make the code very succinct!
-    webhooks: (state) => state.webhook.items,
-  }),
   methods: {
     triggerWebhook() {
       console.log('trying to run, right?', this.$refs)

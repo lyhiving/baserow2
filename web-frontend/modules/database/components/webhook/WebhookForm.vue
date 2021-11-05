@@ -16,11 +16,23 @@
           </div>
         </div>
       </div>
-      <div v-if="!create" class="col col-12">
+      <div v-if="!create" class="col col-4">
         <div class="control">
           <label class="control__label">Status</label>
           <div class="control__elements">
             <Checkbox v-model="values.active">Active</Checkbox>
+          </div>
+        </div>
+      </div>
+      <div class="col" :class="{ 'col-6': !create, 'col-12': create }">
+        <div class="control">
+          <label class="control__label">User field names</label>
+          <div class="control__elements">
+            <Checkbox v-model="values.use_user_field_names">{{
+              values.use_user_field_names
+                ? 'Send user field names'
+                : 'Send field ids'
+            }}</Checkbox>
           </div>
         </div>
       </div>
@@ -80,57 +92,58 @@
     </div>
     <div class="control">
       <div class="control__label">Additional headers</div>
-      <div v-if="values.headers.length === 0">
-        <a href="#" @click="addHeaderField()" class="button button--ghost"
-          >Add additional headers</a
-        >
-      </div>
-      <div v-if="values.headers.length > 0" class="control__elements">
+      <div class="control__elements">
         <div
-          v-for="(input, index) in values.headers"
+          v-for="(input, index) in defaultHeaders"
           :key="`headerInput-${index}`"
           class="webhook__header"
         >
-          <input
-            v-model="input.header"
-            class="input webhook__header-key"
-            :class="{
-              'input--error': $v.values.headers.$each[index].header.$error,
-            }"
-            placeholder="Name"
-          />
+          <div class="webhook__header-row">
+            <input
+              v-model="input.header"
+              class="input webhook__header-key"
+              :disabled="true"
+            />
+            <input
+              v-model="input.value"
+              class="input webhook__header-value"
+              :disabled="true"
+            />
+          </div>
+        </div>
+        <div v-if="values.headers.length === 0">
+          <a href="#" class="button button--ghost" @click="addHeaderField()"
+            >Add additional headers</a
+          >
+        </div>
+        <div v-if="values.headers.length > 0">
           <div
-            v-if="$v.values.headers.$each[index].header.$error"
-            class="error"
+            v-for="(input, index) in values.headers"
+            :key="`headerInput-${index}`"
+            class="webhook__header"
           >
-            This field is required.
+            <div class="webhook__header-row">
+              <input
+                v-model="input.header"
+                class="input webhook__header-key"
+                placeholder="Header"
+              />
+              <input
+                v-model="input.value"
+                class="input webhook__header-value"
+                @input="inputChange(index, input)"
+                placeholder="Value"
+              />
+              <a
+                v-if="!lastHeaderElement(index)"
+                href="#"
+                class="button button--error webhook__header-delete"
+                @click="removeHeaderField(index)"
+              >
+                <i class="fas fa-trash button__icon"></i>
+              </a>
+            </div>
           </div>
-          <input
-            v-model="input.value"
-            class="input webhook__header-value"
-            :class="{
-              'input--error': $v.values.headers.$each[index].value.$error,
-            }"
-            placeholder="Value"
-          />
-          <div v-if="$v.values.headers.$each[index].value.$error" class="error">
-            This field is required.
-          </div>
-          <a
-            v-if="lastHeaderElement(index)"
-            href="#"
-            class="button button--success webhook__header-add"
-            @click="addHeaderField()"
-          >
-            <i class="fas fa-plus button__icon"></i>
-          </a>
-          <a
-            href="#"
-            class="button button--error webhook__header-delete"
-            @click="removeHeaderField()"
-          >
-            <i class="fas fa-trash button__icon"></i>
-          </a>
         </div>
       </div>
     </div>
@@ -175,6 +188,7 @@ export default {
         'url',
         'request_method',
         'include_all_events',
+        'use_user_field_names',
         'headers',
         'events',
         'active',
@@ -182,10 +196,12 @@ export default {
       values: {
         name: '',
         active: true,
+        use_user_field_names: true,
         url: '',
         request_method: 'POST',
-        headers: [],
+        headers: [{ header: '', value: '' }],
       },
+      defaultHeaders: [{ header: 'Content-type', value: 'application/json' }],
       radio: 'all',
       events: {
         rowCreated: false,
@@ -219,15 +235,14 @@ export default {
     values: {
       name: { required },
       url: { required },
-      headers: {
-        $each: {
-          header: { required },
-          value: { required },
-        },
-      },
     },
   },
   methods: {
+    inputChange(index, input) {
+      if (this.lastHeaderElement(index) && input.header !== '') {
+        this.addHeaderField()
+      }
+    },
     triggerAllEvents(val) {
       console.log('YEELLOW ALL EVENTS', val)
       if (val) {
@@ -267,12 +282,22 @@ export default {
       }
       return list
     },
+    getHeaderValues() {
+      // remove empty headers and values
+      const result = this.values.headers.filter((item) => {
+        const bothNotEmpty = item.header !== '' && item.values !== ''
+        const headerNotEmpty = item.header !== ''
+        return bothNotEmpty || headerNotEmpty
+      })
+      return result
+    },
     getFormValues() {
+      const headers = this.getHeaderValues()
       if (this.radio === 'custom') {
         const events = this.createEventsList()
-        return { ...this.values, include_all_events: false, events }
+        return { ...this.values, include_all_events: false, events, headers }
       } else {
-        return { ...this.values, include_all_events: true }
+        return { ...this.values, include_all_events: true, headers }
       }
     },
   },

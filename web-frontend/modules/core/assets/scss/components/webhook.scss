@@ -116,14 +116,16 @@
 }
 
 .webhook__header {
-  position: relative;
-  display: flex;
-  width: 100%;
-  padding-right: 88px;
-
   &:not(:last-child) {
     margin-bottom: 10px;
   }
+}
+
+.webhook__header-row {
+  position: relative;
+  display: flex;
+  width: 100%;
+  padding-right: 44px;
 }
 
 .webhook__header-key {
@@ -146,7 +148,7 @@
   width: 32px;
   padding: 0 0;
 
-  @include absolute(0, 42px, 0, auto);
+  @include absolute(0, 0, 0, auto);
 }
 
 .webhook__code-container {
