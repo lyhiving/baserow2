@@ -18,10 +18,5 @@ export default (client) => {
     delete(tableId, webhookId) {
       return client.delete(`/database/tables/${tableId}/webhooks/${webhookId}/`)
     },
-    fetchAllCalls(tableId, webhookId) {
-      return client.get(
-        `/database/tables/${tableId}/webhooks/${webhookId}/call`
-      )
-    },
   }
 }

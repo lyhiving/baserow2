@@ -175,7 +175,6 @@ export const actions = {
     await axios.all([
       dispatch('view/fetchAll', table, { root: true }),
       dispatch('field/fetchAll', table, { root: true }),
-      dispatch('webhook/fetchAll', table, { root: true }),
     ])
     await dispatch('application/clearChildrenSelected', null, { root: true })
     commit('SET_SELECTED', { database, table })
