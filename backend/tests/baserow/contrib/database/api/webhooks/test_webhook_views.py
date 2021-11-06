@@ -1,4 +1,3 @@
-import json
 import pytest
 import responses
 from rest_framework.status import (
@@ -280,6 +279,7 @@ def test_call_webhooks(api_client, data_fixture):
 
     webhook_create_data = {
         "url": "https://mydomain.com/endpoint",
+        "request_method": "POST",
         "name": "My Webhook",
         "include_all_events": True,
     }
@@ -290,7 +290,6 @@ def test_call_webhooks(api_client, data_fixture):
         HTTP_AUTHORIZATION=f"JWT {jwt_token}",
     )
     response_json = response.json()
-    webhook_id = response_json["id"]
     assert response.status_code == HTTP_200_OK
 
     # mocked responses
@@ -305,24 +304,27 @@ def test_call_webhooks(api_client, data_fixture):
     response = api_client.post(
         reverse(
             "api:database:tables:call_webhook",
-            kwargs={"table_id": table.id, "webhook_id": webhook_id},
+            kwargs={"table_id": table.id},
         ),
+        dict(webhook_create_data),
         format="json",
         HTTP_AUTHORIZATION=f"JWT {jwt_token}",
     )
 
     response_json = response.json()
-    assert response.status_code == 400
-    assert response_json["error"] == "TableWebhookCannotBeCalled"
+    assert response.status_code == 200
+    assert response_json["status_code"] == 400
 
     response = api_client.post(
         reverse(
             "api:database:tables:call_webhook",
-            kwargs={"table_id": table.id, "webhook_id": webhook_id},
+            kwargs={"table_id": table.id},
         ),
+        dict(webhook_create_data),
         format="json",
         HTTP_AUTHORIZATION=f"JWT {jwt_token}",
     )
 
+    response_json = response.json()
     assert response.status_code == 200
-    assert response.data == json.dumps(mocked_response)
+    assert response_json["status_code"] == 200

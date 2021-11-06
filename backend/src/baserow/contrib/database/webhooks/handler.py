@@ -1,4 +1,4 @@
-import json
+from typing import List
 import uuid
 from django.db import transaction
 from django.conf import settings
@@ -33,11 +33,11 @@ else:
 
 class WebhookHandler:
     def get_example_payload(
-        self, webhook: TableWebhook, table: Table, event_type="row.created"
+        self, use_user_field_names: bool, table: Table, event_type="row.created"
     ):
         model = table.get_model()
         serializer = get_row_serializer_class(
-            model, RowSerializer, user_field_names=webhook.use_user_field_names
+            model, RowSerializer, user_field_names=use_user_field_names
         )
         serialized_data = serializer().data
         types_mapping = {
@@ -202,21 +202,14 @@ class WebhookHandler:
             if "include_all_events" in data and data["include_all_events"]:
                 TableWebhookEvents.objects.filter(webhook_id=webhook_id).delete()
 
-            # default header
-            default_headers = self._get_default_headers()
-
             # additional user provided headers
             if headers is not None:
-                headers = [*default_headers, *headers]
-            else:
-                headers = default_headers
-
-            for header in headers:
-                TableWebhookHeader.objects.get_or_create(
-                    header=header["header"],
-                    value=header["value"],
-                    webhook_id=webhook,
-                )
+                for header in headers:
+                    TableWebhookHeader.objects.get_or_create(
+                        header=header["header"],
+                        value=header["value"],
+                        webhook_id=webhook,
+                    )
             webhook.save()
         return webhook
 
@@ -230,7 +223,9 @@ class WebhookHandler:
 
         TableWebhook.objects.filter(id=webhook_id).delete()
 
-    def call(self, webhook_id: int, payload: dict, event_id: str, event_type: str):
+    def call_from_task(
+        self, webhook_id: int, payload: dict, event_id: str, event_type: str
+    ):
         """
         Calls a specific webhook and stores the result in the database. This function
         is to be used from a celery task. After each call it will also call a call log
@@ -241,7 +236,7 @@ class WebhookHandler:
         webhook = TableWebhook.objects.get(id=webhook_id)
         webhook_call_defaults = dict(
             status_code=500,
-            request=json.dumps(payload),
+            request="",
             called_url=webhook.url,
             response="",
             error="",
@@ -254,6 +249,7 @@ class WebhookHandler:
                 json=payload,
                 timeout=5,
             )
+            webhook_call_defaults["request"] = self.formatted_request(response.request)
         except RequestException as e:
             # RequestException catches ConnectionError, HTTPError, Timeout or
             # TooManyRedirects
@@ -277,7 +273,7 @@ class WebhookHandler:
 
         return True
 
-    def test_call(self, webhook_id: int, table: Table, user: any):
+    def test_call(self, table: Table, user: any, **kwargs):
         """
         Helps with running a manual test call triggered by the user. It will generate
         an event_id, as well as uses a "manual.call" event type to indicate that this
@@ -287,22 +283,50 @@ class WebhookHandler:
         group = table.database.group
         group.has_user(user, raise_error=True)
 
-        webhook = self.get_table_webhook(webhook_id, table, user)
         event_id = str(uuid.uuid4())
         event_type = "manual.call"
-        example_payload = self.get_example_payload(webhook, table)
+        use_user_field_names = kwargs.get("use_user_field_names")
+        request_method = kwargs.get("request_method")
+        additional_headers = kwargs.get("headers")
+        url = kwargs.get("url")
+        example_payload = self.get_example_payload(use_user_field_names, table)
+        default_headers = self._get_default_headers()
+        baserow_headers = self.baserow_headers(event_type, event_id)
+        all_headers = [*default_headers, *baserow_headers]
+
+        if additional_headers is not None:
+            all_headers = [*all_headers, *additional_headers]
+
+        assembled_headers = self.assemble_headers(all_headers)
 
         try:
-            self.call(webhook_id, example_payload, event_id, event_type)
-            call = TableWebhookCall.objects.get(event_id=event_id)
-            return {"response": call.response, "status": call.status_code}
-        except Exception:
-            call = TableWebhookCall.objects.get(event_id=event_id)
-            res = {
-                "error": "TableWebhookCannotBeCalled",
-                "server_response": call.response,
+            response = request_module(
+                request_method,
+                url,
+                headers=assembled_headers,
+                json=example_payload,
+                timeout=5,
+            )
+            request_text = self.formatted_request(response.request)
+            return {
+                "response": response.text,
+                "request": request_text,
+                "status": response.status_code,
             }
-            return {"response": res, "status": call.status_code}
+        except RequestException:
+            # RequestException catches ConnectionError, HTTPError, Timeout or
+            # TooManyRedirects
+            raise TableWebhookCannotBeCalled
+
+    def formatted_request(self, req):
+        """
+        Helper function, which will format a requests request object.
+        """
+        return "{}\r\n{}\r\n\r\n{}".format(
+            req.method + " " + req.url,
+            "\r\n".join("{}: {}".format(k, v) for k, v in req.headers.items()),
+            req.body,
+        )
 
     def get_call_events_per_webhook(self, webhook_id: int):
         """
@@ -332,13 +356,20 @@ class WebhookHandler:
         return TableWebhookCall.objects.exclude(pk__in=objects_to_keep).delete()
 
     def create_headers(self, webhook_id: int, event_id: str, event_type: str) -> dict:
-        headers = TableWebhookHeader.objects.filter(webhook_id=webhook_id)
+        headers = TableWebhookHeader.objects.filter(webhook_id=webhook_id).values()
+        baserow_headers = self.baserow_headers(event_type, event_id)
+        all_headers = [*headers, *baserow_headers]
+        return self.assemble_headers(all_headers)
+
+    def baserow_headers(self, event_type: str, event_id: str):
+        e_type = {"header": "X-Baserow-Event", "value": event_type}
+        id = {"header": "X-Baserow-Delivery", "value": event_id}
+        return [e_type, id]
+
+    def assemble_headers(self, headers: List[dict]):
         headers_dict = {}
         for header in headers:
-            headers_dict[header.header] = header.value
-
-        headers_dict["X-Baserow-Event"] = event_type
-        headers_dict["X-Baserow-Delivery"] = event_id
+            headers_dict[header["header"]] = header["value"]
         return headers_dict
 
     def reset_failed_trigger(self, webhook_id: int) -> None:
