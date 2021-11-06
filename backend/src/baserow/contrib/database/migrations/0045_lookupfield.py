@@ -7,20 +7,44 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('database', '0044_auto_20211105_1650'),
+        ("database", "0044_auto_20211105_1650"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='LookupField',
+            name="LookupField",
             fields=[
-                ('formulafield_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='database.formulafield')),
-                ('target_field', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='targetting_lookup_fields', to='database.field')),
-                ('through_field', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lookup_fields_used_by', to='database.field')),
+                (
+                    "formulafield_ptr",
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to="database.formulafield",
+                    ),
+                ),
+                (
+                    "target_field",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="targetting_lookup_fields",
+                        to="database.field",
+                    ),
+                ),
+                (
+                    "through_field",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="lookup_fields_used_by",
+                        to="database.field",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
-            bases=('database.formulafield',),
+            bases=("database.formulafield",),
         ),
     ]

@@ -16,6 +16,7 @@ import {
   PhoneNumberFieldType,
   CreatedOnFieldType,
   FormulaFieldType,
+  LookupFieldType,
 } from '@baserow/modules/database/fieldTypes'
 import {
   EqualViewFilterType,
@@ -179,6 +180,7 @@ export default (context) => {
   app.$registry.register('field', new MultipleSelectFieldType(context))
   app.$registry.register('field', new PhoneNumberFieldType(context))
   app.$registry.register('field', new FormulaFieldType(context))
+  app.$registry.register('field', new LookupFieldType(context))
   app.$registry.register('importer', new CSVImporterType(context))
   app.$registry.register('importer', new PasteImporterType(context))
   app.$registry.register('importer', new XMLImporterType(context))

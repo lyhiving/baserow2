@@ -78,6 +78,7 @@ def set_allowed_attrs(values, allowed_fields, instance):
 
     for field in allowed_fields:
         if field in values:
+            print(f"setting {field} to {values[field]}")
             setattr(instance, field, values[field])
 
     return instance

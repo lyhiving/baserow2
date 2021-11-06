@@ -77,9 +77,9 @@ class FormulaHandler:
 
     @classmethod
     def get_lookup_field_reference_expression(
-        cls, through_field, lookup_field, formula_type: BaserowFormulaType
+        cls, through_field, lookup_field, formula_type
     ):
-        return BaserowFieldReference[BaserowFormulaType](
+        return BaserowFieldReference(
             through_field.db_column, lookup_field.db_column, formula_type
         )
 

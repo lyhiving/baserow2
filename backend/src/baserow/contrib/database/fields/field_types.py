@@ -62,6 +62,8 @@ from .exceptions import (
     IncompatiblePrimaryFieldTypeError,
     AllProvidedMultipleSelectValuesMustBeIntegers,
     AllProvidedMultipleSelectValuesMustBeSelectOption,
+    FieldDoesNotExist,
+    FieldNotInTable,
 )
 from .field_filters import contains_filter, AnnotatedQ, filename_contains_filter
 from .field_sortings import AnnotatedOrder
@@ -92,8 +94,10 @@ from .models import (
     PhoneNumberField,
     FormulaField,
     Field,
+    LookupField,
 )
 from .registries import FieldType, field_type_registry
+from ..formula.ast.tree import BaserowFieldReference
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -2271,12 +2275,11 @@ class FormulaFieldType(FieldType):
 
 class LookupFieldType(FormulaFieldType):
     type = "lookup"
-    model_class = FormulaField
+    model_class = LookupField
 
     allowed_fields = BASEROW_FORMULA_TYPE_ALLOWED_FIELDS + [
         "through_field",
         "target_field",
-        "formula_type",
     ]
     serializer_field_names = BASEROW_FORMULA_TYPE_ALLOWED_FIELDS + [
         "through_field",
@@ -2285,8 +2288,34 @@ class LookupFieldType(FormulaFieldType):
     ]
 
     def prepare_values(self, values, user):
-        # values["formula"] =
         return super().prepare_values(values, user)
+
+    def before_create(self, table, primary, values, order, user):
+        """
+        It is not allowed to link with a table from another database. This method
+        checks if the database ids are the same and if not a proper exception is
+        raised.
+        """
+
+        self._setup(table, values, values["through_field"], values["target_field"])
+
+    def _setup(self, table, values, through_field_id, target_field_id):
+        through_field = FieldHandler().get_field(through_field_id, LinkRowField)
+        if through_field.table != table:
+            raise FieldNotInTable()
+        target_field = FieldHandler().get_field(target_field_id)
+        if target_field.table != through_field.link_row_table:
+            raise FieldNotInTable()
+        values["target_field"] = target_field
+        values["through_field"] = through_field
+
+    def before_update(self, from_field, to_field_values, user):
+        self._setup(
+            from_field.table,
+            to_field_values,
+            to_field_values.get("through_field", from_field.through_field.id),
+            to_field_values.get("target_field", from_field.target_field.id),
+        )
 
     def to_baserow_formula_expression(
         self, field: FormulaField

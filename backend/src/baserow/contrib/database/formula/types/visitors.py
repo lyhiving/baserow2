@@ -152,6 +152,7 @@ class FormulaTypingVisitor(
             field_type = field_type_registry.get_by_model(referenced_field)
             lookup_field = field_reference.referenced_lookup_field
             if lookup_field is not None:
+                print(f"lookup field is {lookup_field}")
                 from baserow.contrib.database.fields.models import LinkRowField
 
                 if not isinstance(referenced_field, LinkRowField):
@@ -163,6 +164,7 @@ class FormulaTypingVisitor(
                 lookup_field = self.field_lookup_cache.lookup(
                     target_table, lookup_field
                 )
+                print(f"found lookup_field from cache of {lookup_field}")
                 if lookup_field is None:
                     return field_reference.with_invalid_type(
                         f"references the deleted or unknown lookup field"

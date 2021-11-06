@@ -69,6 +69,7 @@ export default {
     singleSelect: 'Single select',
     phoneNumber: 'Phone number',
     formula: 'Formula',
+    lookup: 'Lookup',
   },
   fieldErrors: {
     invalidNumber: 'Invalid number',

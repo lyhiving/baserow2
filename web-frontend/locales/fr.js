@@ -69,6 +69,7 @@ export default {
     singleSelect: 'Liste déroulante',
     phoneNumber: 'Téléphone',
     formula: 'Formule',
+    lookup: 'Chercher',
   },
   fieldErrors: {
     invalidNumber: 'Nombre invalide',

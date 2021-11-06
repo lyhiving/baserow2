@@ -75,6 +75,7 @@ class DatabaseConfig(AppConfig):
             MultipleSelectFieldType,
             PhoneNumberFieldType,
             FormulaFieldType,
+            LookupFieldType,
         )
 
         field_type_registry.register(TextFieldType())
@@ -92,6 +93,7 @@ class DatabaseConfig(AppConfig):
         field_type_registry.register(MultipleSelectFieldType())
         field_type_registry.register(PhoneNumberFieldType())
         field_type_registry.register(FormulaFieldType())
+        field_type_registry.register(LookupFieldType())
 
         from .fields.field_converters import (
             LinkRowFieldConverter,

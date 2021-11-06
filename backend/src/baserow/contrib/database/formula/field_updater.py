@@ -21,6 +21,7 @@ class BulkMultiTableFormulaFieldRefresher:
             old_field,
         ) in updated_fields.ordered_updated_and_old_fields.values():
             if isinstance(updated_field, FormulaField):
+                print(f"refreshing {updated_field}")
                 if old_field is not None:
                     _recreate_field_if_required(updated_field, old_field)
                     ViewHandler().field_type_changed(updated_field)
@@ -32,6 +33,9 @@ class BulkMultiTableFormulaFieldRefresher:
                         self._get_model(updated_field),
                     ),
                 )
+            else:
+                print("is not formula not refreshing")
+                print(updated_field)
         # Ensure we execute any final pending update statements
         self._execute_current_bulk_update()
 

@@ -70,6 +70,7 @@ import {
 import GridViewFieldFormula from '@baserow/modules/database/components/view/grid/fields/GridViewFieldFormula'
 import FieldFormulaSubForm from '@baserow/modules/database/components/field/FieldFormulaSubForm'
 import RowEditFieldFormula from '@baserow/modules/database/components/row/RowEditFieldFormula'
+import FieldLookupSubForm from '@/modules/database/components/field/FieldLookupSubForm'
 
 export class FieldType extends Registerable {
   /**
@@ -1899,5 +1900,32 @@ export class FormulaFieldType extends FieldType {
 
   canBeReferencedByFormulaField() {
     return true
+  }
+}
+
+export class LookupFieldType extends FormulaFieldType {
+  static getType() {
+    return 'lookup'
+  }
+
+  getIconClass() {
+    return 'columns'
+  }
+
+  getName() {
+    const { i18n } = this.app
+    return i18n.t('fieldType.lookup')
+  }
+
+  getDocsDescription(field) {
+    return this.app.i18n.t('fieldDocs.lookup')
+  }
+
+  getDocsRequestExample(field) {
+    return 'Result of a lookup'
+  }
+
+  getFormComponent() {
+    return FieldLookupSubForm
   }
 }

@@ -2,6 +2,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.functional import cached_property
 
+from baserow.contrib.database.fields.exceptions import FieldNotInTable
 from baserow.contrib.database.fields.mixins import (
     BaseDateMixin,
     TimezoneMixin,
@@ -368,7 +369,13 @@ class FormulaField(Field):
         if hasattr(self, "cached_untyped_expression"):
             # noinspection PyPropertyAccess
             del self.cached_untyped_expression
+        print("formula")
+        print(self.formula)
+        print("untyped")
+        print(self.cached_untyped_expression)
         expression = FormulaHandler.calculate_typed_expression(self, field_lookup_cache)
+        print("typed")
+        print(expression)
         expression_type = expression.expression_type
 
         self.internal_formula = str(expression)
@@ -409,5 +416,14 @@ class LookupField(FormulaField):
         Field, on_delete=models.CASCADE, related_name="lookup_fields_used_by"
     )
     target_field = models.ForeignKey(
-        Field, on_delete=models.CASCADE, related_name="targetting_lookup_fields"
+        Field, on_delete=models.CASCADE, related_name="targeting_lookup_fields"
     )
+
+    def save(self, *args, **kwargs):
+        from baserow.contrib.database.formula.ast.tree import BaserowFieldReference
+
+        expression = str(
+            BaserowFieldReference(self.through_field.name, self.target_field.name, None)
+        )
+        self.formula = expression
+        super().save(*args, **kwargs)
