@@ -1,6 +1,6 @@
 from abc import ABC
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Type
 
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import (
@@ -15,6 +15,9 @@ from django.db.models import (
     Model,
     Count,
     Q,
+    Subquery,
+    OuterRef,
+    Sum,
 )
 from django.db.models.functions import (
     Upper,
@@ -29,7 +32,6 @@ from django.db.models.functions import (
     Length,
     Reverse,
 )
-from sql_util.aggregates import SubquerySum
 
 from baserow.contrib.database.fields.models import (
     NUMBER_MAX_DECIMAL_PLACES,
@@ -237,6 +239,7 @@ class BaserowConcat(BaserowFunctionDefinition):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
+        model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
     ) -> Expression:
@@ -803,7 +806,11 @@ class BaserowRowId(ZeroArgumentBaserowFunction):
         pass
 
     def to_django_expression_given_args(
-        self, args: List[Expression], model_instance: Optional[Model]
+        self,
+        args: List[Expression],
+        model: Type[Model],
+        model_instance: Optional[Model],
+        aggregate_filters: List[Q],
     ) -> Expression:
         if model_instance is None:
             return ExpressionWrapper(
@@ -874,6 +881,7 @@ class BaserowArrayAgg(OneArgumentBaserowFunction):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
+        model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
     ) -> Expression:
@@ -1008,6 +1016,7 @@ class BaserowSum(OneArgumentBaserowFunction):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
+        model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
     ) -> Expression:
@@ -1016,5 +1025,17 @@ class BaserowSum(OneArgumentBaserowFunction):
             starting = starting & a
         aggregate_filters.clear()
         return ExpressionWrapper(
-            SubquerySum(*args, filter=starting), output_field=args[0].output_field
+            Subquery(
+                model.objects.filter(id=OuterRef("id")).values(
+                    result=Coalesce(
+                        Sum(
+                            *args,
+                            filter=starting,
+                        ),
+                        Value(0),
+                        output_field=args[0].output_field,
+                    )
+                )
+            ),
+            output_field=args[0].output_field,
         )

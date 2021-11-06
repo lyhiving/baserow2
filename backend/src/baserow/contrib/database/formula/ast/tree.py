@@ -1,6 +1,6 @@
 import abc
 from decimal import Decimal
-from typing import List, TypeVar, Generic, Tuple, Optional
+from typing import List, TypeVar, Generic, Tuple, Optional, Type
 
 from django.conf import settings
 from django.db.models import Expression, Model, Q
@@ -299,11 +299,12 @@ class BaserowFunctionCall(BaserowExpression[A]):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
+        model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
     ) -> Expression:
         return self.function_def.to_django_expression_given_args(
-            args, model_instance, aggregate_filters
+            args, model, model_instance, aggregate_filters
         )
 
     def check_arg_type_valid(
@@ -411,6 +412,7 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
+        model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
     ) -> Expression:

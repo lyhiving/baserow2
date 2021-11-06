@@ -1,5 +1,5 @@
 import abc
-from typing import List, Optional
+from typing import List, Optional, Type
 
 from django.db.models import Expression, Model, Q
 
@@ -102,6 +102,7 @@ class ZeroArgumentBaserowFunction(BaserowFunctionDefinition):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
+        model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
     ) -> Expression:
@@ -195,6 +196,7 @@ class OneArgumentBaserowFunction(BaserowFunctionDefinition):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
+        model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
     ) -> Expression:
@@ -307,6 +309,7 @@ class TwoArgumentBaserowFunction(BaserowFunctionDefinition):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
+        model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
     ) -> Expression:
@@ -435,6 +438,7 @@ class ThreeArgumentBaserowFunction(BaserowFunctionDefinition):
     def to_django_expression_given_args(
         self,
         args: List[Expression],
+        model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
     ) -> Expression:

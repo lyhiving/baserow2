@@ -12,8 +12,6 @@ from django.db.models import (
     OuterRef,
     Func,
     Model,
-    Case,
-    When,
     Q,
     FilteredRelation,
 )
@@ -232,7 +230,7 @@ class BaserowExpressionToDjangoExpressionGenerator(
     ) -> Expression:
         args = [expr.accept(self) for expr in function_call.args]
         return function_call.to_django_expression_given_args(
-            args, self.model_instance, self.aggregate_filters
+            args, self.model, self.model_instance, self.aggregate_filters
         )
 
     def visit_string_literal(
