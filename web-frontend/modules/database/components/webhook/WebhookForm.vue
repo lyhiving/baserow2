@@ -148,7 +148,7 @@
       </div>
     </div>
     <div class="control">
-      <webhook-example :userFieldNames="values.use_user_field_names" />
+      <webhook-example :user-field-names="values.use_user_field_names" />
     </div>
     <slot></slot>
   </form>
