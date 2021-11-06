@@ -131,8 +131,8 @@
               <input
                 v-model="input.value"
                 class="input webhook__header-value"
-                @input="inputChange(index, input)"
                 placeholder="Value"
+                @input="inputChange(index, input)"
               />
               <a
                 v-if="!lastHeaderElement(index)"
@@ -148,7 +148,7 @@
       </div>
     </div>
     <div class="control">
-      <webhook-example />
+      <webhook-example :userFieldNames="values.use_user_field_names" />
     </div>
     <slot></slot>
   </form>
@@ -244,14 +244,12 @@ export default {
       }
     },
     triggerAllEvents(val) {
-      console.log('YEELLOW ALL EVENTS', val)
       if (val) {
         this.showIndividualEvents = false
         this.resetSelectedEvents()
       }
     },
     selectSingleEvent(val) {
-      console.log('WHAT HAPPENS: ', val)
       if (val) {
         this.values.include_all_events = false
       }

@@ -42,16 +42,6 @@ export default {
       loading: false,
     }
   },
-  watch: {
-    field() {
-      // If the field values are updated via an outside source, think of real time
-      // collaboration or via the modal, we want to reset the form so that it contains
-      // the correct base values.
-      this.$nextTick(() => {
-        this.$refs.form.reset()
-      })
-    },
-  },
   methods: {
     async submit(values) {
       this.loading = true

@@ -2,13 +2,11 @@
   <Modal>
     <h2 class="box__title">Webhooks {{ table.name }} table</h2>
     <Error :error="error"></Error>
-    <div class="actions">
-      <div class="align-right">
-        <a href="#" class="button" @click="toggleCreate()">
-          {{ renderList ? 'Create web hook' : 'Back to list' }}
-          <i class="fas fa-plus"></i>
-        </a>
-      </div>
+    <div class="align-right">
+      <a href="#" class="button" @click="toggleCreate()">
+        {{ renderList ? 'Create web hook' : 'Back to list' }}
+        <i class="fas fa-plus"></i>
+      </a>
     </div>
     <webhook-list
       :table="table"
@@ -50,7 +48,6 @@ export default {
   },
   methods: {
     triggerWebhook() {
-      console.log('trying to run, right?', this.$refs)
       this.$refs.triggerWebhookModal.show()
     },
     toggleCreate() {
