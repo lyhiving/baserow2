@@ -1,10 +1,9 @@
 from typing import List
 import uuid
+import json
 from django.db import transaction
 from django.conf import settings
 from django.db.models.query import QuerySet
-from requests import request, RequestException
-from advocate import request as advocate_request
 from django.db.models import Q, F
 
 from .models import (
@@ -24,11 +23,6 @@ from baserow.contrib.database.api.rows.serializers import (
     get_row_serializer_class,
     RowSerializer,
 )
-
-if settings.DEBUG is True:
-    request_module = request
-else:
-    request_module = advocate_request
 
 
 class WebhookHandler:
@@ -233,40 +227,34 @@ class WebhookHandler:
         """
 
         headers = self.create_headers(webhook_id, event_id, event_type)
-        webhook = TableWebhook.objects.get(id=webhook_id)
+        webhook: TableWebhook = TableWebhook.objects.get(id=webhook_id)
         webhook_call_defaults = dict(
-            status_code=500,
             request="",
             called_url=webhook.url,
             response="",
             error="",
         )
-        try:
-            response = request_module(
-                webhook.request_method,
-                webhook.url,
-                headers=headers,
-                json=payload,
-                timeout=5,
-            )
-            webhook_call_defaults["request"] = self.formatted_request(response.request)
-        except RequestException as e:
-            # RequestException catches ConnectionError, HTTPError, Timeout or
-            # TooManyRedirects
-            webhook_call_defaults["error"] = repr(e)
+        response = self.make_request(
+            webhook.request_method, webhook.url, headers, payload
+        )
+        webhook_call_defaults["request"] = response["request"]
+        webhook_call_defaults["status_code"] = response["status_code"]
+
+        if response["is_unreachable"]:
+            webhook_call_defaults["error"] = response["exception"]
             self._create_or_update_webhook_call(
                 webhook, event_id, event_type, webhook_call_defaults
             )
             raise TableWebhookCannotBeCalled
 
-        webhook_call_defaults["status_code"] = response.status_code
-        webhook_call_defaults["response"] = response.text
+        webhook_call_defaults["status_code"] = response["status_code"]
+        webhook_call_defaults["response"] = response["response"]
         self._create_or_update_webhook_call(
             webhook, event_id, event_type, webhook_call_defaults
         )
 
         self._delete_webhook_calls(webhook)
-        if response.status_code != 200 and response.status_code != 201:
+        if response["status_code"] != 200 and response["status_code"] != 201:
             # we raise the exception here so that the task calling this method
             # will know to retry the webhook call.
             raise TableWebhookCannotBeCalled
@@ -284,12 +272,15 @@ class WebhookHandler:
         group.has_user(user, raise_error=True)
 
         event_id = str(uuid.uuid4())
-        event_type = "manual.call"
-        use_user_field_names = kwargs.get("use_user_field_names")
-        request_method = kwargs.get("request_method")
-        additional_headers = kwargs.get("headers")
-        url = kwargs.get("url")
-        example_payload = self.get_example_payload(use_user_field_names, table)
+        event_type = kwargs.get("event_type", "row.created")
+        webhook_data = kwargs.get("webhook")
+        use_user_field_names = webhook_data.get("use_user_field_names")
+        request_method = webhook_data.get("request_method")
+        additional_headers = webhook_data.get("headers")
+        url = webhook_data.get("url")
+        example_payload = self.get_example_payload(
+            use_user_field_names, table, event_type=event_type
+        )
         default_headers = self._get_default_headers()
         baserow_headers = self.baserow_headers(event_type, event_id)
         all_headers = [*default_headers, *baserow_headers]
@@ -299,24 +290,52 @@ class WebhookHandler:
 
         assembled_headers = self.assemble_headers(all_headers)
 
-        try:
-            response = request_module(
-                request_method,
-                url,
-                headers=assembled_headers,
-                json=example_payload,
-                timeout=5,
+        response = self.make_request(
+            request_method, url, assembled_headers, example_payload
+        )
+
+        return response
+
+    def make_request(self, method: str, url: str, headers: dict, payload: str) -> dict:
+        if settings.DEBUG is True:
+            from requests import Request, Session, RequestException
+        else:
+            from advocate import (
+                Request,
+                Session,
+                RequestException,
+                UnacceptableAddressException,
             )
-            request_text = self.formatted_request(response.request)
+
+        request = Request(method, url, headers=headers, json=payload)
+        prepped = request.prepare()
+        request_text = self.formatted_request(prepped)
+        try:
+            s = Session()
+            response = s.send(prepped, timeout=5)
             return {
                 "response": response.text,
                 "request": request_text,
-                "status": response.status_code,
+                "status_code": response.status_code,
+                "is_unreachable": False,
+                "exception": "",
             }
-        except RequestException:
-            # RequestException catches ConnectionError, HTTPError, Timeout or
-            # TooManyRedirects
-            raise TableWebhookCannotBeCalled
+        except RequestException as e:
+            return {
+                "response": "",
+                "request": request_text,
+                "status_code": None,
+                "is_unreachable": True,
+                "exception": repr(e),
+            }
+        except UnacceptableAddressException as e:
+            return {
+                "response": "",
+                "request": "",
+                "status_code": None,
+                "is_unreachable": True,
+                "exception": repr(e),
+            }
 
     def formatted_request(self, req):
         """
@@ -325,7 +344,8 @@ class WebhookHandler:
         return "{}\r\n{}\r\n\r\n{}".format(
             req.method + " " + req.url,
             "\r\n".join("{}: {}".format(k, v) for k, v in req.headers.items()),
-            req.body,
+            # json.loads(req.body),
+            json.dumps(json.loads(req.body), indent=4),
         )
 
     def get_call_events_per_webhook(self, webhook_id: int):

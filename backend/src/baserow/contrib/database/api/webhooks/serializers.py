@@ -48,6 +48,20 @@ class TableWebhookCreateRequestSerializer(serializers.ModelSerializer):
         return validate_events_data(data)
 
 
+class TableWebhookManualCallRequestSerializer(serializers.Serializer):
+    webhook = TableWebhookCreateRequestSerializer(required=True)
+    event_type = serializers.ChoiceField(
+        choices=webhook_event_type_registry.get_types(), required=False
+    )
+
+
+class TableWebhookManualCallResponseSerializer(serializers.Serializer):
+    request = serializers.CharField()
+    response = serializers.CharField()
+    status_code = serializers.IntegerField(required=False)
+    is_unreachable = serializers.BooleanField()
+
+
 class TableWebhookUpdateRequestSerializer(serializers.ModelSerializer):
     events = TableWebhookEventsSerializer(required=False)
     headers = serializers.ListField(
