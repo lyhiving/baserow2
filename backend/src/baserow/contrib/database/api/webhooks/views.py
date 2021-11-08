@@ -27,7 +27,6 @@ from .serializers import (
     TableWebhookResultSerializer,
     TableWebhookUpdateRequestSerializer,
 )
-from baserow.contrib.database.tokens.handler import TokenHandler
 from baserow.contrib.database.webhooks.handler import WebhookHandler
 from baserow.contrib.database.table.handler import TableHandler
 from baserow.contrib.database.tokens.exceptions import NoPermissionToTable
@@ -118,7 +117,6 @@ class TableWebhooksView(APIView):
 
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
-        TokenHandler().check_table_permissions(request, "create", table, False)
         webhook = webhook_handler.create_table_webhook(
             table=table, user=request.user, data=data
         )
@@ -163,7 +161,6 @@ class TableWebhookView(APIView):
     def get(self, request, table_id, webhook_id):
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
-        TokenHandler().check_table_permissions(request, "create", table, False)
         webhook = webhook_handler.get_table_webhook(
             webhook_id=webhook_id, table=table, user=request.user
         )
@@ -208,7 +205,6 @@ class TableWebhookView(APIView):
     def patch(self, request, data, table_id, webhook_id):
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
-        TokenHandler().check_table_permissions(request, "create", table, False)
         webhook = webhook_handler.update_table_webhook(
             webhook_id=webhook_id, table=table, user=request.user, data=data
         )
@@ -248,7 +244,6 @@ class TableWebhookView(APIView):
     def delete(self, request, table_id, webhook_id):
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
-        TokenHandler().check_table_permissions(request, "create", table, False)
         webhook_handler.delete_table_webhook(
             webhook_id=webhook_id, table=table, user=request.user
         )
@@ -290,9 +285,14 @@ class TableWebhookCallView(APIView):
             TableWebhookCannotBeCalled: ERROR_TABLE_WEBHOOK_CANNOT_BE_CALLED,
         }
     )
-    def post(self, request, table_id, webhook_id):
+    @validate_body(TableWebhookCreateRequestSerializer)
+    def post(self, request, data, table_id):
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
-        TokenHandler().check_table_permissions(request, "create", table, False)
-        data = webhook_handler.test_call(webhook_id, table, request.user)
-        return Response(data=data["response"], status=data["status"])
+        data = webhook_handler.test_call(table, request.user, **data)
+        data_response = {
+            "request": data["request"],
+            "response": data["response"],
+            "status_code": data["status"],
+        }
+        return Response(data=data_response, status=200)

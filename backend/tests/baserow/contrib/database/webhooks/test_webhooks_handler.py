@@ -371,26 +371,28 @@ def test_calling_webhook(data_fixture):
     event_id = uuid.uuid4()
 
     with pytest.raises(TableWebhookCannotBeCalled):
-        webhook_handler.call(webhook.id, request_payload, str(event_id), "row_created")
+        webhook_handler.call_from_task(
+            webhook.id, request_payload, str(event_id), "row_created"
+        )
 
     call = TableWebhookCall.objects.filter(webhook_id=webhook, event_id=event_id)
 
     assert len(call) == 1
     assert call[0].called_url == webhook_data["url"]
     assert call[0].status_code == 400
-    assert call[0].request == json.dumps(request_payload)
     assert call[0].response == json.dumps(response)
 
     # calling a second time with success will update the initial call db entry
 
-    webhook_handler.call(webhook.id, request_payload, str(event_id), "row_created")
+    webhook_handler.call_from_task(
+        webhook.id, request_payload, str(event_id), "row_created"
+    )
 
     call = TableWebhookCall.objects.filter(webhook_id=webhook, event_id=event_id)
 
     assert len(call) == 1
     assert call[0].called_url == webhook_data["url"]
     assert call[0].status_code == 200
-    assert call[0].request == json.dumps(request_payload)
     assert call[0].response == json.dumps(response)
 
 
@@ -417,7 +419,7 @@ def test_webhook_example_payload(data_fixture):
     webhook = webhook_handler.create_table_webhook(
         table=table, user=user, data=dict(webhook_data)
     )
-    payload = webhook_handler.get_example_payload(webhook, table)
+    payload = webhook_handler.get_example_payload(webhook.use_user_field_names, table)
 
     assert "table_id" in payload
     assert "row_id" in payload
@@ -437,7 +439,7 @@ def test_webhook_example_payload(data_fixture):
     webhook.refresh_from_db()
     assert webhook.use_user_field_names is False
 
-    payload = webhook_handler.get_example_payload(webhook, table)
+    payload = webhook_handler.get_example_payload(webhook.use_user_field_names, table)
 
     assert "table_id" in payload
     assert "row_id" in payload

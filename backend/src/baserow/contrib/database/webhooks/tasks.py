@@ -13,7 +13,7 @@ def call_webhook(self, **kwargs):
     event_id = kwargs.get("event_id")
     event_type = kwargs.get("event_type")
     try:
-        webhook_handler.call(webhook_id, payload, event_id, event_type)
+        webhook_handler.call_from_task(webhook_id, payload, event_id, event_type)
     except TableWebhookCannotBeCalled as exc:
         if self.request.retries < settings.WEBHHOKS_MAX_RETRIES_PER_CALL:
             self.retry(exc=exc, countdown=2 ** self.request.retries)
