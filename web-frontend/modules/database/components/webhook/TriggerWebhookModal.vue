@@ -27,7 +27,7 @@
     <div class="actions">
       <a href="#">Cancel</a>
       <div class="align-right">
-        <button @click="$emit('retry')" class="button button--ghost">
+        <button class="button button--ghost" @click="$emit('retry')">
           Retry
         </button>
       </div>
