@@ -32,13 +32,15 @@ export const mutations = {
 }
 
 const cleanHeaders = (data) => {
-  data.forEach((item) => {
-    const contentTypeIndex = item.headers.findIndex(
-      (item) => item.header === 'Content-type'
-    )
-    item.headers.splice(contentTypeIndex, 1)
-    item.headers.push({ header: '', value: '' })
-  })
+  data.forEach((item) => cleanHeader(item))
+}
+
+const cleanHeader = (item) => {
+  const contentTypeIndex = item.headers.findIndex(
+    (item) => item.header === 'Content-type'
+  )
+  item.headers.splice(contentTypeIndex, 1)
+  item.headers.push({ header: '', value: '' })
 }
 
 export const actions = {
@@ -68,7 +70,7 @@ export const actions = {
         table.id,
         values
       )
-      cleanHeaders(data)
+      cleanHeader(data)
       commit('ADD_WEBHOOK', data)
       commit('SET_LOADING', false)
       commit('SET_LOADED', true)
@@ -89,7 +91,7 @@ export const actions = {
         webhook.id,
         values
       )
-      cleanHeaders(data)
+      cleanHeader(data)
       commit('UPDATE_WEBHOOK', data)
       commit('SET_LOADING', false)
       commit('SET_LOADED', true)

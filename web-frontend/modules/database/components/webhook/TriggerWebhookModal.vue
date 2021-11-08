@@ -7,15 +7,7 @@
         <div class="webhook__code-container">
           <pre
             class="webhook__code webhook__code--small"
-          ><code>POST https://target-url.com/target-page
-Authorization: Some token
-Content-Type: application/json
-
-{
-    “id”: 1,
-    “type”: “row_deleted”,
-    “old_values”: {}
-}</code></pre>
+          ><code>{{request}}</code></pre>
         </div>
       </div>
     </div>
@@ -25,17 +17,19 @@ Content-Type: application/json
         <div class="webhook__code-container">
           <pre
             class="webhook__code webhook__code--small"
-          ><div class="loading"></div></pre>
+          ><div v-if="isLoading" class="loading"></div><code v-if="!isLoading">{{response}}</code></pre>
         </div>
       </div>
     </div>
-    <div class="webhook__test-state webhook__test-state--error">
-      404 NOT FOUND
+    <div class="webhook__test-state" :class="statusClass">
+      {{ `${status} ${statusDescription}` }}
     </div>
     <div class="actions">
       <a href="#">Cancel</a>
       <div class="align-right">
-        <button class="button button--ghost">Retry</button>
+        <button @click="$emit('retry')" class="button button--ghost">
+          Retry
+        </button>
       </div>
     </div>
   </Modal>
@@ -48,10 +42,47 @@ import error from '@baserow/modules/core/mixins/error'
 export default {
   name: 'TriggerWebhookModal',
   mixins: [modal, error],
-  data() {
-    return {
-      loading: false,
-    }
+  props: {
+    request: {
+      type: String,
+      required: true,
+    },
+    response: {
+      type: String,
+      required: true,
+    },
+    status: {
+      type: Number,
+      required: true,
+    },
+    isLoading: {
+      type: Boolean,
+      required: true,
+    },
+  },
+  computed: {
+    status200() {
+      const status = this.$props.status
+      if (status >= 200 && status <= 299) {
+        return true
+      } else {
+        return false
+      }
+    },
+    statusClass() {
+      if (this.status200) {
+        return 'webhook__test-state--ok'
+      } else {
+        return 'webhook__test-state--error'
+      }
+    },
+    statusDescription() {
+      if (this.status200) {
+        return 'OK'
+      } else {
+        return 'NOT OK'
+      }
+    },
   },
   methods: {},
 }

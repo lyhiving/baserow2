@@ -1,11 +1,7 @@
 <template>
   <div v-if="renderList" class="webhook__list">
     <div v-for="webhook in webhooks" :key="webhook.id">
-      <webhook
-        :webhook="webhook"
-        :table="table"
-        @triggerWebhook="$emit('triggerWebhook')"
-      />
+      <webhook :webhook="webhook" :table="table" />
     </div>
   </div>
 </template>

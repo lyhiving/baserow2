@@ -18,5 +18,8 @@ export default (client) => {
     delete(tableId, webhookId) {
       return client.delete(`/database/tables/${tableId}/webhooks/${webhookId}/`)
     },
+    call(tableId, values) {
+      return client.post(`/database/tables/${tableId}/webhooks/call/`, values)
+    },
   }
 }

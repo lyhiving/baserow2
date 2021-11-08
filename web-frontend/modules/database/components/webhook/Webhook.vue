@@ -39,11 +39,7 @@
       <div class="webhook__body">
         <Tabs>
           <Tab title="Edit">
-            <update-webhook-context
-              :webhook="webhook"
-              :table="table"
-              @triggerWebhook="$emit('triggerWebhook')"
-            />
+            <update-webhook-context :webhook="webhook" :table="table" />
           </Tab>
           <Tab title="Call log">
             <div v-for="call in webhook.calls" :key="call.id">

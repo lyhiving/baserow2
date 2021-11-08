@@ -8,19 +8,11 @@
     <div class="actions">
       <button
         class="button button--primary button--error"
-        :class="{ 'button--loading': loading }"
-        :disabled="loading"
         @click="deleteWebhook()"
       >
         Delete
       </button>
       <div class="align-right">
-        <a
-          href="#"
-          class="button button--ghost"
-          @click="$emit('triggerWebhook')"
-          >Trigger test webhook</a
-        >
         <button
           class="button button--primary"
           :class="{ 'button--loading': loading }"

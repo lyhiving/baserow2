@@ -150,7 +150,18 @@
     <div class="control">
       <webhook-example :user-field-names="values.use_user_field_names" />
     </div>
+    <a href="#" class="button button--ghost" @click="emitWebhookTrigger()"
+      >Trigger test webhook</a
+    >
     <slot></slot>
+    <trigger-webhook-modal
+      ref="triggerWebhookModal"
+      :request="trigger.request"
+      :response="trigger.response"
+      :status="trigger.status"
+      :is-loading="trigger.isLoading"
+      @retry="emitWebhookTrigger()"
+    />
   </form>
 </template>
 
@@ -161,6 +172,8 @@ import form from '@baserow/modules/core/mixins/form'
 import Checkbox from '@baserow/modules/core/components/Checkbox.vue'
 import Radio from '@baserow/modules/core/components/Radio.vue'
 import WebhookExample from './WebhookExample.vue'
+import TriggerWebhookModal from './TriggerWebhookModal.vue'
+import WebhookService from '@baserow/modules/database/services/webhook'
 
 export default {
   name: 'WebhookForm',
@@ -168,6 +181,7 @@ export default {
     Checkbox,
     Radio,
     WebhookExample,
+    TriggerWebhookModal,
   },
   mixins: [form],
   props: {
@@ -213,6 +227,12 @@ export default {
         rowUpdated: 'row.updated',
         rowDeleted: 'row.deleted',
       },
+      trigger: {
+        response: '',
+        request: '',
+        status: 0,
+        isLoading: false,
+      },
     }
   },
   created() {
@@ -238,6 +258,38 @@ export default {
     },
   },
   methods: {
+    resetTriggerState() {
+      this.trigger = {
+        response: '',
+        request: '',
+        status: 0,
+        isLoading: false,
+      }
+    },
+    async emitWebhookTrigger() {
+      // reset triggerState
+      this.resetTriggerState()
+      this.trigger.isLoading = true
+      const { id } = this.$props.table
+      this.$v.$touch()
+      const isInvalid = this.$v.$invalid
+      if (isInvalid) {
+        return
+      }
+      this.$refs.triggerWebhookModal.show()
+      const formData = this.getFormValues()
+      try {
+        const data = await WebhookService(this.$client).call(id, formData)
+        this.trigger.isLoading = false
+        const { request, response } = data.data
+        const statusCode = data.data.status_code
+        this.trigger.request = request
+        this.trigger.response = response
+        this.trigger.status = statusCode
+      } catch (e) {
+        this.trigger.isLoading = false
+      }
+    },
     inputChange(index, input) {
       if (this.lastHeaderElement(index) && input.header !== '') {
         this.addHeaderField()
