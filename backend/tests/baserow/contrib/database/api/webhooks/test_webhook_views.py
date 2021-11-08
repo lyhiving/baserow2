@@ -283,6 +283,7 @@ def test_call_webhooks(api_client, data_fixture):
         "name": "My Webhook",
         "include_all_events": True,
     }
+    webhook_call_body = {"event_type": "row.created", "webhook": webhook_create_data}
     response = api_client.post(
         reverse("api:database:tables:list_webhooks", kwargs={"table_id": table.id}),
         dict(webhook_create_data),
@@ -306,7 +307,7 @@ def test_call_webhooks(api_client, data_fixture):
             "api:database:tables:call_webhook",
             kwargs={"table_id": table.id},
         ),
-        dict(webhook_create_data),
+        dict(webhook_call_body),
         format="json",
         HTTP_AUTHORIZATION=f"JWT {jwt_token}",
     )
@@ -320,7 +321,7 @@ def test_call_webhooks(api_client, data_fixture):
             "api:database:tables:call_webhook",
             kwargs={"table_id": table.id},
         ),
-        dict(webhook_create_data),
+        dict(webhook_call_body),
         format="json",
         HTTP_AUTHORIZATION=f"JWT {jwt_token}",
     )

@@ -53,7 +53,7 @@ class TableWebhookCall(models.Model):
     )
     called_time = models.DateTimeField(auto_now_add=True)
     called_url = models.URLField()
-    status_code = models.IntegerField()
+    status_code = models.IntegerField(null=True)
     request = models.TextField(null=True)
     response = models.TextField(null=True)
     error = models.TextField(null=True)

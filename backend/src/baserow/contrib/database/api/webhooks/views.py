@@ -12,18 +12,18 @@ from baserow.contrib.database.api.webhooks.errors import (
     ERROR_TABLE_WEBHOOK_ALREADY_EXISTS,
     ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED,
     ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST,
-    ERROR_TABLE_WEBHOOK_CANNOT_BE_CALLED,
 )
 from baserow.contrib.database.table.exceptions import TableDoesNotExist
 from baserow.contrib.database.webhooks.exceptions import (
     TableWebhookAlreadyExists,
     TableWebhookDoesNotExist,
     TableWebhookMaxAllowedCountExceeded,
-    TableWebhookCannotBeCalled,
 )
 from baserow.core.exceptions import UserNotInGroup
 from .serializers import (
+    TableWebhookManualCallRequestSerializer,
     TableWebhookCreateRequestSerializer,
+    TableWebhookManualCallResponseSerializer,
     TableWebhookResultSerializer,
     TableWebhookUpdateRequestSerializer,
 )
@@ -259,21 +259,14 @@ class TableWebhookCallView(APIView):
                 type=OpenApiTypes.INT,
                 description="The ID of the table under which the webhook was created.",
             ),
-            OpenApiParameter(
-                name="webhook_id",
-                location=OpenApiParameter.PATH,
-                type=OpenApiTypes.INT,
-                description="The ID of the webhook that shall be called.",
-            ),
         ],
         tags=["Database table webhooks"],
         operation_id="call_database_table_webhook",
-        description="Manually calls a specific table webhook.",
+        description="Manually calls a webhook.",
         request=TableWebhookCreateRequestSerializer(),
         responses={
-            400: get_error_schema(
-                ["ERROR_USER_NOT_IN_GROUP", "ERROR_TABLE_WEBHOOK_CANNOT_BE_CALLED"]
-            ),
+            200: TableWebhookManualCallResponseSerializer(),
+            400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
             401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
         },
@@ -282,17 +275,11 @@ class TableWebhookCallView(APIView):
         {
             NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
-            TableWebhookCannotBeCalled: ERROR_TABLE_WEBHOOK_CANNOT_BE_CALLED,
         }
     )
-    @validate_body(TableWebhookCreateRequestSerializer)
+    @validate_body(TableWebhookManualCallRequestSerializer)
     def post(self, request, data, table_id):
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
         data = webhook_handler.test_call(table, request.user, **data)
-        data_response = {
-            "request": data["request"],
-            "response": data["response"],
-            "status_code": data["status"],
-        }
-        return Response(data=data_response, status=200)
+        return Response(TableWebhookManualCallResponseSerializer(data).data)
