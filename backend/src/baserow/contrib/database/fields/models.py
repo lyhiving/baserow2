@@ -267,6 +267,11 @@ class LinkRowField(Field):
         )
         return last_id + 1
 
+    def get_related_primary_field(self):
+        return next(
+            f for f in self.link_row_table.field_set.all() if f.primary
+        ).specific
+
 
 class EmailField(Field):
     pass

@@ -28,9 +28,12 @@ class FieldDependencyEdge(edge_factory("FieldDependencyNode", concrete=False)):
 
     def __str__(self):
         if self.via is not None:
-            return f"{self.child} depends via field {self.via} on {self.parent}"
+            return (
+                f"Edge({self.child} depends via field {self.via.name}:{self.via.id} on"
+                f" {self.parent})"
+            )
         else:
-            return f"{self.child} depends on {self.parent}"
+            return f"Edge({self.child} depends on {self.parent})"
 
 
 class FieldDependencyNode(node_factory(FieldDependencyEdge)):
@@ -88,7 +91,7 @@ class FieldDependencyNode(node_factory(FieldDependencyEdge)):
 
     def __str__(self):
         if self.is_reference_to_real_field():
-            return f"Field({self.table.name}, {self.field.name})"
+            return f"Field({self.table.name}:{self.field_id}, {self.field.name})"
         else:
             return (
                 f"BrokenRef({self.table.name}," f" {self.broken_reference_field_name})"

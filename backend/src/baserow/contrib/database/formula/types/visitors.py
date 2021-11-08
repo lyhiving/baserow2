@@ -3,6 +3,7 @@ from typing import Any, Set, List
 from baserow.contrib.database.fields.dependencies.exceptions import (
     SelfReferenceFieldDependencyError,
 )
+from baserow.contrib.database.fields.dependencies import handler as dep_handler
 from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
     BaserowStringLiteral,
@@ -62,38 +63,40 @@ class FunctionsUsedVisitor(
         return set()
 
 
-class FieldReferenceExtractingVisitor(BaserowFormulaASTVisitor[UnTyped, List[str]]):
+class FieldReferenceExtractingVisitor(
+    BaserowFormulaASTVisitor[UnTyped, "dep_handler.FieldDependencies"]
+):
     def visit_field_reference(
         self, field_reference: BaserowFieldReference[UnTyped]
-    ) -> List[str]:
+    ) -> "dep_handler.FieldDependencies":
         return [field_reference.referenced_field_name]
 
     def visit_string_literal(
         self, string_literal: BaserowStringLiteral[UnTyped]
-    ) -> List[str]:
+    ) -> "dep_handler.FieldDependencies":
         return []
 
     def visit_function_call(
         self, function_call: BaserowFunctionCall[UnTyped]
-    ) -> List[str]:
-        field_references: List[str] = []
+    ) -> "dep_handler.FieldDependencies":
+        field_references: "dep_handler.FieldDependencies" = []
         for expr in function_call.args:
             field_references += expr.accept(self)
         return field_references
 
     def visit_int_literal(
         self, int_literal: BaserowIntegerLiteral[UnTyped]
-    ) -> List[str]:
+    ) -> "dep_handler.FieldDependencies":
         return []
 
     def visit_decimal_literal(
         self, decimal_literal: BaserowDecimalLiteral[UnTyped]
-    ) -> List[str]:
+    ) -> "dep_handler.FieldDependencies":
         return []
 
     def visit_boolean_literal(
         self, boolean_literal: BaserowBooleanLiteral[UnTyped]
-    ) -> List[str]:
+    ) -> "dep_handler.FieldDependencies":
         return []
 
 

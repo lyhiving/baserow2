@@ -734,6 +734,7 @@ class FieldType(
         changed_parent_field,
         old_changed_parent_field,
         updated_fields,
+        via_field,
         rename_only=False,
     ):
         """
@@ -767,7 +768,9 @@ class FieldType(
 
         return None, None
 
-    def get_direct_field_name_dependencies(self, field_instance) -> Optional[List[str]]:
+    def get_direct_field_name_dependencies(
+        self, field_instance, field_lookup_cache
+    ) -> Optional[List[str]]:
         return None
 
     def restore_failed(self, field_instance, restore_exception):

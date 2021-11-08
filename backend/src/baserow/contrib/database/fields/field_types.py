@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint, sample
-from typing import Any, Callable, Dict, List, Tuple, Optional
+from typing import Any, Callable, Dict, List, Tuple
 
 import pytz
 from dateutil import parser
@@ -55,6 +55,7 @@ from .dependencies.exceptions import (
     SelfReferenceFieldDependencyError,
     CircularFieldDependencyError,
 )
+from .dependencies.handler import OptionalFieldDependencies
 from .exceptions import (
     LinkRowTableNotInSameDatabase,
     LinkRowTableNotProvided,
@@ -1288,6 +1289,25 @@ class LinkRowFieldType(FieldType):
     def get_related_items_to_trash(self, field) -> List[Any]:
         return [field.link_row_related_field]
 
+    def get_direct_field_name_dependencies(self, field_instance, field_lookup_cache):
+        try:
+            return [
+                (field_instance.name, field_instance.get_related_primary_field().name)
+            ]
+        except StopIteration:
+            return []
+
+    def after_direct_field_dependency_changed(
+        self,
+        field_instance: FormulaField,
+        changed_parent_field,
+        old_changed_parent_field,
+        updated_fields,
+        via_field,
+        rename_only=False,
+    ):
+        return field_instance, field_instance
+
 
 class EmailFieldType(CharFieldMatchingRegexFieldType):
     type = "email"
@@ -2187,6 +2207,7 @@ class FormulaFieldType(FieldType):
         changed_parent_field,
         old_changed_parent_field,
         updated_fields,
+        via_field,
         rename_only=False,
     ):
         old_field = deepcopy(field_instance)
@@ -2196,7 +2217,9 @@ class FormulaFieldType(FieldType):
             if old_parent_name != new_parent_name:
                 field_instance.formula = (
                     FormulaHandler.rename_field_references_in_formula_string(
-                        old_field.formula, {old_parent_name: new_parent_name}
+                        old_field.formula,
+                        {old_parent_name: new_parent_name},
+                        via_field.name if via_field is not None else None,
                     )
                 )
             if rename_only:
@@ -2209,8 +2232,12 @@ class FormulaFieldType(FieldType):
         field_instance.save(field_lookup_cache=updated_fields)
         return field_instance, old_field
 
-    def get_direct_field_name_dependencies(self, field_instance) -> Optional[List[str]]:
-        return FormulaHandler.get_direct_field_name_dependencies(field_instance)
+    def get_direct_field_name_dependencies(
+        self, field_instance, field_lookup_cache
+    ) -> OptionalFieldDependencies:
+        return FormulaHandler.get_direct_field_name_dependencies(
+            field_instance, field_lookup_cache
+        )
 
     def restore_failed(self, field_instance, restore_exception):
         if isinstance(restore_exception, SelfReferenceFieldDependencyError):

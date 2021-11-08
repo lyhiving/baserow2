@@ -1,10 +1,18 @@
+from baserow.contrib.database.formula.parser.ast_mapper import (
+    raw_formula_to_untyped_expression,
+)
 from baserow.contrib.database.formula.parser.exceptions import MaximumFormulaSizeError
 from baserow.contrib.database.formula.types.visitors import FormulaTypingVisitor
 
 
 def calculate_typed_expression(formula_field, field_lookup_cache):
     try:
-        untyped_expression = formula_field.cached_untyped_expression
+        if hasattr(formula_field, "cached_untyped_expression"):
+            untyped_expression = formula_field.cached_untyped_expression
+        else:
+            untyped_expression = raw_formula_to_untyped_expression(
+                formula_field.formula
+            )
 
         typed_expression = untyped_expression.accept(
             FormulaTypingVisitor(formula_field, field_lookup_cache)
