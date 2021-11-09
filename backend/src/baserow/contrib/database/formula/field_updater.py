@@ -58,8 +58,10 @@ class BulkMultiTableFormulaFieldRefresher(FieldGraphDependencyVisitor):
         if old_field is None and self.recalculate_field_types:
             old_field = deepcopy(field)
             field.save(field_lookup_cache=self.updated_fields_collector)
-            _recreate_field_if_required(field, old_field)
-            ViewHandler().field_type_changed(field)
+            if self.refresh_field_values:
+                # TODO this doesnt read nice
+                _recreate_field_if_required(field, old_field)
+                ViewHandler().field_type_changed(field)
             self.updated_fields_collector.add_updated_field(field)
 
         if self.refresh_field_values:
