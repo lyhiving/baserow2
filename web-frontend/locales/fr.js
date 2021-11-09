@@ -14,6 +14,7 @@ export default {
     makeChoice: 'Choisissez',
     cancel: 'Annuler',
     save: '@TODO',
+    retry: '@TODO',
   },
   adminType: {
     settings: 'Paramètres',
@@ -93,5 +94,19 @@ export default {
     table: 'table',
     field: 'champ',
     row: 'ligne',
+  },
+  webhook: {
+    request: '@TODO',
+    response: '@TODO',
+    status: {
+      noStatus: '@TODO',
+      statusOK: '@TODO',
+      statusNotOK: '@TODO',
+    },
+    events: {
+      rowCreated: '@TODO',
+      rowUpdated: '@TODO',
+      rowDeleted: '@TODO',
+    },
   },
 }

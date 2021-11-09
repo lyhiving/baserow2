@@ -5,7 +5,9 @@
     <div v-if="isLoading" class="loading"></div>
     <div v-if="!isLoading">
       <div v-if="!error.visible" class="control">
-        <div class="control__label">Request</div>
+        <div class="control__label">
+          {{ $t('webhook.request') }}
+        </div>
         <div class="control__elements">
           <div class="webhook__code-container">
             <pre
@@ -15,7 +17,9 @@
         </div>
       </div>
       <div v-if="status" class="control">
-        <div class="control__label">Response</div>
+        <div class="control__label">
+          {{ $t('webhook.response') }}
+        </div>
         <div class="control__elements">
           <div class="webhook__code-container">
             <pre
@@ -32,10 +36,10 @@
         {{ statusString(status) }}
       </div>
       <div class="actions">
-        <a href="#" @click="$emit('cancel')">Cancel</a>
+        <a href="#" @click="$emit('cancel')">{{ $t('action.cancel') }}</a>
         <div class="align-right">
           <button class="button button--ghost" @click="$emit('retry')">
-            Retry
+            {{ $t('action.retry') }}
           </button>
         </div>
       </div>
@@ -97,3 +101,18 @@ export default {
   },
 }
 </script>
+
+<i18n>
+{
+  "en": {
+    "triggerWebhookModal": {
+      "title": "Test webhook"
+    }
+  },
+  "fr": {
+    "triggerWebhookModal": {
+      "title": "@TODO"
+    }
+  }
+}
+</i18n>

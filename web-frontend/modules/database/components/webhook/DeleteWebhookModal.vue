@@ -1,12 +1,12 @@
 <template>
   <Modal>
-    <h2 class="box__title">Delete {{ webhook.name }}</h2>
+    <h2 class="box__title">
+      {{ $t('deleteWebhookModal.title', { webhookName: webhook.name }) }}
+    </h2>
     <Error :error="error"></Error>
     <div>
       <p>
-        Are you sure you want to delete the webhook
-        <strong>{{ webhook.name }}</strong
-        >? You will not be able to restore it later.
+        {{ $t('deleteWebhookModal.body') }}
       </p>
       <div class="actions">
         <div class="align-right">
@@ -16,7 +16,7 @@
             :disabled="loading"
             @click="deleteWebhook()"
           >
-            Delete webhook
+            {{ $t('deleteWebhookModal.deleteButton') }}
           </button>
         </div>
       </div>
@@ -63,3 +63,22 @@ export default {
   },
 }
 </script>
+
+<i18n>
+{
+  "en": {
+    "deleteWebhookModal": {
+      "title": "Delete {webhookName}",
+      "deleteButton": "Delete webhook",
+      "body": "Are you sure you want to delete this webhook? You will not be able to restore it later."
+    }
+  },
+  "fr": {
+    "deleteWebhookModal": {
+      "title": "@TODO",
+      "deleteButton": "@TODO",
+      "body": "@TODO"
+    }
+  }
+}
+</i18n>

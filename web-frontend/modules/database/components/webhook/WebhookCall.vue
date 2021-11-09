@@ -19,7 +19,7 @@
     </div>
     <div class="webhook__call-body">
       <div class="webhook__call-body-content">
-        <div class="webhook__call-body-label">Request</div>
+        <div class="webhook__call-body-label">{{ $t('webhook.request') }}</div>
         <div class="webhook__code-container">
           <pre
             class="webhook__code webhook__code--small"
@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="webhook__call-body-content">
-        <div class="webhook__call-body-label">Response</div>
+        <div class="webhook__call-body-label">{{ $t('webhook.response') }}</div>
         <div class="webhook__code-container">
           <pre
             class="webhook__code webhook__code--small"

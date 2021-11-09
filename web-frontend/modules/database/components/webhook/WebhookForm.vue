@@ -3,7 +3,9 @@
     <div class="row">
       <div class="col col-12">
         <div class="control">
-          <label class="control__label">Name</label>
+          <label class="control__label">
+            {{ $t('webhookForm.inputLabels.name') }}
+          </label>
           <div class="control__elements">
             <input
               v-model="values.name"
@@ -11,34 +13,42 @@
               :class="{ 'input--error': $v.values.name.$error }"
             />
             <div v-if="$v.values.name.$error" class="error">
-              This field is required.
+              {{ $t('error.requiredField') }}
             </div>
           </div>
         </div>
       </div>
       <div v-if="!create" class="col col-4">
         <div class="control">
-          <label class="control__label">Status</label>
+          <label class="control__label">
+            {{ $t('webhookForm.inputLabels.status') }}
+          </label>
           <div class="control__elements">
-            <Checkbox v-model="values.active">Active</Checkbox>
+            <Checkbox v-model="values.active">{{
+              $t('webhookForm.checkbox.statusActive')
+            }}</Checkbox>
           </div>
         </div>
       </div>
       <div class="col" :class="{ 'col-6': !create, 'col-12': create }">
         <div class="control">
-          <label class="control__label">User field names</label>
+          <label class="control__label">
+            {{ $t('webhookForm.inputLabels.userFieldNames') }}
+          </label>
           <div class="control__elements">
             <Checkbox v-model="values.use_user_field_names">{{
               values.use_user_field_names
-                ? 'Send user field names'
-                : 'Send field ids'
+                ? $t('webhookForm.checkbox.sendUserFieldNames')
+                : $t('webhookForm.checkbox.sendFieldIDs')
             }}</Checkbox>
           </div>
         </div>
       </div>
       <div class="col col-4">
         <div class="control">
-          <div class="control__label">Method</div>
+          <div class="control__label">
+            {{ $t('webhookForm.inputLabels.requestMethod') }}
+          </div>
           <div class="control__elements">
             <Dropdown v-model="values.request_method">
               <DropdownItem name="POST" value="POST"></DropdownItem>
@@ -52,7 +62,9 @@
       </div>
       <div class="col col-8">
         <div class="control">
-          <label class="control__label">URL</label>
+          <label class="control__label">
+            {{ $t('webhookForm.inputLabels.url') }}
+          </label>
           <div class="control__elements">
             <input
               v-model="values.url"
@@ -60,38 +72,40 @@
               :class="{ 'input--error': $v.values.url.$error }"
             />
             <div v-if="$v.values.url.$error" class="error">
-              This field is required and needs to be a valid url.
+              {{ $t('webhookForm.errors.urlField') }}
             </div>
           </div>
         </div>
       </div>
     </div>
     <div class="control">
-      <label class="control__label"
-        >Which events should trigger this webhook?</label
-      >
+      <label class="control__label">
+        {{ $t('webhookForm.inputLabels.events') }}
+      </label>
       <div class="control__elements">
-        <Radio v-model="radio" value="all" @input="triggerAllEvents"
-          >Send me everything</Radio
-        >
+        <Radio v-model="radio" value="all" @input="triggerAllEvents">{{
+          $t('webhookForm.radio.allEvents')
+        }}</Radio>
         <Radio v-model="radio" value="custom" @input="selectSingleEvent">
-          Let me select individual events
+          {{ $t('webhookForm.radio.customEvents') }}
         </Radio>
         <div v-if="radio === 'custom'" class="webhook__types">
-          <Checkbox v-model="events.rowCreated" class="webhook__type"
-            >When a row is created</Checkbox
-          >
-          <Checkbox v-model="events.rowUpdated" class="webhook__type"
-            >When a row is updated</Checkbox
-          >
-          <Checkbox v-model="events.rowDeleted" class="webhook__type"
-            >When a row is deleted</Checkbox
-          >
+          <Checkbox v-model="events.rowCreated" class="webhook__type">{{
+            $t('webhook.events.rowCreated')
+          }}</Checkbox>
+          <Checkbox v-model="events.rowUpdated" class="webhook__type">{{
+            $t('webhook.events.rowUpdated')
+          }}</Checkbox>
+          <Checkbox v-model="events.rowDeleted" class="webhook__type">{{
+            $t('webhook.events.rowDeleted')
+          }}</Checkbox>
         </div>
       </div>
     </div>
     <div class="control">
-      <div class="control__label">Additional headers</div>
+      <div class="control__label">
+        {{ $t('webhookForm.inputLabels.headers') }}
+      </div>
       <div class="control__elements">
         <div
           v-for="(input, index) in defaultHeaders"
@@ -110,11 +124,6 @@
               :disabled="true"
             />
           </div>
-        </div>
-        <div v-if="values.headers.length === 0">
-          <a href="#" class="button button--ghost" @click="addHeaderField()"
-            >Add additional headers</a
-          >
         </div>
         <div v-if="values.headers.length > 0">
           <div
@@ -154,9 +163,9 @@
         :user-field-names="values.use_user_field_names"
       />
     </div>
-    <a href="#" class="button button--ghost" @click="emitWebhookTrigger()"
-      >Trigger test webhook</a
-    >
+    <a href="#" class="button button--ghost" @click="emitWebhookTrigger()">{{
+      $t('webhookForm.triggerButton')
+    }}</a>
     <slot></slot>
     <trigger-webhook-modal
       ref="triggerWebhookModal"
@@ -374,3 +383,60 @@ export default {
   },
 }
 </script>
+
+<i18n>
+{
+  "en": {
+    "webhookForm": {
+      "inputLabels": {
+        "name": "Name",
+        "requestMethod": "Method",
+        "url": "URL",
+        "status": "Status",
+        "userFieldNames": "User field names",
+        "events": "Which events should trigger this webhook?",
+        "headers": "Additional headers"
+      },
+      "errors": {
+        "urlField": "This field is required and needs to be a valid url."
+      },
+      "checkbox": {
+        "sendUserFieldNames": "Send user field names",
+        "sendFieldIDs": "Send field ids",
+        "statusActive": "Active"
+      },
+      "radio": {
+        "allEvents": "Send me everything",
+        "customEvents": "Let me select individual events"
+      },
+      "triggerButton": "Trigger test webhook"
+    }
+  },
+  "fr": {
+    "webhookForm": {
+      "inputLabels": {
+        "name": "@TODO",
+        "requestMethod": "@TODO",
+        "url": "@TODO",
+        "status": "@TODO",
+        "userFieldNames": "@TODO",
+        "events": "@TODO",
+        "headers": "@TODO"
+      },
+      "errors": {
+        "urlField": "@TODO"
+      },
+      "checkbox": {
+        "sendUserFieldNames": "@TODO",
+        "sendFieldIDs": "@TODO",
+        "statusActive": "@TODO"
+      },
+      "radio": {
+        "allEvents": "@TODO",
+        "customEvents": "@TODO"
+      },
+      "triggerButton": "@TODO"
+    }
+  }
+}
+</i18n>

@@ -1,43 +1,47 @@
 <template>
-  <webhook-form
-    ref="form"
-    :table="table"
-    :default-values="webhook"
-    @submitted="submit"
-  >
-    <div class="actions">
-      <button
-        class="button button--primary button--error"
-        @click="deleteWebhook()"
-      >
-        Delete
-      </button>
-      <div class="align-right">
-        <button
-          class="button button--primary"
-          :class="{ 'button--loading': loading }"
-          :disabled="loading"
-        >
-          Save
-        </button>
-      </div>
-    </div>
-    <delete-webhook-modal
-      ref="deleteWebhookModal"
-      :webhook="webhook"
+  <div>
+    <Error :error="error" />
+    <webhook-form
+      ref="form"
       :table="table"
-    />
-  </webhook-form>
+      :default-values="webhook"
+      @submitted="submit"
+    >
+      <div class="actions">
+        <button
+          class="button button--primary button--error"
+          @click="deleteWebhook()"
+        >
+          {{ $t('action.delete') }}
+        </button>
+        <div class="align-right">
+          <button
+            class="button button--primary"
+            :class="{ 'button--loading': loading }"
+            :disabled="loading"
+          >
+            {{ $t('action.save') }}
+          </button>
+        </div>
+      </div>
+      <delete-webhook-modal
+        ref="deleteWebhookModal"
+        :webhook="webhook"
+        :table="table"
+      />
+    </webhook-form>
+  </div>
 </template>
 
 <script>
 import WebhookForm from '@baserow/modules/database/components/webhook/WebhookForm'
-import DeleteWebhookModal from './DeleteWebhookModal.vue'
-import { notifyIf } from '@baserow/modules/core/utils/error'
+import DeleteWebhookModal from '@baserow/modules/database/components/webhook/DeleteWebhookModal.vue'
+import error from '@baserow/modules/core/mixins/error'
 
 export default {
   name: 'UpdateWebhookContext',
   components: { WebhookForm, DeleteWebhookModal },
+  mixins: [error],
   props: {
     table: {
       type: Object,
@@ -53,16 +57,6 @@ export default {
       loading: false,
     }
   },
-  watch: {
-    webhook() {
-      // If the field values are updated via an outside source, think of real time
-      // collaboration or via the modal, we want to reset the form so that it contains
-      // the correct base values.
-      this.$nextTick(() => {
-        this.$refs.form.reset()
-      })
-    },
-  },
   methods: {
     deleteWebhook() {
       this.$refs.deleteWebhookModal.show()
@@ -76,7 +70,8 @@ export default {
         this.loading = false
       } catch (error) {
         this.loading = false
-        notifyIf(error, 'webhook')
+        this.handleError(error)
+        this.$refs.form.reset()
       }
     },
   },

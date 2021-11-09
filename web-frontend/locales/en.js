@@ -14,6 +14,7 @@ export default {
     makeChoice: 'Make a choice',
     cancel: 'Cancel',
     save: 'Save',
+    retry: 'Retry',
   },
   adminType: {
     settings: 'Settings',
@@ -93,5 +94,19 @@ export default {
     table: 'table',
     field: 'field',
     row: 'row',
+  },
+  webhook: {
+    request: 'Request',
+    response: 'Response',
+    status: {
+      noStatus: 'NO STATUS',
+      statusOK: 'OK',
+      statusNotOK: 'NOT OK',
+    },
+    events: {
+      rowCreated: 'When a row is created',
+      rowUpdated: 'When a row is updated',
+      rowDeleted: 'When a row is deleted',
+    },
   },
 }

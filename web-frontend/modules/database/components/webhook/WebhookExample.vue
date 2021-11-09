@@ -1,20 +1,20 @@
 <template>
   <div>
-    <div class="control__label">Example payload</div>
+    <div class="control__label">{{ $t('webhookExample.label') }}</div>
     <div class="control__elements">
       <div class="webhook__code-container">
         <div class="webhook__code-dropdown">
           <Dropdown v-model="selectedEvent" class="dropdown--floating-left">
             <DropdownItem
-              name="When a row is created"
+              :name="$t('webhook.events.rowCreated')"
               value="rowCreated"
             ></DropdownItem>
             <DropdownItem
-              name="When a row is updated"
+              :name="$t('webhook.events.rowUpdated')"
               value="rowUpdated"
             ></DropdownItem>
             <DropdownItem
-              name="When a row is deleted"
+              :name="$t('webhook.events.rowDeleted')"
               value="rowDeleted"
             ></DropdownItem>
           </Dropdown>
@@ -100,3 +100,18 @@ export default {
   },
 }
 </script>
+
+<i18n>
+{
+  "en": {
+    "webhookExample": {
+      "label": "Example payload"
+    }
+  },
+  "fr": {
+    "webhookExample": {
+      "label": "@TODO"
+    }
+  }
+}
+</i18n>

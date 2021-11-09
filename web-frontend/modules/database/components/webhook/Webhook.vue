@@ -13,7 +13,7 @@
               {{ webhook.url }}
             </div>
             <a href="#" class="webhook__head-toggle" @click="toggleExpand()">
-              details
+              {{ $t('webhook.details') }}
               <i
                 class="fas webhook__head-toggle-icon"
                 :class="{
@@ -26,11 +26,15 @@
         </div>
         <div class="webhook__head-right">
           <div class="webhook__head-trigger">
-            {{ webhookTriggerDescription }}
+            {{
+              $tc('webhook.triggerDescription', calculateNumberOfEvents, {
+                count: calculateNumberOfEvents,
+              })
+            }}
           </div>
           <div class="webhook__head-call">
             <div class="webhook__head-date">
-              {{ `Last call: ${lastCall}` }}
+              {{ $t('webhook.lastCall', { lastCallTime: lastCall }) }}
             </div>
             <span class="webhook__head-call-state" :class="lastStatusClass">{{
               lastStatus
@@ -44,7 +48,7 @@
             <update-webhook-context :webhook="webhook" :table="table" />
           </Tab>
           <Tab title="Call log">
-            <p v-if="webhook.calls.length <= 0">No calls yet.</p>
+            <p v-if="webhook.calls.length <= 0">{{ $t('webhook.noCalls') }}</p>
             <div v-for="call in webhook.calls" :key="call.id">
               <webhook-call :call="call" />
             </div>
@@ -88,7 +92,7 @@ export default {
       if (calls.length > 0) {
         return moment(calls[0].called_time).format('YYYY-MM-DD HH:mm:ss')
       } else {
-        return 'Not called yet'
+        return this.$t('webhook.noCalls')
       }
     },
     lastStatus() {
@@ -111,14 +115,11 @@ export default {
         return ''
       }
     },
-    webhookTriggerDescription() {
+    calculateNumberOfEvents() {
       if (this.$props.webhook.include_all_events) {
-        return 'Sends on every event'
+        return 0
       } else {
-        const numberOfEvents = this.$props.webhook.events.length
-        return `Sends on ${numberOfEvents} ${
-          numberOfEvents <= 1 ? 'event' : 'events'
-        }`
+        return this.$props.webhook.events.length
       }
     },
   },
@@ -129,3 +130,24 @@ export default {
   },
 }
 </script>
+
+<i18n>
+{
+  "en": {
+    "webhook": {
+      "details": "details",
+      "lastCall": "Last call: {lastCallTime}",
+      "noCalls": "Not called yet.",
+      "triggerDescription": "Sends on every event | Sends on {count} event | Send on {count} events"
+    }
+  },
+  "fr": {
+    "webhook": {
+      "details": "@TODO",
+      "lastCall": "@TODO",
+      "noCalls": "@TODO",
+      "triggerDescription": "@TODO"
+    }
+  }
+}
+</i18n>

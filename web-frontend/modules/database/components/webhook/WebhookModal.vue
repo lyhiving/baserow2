@@ -1,11 +1,17 @@
 <template>
   <Modal>
-    <h2 class="box__title">Webhooks {{ table.name }} table</h2>
+    <h2 class="box__title">
+      {{ $t('webhookModal.title', { tableName: table.name }) }}
+    </h2>
     <Error :error="error"></Error>
     <div class="align-right">
       <a href="#" class="button" @click="toggleCreateForm()">
         <i v-if="!renderList" class="fas fa-arrow-left"></i>
-        {{ renderList ? 'Create web hook' : 'Back to list' }}
+        {{
+          renderList
+            ? $t('webhookModal.toggleCreateFormButton.createWebhook')
+            : $t('webhookModal.toggleCreateFormButton.backToList')
+        }}
         <i v-if="renderList" class="fas fa-plus"></i>
       </a>
     </div>
@@ -47,3 +53,26 @@ export default {
   },
 }
 </script>
+
+<i18n>
+{
+  "en": {
+    "webhookModal": {
+      "title": "Webhooks {tableName} table",
+      "toggleCreateFormButton": {
+        "createWebhook": "Create webhook",
+        "backToList": "Back to list"
+      }
+    }
+  },
+  "fr": {
+    "webhookModal": {
+      "title": "@TODO",
+      "toggleCreateFormButton": {
+        "createWebhook": "@TODO",
+        "backToList": "@TODO"
+      }
+    }
+  }
+}
+</i18n>
