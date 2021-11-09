@@ -4,8 +4,9 @@
     <Error :error="error"></Error>
     <div class="align-right">
       <a href="#" class="button" @click="toggleCreateForm()">
+        <i v-if="!renderList" class="fas fa-arrow-left"></i>
         {{ renderList ? 'Create web hook' : 'Back to list' }}
-        <i class="fas fa-plus"></i>
+        <i v-if="renderList" class="fas fa-plus"></i>
       </a>
     </div>
     <webhook-list :table="table" :render-list="renderList" />

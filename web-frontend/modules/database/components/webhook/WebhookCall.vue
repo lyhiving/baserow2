@@ -11,7 +11,7 @@
         <div class="webhook__call-info">{{ lastCall }}</div>
         <a href="#" class="webhook__call-toggle" @click="toggleExpand()">
           <div class="webhook__call-state" :class="lastStatusClass">
-            {{ call.status_code }}
+            {{ statusDescription(call.status_code) }}
           </div>
           <i class="fas fa-chevron-down"></i>
         </a>
@@ -40,8 +40,11 @@
 
 <script>
 import moment from '@baserow/modules/core/moment'
+import webhook from '@baserow/modules/database/mixins/webhook'
+
 export default {
   name: 'WebhookCall',
+  mixins: [webhook],
   props: {
     call: {
       type: Object,

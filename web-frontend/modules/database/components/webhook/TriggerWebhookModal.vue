@@ -1,35 +1,43 @@
 <template>
   <Modal :tiny="true">
     <div class="webhook__test-title">Test web hook</div>
-    <div class="control">
-      <div class="control__label">Request</div>
-      <div class="control__elements">
-        <div class="webhook__code-container">
-          <pre
-            class="webhook__code webhook__code--small"
-          ><code>{{request}}</code></pre>
+    <Error :error="error" />
+    <div v-if="isLoading" class="loading"></div>
+    <div v-if="!isLoading">
+      <div v-if="!error.visible" class="control">
+        <div class="control__label">Request</div>
+        <div class="control__elements">
+          <div class="webhook__code-container">
+            <pre
+              class="webhook__code webhook__code--small"
+            ><code>{{request}}</code></pre>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="control">
-      <div class="control__label">Response</div>
-      <div class="control__elements">
-        <div class="webhook__code-container">
-          <pre
-            class="webhook__code webhook__code--small"
-          ><div v-if="isLoading" class="loading"></div><code v-if="!isLoading">{{response}}</code></pre>
+      <div v-if="status" class="control">
+        <div class="control__label">Response</div>
+        <div class="control__elements">
+          <div class="webhook__code-container">
+            <pre
+              class="webhook__code webhook__code--small"
+            ><div v-if="isLoading" class="loading"></div><code v-if="!isLoading">{{response}}</code></pre>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="webhook__test-state" :class="statusClass">
-      {{ `${status ? status : ''} ${statusDescription}` }}
-    </div>
-    <div class="actions">
-      <a href="#" @click="$emit('cancel')">Cancel</a>
-      <div class="align-right">
-        <button class="button button--ghost" @click="$emit('retry')">
-          Retry
-        </button>
+      <div
+        v-if="!error.visible"
+        class="webhook__test-state"
+        :class="statusClass"
+      >
+        {{ statusString(status) }}
+      </div>
+      <div class="actions">
+        <a href="#" @click="$emit('cancel')">Cancel</a>
+        <div class="align-right">
+          <button class="button button--ghost" @click="$emit('retry')">
+            Retry
+          </button>
+        </div>
       </div>
     </div>
   </Modal>
@@ -38,10 +46,11 @@
 <script>
 import modal from '@baserow/modules/core/mixins/modal'
 import error from '@baserow/modules/core/mixins/error'
+import webhook from '@baserow/modules/database/mixins/webhook'
 
 export default {
   name: 'TriggerWebhookModal',
-  mixins: [modal, error],
+  mixins: [modal, error, webhook],
   props: {
     request: {
       type: String,
@@ -77,17 +86,14 @@ export default {
         return 'webhook__test-state--error'
       }
     },
-    statusDescription() {
-      if (!this.$props.status) {
+  },
+  methods: {
+    statusString(statusCode) {
+      if (!statusCode) {
         return 'Server unreachable'
       }
-      if (this.status200) {
-        return 'OK'
-      } else {
-        return 'NOT OK'
-      }
+      return this.statusDescription(statusCode)
     },
   },
-  methods: {},
 }
 </script>

@@ -4,7 +4,9 @@
       <div class="webhook__head">
         <div class="webhook__head-left">
           <div class="webhook__head-name">
-            {{ webhook.name }}
+            {{
+              !webhook.active ? `${webhook.name} - Deactivated` : webhook.name
+            }}
           </div>
           <div class="webhook__head-details">
             <div class="webhook__head-details-target">
@@ -42,6 +44,7 @@
             <update-webhook-context :webhook="webhook" :table="table" />
           </Tab>
           <Tab title="Call log">
+            <p v-if="webhook.calls.length <= 0">No calls yet.</p>
             <div v-for="call in webhook.calls" :key="call.id">
               <webhook-call :call="call" />
             </div>
@@ -58,10 +61,12 @@ import Tabs from '@baserow/modules/core/components/Tabs.vue'
 import Tab from '@baserow/modules/core/components/Tab.vue'
 import UpdateWebhookContext from './UpdateWebhookContext.vue'
 import WebhookCall from './WebhookCall.vue'
+import webhook from '@baserow/modules/database/mixins/webhook'
 
 export default {
   name: 'Webhook',
   components: { Tabs, Tab, UpdateWebhookContext, WebhookCall },
+  mixins: [webhook],
   props: {
     webhook: {
       type: Object,
@@ -89,9 +94,9 @@ export default {
     lastStatus() {
       const calls = this.$props.webhook.calls
       if (calls.length > 0) {
-        return calls[0].status_code
+        return this.statusDescription(calls.status_code)
       } else {
-        return 'No status'
+        return ''
       }
     },
     lastStatusClass() {

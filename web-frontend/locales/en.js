@@ -13,6 +13,7 @@ export default {
     add: 'Add',
     makeChoice: 'Make a choice',
     cancel: 'Cancel',
+    save: 'Save',
   },
   adminType: {
     settings: 'Settings',

@@ -1,26 +1,30 @@
 <template>
-  <webhook-form ref="form" :table="table" :create="true" @submitted="submit">
-    <div class="actions">
-      <div class="align-right">
-        <button
-          class="button button--primary"
-          :class="{ 'button--loading': loading }"
-          :disabled="loading"
-        >
-          Save
-        </button>
+  <div>
+    <Error :error="error" />
+    <webhook-form ref="form" :table="table" :create="true" @submitted="submit">
+      <div class="actions">
+        <div class="align-right">
+          <button
+            class="button button--primary"
+            :class="{ 'button--loading': loading }"
+            :disabled="loading"
+          >
+            {{ $t('action.save') }}
+          </button>
+        </div>
       </div>
-    </div>
-  </webhook-form>
+    </webhook-form>
+  </div>
 </template>
 
 <script>
 import WebhookForm from '@baserow/modules/database/components/webhook/WebhookForm'
-import { notifyIf } from '@baserow/modules/core/utils/error'
+import error from '@baserow/modules/core/mixins/error'
 
 export default {
   name: 'CreateWebhookContext',
   components: { WebhookForm },
+  mixins: [error],
   props: {
     table: {
       type: Object,
@@ -42,7 +46,7 @@ export default {
         this.$emit('created')
       } catch (error) {
         this.loading = false
-        notifyIf(error, 'webhook')
+        this.handleError(error)
       }
     },
   },

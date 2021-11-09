@@ -10,9 +10,10 @@ export default {
     change: 'Changer',
     delete: 'Supprimer',
     rename: 'Renomer',
-    cancel: 'Annuler',
     add: 'Ajouter',
     makeChoice: 'Choisissez',
+    cancel: 'Annuler',
+    save: '@TODO',
   },
   adminType: {
     settings: 'Paramètres',

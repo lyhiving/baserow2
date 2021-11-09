@@ -127,12 +127,13 @@
                 v-model="input.header"
                 class="input webhook__header-key"
                 placeholder="Header"
+                @input="handleHeaderInputChange(index)"
               />
               <input
                 v-model="input.value"
                 class="input webhook__header-value"
                 placeholder="Value"
-                @input="inputChange(index, input)"
+                @input="handleHeaderInputChange(index)"
               />
               <a
                 v-if="!lastHeaderElement(index)"
@@ -148,7 +149,7 @@
       </div>
     </div>
     <div class="control">
-      <webhook-example
+      <WebhookExample
         ref="webhookExample"
         :user-field-names="values.use_user_field_names"
       />
@@ -159,6 +160,7 @@
     <slot></slot>
     <trigger-webhook-modal
       ref="triggerWebhookModal"
+      :error="error"
       :request="trigger.request"
       :response="trigger.response"
       :status="trigger.status"
@@ -173,12 +175,12 @@
 import { required } from 'vuelidate/lib/validators'
 
 import form from '@baserow/modules/core/mixins/form'
+import error from '@baserow/modules/core/mixins/error'
 import Checkbox from '@baserow/modules/core/components/Checkbox.vue'
 import Radio from '@baserow/modules/core/components/Radio.vue'
 import WebhookExample from './WebhookExample.vue'
 import TriggerWebhookModal from './TriggerWebhookModal.vue'
 import WebhookService from '@baserow/modules/database/services/webhook'
-import { notifyIf } from '@baserow/modules/core/utils/error'
 
 export default {
   name: 'WebhookForm',
@@ -188,7 +190,7 @@ export default {
     WebhookExample,
     TriggerWebhookModal,
   },
-  mixins: [form],
+  mixins: [form, error],
   props: {
     table: {
       type: Object,
@@ -276,6 +278,7 @@ export default {
       const selectedEvent = this.$refs.webhookExample.selectedEvent
       const eventType = this.eventsMapping[selectedEvent]
       this.resetTriggerState()
+      this.hideError()
       this.trigger.isLoading = true
       const { id } = this.$props.table
       this.$v.$touch()
@@ -288,6 +291,7 @@ export default {
         event_type: eventType,
         webhook: formData,
       }
+      this.$refs.triggerWebhookModal.show()
       try {
         const data = await WebhookService(this.$client).call(id, requestObject)
         this.trigger.isLoading = false
@@ -296,18 +300,17 @@ export default {
         this.trigger.request = request
         this.trigger.response = response
         this.trigger.status = statusCode
-        this.$refs.triggerWebhookModal.show()
       } catch (e) {
         this.trigger.isLoading = false
-        notifyIf(e)
+        this.handleError(e)
       }
     },
     cancelTriggerModal() {
       this.resetTriggerState()
       this.$refs.triggerWebhookModal.hide()
     },
-    inputChange(index, input) {
-      if (this.lastHeaderElement(index) && input.header !== '') {
+    handleHeaderInputChange(index) {
+      if (this.lastHeaderElement(index)) {
         this.addHeaderField()
       }
     },
