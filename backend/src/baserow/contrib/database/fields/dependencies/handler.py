@@ -17,6 +17,9 @@ from baserow.contrib.database.fields.dependencies.visitors import (
 from baserow.contrib.database.fields.field_cache import FieldCache
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.contrib.database.formula.field_updater import (
+    BulkMultiTableFormulaFieldRefresher,
+)
 from baserow.contrib.database.formula.models import (
     FieldDependencyEdge,
 )
@@ -96,7 +99,7 @@ def _visit_all_dependencies_breadth_first(
                 if visit_child:
                     remaining_visitors.append(v)
         # Only continue visiting edges of this child_field if there is a visitor who
-        # wants to continue for this particular dependencies.
+        # wants to continue for this particular dependencies child.
         if remaining_visitors:
             deps_with_visitors += [
                 (e, remaining_visitors, path)
@@ -130,39 +133,12 @@ def _get_direct_descendants_and_break_node(field):
     return edges
 
 
-def _setup_field_update_visitors(
-    field,
-    old_field,
-    rename_only,
-    updated_fields,
-    rebuild_children,
-    refresh_field_values,
-):
-    visitors = []
-    if field is not None and old_field is not None:
-        old_name = old_field.name
-        new_name = field.name
-        if old_name != new_name:
-            visitors.append(
-                FieldGraphRenamingVisitor(updated_fields, old_name, new_name)
-            )
-    if not rename_only:
-        visitors.append(
-            FieldDependencyRebuildingVisitor(updated_fields, rebuild_children)
-        )
-        for field_type in field_type_registry.get_all():
-            visitors += field_type.get_field_changed_graph_visitor(
-                updated_fields, refresh_field_values
-            )
-    return visitors
-
-
-def _run_visitors_over_dependant_fields(
+def _visit_all_dependencies(
     visitors: List[FieldGraphDependencyVisitor],
-    field_lookup_cache=None,
     field: Optional[Field] = None,
     old_field: Optional[Field] = None,
     starting_edges: Optional[List[FieldDependencyEdge]] = None,
+    field_lookup_cache=None,
 ):
     if field_lookup_cache is None:
         field_lookup_cache = FieldCache()
@@ -188,34 +164,41 @@ def _run_visitors_over_dependant_fields(
         v.after_graph_visit()
 
 
-def _update_graph_after_field_change(
-    field: Optional[Field] = None,
-    old_field: Optional[Field] = None,
-    starting_edges: Optional[List[FieldDependencyEdge]] = None,
-    rebuild_children: bool = False,
-    rename_only: bool = False,
-    field_lookup_cache: Optional[FieldCache] = None,
-    updated_fields: Optional[CachingFieldUpdateCollector] = None,
-    refresh_field_values: bool = True,
+def _field_deleted_visitors(updated_fields: CachingFieldUpdateCollector):
+    return [
+        FieldDependencyRebuildingVisitor(updated_fields, rebuild_first_children=True),
+        BulkMultiTableFormulaFieldRefresher(
+            updated_fields,
+            recalculate_internal_formulas=True,
+            refresh_row_values=True,
+        ),
+    ]
+
+
+def _field_changed_visitors(
+    changed_field: Optional[Field],
+    old_changed_field: Optional[Field],
+    rename_only: bool,
+    updated_fields: CachingFieldUpdateCollector,
 ):
-    if updated_fields is None:
-        updated_fields = CachingFieldUpdateCollector(field_lookup_cache)
-    if field is not None:
-        fixed_some_fields = update_fields_with_broken_references(field)
-        if fixed_some_fields:
-            rename_only = False
-    visitors = _setup_field_update_visitors(
-        field,
-        old_field,
-        rename_only,
-        updated_fields,
-        rebuild_children,
-        refresh_field_values,
-    )
-    _run_visitors_over_dependant_fields(
-        visitors, updated_fields, field, old_field, starting_edges
-    )
-    return updated_fields
+    visitors = []
+    if changed_field is not None and old_changed_field is not None:
+        old_name = old_changed_field.name
+        new_name = changed_field.name
+        if old_name != new_name:
+            visitors.append(
+                FieldGraphRenamingVisitor(updated_fields, old_name, new_name)
+            )
+    if not rename_only:
+        visitors += [
+            FieldDependencyRebuildingVisitor(updated_fields),
+            BulkMultiTableFormulaFieldRefresher(
+                updated_fields,
+                recalculate_internal_formulas=True,
+                refresh_row_values=True,
+            ),
+        ]
+    return visitors
 
 
 class FieldDependencyHandler:
@@ -235,9 +218,13 @@ class FieldDependencyHandler:
 
         field.delete()
 
-        return _update_graph_after_field_change(
+        updated_fields = CachingFieldUpdateCollector()
+        _visit_all_dependencies(
+            _field_deleted_visitors(updated_fields),
             starting_edges=direct_descendants_edges,
+            field_lookup_cache=updated_fields,
         )
+        return updated_fields
 
     @classmethod
     def trash_and_update_dependencies(
@@ -260,9 +247,12 @@ class FieldDependencyHandler:
 
         updated_fields = CachingFieldUpdateCollector()
         updated_fields.add_updated_field(field)
-        return _update_graph_after_field_change(
-            starting_edges=direct_descendants_edges, updated_fields=updated_fields
+        _visit_all_dependencies(
+            _field_deleted_visitors(updated_fields),
+            starting_edges=direct_descendants_edges,
+            field_lookup_cache=updated_fields,
         )
+        return updated_fields
 
     @classmethod
     def refresh_all_dependant_rows(
@@ -275,21 +265,23 @@ class FieldDependencyHandler:
         :param updated_fields: The list of fields which changed in the row.
         :param changed_row_id: The id of the row which changed.
         """
-        row_refresh_visitors = []
-        field_cache = CachingFieldUpdateCollector()
-        for field_type in field_type_registry.get_all():
-            row_refresh_visitors = field_type.get_row_changed_graph_visitor(
-                field_cache, changed_row_id
-            )
 
+        updated_fields_collector = CachingFieldUpdateCollector()
         starting_edges = []
         for field in updated_fields:
             starting_edges += _direct_non_broken_dependency_edges(field)
 
-        _run_visitors_over_dependant_fields(
-            row_refresh_visitors,
-            field_lookup_cache=field_cache,
+        _visit_all_dependencies(
+            [
+                BulkMultiTableFormulaFieldRefresher(
+                    updated_fields_collector,
+                    refresh_row_values=True,
+                    recalculate_internal_formulas=False,
+                    starting_row_id=changed_row_id,
+                ),
+            ],
             starting_edges=starting_edges,
+            field_lookup_cache=updated_fields_collector,
         )
 
     @classmethod
@@ -318,12 +310,22 @@ class FieldDependencyHandler:
         :raises SelfReferenceFieldDependencyError:
         """
 
-        return _update_graph_after_field_change(
+        updated_fields = CachingFieldUpdateCollector(field_lookup_cache)
+
+        if changed_field is not None:
+            fixed_some_fields = update_fields_with_broken_references(changed_field)
+            if fixed_some_fields:
+                rename_only = False
+
+        _visit_all_dependencies(
+            _field_changed_visitors(
+                changed_field, old_changed_field, rename_only, updated_fields
+            ),
             field=changed_field,
             old_field=old_changed_field,
-            rename_only=rename_only,
-            field_lookup_cache=field_lookup_cache,
+            field_lookup_cache=updated_fields,
         )
+        return updated_fields
 
     @classmethod
     def get_same_table_dependencies(cls, field: Field) -> List[Field]:
@@ -392,7 +394,20 @@ class FieldDependencyHandler:
         :raises SelfReferenceFieldDependencyError:
         """
 
+        updated_fields = CachingFieldUpdateCollector()
+        visitors = [
+            FieldDependencyRebuildingVisitor(updated_fields, rebuild_all_children=True),
+            BulkMultiTableFormulaFieldRefresher(
+                updated_fields,
+                recalculate_internal_formulas=True,
+                refresh_row_values=False,
+                # The tables might not yet exist and hence we can't do any operations
+                # on the fields actual table like recreating the field.
+                recreate_database_columns=False,
+            ),
+        ]
+
         for field in fields:
-            _update_graph_after_field_change(
-                field, rebuild_children=True, refresh_field_values=False
+            _visit_all_dependencies(
+                visitors, field=field, field_lookup_cache=updated_fields
             )

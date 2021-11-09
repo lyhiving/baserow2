@@ -2208,8 +2208,8 @@ class FormulaFieldType(FieldType):
         return [
             BulkMultiTableFormulaFieldRefresher(
                 updated_fields,
-                recalculate_field_types=True,
-                refresh_field_values=refresh_field_values,
+                recalculate_internal_formulas=True,
+                refresh_row_values=refresh_field_values,
             )
         ]
 
@@ -2220,8 +2220,8 @@ class FormulaFieldType(FieldType):
             BulkMultiTableFormulaFieldRefresher(
                 updated_fields,
                 starting_row_id=changed_row_id,
-                recalculate_field_types=False,
-                refresh_field_values=True,
+                recalculate_internal_formulas=False,
+                refresh_row_values=True,
             )
         ]
 

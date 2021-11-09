@@ -54,10 +54,14 @@ class FieldDependencyRebuildingVisitor(FieldGraphDependencyVisitor):
     def __init__(
         self,
         updated_fields_collector: CachingFieldUpdateCollector,
-        rebuild_children,
+        rebuild_all_children: bool = False,
+        rebuild_first_children: bool = False,
     ):
         super().__init__(updated_fields_collector)
-        self.rebuild_children = rebuild_children
+        self.rebuild_first_children = rebuild_first_children
+        self.rebuild_all_children = rebuild_all_children
+        if rebuild_first_children and rebuild_all_children:
+            raise ValueError("Cannot rebuild only the first and all children")
 
     def visit_starting_field(
         self, starting_field: Field, old_starting_field: Optional[Field]
@@ -72,10 +76,10 @@ class FieldDependencyRebuildingVisitor(FieldGraphDependencyVisitor):
         via_field: Optional[Field],
         path_to_starting_field: List[str],
     ):
-        if self.rebuild_children:
+        if self.rebuild_all_children or self.rebuild_first_children:
             _rebuild_field_dependencies(child_field, self.updated_fields_collector)
             self.updated_fields_collector.add_updated_field(child_field)
-        return self.rebuild_children
+        return self.rebuild_all_children
 
 
 def _add_graph_dependency_raising_if_circular(

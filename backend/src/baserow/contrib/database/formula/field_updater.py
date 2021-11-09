@@ -16,20 +16,31 @@ from baserow.contrib.database.formula.expression_generator.generator import (
 
 
 class BulkMultiTableFormulaFieldRefresher(FieldGraphDependencyVisitor):
+    """
+    A configurable visitor which is used to ensure formula fields are updated correctly
+    after a dependency has changed.
+
+    Will build up bulk update statements as dependencies in the same table are visited
+    in turn. These updates will then be executed when a new dependency is visited in a
+    different table.
+    """
+
     def __init__(
         self,
         updated_fields_collector: CachingFieldUpdateCollector,
         starting_row_id: Optional[int] = None,
-        recalculate_field_types: bool = True,
-        refresh_field_values: bool = True,
+        recalculate_internal_formulas: bool = True,
+        refresh_row_values: bool = True,
+        recreate_database_columns: bool = True,
     ):
         super().__init__(updated_fields_collector)
-        self.refresh_field_values = refresh_field_values
+        self.recreate_database_columns = recreate_database_columns
+        self.refresh_row_values = refresh_row_values
         self.current_table = None
         self.current_bulk_update_query = {}
         self.model_cache = {}
         self.starting_row_id = starting_row_id
-        self.recalculate_field_types = recalculate_field_types
+        self.recalculate_internal_formulas = recalculate_internal_formulas
         self.last_path = None
 
     def only_for_specific_field_types(self) -> Optional[List[str]]:
@@ -55,16 +66,15 @@ class BulkMultiTableFormulaFieldRefresher(FieldGraphDependencyVisitor):
     ):
         from baserow.contrib.database.views.handler import ViewHandler
 
-        if old_field is None and self.recalculate_field_types:
+        if old_field is None and self.recalculate_internal_formulas:
             old_field = deepcopy(field)
             field.save(field_lookup_cache=self.updated_fields_collector)
-            if self.refresh_field_values:
-                # TODO this doesnt read nice
+            if self.recreate_database_columns:
                 _recreate_field_if_required(field, old_field)
                 ViewHandler().field_type_changed(field)
             self.updated_fields_collector.add_updated_field(field)
 
-        if self.refresh_field_values:
+        if self.refresh_row_values:
             expression = field.cached_typed_internal_expression
             self._refresh_formula_values_in_bulk(
                 field,
@@ -78,7 +88,7 @@ class BulkMultiTableFormulaFieldRefresher(FieldGraphDependencyVisitor):
             self.last_path = path_from_starting_table
 
     def after_graph_visit(self):
-        if self.last_path is not None and self.refresh_field_values:
+        if self.last_path is not None and self.refresh_row_values:
             self._execute_current_bulk_update(self.last_path)
 
     def _refresh_formula_values_in_bulk(

@@ -746,46 +746,6 @@ class FieldType(
         """
         pass
 
-    def get_field_changed_graph_visitor(self, updated_fields, refresh_field_values):
-        """
-        Called when a field has been updated, created, restored or
-        deleted. Should return a FieldGraphDependencyVisitor which will do any
-        appropriate updates to the changed fields its dependencies and
-        related data. If the visitor wants to lookup and fields from the database
-        or makes changes to a field it should do both using the updated_fields update
-        collector provided.
-
-        :param refresh_field_values: Whether or not field values should be refreshed
-            when dealing with the field change. The tables might not actually exist
-            if this is False during template importing.
-        :type refresh_field_values: bool
-        :param updated_fields: An cached update collector that should be used to
-            register any fields which have been updated and/or lookup fields.
-        :type updated_fields: CachingFieldUpdateCollector
-        :return: A list of FieldGraphDependencyVisitors relevant to this field type.
-        :rtype: List[FieldGraphDependencyVisitor]
-        """
-
-        return []
-
-    def get_row_changed_graph_visitor(self, updated_fields, changed_row_id):
-        """
-        Called when a row has been updated, restored or deleted. Should return a
-        FieldGraphDependencyVisitor which will do any
-        appropriate updates to the changed row, its dependencies and
-        related data. If the visitor wants to lookup and fields from the database
-        or it should use the updated_fields field cache provided.
-
-        :param changed_row_id: The id of the row that changed.
-        :param updated_fields: An cached update collector that should be used to
-            register any fields which have been updated and/or lookup fields.
-        :type updated_fields: CachingFieldUpdateCollector
-        :return: A list of FieldGraphDependencyVisitors relevant to this field type.
-        :rtype: List[FieldGraphDependencyVisitor]
-        """
-
-        return []
-
     def get_field_dependencies(
         self, field_instance, field_lookup_cache
     ) -> OptionalFieldDependencies:
