@@ -15,7 +15,7 @@ from baserow.contrib.database.fields.models import (
 )
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.rows.handler import RowHandler
-from tests.test_utils import setup_interesting_test_table
+from baserow.test_utils.helpers import setup_interesting_test_table
 
 
 @pytest.mark.django_db
@@ -51,7 +51,7 @@ def test_import_export_formula_field(data_fixture, api_client):
     formula_field = data_fixture.create_formula_field(
         table=first_table,
         name="formula field",
-        formula=f"field_by_id({text_field.id})",
+        formula=f"field('{text_field.name}')",
         formula_type="text",
     )
     formula_field_type = field_type_registry.get_by_model(formula_field)
@@ -369,7 +369,7 @@ def test_email_field_type(data_fixture):
 
 
 @pytest.mark.django_db
-@override_settings(debug=True)
+@override_settings(DEBUG=True)
 def test_phone_number_field_type(data_fixture):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
