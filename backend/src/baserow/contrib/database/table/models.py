@@ -468,9 +468,7 @@ class Table(
 
             if filtered and add_dependencies:
                 direct_dependencies = (
-                    FieldDependencyHandler.get_direct_same_table_field_dependencies(
-                        field
-                    )
+                    FieldDependencyHandler.get_same_table_dependencies(field)
                 )
                 for f in direct_dependencies:
                     if f.name not in already_included_field_names:

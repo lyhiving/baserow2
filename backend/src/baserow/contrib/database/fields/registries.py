@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List
 
 from django.db.models import Q
 
@@ -14,6 +14,7 @@ from baserow.core.registry import (
     APIUrlsInstanceMixin,
     ImportExportMixin,
 )
+from .dependencies.types import OptionalFieldDependencies
 from .exceptions import FieldTypeAlreadyRegistered, FieldTypeDoesNotExist
 from .models import SelectOption, Field
 
@@ -728,52 +729,99 @@ class FieldType(
             field, self.to_baserow_formula_type(field)
         )
 
-    def after_direct_field_dependency_changed(
-        self,
-        field_instance,
-        changed_parent_field,
-        old_changed_parent_field,
-        updated_fields,
-        via_field,
-        rename_only=False,
-    ):
+    def after_dependency_rename(self, field_instance, old_name, new_name, via_field):
         """
-        Called when a parent of field_instance has been updated, created, restored or
-        deleted. This method should do any appropriate updates to field_instance and
-        related data and return a list of field instance's which have changed as a
-        result.
+        Called when a field that field_instance depends on has been renamed.
 
-        :param old_changed_parent_field: If the parent field was updated this will be
-            the old instance prior whose attributes will be set to the values prior to
-            the update. If None then a new field has been created and set to be
-            field_instances parent.
-        :type old_changed_parent_field: Optional[Field]
-        :param changed_parent_field: The instance of the parent field with the new
-            changed values.
-        :type changed_parent_field: Field
-        :param field_instance: An instance of this FieldType whose parent has changed.
+        :param field_instance: An instance of this FieldType who has had a dependency
+            be renamed.
         :type field_instance: Field
-        :param updated_fields: A collector object which all updated fields should be
-            registered with.
-        :type updated_fields: FieldUpdateCollector
-        :param rename_only: True if the only change to the parent field is a
-            change in name.
-        :type rename_only: bool
-        :return: A list of updated field instances which changed as a result of the
-            dependency change.
-        :rtype: A tuple containing the updated field instance and a copy of its old
-            instance before the update. None,None if no further recursion into the
-            descendants is desired for this particular field_instance.
+        :param old_name: The dependencies old name.
+        :type old_name: str
+        :param new_name: The dependencies new name.
+        :type new_name: str
+        :param via_field: If the dependency is via another field this will be that
+            field.
+        :type field_instance: Field
+        """
+        pass
+
+    def get_field_changed_graph_visitor(self, updated_fields, refresh_field_values):
+        """
+        Called when a field has been updated, created, restored or
+        deleted. Should return a FieldGraphDependencyVisitor which will do any
+        appropriate updates to the changed fields its dependencies and
+        related data. If the visitor wants to lookup and fields from the database
+        or makes changes to a field it should do both using the updated_fields update
+        collector provided.
+
+        :param refresh_field_values: Whether or not field values should be refreshed
+            when dealing with the field change. The tables might not actually exist
+            if this is False during template importing.
+        :type refresh_field_values: bool
+        :param updated_fields: An cached update collector that should be used to
+            register any fields which have been updated and/or lookup fields.
+        :type updated_fields: CachingFieldUpdateCollector
+        :return: A list of FieldGraphDependencyVisitors relevant to this field type.
+        :rtype: List[FieldGraphDependencyVisitor]
         """
 
-        return None, None
+        return []
 
-    def get_direct_field_name_dependencies(
+    def get_row_changed_graph_visitor(self, updated_fields, changed_row_id):
+        """
+        Called when a row has been updated, restored or deleted. Should return a
+        FieldGraphDependencyVisitor which will do any
+        appropriate updates to the changed row, its dependencies and
+        related data. If the visitor wants to lookup and fields from the database
+        or it should use the updated_fields field cache provided.
+
+        :param changed_row_id: The id of the row that changed.
+        :param updated_fields: An cached update collector that should be used to
+            register any fields which have been updated and/or lookup fields.
+        :type updated_fields: CachingFieldUpdateCollector
+        :return: A list of FieldGraphDependencyVisitors relevant to this field type.
+        :rtype: List[FieldGraphDependencyVisitor]
+        """
+
+        return []
+
+    def get_field_dependencies(
         self, field_instance, field_lookup_cache
-    ) -> Optional[List[str]]:
+    ) -> OptionalFieldDependencies:
+        """
+        Should return a list of field dependencies that field_instance has. A field
+        dependency can either be the name of a field in the same table as
+        field_instance, or a tuple where the first value is the name of a link row field
+        in the same table and the second is the name of a field in the linked table.
+
+        If instead None is returned this field_type will be treated as if it cannot have
+        dependencies on other fields.
+
+        :param field_instance: The field_instance to get field dependencies for.
+        :type field_instance: Field
+        :param field_lookup_cache: A cache that can be used to lookup fields.
+        :type field_lookup_cache: FieldCache
+        """
         return None
 
     def restore_failed(self, field_instance, restore_exception):
+        """
+        Called when restoring field_instance has caused an exception. Return True if
+        the exception should be swallowed and the restore operation should succeed or
+        False if it should fail and rollback.
+
+        :param field_instance: The instance of the field which caused
+            restore_exception on field restore.
+        :type field_instance: Field
+        :param restore_exception: The exception that was raised when restoring the
+            field.
+        :type restore_exception:
+        :return: True to swallow the exception and succeed the restore, false to
+            re-raise and fail the restore.
+        :rtype: bool
+        """
+
         return False
 
 

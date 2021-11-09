@@ -25,9 +25,7 @@ from baserow.contrib.database.fields.dependencies.exceptions import (
     CircularFieldDependencyError,
 )
 from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
-from baserow.contrib.database.fields.dependencies.update_collector import (
-    LookupFieldByNameCache,
-)
+from baserow.contrib.database.fields.field_cache import FieldCache
 from baserow.contrib.database.fields.exceptions import FieldDoesNotExist
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import FormulaField
@@ -89,10 +87,8 @@ class TypeFormulaView(APIView):
 
         field = field.specific
         field.formula = data["formula"]
-        field_lookup_cache = LookupFieldByNameCache()
+        field_lookup_cache = FieldCache()
         field.recalculate_internal_fields(field_lookup_cache=field_lookup_cache)
-        FieldDependencyHandler.raise_if_any_circular_references(
-            field, field_lookup_cache
-        )
+        FieldDependencyHandler.check_for_circular_references(field, field_lookup_cache)
 
         return Response(TypeFormulaResultSerializer(field).data)

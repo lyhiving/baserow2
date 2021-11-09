@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from copy import deepcopy
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint, sample
@@ -55,7 +54,8 @@ from .dependencies.exceptions import (
     SelfReferenceFieldDependencyError,
     CircularFieldDependencyError,
 )
-from .dependencies.handler import OptionalFieldDependencies
+from .dependencies.types import OptionalFieldDependencies
+from .dependencies.update_collector import CachingFieldUpdateCollector
 from .exceptions import (
     LinkRowTableNotInSameDatabase,
     LinkRowTableNotProvided,
@@ -94,6 +94,7 @@ from .models import (
     Field,
 )
 from .registries import FieldType, field_type_registry
+from ..formula.field_updater import BulkMultiTableFormulaFieldRefresher
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -1289,24 +1290,13 @@ class LinkRowFieldType(FieldType):
     def get_related_items_to_trash(self, field) -> List[Any]:
         return [field.link_row_related_field]
 
-    def get_direct_field_name_dependencies(self, field_instance, field_lookup_cache):
+    def get_field_dependencies(self, field_instance, field_lookup_cache):
         try:
             return [
                 (field_instance.name, field_instance.get_related_primary_field().name)
             ]
         except StopIteration:
             return []
-
-    def after_direct_field_dependency_changed(
-        self,
-        field_instance: FormulaField,
-        changed_parent_field,
-        old_changed_parent_field,
-        updated_fields,
-        via_field,
-        rename_only=False,
-    ):
-        return field_instance, field_instance
 
 
 class EmailFieldType(CharFieldMatchingRegexFieldType):
@@ -2201,43 +2191,44 @@ class FormulaFieldType(FieldType):
     ) -> BaserowExpression[BaserowFormulaType]:
         return field.cached_typed_internal_expression
 
-    def after_direct_field_dependency_changed(
-        self,
-        field_instance: FormulaField,
-        changed_parent_field,
-        old_changed_parent_field,
-        updated_fields,
-        via_field,
-        rename_only=False,
+    def after_dependency_rename(self, field_instance, old_name, new_name, via_field):
+        updated_formula = FormulaHandler.rename_field_references_in_formula_string(
+            field_instance.formula,
+            {old_name: new_name},
+            via_field.name if via_field is not None else None,
+        )
+        field_instance.formula = updated_formula
+        # The internal formula directly references database columns which will not have
+        # changed as a result of a rename hence we don't need to do any recalculation.
+        field_instance.save(recalculate=False)
+
+    def get_field_changed_graph_visitor(
+        self, updated_fields: CachingFieldUpdateCollector, refresh_field_values
     ):
-        old_field = deepcopy(field_instance)
-        if old_changed_parent_field is not None:
-            old_parent_name = old_changed_parent_field.name
-            new_parent_name = changed_parent_field.name
-            if old_parent_name != new_parent_name:
-                field_instance.formula = (
-                    FormulaHandler.rename_field_references_in_formula_string(
-                        old_field.formula,
-                        {old_parent_name: new_parent_name},
-                        via_field.name if via_field is not None else None,
-                    )
-                )
-            if rename_only:
-                # No need to recursively update this fields dependencies also if
-                # our parent field has only changed it's name.
-                field_instance.save(recalculate=False)
-                updated_fields.add_field(field_instance, old_field)
-                return None, None
+        return [
+            BulkMultiTableFormulaFieldRefresher(
+                updated_fields,
+                recalculate_field_types=True,
+                refresh_field_values=refresh_field_values,
+            )
+        ]
 
-        field_instance.save(field_lookup_cache=updated_fields)
-        return field_instance, old_field
+    def get_row_changed_graph_visitor(
+        self, updated_fields: CachingFieldUpdateCollector, changed_row_id: int
+    ):
+        return [
+            BulkMultiTableFormulaFieldRefresher(
+                updated_fields,
+                starting_row_id=changed_row_id,
+                recalculate_field_types=False,
+                refresh_field_values=True,
+            )
+        ]
 
-    def get_direct_field_name_dependencies(
+    def get_field_dependencies(
         self, field_instance, field_lookup_cache
     ) -> OptionalFieldDependencies:
-        return FormulaHandler.get_direct_field_name_dependencies(
-            field_instance, field_lookup_cache
-        )
+        return FormulaHandler.get_field_dependencies(field_instance, field_lookup_cache)
 
     def restore_failed(self, field_instance, restore_exception):
         if isinstance(restore_exception, SelfReferenceFieldDependencyError):

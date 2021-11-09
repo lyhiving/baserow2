@@ -2,9 +2,7 @@ from typing import Type, Dict, Set, Optional
 
 from django.db.models import Model
 
-from baserow.contrib.database.fields.dependencies.update_collector import (
-    LookupFieldByNameCache,
-)
+from baserow.contrib.database.fields.field_cache import FieldCache
 from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
     BaserowFieldReference,
@@ -48,7 +46,7 @@ class FormulaHandler:
         cls, field, field_lookup_cache=None
     ) -> BaserowExpression[BaserowFormulaType]:
         if field_lookup_cache is None:
-            field_lookup_cache = LookupFieldByNameCache()
+            field_lookup_cache = FieldCache()
         return calculate_typed_expression(field, field_lookup_cache)
 
     @classmethod
@@ -83,12 +81,12 @@ class FormulaHandler:
         return update_field_names(formula_to_update, field_renames, via_field=via_field)
 
     @classmethod
-    def get_direct_field_name_dependencies_from_expression(cls, expression):
+    def get_field_dependencies_from_expression(cls, expression):
         return expression.accept(FieldReferenceExtractingVisitor())
 
     @classmethod
-    def get_direct_field_name_dependencies(cls, formula_field, field_lookup_cache):
-        return cls.get_direct_field_name_dependencies_from_expression(
+    def get_field_dependencies(cls, formula_field, field_lookup_cache):
+        return cls.get_field_dependencies_from_expression(
             formula_field.cached_untyped_expression
         )
 

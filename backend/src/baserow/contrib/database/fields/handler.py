@@ -13,7 +13,7 @@ from baserow.contrib.database.views.handler import ViewHandler
 from baserow.core.trash.handler import TrashHandler
 from baserow.core.utils import extract_allowed, set_allowed_attrs
 from .dependencies.handler import FieldDependencyHandler
-from .dependencies.update_collector import LookupFieldByNameCache
+from .field_cache import FieldCache
 from .exceptions import (
     PrimaryFieldAlreadyExists,
     CannotDeletePrimaryField,
@@ -195,7 +195,7 @@ class FieldHandler:
         instance = model_class(
             table=table, order=last_order, primary=primary, **field_values
         )
-        field_lookup_cache = LookupFieldByNameCache()
+        field_lookup_cache = FieldCache()
         instance.save(field_lookup_cache=field_lookup_cache, raise_if_invalid=True)
 
         # Add the field to the table schema.
@@ -208,8 +208,10 @@ class FieldHandler:
 
         field_type.after_create(instance, to_model, user, connection, before)
 
-        updated_fields = FieldDependencyHandler.update_field_dependency_graph(
-            instance, None, field_lookup_cache=field_lookup_cache
+        updated_fields = (
+            FieldDependencyHandler.update_field_dependency_graph_after_field_change(
+                instance, field_lookup_cache=field_lookup_cache
+            )
         )
         for field, related_fields in updated_fields.get_updated_fields_per_table():
             field_created.send(
@@ -294,7 +296,7 @@ class FieldHandler:
         before = field_type.before_update(old_field, field_values, user)
 
         field = set_allowed_attrs(field_values, allowed_fields, field)
-        field_lookup_cache = LookupFieldByNameCache()
+        field_lookup_cache = FieldCache()
         field.save(field_lookup_cache=field_lookup_cache, raise_if_invalid=True)
         # If no converter is found we are going to convert to field using the
         # lenient schema editor which will alter the field's type and set the data
@@ -395,11 +397,13 @@ class FieldHandler:
             altered_column,
             before,
         )
-        updated_fields = FieldDependencyHandler.update_field_dependency_graph(
-            field,
-            old_field,
-            set(field_values.keys()) == {"name"},
-            field_lookup_cache=field_lookup_cache,
+        updated_fields = (
+            FieldDependencyHandler.update_field_dependency_graph_after_field_change(
+                field,
+                old_field,
+                rename_only=set(field_values.keys()) == {"name"},
+                field_lookup_cache=field_lookup_cache,
+            )
         )
 
         for field, related_fields in updated_fields.get_updated_fields_per_table():
@@ -624,11 +628,13 @@ class FieldHandler:
             field = field.specific
             field.name = field.name
             field.trashed = False
-            field_lookup_cache = LookupFieldByNameCache()
+            field_lookup_cache = FieldCache()
             field.save(field_lookup_cache=field_lookup_cache)
 
-            updated_fields = FieldDependencyHandler.update_field_dependency_graph(
-                field, None, field_lookup_cache=field_lookup_cache
+            updated_fields = (
+                FieldDependencyHandler.update_field_dependency_graph_after_field_change(
+                    field, field_lookup_cache=field_lookup_cache
+                )
             )
             for field, related_fields in updated_fields.get_updated_fields_per_table():
                 field_restored.send(

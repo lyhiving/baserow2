@@ -117,7 +117,7 @@ class Field(
         if hasattr(self, "fieldnode"):
             return self.fieldnode
         else:
-            field, _ = FieldDependencyNode.objects.get_or_create(
+            field, _ = FieldDependencyNode.objects_without_field_join.get_or_create(
                 field=self, table=self.table
             )
             self.fieldnode = field

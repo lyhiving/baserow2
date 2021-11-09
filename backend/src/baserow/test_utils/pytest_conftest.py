@@ -25,6 +25,15 @@ def environ():
         os.environ[key] = value
 
 
+@pytest.fixture()
+def mutable_field_type_registry():
+    from baserow.contrib.database.fields.registries import field_type_registry
+
+    before = field_type_registry.registry.copy()
+    yield field_type_registry
+    field_type_registry.registry = before
+
+
 # We reuse this file in the premium backend folder, if you run a pytest session over
 # plugins and the core at the same time pytest will crash if this called multiple times.
 def pytest_addoption(parser):

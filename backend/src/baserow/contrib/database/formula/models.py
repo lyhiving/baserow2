@@ -65,6 +65,7 @@ class FieldDependencyNode(node_factory(FieldDependencyEdge)):
     """
 
     objects = AlwaysSelectingFieldManager()
+    objects_without_field_join = NodeManager()
 
     field = models.OneToOneField(
         "database.Field",

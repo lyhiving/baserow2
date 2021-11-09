@@ -7,8 +7,7 @@ from django.db.models import Max, F
 from django.db.models.fields.related import ManyToManyField
 
 from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
-from baserow.contrib.database.fields.models import Field, FormulaField
-from baserow.contrib.database.formula import FormulaHandler
+from baserow.contrib.database.fields.models import Field
 from baserow.core.trash.handler import TrashHandler
 from baserow.core.utils import split_comma_separated_string
 from .exceptions import RowDoesNotExist
@@ -19,36 +18,6 @@ from .signals import (
     row_updated,
     row_deleted,
 )
-
-
-def _recursively_update(row_id, connections, path):
-    for edge in connections:
-        child = edge.child
-        child_field = child.field
-        child_model = child_field.table.get_model(field_ids=[child_field.id])
-        this_path = "__".join([edge.via.db_column] + path) + "__id"
-        update_query = {}
-        for field_object in child_model._field_objects.values():
-            field = field_object["field"]
-            if isinstance(field, FormulaField):
-                update_query[
-                    field.db_column
-                ] = FormulaHandler.baserow_expression_to_update_django_expression(
-                    field.cached_typed_internal_expression,
-                    child_field.table.get_model(),
-                )
-
-        queryset = child_model.objects_and_trash.filter(**{this_path: row_id})
-        # queryset = child_model.objects_and_trash
-        queryset.update(**update_query)
-    for edge in connections:
-        more_connections = (
-            FieldDependencyHandler.recursively_find_connections_to_other_tables(
-                edge.child.table, [edge.child.field]
-            )
-        )
-        new_path = [edge.via.db_column] + path
-        _recursively_update(row_id, more_connections, new_path)
 
 
 class RowHandler:
@@ -497,12 +466,7 @@ class RowHandler:
 
             row.save()
 
-            other_table_connections = (
-                FieldDependencyHandler.recursively_find_connections_to_other_tables(
-                    table, updated_fields
-                )
-            )
-            _recursively_update(row.id, other_table_connections, [])
+            FieldDependencyHandler.refresh_all_dependant_rows(row.id, updated_fields)
 
             # We need to refresh here as ExpressionFields might have had their values
             # updated. Django does not support UPDATE .... RETURNING and so we need to
@@ -603,12 +567,7 @@ class RowHandler:
 
         TrashHandler.trash(user, group, table.database, row, parent_id=table.id)
         updated_fields = [field["field"] for field in model._field_objects.values()]
-        other_table_connections = (
-            FieldDependencyHandler.recursively_find_connections_to_other_tables(
-                table, updated_fields
-            )
-        )
-        _recursively_update(row.id, other_table_connections, [])
+        FieldDependencyHandler.refresh_all_dependant_rows(row.id, updated_fields)
 
         row_deleted.send(
             self,

@@ -77,8 +77,8 @@ def _build_graph_from_scratch(
 
     for formula in FormulaField.objects.all():
         expr = FormulaHandler.raw_formula_to_untyped_expression(formula.formula)
-        dependency_field_names = (
-            FormulaHandler.get_direct_field_name_dependencies_from_expression(expr)
+        dependency_field_names = FormulaHandler.get_field_dependencies_from_expression(
+            expr
         )
 
         for new_dependency_field_name in dependency_field_names:
