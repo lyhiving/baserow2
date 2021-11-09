@@ -22,10 +22,10 @@
       </div>
     </div>
     <div class="webhook__test-state" :class="statusClass">
-      {{ `${status} ${statusDescription}` }}
+      {{ `${status ? status : ''} ${statusDescription}` }}
     </div>
     <div class="actions">
-      <a href="#">Cancel</a>
+      <a href="#" @click="$emit('cancel')">Cancel</a>
       <div class="align-right">
         <button class="button button--ghost" @click="$emit('retry')">
           Retry
@@ -53,7 +53,8 @@ export default {
     },
     status: {
       type: Number,
-      required: true,
+      required: false,
+      default: null,
     },
     isLoading: {
       type: Boolean,
@@ -77,6 +78,9 @@ export default {
       }
     },
     statusDescription() {
+      if (!this.$props.status) {
+        return 'Server unreachable'
+      }
       if (this.status200) {
         return 'OK'
       } else {

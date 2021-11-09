@@ -23,7 +23,7 @@
         <div class="webhook__code-container">
           <pre
             class="webhook__code webhook__code--small"
-          ><code>{{ JSON.stringify(JSON.parse(call.request), null, 4) }}</code></pre>
+          ><code>{{ call.request }}</code></pre>
         </div>
       </div>
       <div class="webhook__call-body-content">

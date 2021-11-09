@@ -1,11 +1,5 @@
 <template>
-  <webhook-form
-    ref="form"
-    :table="table"
-    :default-values="webhook"
-    :create="true"
-    @submitted="submit"
-  >
+  <webhook-form ref="form" :table="table" :create="true" @submitted="submit">
     <div class="actions">
       <div class="align-right">
         <button
@@ -31,10 +25,6 @@ export default {
     table: {
       type: Object,
       required: true,
-    },
-    webhook: {
-      type: Object,
-      required: false,
     },
   },
   data() {

@@ -148,7 +148,10 @@
       </div>
     </div>
     <div class="control">
-      <webhook-example :user-field-names="values.use_user_field_names" />
+      <webhook-example
+        ref="webhookExample"
+        :user-field-names="values.use_user_field_names"
+      />
     </div>
     <a href="#" class="button button--ghost" @click="emitWebhookTrigger()"
       >Trigger test webhook</a
@@ -161,6 +164,7 @@
       :status="trigger.status"
       :is-loading="trigger.isLoading"
       @retry="emitWebhookTrigger()"
+      @cancel="cancelTriggerModal()"
     />
   </form>
 </template>
@@ -174,6 +178,7 @@ import Radio from '@baserow/modules/core/components/Radio.vue'
 import WebhookExample from './WebhookExample.vue'
 import TriggerWebhookModal from './TriggerWebhookModal.vue'
 import WebhookService from '@baserow/modules/database/services/webhook'
+import { notifyIf } from '@baserow/modules/core/utils/error'
 
 export default {
   name: 'WebhookForm',
@@ -268,6 +273,8 @@ export default {
     },
     async emitWebhookTrigger() {
       // reset triggerState
+      const selectedEvent = this.$refs.webhookExample.selectedEvent
+      const eventType = this.eventsMapping[selectedEvent]
       this.resetTriggerState()
       this.trigger.isLoading = true
       const { id } = this.$props.table
@@ -276,19 +283,28 @@ export default {
       if (isInvalid) {
         return
       }
-      this.$refs.triggerWebhookModal.show()
       const formData = this.getFormValues()
+      const requestObject = {
+        event_type: eventType,
+        webhook: formData,
+      }
       try {
-        const data = await WebhookService(this.$client).call(id, formData)
+        const data = await WebhookService(this.$client).call(id, requestObject)
         this.trigger.isLoading = false
         const { request, response } = data.data
         const statusCode = data.data.status_code
         this.trigger.request = request
         this.trigger.response = response
         this.trigger.status = statusCode
+        this.$refs.triggerWebhookModal.show()
       } catch (e) {
         this.trigger.isLoading = false
+        notifyIf(e)
       }
+    },
+    cancelTriggerModal() {
+      this.resetTriggerState()
+      this.$refs.triggerWebhookModal.hide()
     },
     inputChange(index, input) {
       if (this.lastHeaderElement(index) && input.header !== '') {
@@ -343,11 +359,13 @@ export default {
     },
     getFormValues() {
       const headers = this.getHeaderValues()
+      const valuesCopy = Object.assign({}, this.values)
+      delete valuesCopy.events
       if (this.radio === 'custom') {
         const events = this.createEventsList()
-        return { ...this.values, include_all_events: false, events, headers }
+        return { ...valuesCopy, include_all_events: false, events, headers }
       } else {
-        return { ...this.values, include_all_events: true, headers }
+        return { ...valuesCopy, include_all_events: true, headers }
       }
     },
   },
