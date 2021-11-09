@@ -1,4 +1,5 @@
 from django.conf import settings
+
 from baserow.config.celery import app
 from .exceptions import TableWebhookCannotBeCalled
 

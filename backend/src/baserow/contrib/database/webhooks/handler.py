@@ -1,11 +1,17 @@
-from typing import List
 import uuid
 import json
+from typing import List
+
 from django.db import transaction
 from django.conf import settings
 from django.db.models.query import QuerySet
 from django.db.models import Q, F
 
+from baserow.contrib.database.api.rows.serializers import (
+    get_row_serializer_class,
+    RowSerializer,
+)
+from baserow.contrib.database.table.models import Table
 from .models import (
     TableWebhook,
     TableWebhookCall,
@@ -18,17 +24,17 @@ from .exceptions import (
     TableWebhookMaxAllowedCountExceeded,
     TableWebhookCannotBeCalled,
 )
-from baserow.contrib.database.table.models import Table
-from baserow.contrib.database.api.rows.serializers import (
-    get_row_serializer_class,
-    RowSerializer,
-)
 
 
 class WebhookHandler:
     def get_example_payload(
         self, use_user_field_names: bool, table: Table, event_type="row.created"
     ):
+        """
+        Generates an example payload off the related table, to be used when manually
+        calling a webhook endpoint.
+        """
+
         model = table.get_model()
         serializer = get_row_serializer_class(
             model, RowSerializer, user_field_names=use_user_field_names
@@ -344,7 +350,6 @@ class WebhookHandler:
         return "{}\r\n{}\r\n\r\n{}".format(
             req.method + " " + req.url,
             "\r\n".join("{}: {}".format(k, v) for k, v in req.headers.items()),
-            # json.loads(req.body),
             json.dumps(json.loads(req.body), indent=4),
         )
 
@@ -387,6 +392,11 @@ class WebhookHandler:
         return [e_type, id]
 
     def assemble_headers(self, headers: List[dict]):
+        """
+        Helper function, which will turn a list of header objects into a requests
+        expected dictionary where the header is the key and the value is the value.
+        """
+
         headers_dict = {}
         for header in headers:
             headers_dict[header["header"]] = header["value"]

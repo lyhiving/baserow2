@@ -1,11 +1,12 @@
-from rest_framework import serializers
-from django.conf import settings
-from advocate.connection import (
-    validating_create_connection,
-    UnacceptableAddressException,
-)
-from advocate.addrvalidator import AddrValidator
 from urllib.parse import urlparse
+
+from advocate.addrvalidator import AddrValidator
+from advocate.connection import (
+    UnacceptableAddressException,
+    validating_create_connection,
+)
+from django.conf import settings
+from rest_framework import serializers
 
 
 def validate_events_data(data):
@@ -62,6 +63,11 @@ def url_validation(value):
 
 
 def http_header_validation(value):
+    """
+    This http header validation helper makes sure that we don't receive duplicate
+    headers or that someone is trying to override the default 'content-type' header.
+    """
+
     headers = [x["header"].strip().lower().capitalize() for x in value]
 
     if len(headers) != len(set(headers)):

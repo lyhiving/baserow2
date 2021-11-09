@@ -5,7 +5,6 @@ from baserow.contrib.database.api.webhooks.validators import (
     http_header_validation,
     validate_events_data,
 )
-
 from baserow.contrib.database.webhooks.models import (
     TableWebhook,
     TableWebhookCall,
