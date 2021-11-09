@@ -154,6 +154,11 @@
               </a>
             </div>
           </div>
+          <div v-if="areHeadersInvalid" class="webhook__header-row">
+            <div class="error">
+              {{ $t('webhookForm.errors.invalidHeaders') }}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -249,6 +254,7 @@ export default {
         status: 0,
         isLoading: false,
       },
+      areHeadersInvalid: false,
     }
   },
   created() {
@@ -291,8 +297,8 @@ export default {
       this.trigger.isLoading = true
       const { id } = this.$props.table
       this.$v.$touch()
-      const isInvalid = this.$v.$invalid
-      if (isInvalid) {
+      const isFormValid = this.isFormValid()
+      if (!isFormValid) {
         return
       }
       const formData = this.getFormValues()
@@ -360,6 +366,19 @@ export default {
       }
       return list
     },
+    validateHeaders() {
+      // Check if there is a key-value pair where
+      // the header is set but value is empty.
+      this.resetHeaderError()
+      this.values.headers.forEach((item, index) => {
+        if (item.header.length > 0 && item.value.length < 2) {
+          this.areHeadersInvalid = true
+        }
+      })
+    },
+    resetHeaderError() {
+      this.areHeadersInvalid = false
+    },
     getHeaderValues() {
       // remove empty headers and values
       const result = this.values.headers.filter((item) => {
@@ -368,6 +387,10 @@ export default {
         return bothNotEmpty || headerNotEmpty
       })
       return result
+    },
+    isFormValid() {
+      this.validateHeaders()
+      return !this.areHeadersInvalid && !this.$v.$invalid
     },
     getFormValues() {
       const headers = this.getHeaderValues()
@@ -398,7 +421,8 @@ export default {
         "headers": "Additional headers"
       },
       "errors": {
-        "urlField": "This field is required and needs to be a valid url."
+        "urlField": "This field is required and needs to be a valid url.",
+        "invalidHeaders": "You cannot set a header without a value."
       },
       "checkbox": {
         "sendUserFieldNames": "Send user field names",
@@ -424,7 +448,8 @@ export default {
         "headers": "@TODO"
       },
       "errors": {
-        "urlField": "@TODO"
+        "urlField": "@TODO",
+        "invalidHeaders": "@TODO"
       },
       "checkbox": {
         "sendUserFieldNames": "@TODO",

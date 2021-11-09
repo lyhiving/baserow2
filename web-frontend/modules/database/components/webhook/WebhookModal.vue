@@ -3,7 +3,6 @@
     <h2 class="box__title">
       {{ $t('webhookModal.title', { tableName: table.name }) }}
     </h2>
-    <Error :error="error"></Error>
     <div class="align-right">
       <a href="#" class="button" @click="toggleCreateForm()">
         <i v-if="!renderList" class="fas fa-arrow-left"></i>
@@ -26,7 +25,6 @@
 import WebhookList from './WebhookList.vue'
 import CreateWebhookContext from './CreateWebhookContext.vue'
 import modal from '@baserow/modules/core/mixins/modal'
-import error from '@baserow/modules/core/mixins/error'
 
 export default {
   name: 'WebhookModal',
@@ -34,7 +32,7 @@ export default {
     CreateWebhookContext,
     WebhookList,
   },
-  mixins: [modal, error],
+  mixins: [modal],
   props: {
     table: {
       type: Object,

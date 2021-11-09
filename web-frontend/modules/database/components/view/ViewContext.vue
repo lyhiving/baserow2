@@ -10,7 +10,7 @@
       <li>
         <a @click="openWebhookModal()">
           <i class="context__menu-icon fas fa-fw fa-globe"></i>
-          {{ $t('viewContext.openWebhookModal') }}
+          Webhooks
         </a>
       </li>
       <li>
@@ -82,8 +82,7 @@ export default {
     "viewContext": {
       "exportView": "Export view",
       "renameView": "Rename view",
-      "deleteView": "Delete view",
-      "openWebhookModal": "Webhooks"
+      "deleteView": "Delete view"
     }
   },
   "fr": {

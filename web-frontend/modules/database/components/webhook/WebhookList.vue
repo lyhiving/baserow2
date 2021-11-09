@@ -26,7 +26,6 @@ export default {
     },
   },
   computed: mapState({
-    // arrow functions can make the code very succinct!
     webhooks: (state) => state.webhook.items,
   }),
   async created() {
