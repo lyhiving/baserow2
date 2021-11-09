@@ -1,38 +1,36 @@
 from django.db import transaction
+from drf_spectacular.openapi import OpenApiParameter, OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from drf_spectacular.openapi import OpenApiParameter, OpenApiTypes
-from drf_spectacular.utils import extend_schema
+
+from baserow.api.decorators import map_exceptions, validate_body
 from baserow.api.errors import ERROR_USER_NOT_IN_GROUP
 from baserow.api.schemas import get_error_schema
 from baserow.contrib.database.api.tables.errors import ERROR_TABLE_DOES_NOT_EXIST
 from baserow.contrib.database.api.tokens.authentications import TokenAuthentication
 from baserow.contrib.database.api.webhooks.errors import (
     ERROR_TABLE_WEBHOOK_ALREADY_EXISTS,
-    ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED,
     ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST,
+    ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED,
 )
 from baserow.contrib.database.table.exceptions import TableDoesNotExist
+from baserow.contrib.database.table.handler import TableHandler
 from baserow.contrib.database.webhooks.exceptions import (
     TableWebhookAlreadyExists,
     TableWebhookDoesNotExist,
     TableWebhookMaxAllowedCountExceeded,
 )
+from baserow.contrib.database.webhooks.handler import WebhookHandler
 from baserow.core.exceptions import UserNotInGroup
 from .serializers import (
-    TableWebhookManualCallRequestSerializer,
     TableWebhookCreateRequestSerializer,
+    TableWebhookManualCallRequestSerializer,
     TableWebhookManualCallResponseSerializer,
     TableWebhookResultSerializer,
     TableWebhookUpdateRequestSerializer,
 )
-from baserow.contrib.database.webhooks.handler import WebhookHandler
-from baserow.contrib.database.table.handler import TableHandler
-from baserow.contrib.database.tokens.exceptions import NoPermissionToTable
-from baserow.contrib.database.api.tokens.errors import ERROR_NO_PERMISSION_TO_TABLE
-
-from baserow.api.decorators import map_exceptions, validate_body
 
 
 class TableWebhooksView(APIView):
@@ -54,7 +52,6 @@ class TableWebhooksView(APIView):
         responses={
             200: TableWebhookResultSerializer(many=True),
             400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
-            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
         },
     )
@@ -62,7 +59,6 @@ class TableWebhooksView(APIView):
         {
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
-            NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
         }
     )
     def get(self, request, table_id):
@@ -96,14 +92,13 @@ class TableWebhooksView(APIView):
             400: get_error_schema(
                 ["ERROR_USER_NOT_IN_GROUP", "ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED"]
             ),
-            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
         },
     )
     @transaction.atomic
     @map_exceptions(
         {
-            NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
+            UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
             TableWebhookMaxAllowedCountExceeded: ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED,
             TableWebhookAlreadyExists: ERROR_TABLE_WEBHOOK_ALREADY_EXISTS,
@@ -145,7 +140,6 @@ class TableWebhookView(APIView):
         responses={
             200: TableWebhookResultSerializer(),
             400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
-            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
             404: get_error_schema(
                 ["ERROR_TABLE_DOES_NOT_EXIST", "ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST"]
             ),
@@ -153,7 +147,7 @@ class TableWebhookView(APIView):
     )
     @map_exceptions(
         {
-            NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
+            UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
             TableWebhookDoesNotExist: ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST,
         }
@@ -188,7 +182,6 @@ class TableWebhookView(APIView):
         responses={
             200: TableWebhookResultSerializer(),
             400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
-            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
             404: get_error_schema(
                 ["ERROR_TABLE_DOES_NOT_EXIST", "ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST"]
             ),
@@ -197,7 +190,7 @@ class TableWebhookView(APIView):
     @validate_body(TableWebhookUpdateRequestSerializer)
     @map_exceptions(
         {
-            NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
+            UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
             TableWebhookDoesNotExist: ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST,
         }
@@ -231,13 +224,12 @@ class TableWebhookView(APIView):
         request=TableWebhookCreateRequestSerializer(),
         responses={
             400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
-            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
         },
     )
     @map_exceptions(
         {
-            NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
+            UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
         }
     )
@@ -267,13 +259,12 @@ class TableWebhookCallView(APIView):
         responses={
             200: TableWebhookManualCallResponseSerializer(),
             400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
-            401: get_error_schema(["ERROR_NO_PERMISSION_TO_TABLE"]),
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
         },
     )
     @map_exceptions(
         {
-            NoPermissionToTable: ERROR_NO_PERMISSION_TO_TABLE,
+            UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
         }
     )

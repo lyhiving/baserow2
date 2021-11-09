@@ -1,23 +1,31 @@
 import uuid
-from django.dispatch.dispatcher import Signal
-from baserow.contrib.database.webhooks.handler import WebhookHandler
 
+from django.dispatch.dispatcher import Signal
+
+from baserow.contrib.database.api.rows.serializers import (
+    RowSerializer,
+    get_row_serializer_class,
+)
+from baserow.contrib.database.webhooks.handler import WebhookHandler
 from baserow.core.registry import (
     ModelRegistryMixin,
     Registry,
     Instance,
 )
-from baserow.contrib.database.api.rows.serializers import (
-    RowSerializer,
-    get_row_serializer_class,
-)
-
 from .tasks import call_webhook
 
 
 class WebhookEventType(Instance):
     """
-    @TODO docstring
+    This class represents a custom webhook event type that can be added to the webhook
+    event type registry.
+    Each registered event type needs to set a django signal on which it will listen on.
+    Upon initialization the webhook event type will connect to the django signal.
+
+    The 'listener' function will be called for every received signal. The listener will
+    generate a unique ID for every received signal, find all webhooks that need to be
+    called and subsequently generates the payload for every webhook and runs a celery
+    task that will do the actuall call to the endpoint.
     """
 
     def __init__(self):

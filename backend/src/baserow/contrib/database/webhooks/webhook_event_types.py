@@ -1,9 +1,9 @@
-from .registries import WebhookEventType
-from baserow.contrib.database.rows.signals import row_created, row_updated, row_deleted
 from baserow.contrib.database.api.rows.serializers import (
     get_row_serializer_class,
     RowSerializer,
 )
+from baserow.contrib.database.rows.signals import row_created, row_updated, row_deleted
+from .registries import WebhookEventType
 
 
 class RowCreatedEventType(WebhookEventType):
