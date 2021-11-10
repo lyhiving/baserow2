@@ -330,6 +330,7 @@ class Table(
         attribute_names=False,
         manytomany_models=None,
         add_dependencies=True,
+        managed=False,
     ) -> GeneratedTableModel:
         """
         Generates a temporary Django model based on available fields that belong to
@@ -357,6 +358,10 @@ class Table(
         :param add_dependencies: When True will ensure any direct field dependencies
             are included in the model. Otherwise only the exact fields you specify will
             be added to the model.
+        :param managed: Whether the created model should be managed by Django or not.
+            Only in very specific limited situations should this be enabled as
+            generally Baserow itself manages most aspects of returned generated models.
+        :type managed: bool
         :return: The generated model.
         :rtype: Model
         """
@@ -374,7 +379,7 @@ class Table(
             "Meta",
             (),
             {
-                "managed": False,
+                "managed": managed,
                 "db_table": self.get_database_table_name(),
                 "app_label": app_label,
                 "ordering": ["order", "id"],

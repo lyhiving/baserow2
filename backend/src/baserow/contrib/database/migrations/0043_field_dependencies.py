@@ -147,7 +147,7 @@ def _setup_field(already_fixed_fields, formula_field):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("database", "0040_formulafield_remove_field_by_id"),
+        ("database", "0042_add_other_trashed_indexes"),
     ]
 
     operations = [

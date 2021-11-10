@@ -10,8 +10,8 @@ from django.db.migrations.executor import MigrationExecutor
 # noinspection PyPep8Naming
 @pytest.mark.django_db
 def test_forwards_migration(data_fixture, transactional_db):
-    migrate_from = [("database", "0040_formulafield_remove_field_by_id")]
-    migrate_to = [("database", "0042_not_null_internal_formula_fields")]
+    migrate_from = [("database", "0042_add_other_trashed_indexes")]
+    migrate_to = [("database", "0044_not_null_internal_formula_fields")]
 
     old_state = migrate(migrate_from)
 
@@ -83,8 +83,8 @@ def test_forwards_migration(data_fixture, transactional_db):
 # noinspection PyPep8Naming
 @pytest.mark.django_db
 def test_backwards_migration(data_fixture, transactional_db):
-    migrate_from = [("database", "0042_not_null_internal_formula_fields")]
-    migrate_to = [("database", "0040_formulafield_remove_field_by_id")]
+    migrate_from = [("database", "0044_not_null_internal_formula_fields")]
+    migrate_to = [("database", "0042_add_other_trashed_indexes")]
 
     old_state = migrate(migrate_from)
 
