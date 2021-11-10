@@ -2103,7 +2103,10 @@ class FormulaFieldType(FieldType):
             from baserow.contrib.database.fields.registries import field_type_registry
 
             field_type = field_type_registry.get_by_model(field.specific_class)
-            if field_type.type == FormulaFieldType.type:
+            if (
+                field_type.type == FormulaFieldType.type
+                or field_type.type == LookupFieldType.type
+            ):
                 formula_type = field.specific.cached_formula_type
                 return formula_type.type in compatible_formula_types
             else:

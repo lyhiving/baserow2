@@ -54,8 +54,8 @@ def test_can_update_lookup_field_value(
         table,
         "lookup",
         name="formulafield",
-        through_field=linkrowfield.name,
-        target_field=looked_up_field.name,
+        through_field=linkrowfield.id,
+        target_field=looked_up_field.id,
     )
     response = api_client.get(
         reverse("api:database:rows:list", kwargs={"table_id": table.id}),
@@ -73,7 +73,10 @@ def test_can_update_lookup_field_value(
                     {"id": a.id, "value": "primary a"},
                     {"id": b.id, "value": "primary b"},
                 ],
-                f"field_{formulafield.id}": ["2021-02-01", "2022-02-03"],
+                f"field_{formulafield.id}": [
+                    {"id": a.id, "value": "2021-02-01"},
+                    {"id": b.id, "value": "2022-02-03"},
+                ],
                 "id": table_row.id,
                 "order": "1.00000000000000000000",
             }
@@ -105,7 +108,10 @@ def test_can_update_lookup_field_value(
                     {"id": a.id, "value": "primary a"},
                     {"id": b.id, "value": "primary b"},
                 ],
-                f"field_{formulafield.id}": ["2022-02-03", "2000-02-01"],
+                f"field_{formulafield.id}": [
+                    {"id": a.id, "value": "2000-02-01"},
+                    {"id": b.id, "value": "2022-02-03"},
+                ],
                 "id": table_row.id,
                 "order": "1.00000000000000000000",
             }

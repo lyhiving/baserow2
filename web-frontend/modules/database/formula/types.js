@@ -7,6 +7,7 @@ import FunctionalGridViewFieldDate from '@baserow/modules/database/components/vi
 import FunctionalGridViewFieldBoolean from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldBoolean'
 import FunctionalGridViewFieldNumber from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldNumber'
 import FunctionalGridViewFieldText from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldText'
+import FunctionalGridViewFieldArray from '@baserow/modules/database/components/view/grid/fields/FunctionalGridViewFieldArray'
 
 export class BaserowFormulaTypeDefinition extends Registerable {
   getIconClass() {
@@ -232,6 +233,6 @@ export class BaserowFormulaArrayType extends BaserowFormulaTypeDefinition {
   }
 
   getFunctionalGridViewFieldComponent() {
-    return FunctionalGridViewFieldText
+    return FunctionalGridViewFieldArray
   }
 }

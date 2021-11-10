@@ -1,8 +1,8 @@
 from abc import ABC
 from decimal import Decimal
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Set
 
-from django.contrib.postgres.aggregates import ArrayAgg
+from django.contrib.postgres.aggregates import ArrayAgg, JSONBAgg
 from django.db.models import (
     Expression,
     Value,
@@ -31,6 +31,7 @@ from django.db.models.functions import (
     StrIndex,
     Length,
     Reverse,
+    JSONObject,
 )
 
 from baserow.contrib.database.fields.models import (
@@ -242,6 +243,7 @@ class BaserowConcat(BaserowFunctionDefinition):
         model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
+        join_ids: Set[str],
     ) -> Expression:
         return Concat(*args, output_field=fields.TextField())
 
@@ -811,6 +813,7 @@ class BaserowRowId(ZeroArgumentBaserowFunction):
         model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
+        join_ids: Set[str],
     ) -> Expression:
         if model_instance is None:
             return ExpressionWrapper(
@@ -884,12 +887,21 @@ class BaserowArrayAgg(OneArgumentBaserowFunction):
         model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
+        join_ids: Set[str],
     ) -> Expression:
         starting = Q()
         for a in aggregate_filters:
             starting = starting & a
         aggregate_filters.clear()
-        return ArrayAgg(*args, filter=starting)
+        json_builder_args = {"value": args[0]}
+        if len(join_ids) > 1:
+            json_builder_args["ids"] = JSONObject(
+                **{i.split("__")[-1]: F(i + "__id") for i in join_ids}
+            )
+        else:
+            json_builder_args["id"] = F(list(join_ids)[0] + "__id")
+        join_ids.clear()
+        return JSONBAgg(JSONObject(**json_builder_args), filter=starting)
 
 
 class Baserow2dArrayAgg(OneArgumentBaserowFunction):
@@ -1019,6 +1031,7 @@ class BaserowSum(OneArgumentBaserowFunction):
         model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
+        join_ids: Set[str],
     ) -> Expression:
         starting = Q()
         for a in aggregate_filters:

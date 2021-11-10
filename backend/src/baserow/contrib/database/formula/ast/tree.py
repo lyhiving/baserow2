@@ -1,9 +1,9 @@
 import abc
 from decimal import Decimal
-from typing import List, TypeVar, Generic, Tuple, Optional, Type
+from typing import List, TypeVar, Generic, Tuple, Optional, Type, Set
 
 from django.conf import settings
-from django.db.models import Expression, Model, Q
+from django.db.models import Expression, Model, Q, F
 
 from baserow.contrib.database.formula.ast import visitors
 from baserow.contrib.database.formula.ast.exceptions import (
@@ -302,9 +302,10 @@ class BaserowFunctionCall(BaserowExpression[A]):
         model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
+        join_ids: Set[str],
     ) -> Expression:
         return self.function_def.to_django_expression_given_args(
-            args, model, model_instance, aggregate_filters
+            args, model, model_instance, aggregate_filters, join_ids
         )
 
     def check_arg_type_valid(
@@ -415,6 +416,7 @@ class BaserowFunctionDefinition(Instance, abc.ABC):
         model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
+        join_ids: Set[str],
     ) -> Expression:
         """
         Given the args already converted to Django Expressions should return a Django

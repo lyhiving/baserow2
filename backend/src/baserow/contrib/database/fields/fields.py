@@ -157,6 +157,9 @@ class BaserowExpressionField(models.Field):
     def get_prep_value(self, value):
         return self.expression_field.get_prep_value(value)
 
+    def from_db_value(self, value, expression, connection):
+        return self.expression_field.from_db_value(value, expression, connection)
+
     def pre_save(self, model_instance, add):
         if self.expression is None:
             return Value(None)

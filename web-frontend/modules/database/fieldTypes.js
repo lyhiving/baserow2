@@ -1807,7 +1807,7 @@ export class FormulaFieldType extends FieldType {
   static compatibleWithFormulaTypes(...formulaTypeStrings) {
     return (field) => {
       return (
-        field.type === this.getType() &&
+        (field.type === this.getType() || field.type === 'lookup') &&
         formulaTypeStrings.includes(field.formula_type)
       )
     }

@@ -85,6 +85,31 @@ class UpdateFieldSerializer(serializers.ModelSerializer):
         }
 
 
+class ArrayValueSerializer(serializers.Serializer):
+    id = serializers.IntegerField(
+        read_only=True,
+        required=False,
+        help_text="The unique identifier of the row in the related table.",
+    )
+    ids = serializers.DictField(
+        child=serializers.IntegerField(
+            read_only=True,
+            required=False,
+            help_text="The unique identifier of the row in the related table.",
+        ),
+        read_only=True,
+        required=False,
+        help_text="The unique identifier of the row in the related table.",
+    )
+
+    def __init__(self, child, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["value"] = child
+
+    def to_representation(self, instance):
+        return super().to_representation(instance)
+
+
 class LinkRowValueSerializer(serializers.Serializer):
     id = serializers.IntegerField(
         read_only=True,

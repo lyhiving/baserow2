@@ -30,4 +30,8 @@
   &.active .grid-field-boolean__checkbox-icon {
     visibility: visible;
   }
+
+  &__cross {
+    color: $color-error-600;
+  }
 }

@@ -2,7 +2,7 @@ from typing import List, Type, Optional, Any
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, JSONField
 from rest_framework import serializers
 from rest_framework.fields import Field
 
@@ -372,16 +372,12 @@ class BaserowFormulaArrayType(BaserowFormulaValidType):
         return self, self
 
     def get_model_field(self, instance, **kwargs) -> models.Field:
-        (
-            instance,
-            field_type,
-        ) = BaserowFormulaTextType().get_baserow_field_instance_and_type()
-        return ArrayField(
-            base_field=field_type.get_model_field(instance, **kwargs), **kwargs
-        )
+        return JSONField(default=list, **kwargs)
 
     def get_serializer_field(self, instance, **kwargs) -> Optional[Field]:
         required = kwargs.get("required", False)
+
+        from baserow.contrib.database.api.fields.serializers import ArrayValueSerializer
 
         (
             instance,
@@ -391,7 +387,9 @@ class BaserowFormulaArrayType(BaserowFormulaValidType):
             **{
                 "required": required,
                 "allow_null": not required,
-                "child": field_type.get_serializer_field(instance, **kwargs),
+                "child": ArrayValueSerializer(
+                    field_type.get_serializer_field(instance, **kwargs)
+                ),
             }
         )
 

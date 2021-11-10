@@ -1,7 +1,7 @@
 import abc
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Set
 
-from django.db.models import Expression, Model, Q
+from django.db.models import Expression, Model, Q, F
 
 from baserow.contrib.database.formula.ast.tree import (
     BaserowFunctionCall,
@@ -105,6 +105,7 @@ class ZeroArgumentBaserowFunction(BaserowFunctionDefinition):
         model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
+        join_ids: Set[str],
     ) -> Expression:
         return self.to_django_expression()
 
@@ -199,6 +200,7 @@ class OneArgumentBaserowFunction(BaserowFunctionDefinition):
         model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
+        join_ids: Set[str],
     ) -> Expression:
         return self.to_django_expression(args[0])
 
@@ -312,6 +314,7 @@ class TwoArgumentBaserowFunction(BaserowFunctionDefinition):
         model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
+        join_ids: Set[str],
     ) -> Expression:
         return self.to_django_expression(args[0], args[1])
 
@@ -441,6 +444,7 @@ class ThreeArgumentBaserowFunction(BaserowFunctionDefinition):
         model: Type[Model],
         model_instance: Optional[Model],
         aggregate_filters: List[Q],
+        join_ids: Set[str],
     ) -> Expression:
         return self.to_django_expression(args[0], args[1], args[2])
 

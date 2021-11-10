@@ -146,6 +146,7 @@ class BaserowExpressionToDjangoExpressionGenerator(
         self.model = model
         self.pre_annotations = {}
         self.aggregate_filters = []
+        self.join_ids = set()
 
     def visit_field_reference(
         self, field_reference: BaserowFieldReference[BaserowFormulaType]
@@ -158,8 +159,11 @@ class BaserowExpressionToDjangoExpressionGenerator(
             # TODO
             path = lookup_ref.split("__")
             other_model = self.model
+            so_far = []
             for step in [db_column] + path[:-1]:
                 other_model = other_model._meta.get_field(step).remote_field.model
+                so_far.append(step)
+                self.join_ids.add("__".join(so_far))
             model_field = other_model._meta.get_field(path[-1])
             db_column += f"__{lookup_ref}"
         else:
@@ -200,9 +204,6 @@ class BaserowExpressionToDjangoExpressionGenerator(
                 else:
                     return ExpressionWrapper(F(db_column), output_field=model_field)
             else:
-                if is_lookup:
-                    self._add_aggs(field_reference, lookup_ref)
-
                 return ExpressionWrapper(F(db_column), output_field=model_field)
         elif not hasattr(self.model_instance, db_column):
             raise UnknownFieldReference(db_column)
@@ -230,7 +231,7 @@ class BaserowExpressionToDjangoExpressionGenerator(
     ) -> Expression:
         args = [expr.accept(self) for expr in function_call.args]
         return function_call.to_django_expression_given_args(
-            args, self.model, self.model_instance, self.aggregate_filters
+            args, self.model, self.model_instance, self.aggregate_filters, self.join_ids
         )
 
     def visit_string_literal(
