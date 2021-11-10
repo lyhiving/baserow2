@@ -1,5 +1,5 @@
 <template>
-  <form @submit.prevent="submit">
+  <form @submit.prevent="submit" @input="$emit('formchange')">
     <div class="row">
       <div class="col col-12">
         <div class="control">

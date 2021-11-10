@@ -155,6 +155,7 @@ export default {
   webhook: {
     request: '@TODO',
     response: '@TODO',
+    successfullyUpdated: '@TODO',
     status: {
       noStatus: '@TODO',
       statusOK: '@TODO',

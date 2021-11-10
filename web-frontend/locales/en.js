@@ -153,6 +153,7 @@ export default {
   webhook: {
     request: 'Request',
     response: 'Response',
+    successfullyUpdated: 'Webhook succesfully updated.',
     status: {
       noStatus: 'NO STATUS',
       statusOK: 'OK',

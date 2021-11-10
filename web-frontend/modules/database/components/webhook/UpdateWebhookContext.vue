@@ -6,16 +6,21 @@
       :table="table"
       :default-values="webhook"
       @submitted="submit"
+      @formchange="handleFormChange"
     >
       <div class="actions">
-        <button
+        <a
           class="button button--primary button--error"
           @click="deleteWebhook()"
         >
           {{ $t('action.delete') }}
-        </button>
+        </a>
         <div class="align-right">
+          <p v-if="loadedSuccessfully" class="color-success">
+            <strong>{{ $t('webhook.successfullyUpdated') }}</strong>
+          </p>
           <button
+            v-if="!loadedSuccessfully"
             class="button button--primary"
             :class="{ 'button--loading': loading }"
             :disabled="loading"
@@ -55,11 +60,15 @@ export default {
   data() {
     return {
       loading: false,
+      loadedSuccessfully: false,
     }
   },
   methods: {
     deleteWebhook() {
       this.$refs.deleteWebhookModal.show()
+    },
+    handleFormChange() {
+      this.loadedSuccessfully = false
     },
     async submit(values) {
       this.loading = true
@@ -68,6 +77,7 @@ export default {
       try {
         await this.$store.dispatch('webhook/update', { table, webhook, values })
         this.loading = false
+        this.loadedSuccessfully = true
       } catch (error) {
         this.loading = false
         this.handleError(error)

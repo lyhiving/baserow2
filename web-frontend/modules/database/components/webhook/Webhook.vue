@@ -87,26 +87,36 @@ export default {
     }
   },
   computed: {
-    lastCall() {
+    lastCallEvent() {
       const calls = this.$props.webhook.calls
       if (calls.length > 0) {
-        return moment(calls[0].called_time).format('YYYY-MM-DD HH:mm:ss')
+        return calls[0]
+      } else {
+        return null
+      }
+    },
+    lastCall() {
+      if (this.lastCallEvent) {
+        return moment(this.lastCallEvent.called_time).format(
+          'YYYY-MM-DD HH:mm:ss'
+        )
       } else {
         return this.$t('webhook.noCalls')
       }
     },
     lastStatus() {
-      const calls = this.$props.webhook.calls
-      if (calls.length > 0) {
-        return this.statusDescription(calls.status_code)
+      if (this.lastCallEvent) {
+        return this.statusDescription(this.lastCallEvent.status_code)
       } else {
         return ''
       }
     },
     lastStatusClass() {
-      const calls = this.$props.webhook.calls
-      if (calls.length > 0) {
-        if (calls[0].status_code >= 200 && calls[0].status_code <= 299) {
+      if (this.lastCallEvent) {
+        if (
+          this.lastCallEvent.status_code >= 200 &&
+          this.lastCallEvent.status_code <= 299
+        ) {
           return 'webhook__head-call-state--ok'
         } else {
           return 'webhook__head-call-state--error'

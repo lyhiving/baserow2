@@ -33,7 +33,7 @@
         class="webhook__test-state"
         :class="statusClass"
       >
-        {{ statusString(status) }}
+        {{ statusString }}
       </div>
       <div class="actions">
         <a href="#" @click="$emit('cancel')">{{ $t('action.cancel') }}</a>
@@ -90,13 +90,12 @@ export default {
         return 'webhook__test-state--error'
       }
     },
-  },
-  methods: {
-    statusString(statusCode) {
-      if (!statusCode) {
+    statusString() {
+      const status = this.$props.status
+      if (!status) {
         return 'Server unreachable'
       }
-      return this.statusDescription(statusCode)
+      return this.statusDescription(status)
     },
   },
 }
