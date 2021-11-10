@@ -17,11 +17,11 @@ def get_or_create_node(field, FieldDependencyNode):
     if hasattr(field, "fieldnode"):
         return field.fieldnode
     else:
-        field, _ = FieldDependencyNode.objects.get_or_create(
-            field=field, table=field.table
+        fieldnode, _ = FieldDependencyNode.objects.get_or_create(
+            field_id=field.id, table=field.table
         )
-        field.fieldnode = field
-        return field
+        field.fieldnode = fieldnode
+        return fieldnode
 
 
 def _get_or_create_node_from_name(referenced_field_name, table, FieldDependencyNode):
@@ -81,9 +81,9 @@ def _build_graph_from_scratch(
             expr
         )
 
+        table = formula.table
+        field_node = get_or_create_node(formula, FieldDependencyNode)
         for new_dependency_field_name in dependency_field_names:
-            table = formula.table
-            field_node = get_or_create_node(formula, FieldDependencyNode)
             referenced_field_dependency_node = _get_or_create_node_from_name(
                 new_dependency_field_name,
                 table,
@@ -100,18 +100,25 @@ def _calculate_all_formula_internal_fields_in_order(FormulaField, FieldDependenc
     for formula in FormulaField.objects.all():
         if formula not in already_fixed_fields:
             field_node = get_or_create_node(formula, FieldDependencyNode)
-            _recursively_setup_parents(FormulaField, already_fixed_fields, field_node)
+            _recursively_setup_parents(
+                FormulaField, FieldDependencyNode, already_fixed_fields, field_node
+            )
             _setup_field(already_fixed_fields, formula)
 
 
 # noinspection PyPep8Naming
-def _recursively_setup_parents(FormulaField, already_fixed_fields, field_node):
+def _recursively_setup_parents(
+    FormulaField, FieldDependencyNode, already_fixed_fields, field_node
+):
     for parent_node in field_node.parents.all():
         if hasattr(parent_node, "field"):
             try:
                 formula_field = FormulaField.objects.get(id=parent_node.field_id)
                 _recursively_setup_parents(
-                    FormulaField, already_fixed_fields, formula_field
+                    FormulaField,
+                    FieldDependencyNode,
+                    already_fixed_fields,
+                    get_or_create_node(formula_field, FieldDependencyNode),
                 )
                 _setup_field(already_fixed_fields, formula_field)
             except FormulaField.DoesNotExist:
@@ -188,6 +195,7 @@ class Migration(migrations.Migration):
                         related_name="parents",
                         through="database.FieldDependencyEdge",
                         to="database.FieldDependencyNode",
+                        through_fields=("parent", "child"),
                     ),
                 ),
                 (
@@ -215,19 +223,19 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="fielddependencyedge",
-            name="child",
+            name="parent",
             field=models.ForeignKey(
                 on_delete=django.db.models.deletion.CASCADE,
-                related_name="parent_edges",
+                related_name="children_edges",
                 to="database.fielddependencynode",
             ),
         ),
         migrations.AddField(
             model_name="fielddependencyedge",
-            name="parent",
+            name="child",
             field=models.ForeignKey(
                 on_delete=django.db.models.deletion.CASCADE,
-                related_name="children_edges",
+                related_name="parent_edges",
                 to="database.fielddependencynode",
             ),
         ),
@@ -243,14 +251,4 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.RunPython(forward, reverse),
-        migrations.AlterField(
-            model_name="formulafield",
-            name="internal_formula",
-            field=models.TextField(),
-        ),
-        migrations.AlterField(
-            model_name="formulafield",
-            name="requires_refresh_after_insert",
-            field=models.BooleanField(),
-        ),
     ]

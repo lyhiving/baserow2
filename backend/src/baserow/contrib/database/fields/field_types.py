@@ -2189,7 +2189,15 @@ class FormulaFieldType(FieldType):
     def to_baserow_formula_expression(
         self, field: FormulaField
     ) -> BaserowExpression[BaserowFormulaType]:
-        return field.cached_typed_internal_expression
+        if hasattr(field, "cached_typed_internal_expression"):
+            return field.cached_typed_internal_expression
+        else:
+            untyped_internal_expr = FormulaHandler.raw_formula_to_untyped_expression(
+                field.internal_formula
+            )
+            formula_type = FormulaHandler.get_type(field.formula_type)
+            t = formula_type.construct_type_from_formula_field(self)
+            return untyped_internal_expr.with_type(t)
 
     def after_dependency_rename(self, field_instance, old_name, new_name, via_field):
         updated_formula = FormulaHandler.rename_field_references_in_formula_string(

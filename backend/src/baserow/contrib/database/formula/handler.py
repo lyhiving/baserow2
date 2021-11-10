@@ -12,9 +12,6 @@ from baserow.contrib.database.formula.expression_generator.generator import (
     baserow_expression_to_update_django_expression,
     baserow_expression_to_insert_django_expression,
 )
-from baserow.contrib.database.formula.field_updater import (
-    BulkMultiTableFormulaFieldRefresher,
-)
 from baserow.contrib.database.formula.parser.ast_mapper import (
     raw_formula_to_untyped_expression,
 )
@@ -88,12 +85,6 @@ class FormulaHandler:
     def get_field_dependencies(cls, formula_field, field_lookup_cache):
         return cls.get_field_dependencies_from_expression(
             formula_field.cached_untyped_expression
-        )
-
-    @classmethod
-    def recreate_and_refresh_formula_fields(cls, updated_fields):
-        BulkMultiTableFormulaFieldRefresher().recreate_and_refresh_updated_fields(
-            updated_fields
         )
 
     @classmethod

@@ -35,6 +35,8 @@ class FieldCache:
         except KeyError:
             try:
                 field = non_specific_field.specific
+                if field.trashed:
+                    return None
                 self.cache_field(field)
                 return field
             except ObjectDoesNotExist:
@@ -46,6 +48,8 @@ class FieldCache:
         except KeyError:
             try:
                 field = table.field_set.get(name=field_name).specific
+                if field.trashed:
+                    return None
                 self.cache_field(field)
                 return field
             except ObjectDoesNotExist:
