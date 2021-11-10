@@ -1336,7 +1336,9 @@ def test_deleting_underlying_causes_type_update_nested(api_client, data_fixture)
 
 
 @pytest.mark.django_db
-def test_deleting_underlying_causes_type_update_nested2(api_client, data_fixture):
+def test_deleting_underlying_causes_type_update_nested_after_update(
+    api_client, data_fixture
+):
     user, token = data_fixture.create_user_and_token(
         email="test@test.nl", password="password", first_name="Test1"
     )

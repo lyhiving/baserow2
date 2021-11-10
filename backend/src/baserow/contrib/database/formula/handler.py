@@ -254,7 +254,7 @@ class FormulaHandler:
             expression for.
         :param used_cached_attrs: If False no cached formula_field attributes will be
             used. Useful for migrations when model functions cannot be used.
-        :return: A typed internaal Baserow Expression.
+        :return: A typed internal Baserow Expression.
         """
 
         untyped_internal_expr = FormulaHandler.raw_formula_to_untyped_expression(

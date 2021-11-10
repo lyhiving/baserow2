@@ -49,6 +49,7 @@ class FieldCache:
             try:
                 field = table.field_set.get(name=field_name).specific
                 if field.trashed:
+                    # Inside migrations field_set wont be using the non trashed manager.
                     return None
                 self.cache_field(field)
                 return field

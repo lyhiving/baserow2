@@ -253,21 +253,3 @@ def register_instance_temporarily(registry, instance):
         yield instance
     finally:
         registry.unregister(instance)
-
-
-@contextmanager
-def replace_and_register_instance_temporarily(registry, instance):
-    """
-    A context manager to allow tests to register a new instance into a Baserow
-    registry which will then unregister the instance afterwards to ensure the global
-    registries are kept clean between tests.
-    """
-
-    old = registry.get(instance.type)
-    registry.unregister(instance.type)
-    registry.register(instance)
-    try:
-        yield instance
-    finally:
-        registry.unregister(instance)
-        registry.register(old)

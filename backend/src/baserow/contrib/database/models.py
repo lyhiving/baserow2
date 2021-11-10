@@ -22,7 +22,10 @@ from .fields.models import (
     PhoneNumberField,
 )
 from .tokens.models import Token, TokenPermission
-from baserow.contrib.database.fields.dependencies.models import FieldDependencyNode
+from baserow.contrib.database.fields.dependencies.models import (
+    FieldDependencyNode,
+    FieldDependencyEdge,
+)
 
 __all__ = [
     "Database",
@@ -46,6 +49,7 @@ __all__ = [
     "Token",
     "TokenPermission",
     "FieldDependencyNode",
+    "FieldDependencyEdge",
 ]
 
 

@@ -2211,15 +2211,16 @@ class FormulaFieldType(FieldType):
         return FormulaHandler.get_field_dependencies(field_instance, field_lookup_cache)
 
     def restore_failed(self, field_instance, restore_exception):
-        if isinstance(restore_exception, SelfReferenceFieldDependencyError):
+        handleable_exceptions_to_error = {
+            SelfReferenceFieldDependencyError: "After restoring references itself "
+            "which is impossible",
+            CircularFieldDependencyError: "After restoring would causes a circular "
+            "reference between fields",
+        }
+        exception_type = type(restore_exception)
+        if exception_type in handleable_exceptions_to_error:
             BaserowFormulaInvalidType(
-                "Cannot reference self"
-            ).persist_onto_formula_field(field_instance)
-            field_instance.save(recalculate=False)
-            return True
-        elif isinstance(restore_exception, CircularFieldDependencyError):
-            BaserowFormulaInvalidType(
-                "Causes a circular reference"
+                handleable_exceptions_to_error[exception_type]
             ).persist_onto_formula_field(field_instance)
             field_instance.save(recalculate=False)
             return True

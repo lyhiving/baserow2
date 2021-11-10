@@ -24,12 +24,11 @@ from baserow.contrib.database.table import models as table_models
 
 def update_fields_with_broken_references(field: Field):
     """
-    Checks to see if any fields
+    Checks to see if there are any fields which should now depend on `field` if it's
+    name has changed to match a broken reference.
 
-    :param field:
-    :type field:
-    :return:
-    :rtype:
+    :param field: The field that has potentially just been renamed.
+    :return: True if some fields were found which now depend on field, False otherwise.
     """
 
     try:

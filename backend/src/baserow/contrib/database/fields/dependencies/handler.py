@@ -187,6 +187,8 @@ def _field_changed_visitors(
             visitors.append(
                 FieldGraphRenamingVisitor(updated_fields, old_name, new_name)
             )
+    # No need to bother doing any value refreshing/dependency rebuilding if only the
+    # name has changed.
     if not rename_only:
         visitors += [
             FieldDependencyRebuildingVisitor(
