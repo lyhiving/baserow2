@@ -6,6 +6,17 @@ from baserow.contrib.database.formula.types.visitors import FormulaTypingVisitor
 
 
 def calculate_typed_expression(formula_field, field_lookup_cache):
+    """
+    WARNING: This function is directly used by migration code. Please ensure
+    backwards compatability.
+
+    :param formula_field:
+    :type formula_field:
+    :param field_lookup_cache:
+    :type field_lookup_cache:
+    :return:
+    :rtype:
+    """
     try:
         if hasattr(formula_field, "cached_untyped_expression"):
             untyped_expression = formula_field.cached_untyped_expression

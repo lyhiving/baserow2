@@ -152,6 +152,9 @@ class BaserowFormulaType(abc.ABC):
 
     def persist_onto_formula_field(self, formula_field):
         """
+        WARNING: This function is directly used by migration code. Please ensure
+        backwards compatability when adding fields etc.
+
         Saves this type onto the provided formula_field instance for later retrieval.
         Sets the attributes on the formula_field required
         for this formula type and unsets all other formula types attributes. Does not

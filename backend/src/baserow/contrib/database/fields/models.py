@@ -347,15 +347,11 @@ class FormulaField(Field):
 
     @cached_property
     def cached_typed_internal_expression(self):
-        untyped_internal_expr = FormulaHandler.raw_formula_to_untyped_expression(
-            self.internal_formula
-        )
-        return untyped_internal_expr.with_type(self.cached_formula_type)
+        return FormulaHandler.get_typed_internal_expression_from_field(self)
 
     @cached_property
     def cached_formula_type(self):
-        formula_type = FormulaHandler.get_type(self.formula_type)
-        return formula_type.construct_type_from_formula_field(self)
+        return FormulaHandler.get_formula_type_from_field(self)
 
     def recalculate_internal_fields(
         self, raise_if_invalid=False, field_lookup_cache=None
@@ -363,14 +359,10 @@ class FormulaField(Field):
         if hasattr(self, "cached_untyped_expression"):
             # noinspection PyPropertyAccess
             del self.cached_untyped_expression
-        expression = FormulaHandler.calculate_typed_expression(self, field_lookup_cache)
-        expression_type = expression.expression_type
-
-        self.internal_formula = str(expression)
-        expression_type.persist_onto_formula_field(self)
-        self.requires_refresh_after_insert = (
-            FormulaHandler.formula_requires_refresh_after_insert(expression)
+        expression = FormulaHandler.recalculate_internal_formula_fields(
+            self, field_lookup_cache
         )
+        expression_type = expression.expression_type
         # Update the cached properties
         setattr(self, "cached_typed_internal_expression", expression)
         setattr(self, "cached_formula_type", expression_type)

@@ -17,7 +17,7 @@ from baserow.contrib.database.fields.dependencies.visitors import (
 from baserow.contrib.database.fields.field_cache import FieldCache
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
-from baserow.contrib.database.formula.field_updater import (
+from baserow.contrib.database.formula.formula_field_refresher import (
     BulkMultiTableFormulaFieldRefresher,
 )
 from baserow.contrib.database.formula.models import (
@@ -144,7 +144,7 @@ def _visit_all_dependencies(
         field_lookup_cache = FieldCache()
 
     if field is not None:
-        field_lookup_cache.cache_field(field)
+        field = field_lookup_cache.lookup_specific(field)
         field_type = field_type_registry.get_by_model(field)
         for v in visitors:
             if v.accepts(field_type):

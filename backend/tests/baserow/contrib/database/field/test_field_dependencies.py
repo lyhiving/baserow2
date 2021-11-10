@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 
 from baserow.contrib.database.fields.dependencies.exceptions import (
@@ -9,6 +11,7 @@ from baserow.contrib.database.fields.dependencies.handler import (
 )
 from baserow.contrib.database.fields.dependencies.types import FieldDependencies
 from baserow.contrib.database.fields.field_types import TextFieldType
+from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.formula.models import FieldDependencyNode
 
 
@@ -164,3 +167,87 @@ def test_self_references_raise(data_fixture, mutable_field_type_registry):
     field_node = field.get_node_or_none()
     assert field_node.descendants_tree() == {}
     assert field_node.ancestors_tree() == {}
+
+
+@pytest.mark.django_db
+def test_only_direct_dependencies_are_updated_when_a_rename_happens(
+    data_fixture, mutable_field_type_registry
+):
+    renamed_field = data_fixture.create_text_field(name="a")
+    dependant_field = data_fixture.create_formula_field(
+        formula=f"field('a')", name="formula", table=renamed_field.table
+    )
+    other_dependant_field = data_fixture.create_formula_field(
+        formula=f"field('a')", name="formula2", table=renamed_field.table
+    )
+    non_direct_dependant_field = data_fixture.create_formula_field(
+        formula=f"field('formula')", name="other", table=renamed_field.table
+    )
+    FieldDependencyHandler.rebuild_graph(Field.objects.all())
+
+    assert renamed_field.get_node_or_none().descendants_tree() == {
+        dependant_field.get_node_or_none(): {
+            non_direct_dependant_field.get_node_or_none(): {}
+        },
+        other_dependant_field.get_node_or_none(): {},
+    }
+    old_renamed_field = deepcopy(renamed_field)
+    renamed_field.name = "b"
+    renamed_field.save()
+    updated_fields = (
+        FieldDependencyHandler.update_field_dependency_graph_after_field_change(
+            changed_field=renamed_field,
+            old_changed_field=old_renamed_field,
+            rename_only=True,
+        )
+    )
+    dependant_field.refresh_from_db()
+    other_dependant_field.refresh_from_db()
+    assert dependant_field.formula == "field('b')"
+    assert other_dependant_field.formula == "field('b')"
+    assert updated_fields.field_has_been_updated(renamed_field)
+    assert updated_fields.field_has_been_updated(dependant_field)
+    assert updated_fields.field_has_been_updated(other_dependant_field)
+    assert not updated_fields.field_has_been_updated(non_direct_dependant_field)
+
+
+@pytest.mark.django_db
+def test_a_rename_that_fixes_broken_references(
+    data_fixture, mutable_field_type_registry
+):
+    renamed_field = data_fixture.create_text_field(name="a")
+    dependant_field = data_fixture.create_formula_field(
+        formula=f"field('a')", name="formula", table=renamed_field.table
+    )
+    other_dependant_field = data_fixture.create_formula_field(
+        formula=f"field('a')", name="formula2", table=renamed_field.table
+    )
+    non_direct_dependant_field = data_fixture.create_formula_field(
+        formula=f"field('formula')", name="other", table=renamed_field.table
+    )
+    FieldDependencyHandler.rebuild_graph(Field.objects.all())
+
+    assert renamed_field.get_node_or_none().descendants_tree() == {
+        dependant_field.get_node_or_none(): {
+            non_direct_dependant_field.get_node_or_none(): {}
+        },
+        other_dependant_field.get_node_or_none(): {},
+    }
+    old_renamed_field = deepcopy(renamed_field)
+    renamed_field.name = "b"
+    renamed_field.save()
+    updated_fields = (
+        FieldDependencyHandler.update_field_dependency_graph_after_field_change(
+            changed_field=renamed_field,
+            old_changed_field=old_renamed_field,
+            rename_only=True,
+        )
+    )
+    dependant_field.refresh_from_db()
+    other_dependant_field.refresh_from_db()
+    assert dependant_field.formula == "field('b')"
+    assert other_dependant_field.formula == "field('b')"
+    assert updated_fields.field_has_been_updated(renamed_field)
+    assert updated_fields.field_has_been_updated(dependant_field)
+    assert updated_fields.field_has_been_updated(other_dependant_field)
+    assert not updated_fields.field_has_been_updated(non_direct_dependant_field)

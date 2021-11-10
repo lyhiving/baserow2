@@ -35,6 +35,9 @@ def raw_formula_to_untyped_expression(
     formula: str,
 ) -> BaserowExpression[UnTyped]:
     """
+    WARNING: This function is directly used by migration code. Please ensure
+    backwards compatability.
+
     Takes a raw user input string, syntax checks it to see if it matches the syntax of
     a Baserow Formula (raises a BaserowFormulaSyntaxError if not) and converts it into
     an untyped BaserowExpression.

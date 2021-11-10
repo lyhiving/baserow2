@@ -105,7 +105,7 @@ def _calculate_all_formula_internal_fields_in_order(FormulaField, FieldDependenc
             _recursively_setup_parents(
                 FormulaField, FieldDependencyNode, already_fixed_fields, field_node
             )
-            _setup_field(already_fixed_fields, formula)
+            _setup_and_save_formula_field_internals(already_fixed_fields, formula)
     for formula in FormulaField.objects.filter(trashed=True).all():
         formula.internal_formula = formula.formula
         formula.requires_refresh_after_insert = False
@@ -126,20 +126,15 @@ def _recursively_setup_parents(
                     already_fixed_fields,
                     get_or_create_node(formula_field, FieldDependencyNode),
                 )
-                _setup_field(already_fixed_fields, formula_field)
+                _setup_and_save_formula_field_internals(
+                    already_fixed_fields, formula_field
+                )
             except FormulaField.DoesNotExist:
                 pass
 
 
-def _setup_field(already_fixed_fields, formula_field):
-    expression = FormulaHandler.calculate_typed_expression(formula_field, None)
-    expression_type = expression.expression_type
-
-    formula_field.internal_formula = str(expression)
-    expression_type.persist_onto_formula_field(formula_field)
-    formula_field.requires_refresh_after_insert = (
-        FormulaHandler.formula_requires_refresh_after_insert(expression)
-    )
+def _setup_and_save_formula_field_internals(already_fixed_fields, formula_field):
+    FormulaHandler.recalculate_internal_formula_fields(formula_field, None)
     formula_field.save()
     already_fixed_fields.add(formula_field)
 

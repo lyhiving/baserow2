@@ -55,7 +55,6 @@ from .dependencies.exceptions import (
     CircularFieldDependencyError,
 )
 from .dependencies.types import OptionalFieldDependencies
-from .dependencies.update_collector import CachingFieldUpdateCollector
 from .exceptions import (
     LinkRowTableNotInSameDatabase,
     LinkRowTableNotProvided,
@@ -94,7 +93,6 @@ from .models import (
     Field,
 )
 from .registries import FieldType, field_type_registry
-from ..formula.field_updater import BulkMultiTableFormulaFieldRefresher
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -2192,12 +2190,9 @@ class FormulaFieldType(FieldType):
         if hasattr(field, "cached_typed_internal_expression"):
             return field.cached_typed_internal_expression
         else:
-            untyped_internal_expr = FormulaHandler.raw_formula_to_untyped_expression(
-                field.internal_formula
+            return FormulaHandler.get_typed_internal_expression_from_field(
+                field, used_cached_attrs=False
             )
-            formula_type = FormulaHandler.get_type(field.formula_type)
-            t = formula_type.construct_type_from_formula_field(self)
-            return untyped_internal_expr.with_type(t)
 
     def after_dependency_rename(self, field_instance, old_name, new_name, via_field):
         updated_formula = FormulaHandler.rename_field_references_in_formula_string(
@@ -2209,29 +2204,6 @@ class FormulaFieldType(FieldType):
         # The internal formula directly references database columns which will not have
         # changed as a result of a rename hence we don't need to do any recalculation.
         field_instance.save(recalculate=False)
-
-    def get_field_changed_graph_visitor(
-        self, updated_fields: CachingFieldUpdateCollector, refresh_field_values
-    ):
-        return [
-            BulkMultiTableFormulaFieldRefresher(
-                updated_fields,
-                recalculate_internal_formulas=True,
-                refresh_row_values=refresh_field_values,
-            )
-        ]
-
-    def get_row_changed_graph_visitor(
-        self, updated_fields: CachingFieldUpdateCollector, changed_row_id: int
-    ):
-        return [
-            BulkMultiTableFormulaFieldRefresher(
-                updated_fields,
-                starting_row_id=changed_row_id,
-                recalculate_internal_formulas=False,
-                refresh_row_values=True,
-            )
-        ]
 
     def get_field_dependencies(
         self, field_instance, field_lookup_cache
