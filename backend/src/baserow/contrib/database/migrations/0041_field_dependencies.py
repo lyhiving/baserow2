@@ -26,7 +26,9 @@ def get_or_create_node(field, FieldDependencyNode):
 
 def _get_or_create_node_from_name(referenced_field_name, table, FieldDependencyNode):
     try:
-        referenced_field = table.field_set.get(name=referenced_field_name)
+        referenced_field = table.field_set.filter(trashed=False).get(
+            name=referenced_field_name
+        )
     except ObjectDoesNotExist:
         referenced_field = None
     if referenced_field is not None:
@@ -65,7 +67,7 @@ def forward(apps, schema_editor):
 def _build_graph_from_scratch(
     FieldDependencyEdge, FieldDependencyNode, FormulaField, LinkRowField
 ):
-    for link_row in LinkRowField.objects.all():
+    for link_row in LinkRowField.objects.filter(trashed=False).all():
         link_row_node = get_or_create_node(link_row, FieldDependencyNode)
         related_primary_field = next(
             f for f in link_row.link_row_table.field_set.all() if f.primary
@@ -75,7 +77,7 @@ def _build_graph_from_scratch(
             parent=primary_node, via=link_row, child=link_row_node
         )
 
-    for formula in FormulaField.objects.all():
+    for formula in FormulaField.objects.filter(trashed=False).all():
         expr = FormulaHandler.raw_formula_to_untyped_expression(formula.formula)
         dependency_field_names = FormulaHandler.get_field_dependencies_from_expression(
             expr
@@ -97,13 +99,17 @@ def _build_graph_from_scratch(
 # noinspection PyPep8Naming
 def _calculate_all_formula_internal_fields_in_order(FormulaField, FieldDependencyNode):
     already_fixed_fields = set()
-    for formula in FormulaField.objects.all():
+    for formula in FormulaField.objects.filter(trashed=False).all():
         if formula not in already_fixed_fields:
             field_node = get_or_create_node(formula, FieldDependencyNode)
             _recursively_setup_parents(
                 FormulaField, FieldDependencyNode, already_fixed_fields, field_node
             )
             _setup_field(already_fixed_fields, formula)
+    for formula in FormulaField.objects.filter(trashed=True).all():
+        formula.internal_formula = formula.formula
+        formula.requires_refresh_after_insert = False
+        formula.save()
 
 
 # noinspection PyPep8Naming
@@ -132,7 +138,7 @@ def _setup_field(already_fixed_fields, formula_field):
     formula_field.internal_formula = str(expression)
     expression_type.persist_onto_formula_field(formula_field)
     formula_field.requires_refresh_after_insert = (
-        FormulaHandler.formula_requires_refresh_on_insert(expression)
+        FormulaHandler.formula_requires_refresh_after_insert(expression)
     )
     formula_field.save()
     already_fixed_fields.add(formula_field)

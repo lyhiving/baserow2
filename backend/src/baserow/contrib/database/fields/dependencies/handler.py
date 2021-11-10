@@ -191,7 +191,9 @@ def _field_changed_visitors(
             )
     if not rename_only:
         visitors += [
-            FieldDependencyRebuildingVisitor(updated_fields),
+            FieldDependencyRebuildingVisitor(
+                updated_fields, rebuild_first_children=True
+            ),
             BulkMultiTableFormulaFieldRefresher(
                 updated_fields,
                 recalculate_internal_formulas=True,

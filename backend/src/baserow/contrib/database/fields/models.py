@@ -369,7 +369,7 @@ class FormulaField(Field):
         self.internal_formula = str(expression)
         expression_type.persist_onto_formula_field(self)
         self.requires_refresh_after_insert = (
-            FormulaHandler.formula_requires_refresh_on_insert(expression)
+            FormulaHandler.formula_requires_refresh_after_insert(expression)
         )
         # Update the cached properties
         setattr(self, "cached_typed_internal_expression", expression)

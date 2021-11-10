@@ -32,7 +32,7 @@ from baserow.contrib.database.formula.types.visitors import (
 
 class FormulaHandler:
     @classmethod
-    def formula_requires_refresh_on_insert(cls, expression):
+    def formula_requires_refresh_after_insert(cls, expression):
         functions_used: Set[BaserowFunctionDefinition] = expression.accept(
             FunctionsUsedVisitor()
         )
