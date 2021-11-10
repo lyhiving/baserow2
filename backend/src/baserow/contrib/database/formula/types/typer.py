@@ -10,13 +10,17 @@ def calculate_typed_expression(formula_field, field_lookup_cache):
     WARNING: This function is directly used by migration code. Please ensure
     backwards compatability.
 
-    :param formula_field:
-    :type formula_field:
-    :param field_lookup_cache:
-    :type field_lookup_cache:
-    :return:
-    :rtype:
+    Core algorithm used to generate the internal typed expression for a given user
+    supplied formula. The resulting typed expression can be directly translated to a
+    Django expression for use.
+
+    :param formula_field: The formula field to calculate the typed internal expression
+        for.
+    :param field_lookup_cache: A field lookup cache that will be used to lookup fields
+        referenced by this field.
+    :return: A typed internal expression.
     """
+
     try:
         if hasattr(formula_field, "cached_untyped_expression"):
             untyped_expression = formula_field.cached_untyped_expression
