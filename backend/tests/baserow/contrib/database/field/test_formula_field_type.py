@@ -2,7 +2,7 @@ import pytest
 
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.registries import field_type_registry
-from baserow.contrib.database.formula.types.formula_type import (
+from baserow.contrib.database.formula import (
     BaserowFormulaInvalidType,
 )
 from baserow.contrib.database.rows.handler import RowHandler

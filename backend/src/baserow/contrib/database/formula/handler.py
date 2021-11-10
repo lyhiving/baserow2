@@ -16,6 +16,7 @@ from baserow.contrib.database.formula.expression_generator.generator import (
 from baserow.contrib.database.formula.parser.ast_mapper import (
     raw_formula_to_untyped_expression,
 )
+from baserow.contrib.database.formula.parser.parser import get_parse_tree_for_formula
 from baserow.contrib.database.formula.parser.update_field_names import (
     update_field_names,
 )
@@ -128,7 +129,9 @@ class FormulaHandler:
         cls,
         formula_to_update: str,
         field_renames: Dict[str, str],
-        via_field: Optional[str],
+        via_field: Optional[str] = None,
+        field_ids_to_replace_with_name_refs: Optional[Dict[int, str]] = None,
+        field_names_to_replace_with_id_refs: Optional[Dict[str, int]] = None,
     ) -> str:
         """
         Given a dictionary of renames and an optional via field renames all direct
@@ -142,9 +145,21 @@ class FormulaHandler:
             to use instead.
         :param via_field: If provided this indicates only field references which go via
             this field name should have their target field names renamed.
+        :param field_names_to_replace_with_id_refs: DEPRECATED - An optional dict of
+            field names that any references to should be replaced with the old
+            field_by_id references.
+        :param field_ids_to_replace_with_name_refs: DEPRECATED - An optional dict of
+            field ids that any references to should be replaced with a
+            normal field reference.
         """
 
-        return update_field_names(formula_to_update, field_renames, via_field=via_field)
+        return update_field_names(
+            formula_to_update,
+            field_renames,
+            via_field=via_field,
+            field_ids_to_replace_with_name_refs=field_ids_to_replace_with_name_refs,
+            field_names_to_replace_with_id_refs=field_names_to_replace_with_id_refs,
+        )
 
     @classmethod
     def get_field_dependencies_from_expression(cls, expression) -> FieldDependencies:
@@ -280,3 +295,18 @@ class FormulaHandler:
             _expression_requires_refresh_after_insert(expression)
         )
         return expression
+
+    @classmethod
+    def get_parse_tree_for_formula(cls, formula: str):
+        """
+        WARNING: This function is directly used by migration code. Please ensure
+        backwards compatability .
+
+        Returns the raw antlr parse tree for a formula string in the baserow formula
+        language.
+
+        :param formula: A string possibly in the baserow formula language.
+        :return: An Antlr parse tree for the formula.
+        """
+
+        return get_parse_tree_for_formula(formula)

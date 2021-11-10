@@ -17,12 +17,10 @@ from baserow.contrib.database.fields.dependencies.visitors import (
 from baserow.contrib.database.fields.field_cache import FieldCache
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
-from baserow.contrib.database.formula.formula_field_refresher import (
+from baserow.contrib.database.formula import (
     BulkMultiTableFormulaFieldRefresher,
 )
-from baserow.contrib.database.formula.models import (
-    FieldDependencyEdge,
-)
+from baserow.contrib.database.fields.dependencies.models import FieldDependencyEdge
 from baserow.core.trash.handler import TrashHandler
 
 

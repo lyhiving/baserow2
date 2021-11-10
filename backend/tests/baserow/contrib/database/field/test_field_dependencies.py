@@ -12,7 +12,7 @@ from baserow.contrib.database.fields.dependencies.handler import (
 from baserow.contrib.database.fields.dependencies.types import FieldDependencies
 from baserow.contrib.database.fields.field_types import TextFieldType
 from baserow.contrib.database.fields.models import Field
-from baserow.contrib.database.formula.models import FieldDependencyNode
+from baserow.contrib.database.fields.dependencies.models import FieldDependencyNode
 
 
 class TextFieldTypeButWithDependencies(TextFieldType):

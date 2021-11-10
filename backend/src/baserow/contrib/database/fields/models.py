@@ -12,7 +12,7 @@ from baserow.contrib.database.formula import (
     BASEROW_FORMULA_TYPE_CHOICES,
     FormulaHandler,
 )
-from baserow.contrib.database.formula.models import FieldDependencyNode
+from baserow.contrib.database.fields.dependencies.models import FieldDependencyNode
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
 from baserow.core.mixins import (
     OrderableMixin,

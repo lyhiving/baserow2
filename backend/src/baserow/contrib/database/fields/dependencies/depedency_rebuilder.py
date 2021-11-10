@@ -15,10 +15,10 @@ from baserow.contrib.database.fields.dependencies.visitors import (
 from baserow.contrib.database.fields.field_cache import FieldCache
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
-from baserow.contrib.database.formula.models import (
+from baserow.contrib.database.fields.dependencies.models import (
     FieldDependencyNode,
-    FieldDependencyEdge,
 )
+from baserow.contrib.database.fields.dependencies.models import FieldDependencyEdge
 from baserow.contrib.database.table import models as table_models
 
 

@@ -35,7 +35,20 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
 )
 from baserow.contrib.database.formula.exceptions import BaserowFormulaException
+from baserow.contrib.database.formula.formula_field_refresher import (
+    BulkMultiTableFormulaFieldRefresher,
+)
 from baserow.contrib.database.formula.handler import FormulaHandler
+from baserow.contrib.database.formula.parser.exceptions import (
+    MaximumFormulaSizeError,
+    BaserowFormulaSyntaxError,
+)
+from baserow.contrib.database.formula.parser.generated.BaserowFormula import (
+    BaserowFormula,
+)
+from baserow.contrib.database.formula.parser.generated.BaserowFormulaVisitor import (
+    BaserowFormulaVisitor,
+)
 from baserow.contrib.database.formula.types.formula_type import (
     BaserowFormulaType,
     BaserowFormulaInvalidType,
@@ -61,6 +74,11 @@ __all__ = [
     BaserowFormulaCharType,
     BaserowFormulaDateType,
     BaserowFormulaBooleanType,
+    MaximumFormulaSizeError,
+    BaserowFormulaVisitor,
+    BaserowFormula,
+    BaserowFormulaSyntaxError,
+    BulkMultiTableFormulaFieldRefresher,
     BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
     BASEROW_FORMULA_TYPE_CHOICES,
 ]
