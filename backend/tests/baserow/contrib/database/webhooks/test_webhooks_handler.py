@@ -377,10 +377,17 @@ def test_calling_webhook(data_fixture):
 
     call = TableWebhookCall.objects.filter(webhook_id=webhook, event_id=event_id)
 
+    def formatted_response(response):
+        expected_headers = {"Content-Type": "application/json"}
+        return "{}\r\n\r\n{}".format(
+            "\r\n".join("{}: {}".format(k, v) for k, v in expected_headers.items()),
+            json.dumps(response, indent=4),
+        )
+
     assert len(call) == 1
     assert call[0].called_url == webhook_data["url"]
     assert call[0].status_code == 400
-    assert call[0].response == json.dumps(response)
+    assert call[0].response == formatted_response(response)
 
     # calling a second time with success will update the initial call db entry
 
@@ -393,7 +400,7 @@ def test_calling_webhook(data_fixture):
     assert len(call) == 1
     assert call[0].called_url == webhook_data["url"]
     assert call[0].status_code == 200
-    assert call[0].response == json.dumps(response)
+    assert call[0].response == formatted_response(response)
 
 
 @pytest.mark.django_db()

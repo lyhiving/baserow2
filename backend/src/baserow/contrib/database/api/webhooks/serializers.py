@@ -19,7 +19,11 @@ class TableWebhookEventsSerializer(serializers.ListField):
 
 
 class TableWebhookHeaderSerializer(serializers.Serializer):
-    header = serializers.CharField(min_length=2)
+    header = serializers.RegexField(
+        r"^[^:]+$",
+        min_length=2,
+        error_messages={"invalid": "You entered a character that is not allowed."},
+    )
     value = serializers.CharField(min_length=2)
 
 
@@ -41,6 +45,7 @@ class TableWebhookCreateRequestSerializer(serializers.ModelSerializer):
             "request_method",
             "headers",
             "name",
+            "use_user_field_names",
         )
 
     def validate(self, data):

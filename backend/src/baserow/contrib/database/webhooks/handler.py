@@ -5,7 +5,7 @@ from typing import List
 from django.db import transaction
 from django.conf import settings
 from django.db.models.query import QuerySet
-from django.db.models import Q, F
+from django.db.models import Q
 
 from baserow.contrib.database.api.rows.serializers import (
     get_row_serializer_class,
@@ -28,7 +28,10 @@ from .exceptions import (
 
 class WebhookHandler:
     def get_example_payload(
-        self, use_user_field_names: bool, table: Table, event_type="row.created"
+        self,
+        use_user_field_names: bool,
+        table: Table,
+        event_type="row.created",
     ):
         """
         Generates an example payload off the related table, to be used when manually
@@ -37,9 +40,13 @@ class WebhookHandler:
 
         model = table.get_model()
         serializer = get_row_serializer_class(
-            model, RowSerializer, user_field_names=use_user_field_names
+            model,
+            RowSerializer,
+            is_response=True,
+            user_field_names=use_user_field_names,
         )
-        serialized_data = serializer().data
+        instance = model(id=1, order=1)
+        serialized_data = serializer(instance).data
         types_mapping = {
             "row.created": {"values": serialized_data},
             "row.updated": {"values": serialized_data, "old_values": serialized_data},
@@ -76,13 +83,21 @@ class WebhookHandler:
         self, webhook_id: int, table: Table, user: any
     ) -> TableWebhook:
         """
-        Gets a single webhook for the provided webhookd ID. Raises a
-        'TableWebhookDoesNotExist' exception if no webhook for the given ID can be
-        found.
+        Verifies that the calling user has access to the specified table and if so
+        returns the webhook
         """
 
         group = table.database.group
         group.has_user(user, raise_error=True)
+
+        return self._get_table_webhook(webhook_id)
+
+    def _get_table_webhook(self, webhook_id: int) -> TableWebhook:
+        """
+        Gets a single webhook for the provided webhookd ID. Raises a
+        'TableWebhookDoesNotExist' exception if no webhook for the given ID can be
+        found.
+        """
 
         try:
             webhook = TableWebhook.objects.get(id=webhook_id)
@@ -233,7 +248,7 @@ class WebhookHandler:
         """
 
         headers = self.create_headers(webhook_id, event_id, event_type)
-        webhook: TableWebhook = TableWebhook.objects.get(id=webhook_id)
+        webhook: TableWebhook = self._get_table_webhook(webhook_id)
         webhook_call_defaults = dict(
             request="",
             called_url=webhook.url,
@@ -319,8 +334,9 @@ class WebhookHandler:
         try:
             s = Session()
             response = s.send(prepped, timeout=5)
+            formatted_response = self.formatted_response(response)
             return {
-                "response": response.text,
+                "response": formatted_response,
                 "request": request_text,
                 "status_code": response.status_code,
                 "is_unreachable": False,
@@ -351,6 +367,24 @@ class WebhookHandler:
             req.method + " " + req.url,
             "\r\n".join("{}: {}".format(k, v) for k, v in req.headers.items()),
             json.dumps(json.loads(req.body), indent=4),
+        )
+
+    def formatted_response(self, resp):
+        """
+        Helper function, which will format a requests response. It will try to format
+        the response body as json and if it is not a valid json it will fallback to
+        text.
+        """
+
+        try:
+            response_body = resp.json()
+            response_body = json.dumps(response_body, indent=4)
+        except Exception:
+            response_body = resp.text
+
+        return "{}\r\n\r\n{}".format(
+            "\r\n".join("{}: {}".format(k, v) for k, v in resp.headers.items()),
+            response_body,
         )
 
     def get_call_events_per_webhook(self, webhook_id: int):
@@ -403,21 +437,20 @@ class WebhookHandler:
         return headers_dict
 
     def reset_failed_trigger(self, webhook_id: int) -> None:
-        return TableWebhook.objects.filter(id=webhook_id).update(failed_triggers=0)
+        webhook = self._get_table_webhook(webhook_id)
+        webhook.failed_triggers = 0
+        webhook.save()
 
     def increment_failed_trigger(self, webhook_id: int) -> None:
-        return TableWebhook.objects.filter(id=webhook_id).update(
-            failed_triggers=F("failed_triggers") + 1
-        )
+        webhook = self._get_table_webhook(webhook_id)
+        webhook.failed_triggers += 1
+        webhook.save()
 
     def deactivate_webhook(self, webhook_id: int) -> None:
-        return TableWebhook.objects.filter(id=webhook_id).update(active=False)
+        webhook = self._get_table_webhook(webhook_id)
+        webhook.active = False
+        webhook.save()
 
     def get_trigger_count(self, webhook_id: int) -> int:
-        try:
-            webhook = TableWebhook.objects.get(id=webhook_id)
-        except TableWebhook.DoesNotExist:
-            raise TableWebhookDoesNotExist(
-                f"The webhook with id {webhook_id} does not exist."
-            )
+        webhook = self._get_table_webhook(webhook_id)
         return webhook.failed_triggers
