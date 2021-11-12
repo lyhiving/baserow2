@@ -114,29 +114,6 @@ def test_create_webhooks(api_client, data_fixture):
     assert response_json["error"] == "ERROR_REQUEST_BODY_VALIDATION"
     assert response_json["detail"]["headers"][0]["code"] == "ambigous_headers"
 
-    # make sure it's not possible to create two webhooks with the same url and request
-    # method twice
-    webhook_create_data["headers"] = []
-    webhook_create_data["url"] = "https://myurl.com/endpoint"
-    response = api_client.post(
-        reverse("api:database:tables:list_webhooks", kwargs={"table_id": table.id}),
-        dict(webhook_create_data),
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {jwt_token}",
-    )
-    response_json = response.json()
-    assert response.status_code == HTTP_200_OK
-
-    response = api_client.post(
-        reverse("api:database:tables:list_webhooks", kwargs={"table_id": table.id}),
-        dict(webhook_create_data),
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {jwt_token}",
-    )
-    response_json = response.json()
-    assert response.status_code == HTTP_400_BAD_REQUEST
-    assert response_json["error"] == "ERROR_TABLE_WEBHOOK_ALREADY_EXISTS"
-
 
 @pytest.mark.django_db
 def test_update_webhooks(api_client, data_fixture):

@@ -26,9 +26,6 @@ class TableWebhook(CreatedAndUpdatedOnMixin, models.Model):
     include_all_events = models.BooleanField(default=True)
     failed_triggers = models.IntegerField(default=0)
 
-    class Meta:
-        unique_together = ("table_id", "url", "request_method")
-
 
 class TableWebhookEvents(CreatedAndUpdatedOnMixin, models.Model):
     event_type = models.CharField(max_length=50)
