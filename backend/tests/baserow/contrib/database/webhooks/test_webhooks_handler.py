@@ -5,7 +5,6 @@ import responses
 
 from django.test import override_settings
 from baserow.contrib.database.webhooks.exceptions import (
-    TableWebhookAlreadyExists,
     TableWebhookCannotBeCalled,
     TableWebhookDoesNotExist,
     TableWebhookMaxAllowedCountExceeded,
@@ -29,16 +28,14 @@ def test_create_webhook(data_fixture):
         "name": "My Webhook",
         "include_all_events": True,
         "request_method": "POST",
-        "events": [],
-        "headers": [],
     }
     with pytest.raises(UserNotInGroup):
         webhook_handler.create_table_webhook(
-            table=table, user=user_2, data=dict(webhook_data)
+            table=table, user=user_2, events=[], headers=[], **dict(webhook_data)
         )
 
     webhook = webhook_handler.create_table_webhook(
-        table=table, user=user, data=dict(webhook_data)
+        table=table, user=user, events=[], headers=[], **dict(webhook_data)
     )
 
     assert webhook.name == webhook_data["name"]
@@ -53,26 +50,19 @@ def test_create_webhook(data_fixture):
     assert headers[0].header == "Content-type"
     assert headers[0].value == "application/json"
 
-    # if we try to create another webhook for the same table with the same url
-    # we expect an exception to be raised.
-    with pytest.raises(TableWebhookAlreadyExists):
-        webhook_handler.create_table_webhook(
-            table=table, user=user, data=dict(webhook_data)
-        )
-
     # new url
     webhook_data["url"] = "https://seconddomain.de/endpoint"
 
     # if "include_all_events" is True and we pass in events that are not empty
     # the handler will not create the entry in the events table.
-    webhook_data["events"] = ["row.created"]
+    events = ["row.created"]
 
     webhook = webhook_handler.create_table_webhook(
-        table=table, user=user, data=dict(webhook_data)
+        table=table, user=user, events=events, headers=[], **dict(webhook_data)
     )
 
-    events = webhook.events.all()
-    assert len(events) == 0
+    webhook_events = webhook.events.all()
+    assert len(webhook_events) == 0
 
     # when we set "include_all_events" to False then we expect that the events will be
     # added
@@ -80,12 +70,12 @@ def test_create_webhook(data_fixture):
     webhook_data["include_all_events"] = False
     webhook_data["url"] = "https://thirddomain.de/endpoint"
     webhook = webhook_handler.create_table_webhook(
-        table=table, user=user, data=dict(webhook_data)
+        table=table, user=user, events=events, headers=[], **dict(webhook_data)
     )
 
-    events = webhook.events.all()
-    assert len(events) == 1
-    assert events[0].event_type == "row.created"
+    webhook_events = webhook.events.all()
+    assert len(webhook_events) == 1
+    assert webhook_events[0].event_type == "row.created"
 
     # check that we can't create more than "MAX_ALLOWED_WEBHOOKS" per table
     webhook_data["include_all_events"] = True
@@ -93,7 +83,7 @@ def test_create_webhook(data_fixture):
 
     with pytest.raises(TableWebhookMaxAllowedCountExceeded):
         webhook_handler.create_table_webhook(
-            table=table, user=user, data=dict(webhook_data)
+            table=table, user=user, events=events, headers=[], **dict(webhook_data)
         )
 
 
@@ -108,12 +98,10 @@ def test_update_webhook(data_fixture):
         "name": "My Webhook",
         "include_all_events": True,
         "request_method": "POST",
-        "events": [],
-        "headers": [],
     }
 
     webhook = webhook_handler.create_table_webhook(
-        table=table, user=user, data=dict(webhook_data)
+        table=table, user=user, events=[], headers=[], **dict(webhook_data)
     )
 
     webhook_update_data = {
@@ -122,8 +110,6 @@ def test_update_webhook(data_fixture):
         "name": "My Webhook New Webhook",
         "include_all_events": True,
         "request_method": "POST",
-        "events": [],
-        "headers": [],
     }
 
     updated_webhook = webhook_handler.update_table_webhook(
@@ -354,15 +340,13 @@ def test_calling_webhook(data_fixture):
         "name": "My Webhook",
         "include_all_events": True,
         "request_method": "POST",
-        "events": [],
-        "headers": [],
     }
 
     request_payload = {"some": "payload"}
     response = {"some": "response"}
 
     webhook = webhook_handler.create_table_webhook(
-        table=table, user=user, data=dict(webhook_data)
+        table=table, user=user, events=[], headers=[], **webhook_data
     )
     # mocked responses
     responses.add(responses.POST, webhook_data["url"], json=response, status=400)
@@ -377,10 +361,17 @@ def test_calling_webhook(data_fixture):
 
     call = TableWebhookCall.objects.filter(webhook_id=webhook, event_id=event_id)
 
+    def formatted_response(response):
+        expected_headers = {"Content-Type": "application/json"}
+        return "{}\r\n\r\n{}".format(
+            "\r\n".join("{}: {}".format(k, v) for k, v in expected_headers.items()),
+            json.dumps(response, indent=4),
+        )
+
     assert len(call) == 1
     assert call[0].called_url == webhook_data["url"]
     assert call[0].status_code == 400
-    assert call[0].response == json.dumps(response)
+    assert call[0].response == formatted_response(response)
 
     # calling a second time with success will update the initial call db entry
 
@@ -393,7 +384,7 @@ def test_calling_webhook(data_fixture):
     assert len(call) == 1
     assert call[0].called_url == webhook_data["url"]
     assert call[0].status_code == 200
-    assert call[0].response == json.dumps(response)
+    assert call[0].response == formatted_response(response)
 
 
 @pytest.mark.django_db()

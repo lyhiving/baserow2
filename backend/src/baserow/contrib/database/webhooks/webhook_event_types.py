@@ -48,5 +48,10 @@ class RowDeletedEventType(WebhookEventType):
     def get_payload(self, **kwargs):
         table = kwargs.get("table")
         row = kwargs.get("row")
-        payload = {"table_id": table.id, "row_id": row.id, "values": {}}
+        payload = {
+            "table_id": table.id,
+            "row_id": row.id,
+            "event_type": self.type,
+            "values": {},
+        }
         return payload

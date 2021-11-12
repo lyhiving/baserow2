@@ -1,7 +1,7 @@
 from django.conf import settings
 
 from baserow.config.celery import app
-from .exceptions import TableWebhookCannotBeCalled
+from .exceptions import TableWebhookCannotBeCalled, TableWebhookDoesNotExist
 
 
 @app.task(bind=True, max_retries=settings.WEBHHOKS_MAX_RETRIES_PER_CALL)
@@ -13,20 +13,26 @@ def call_webhook(self, **kwargs):
     payload = kwargs.get("payload")
     event_id = kwargs.get("event_id")
     event_type = kwargs.get("event_type")
+
     try:
         webhook_handler.call_from_task(webhook_id, payload, event_id, event_type)
     except TableWebhookCannotBeCalled as exc:
         if self.request.retries < settings.WEBHHOKS_MAX_RETRIES_PER_CALL:
             self.retry(exc=exc, countdown=2 ** self.request.retries)
         else:
-            if (
-                webhook_handler.get_trigger_count(webhook_id)
-                < settings.WEBHOOKS_MAX_CONSECUTIVE_TRIGGER_FAILURES
-            ):
-                webhook_handler.increment_failed_trigger(webhook_id)
+            try:
+                if (
+                    webhook_handler.get_trigger_count(webhook_id)
+                    < settings.WEBHOOKS_MAX_CONSECUTIVE_TRIGGER_FAILURES
+                ):
+                    webhook_handler.increment_failed_trigger(webhook_id)
+                    return
+                else:
+                    webhook_handler.deactivate_webhook(webhook_id)
+                    return
+            except TableWebhookDoesNotExist:
                 return
-            else:
-                webhook_handler.deactivate_webhook(webhook_id)
-                return
+    except TableWebhookDoesNotExist:
+        return
 
     webhook_handler.reset_failed_trigger(webhook_id)

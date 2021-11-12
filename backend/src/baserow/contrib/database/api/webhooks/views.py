@@ -112,8 +112,10 @@ class TableWebhooksView(APIView):
 
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
+        events = data.pop("events", None)
+        headers = data.pop("headers", None)
         webhook = webhook_handler.create_table_webhook(
-            table=table, user=request.user, data=data
+            table=table, user=request.user, events=events, headers=headers, **data
         )
         return Response(TableWebhookResultSerializer(webhook).data)
 
