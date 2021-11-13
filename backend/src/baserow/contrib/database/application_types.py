@@ -4,6 +4,9 @@ from django.urls import path, include
 
 from baserow.contrib.database.api.serializers import DatabaseSerializer
 from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
+from baserow.contrib.database.fields.dependencies.update_collector import (
+    CachingFieldUpdateCollector,
+)
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.models import Database, Table
 from baserow.contrib.database.views.registries import view_type_registry
@@ -136,7 +139,10 @@ class DatabaseApplicationType(ApplicationType):
                     table["_field_objects"].append(field_object)
                     all_fields.append(field_object)
 
-        FieldDependencyHandler.rebuild_graph(all_fields)
+        updated_fields_collector = CachingFieldUpdateCollector()
+        for field in all_fields:
+            field_type = field_type_registry.get(field["type"])
+            field_type.after_import_serialized(field, updated_fields_collector)
 
         # Now that the all tables and fields exist, we can create the views and create
         # the table schema in the database.

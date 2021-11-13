@@ -35,3 +35,6 @@ class CachingFieldUpdateCollector(FieldCache):
     def for_table(self, table):
         updated_fields = list(self.updated_fields_per_table.get(table.id, {}).values())
         return updated_fields[1:]
+
+    def apply_field_updates(self):
+        pass

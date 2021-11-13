@@ -113,21 +113,15 @@ class Field(
         kwargs.pop("raise_if_invalid", None)
         super().save(*args, **kwargs)
 
-    def get_or_create_node(self):
-        if hasattr(self, "fieldnode"):
-            return self.fieldnode
-        else:
-            field, _ = FieldDependencyNode.objects_without_field_join.get_or_create(
-                field=self, table=self.table
-            )
-            self.fieldnode = field
-            return field
+    def field_dependencies(self, via=True):
+        return (
+            self.dependencies.filter(dependency__isnull=False, via__isnull=not via)
+            .select_related("dependency")
+            .all()
+        )
 
-    def get_node_or_none(self):
-        try:
-            return FieldDependencyNode.objects.get(field=self, table=self.table)
-        except FieldDependencyNode.DoesNotExist:
-            return None
+    def field_dependants(self):
+        return self.dependants.select_related("depending_field").all()
 
 
 class AbstractSelectOption(ParentFieldTrashableModelMixin, models.Model):

@@ -1,76 +1,33 @@
+from django.conf import settings
 from django.db import models
-from django_postgresql_dag.models import edge_factory, node_factory, NodeManager
+from django.db.models import When, Case
+
+from baserow.contrib.database.fields.models import Field
 
 
-class AlwaysSelectingFieldManager(NodeManager):
-    def get_queryset(self):
-        return super().get_queryset().select_related("field")
-
-
-class FieldDependencyEdge(edge_factory("FieldDependencyNode", concrete=False)):
+class FieldDependency(models.Model):
     """
-    A FieldDependencyEdge represents a dependency between two FieldDependencyNodes.
-
-    A field_dependency_edge with child of Field A and parent of Field B means that
-    Field A depends on Field B. So to calculate the value of a Field A we first need to
-    know the value of Field B etc.
+    A FieldDependency represents a dependency between two Fields or a single Field
+    depending on a field name which doesn't exist as a field yet.
     """
 
-    # If the child field depends on the parent field via another field (think a link row
-    # field) then the via attribute will be set to that middle field.
-    via = models.ForeignKey(
+    dependant = models.ForeignKey(
         "database.Field",
         on_delete=models.CASCADE,
-        related_name="vias",
+        related_name="dependencies",
+    )
+    dependency = models.ForeignKey(
+        "database.Field",
+        on_delete=models.CASCADE,
+        related_name="dependants",
         null=True,
         blank=True,
     )
-
-    def __str__(self):
-        if self.via is not None:
-            return (
-                f"Edge({self.child} depends via field {self.via.name}:{self.via.id} on"
-                f" {self.parent})"
-            )
-        else:
-            return f"Edge({self.child} depends on {self.parent})"
-
-
-class FieldDependencyNode(node_factory(FieldDependencyEdge)):
-    """
-    A FieldDependencyNode represents one of two things:
-        1. A real Baserow field which has dependencies to other FieldNodes.
-        2. A "broken reference" which is a non existent field with a particular name
-           in a particular table.
-
-    The second case is so other real fields still depend on a node when one of their
-    dependencies is deleted. This then lets us easily find these fields with broken
-    references when a new field is created/renamed/restored to that table with the
-    matching name.
-
-    For example:
-    1. Field A depends on Field B and so each has a FieldDependencyNode with a
-       FieldDependencyEdge connecting them.
-    2. Field B is deleted.
-    3. As a result Field B's node is updated to now be a "broken reference":
-       1. node.table = node.field.table
-       1. node.broken_reference_field_name = node.field.name
-       1. node.field = null
-    4. Field C is created in the same table with the same name that Field B had.
-    5. We can now easily query the dependency graph to find any broken reference nodes
-       that Field C fixes.
-    6. Field C's new node then replaces the old broken reference node and now Field A
-       depends on Field C.
-
-    """
-
-    objects = AlwaysSelectingFieldManager()
-    objects_without_field_join = NodeManager()
-
-    field = models.OneToOneField(
-        "database.Field",
+    # The link row field that the dependant depends on the dependency via.
+    via = models.ForeignKey(
+        "database.LinkRowField",
         on_delete=models.CASCADE,
-        related_name="nodes",
+        related_name="vias",
         null=True,
         blank=True,
     )
@@ -78,22 +35,71 @@ class FieldDependencyNode(node_factory(FieldDependencyEdge)):
         null=True,
         blank=True,
     )
-    table = models.ForeignKey(
-        "Table",
-        on_delete=models.CASCADE,
-        related_name="nodes",
-    )
-
-    def is_broken_reference_with_no_dependencies(self):
-        return not self.is_reference_to_real_field() and self.children.count() == 0
-
-    def is_reference_to_real_field(self):
-        return self.field is not None
 
     def __str__(self):
-        if self.is_reference_to_real_field():
-            return f"Field({self.table.name}:{self.field_id}, {self.field.name})"
-        else:
+        if self.via is not None:
             return (
-                f"BrokenRef({self.table.name}," f" {self.broken_reference_field_name})"
+                f"{self.dependant} depends via field {self.via.name}:{self.via.id} on"
+                f" {self.dependency})"
             )
+        else:
+            return f"{self.dependant} depends on {self.dependency})"
+
+
+def _ordered_filter(queryset, field_names, values):
+    """
+    Filters the provided queryset for 'field_name__in values' for each given field_name in [field_names]
+    orders results in the same order as provided values
+
+        For instance
+            _ordered_filter(self.__class__.objects, "pk", pks)
+        returns a queryset of the current class, with instances where the 'pk' field matches an pk in pks
+
+    """
+
+    if not isinstance(field_names, list):
+        field_names = [field_names]
+    case = []
+    for pos, value in enumerate(values):
+        when_condition = {field_names[0]: value, "then": pos}
+        case.append(When(**when_condition))
+    order_by = Case(*case)
+    filter_condition = {field_name + "__in": values for field_name in field_names}
+    return queryset.filter(**filter_condition).order_by(order_by)
+
+
+def will_cause_circular_dep(from_field, to_field):
+    return from_field in get_all_field_dependencies(to_field)
+
+
+def get_all_field_dependencies(field):
+    # TODO include copyright notice from dag
+    query_parameters = {
+        "pk": field.pk,
+        "max_depth": settings.MAX_FIELD_REFERENCE_DEPTH,
+    }
+    relationship_table = FieldDependency._meta.db_table
+    pk_name = field.get_pk_name()
+    pks = Field.objects.raw(
+        f"""
+        WITH RECURSIVE traverse({pk_name}, depth) AS (
+            SELECT first.parent_id, 1
+                FROM {relationship_table} AS first
+                LEFT OUTER JOIN {relationship_table} AS second
+                ON first.parent_id = second.child_id
+            WHERE first.child_id = %(pk)s
+        UNION
+            SELECT DISTINCT parent_id, traverse.depth + 1
+                FROM traverse
+                INNER JOIN {relationship_table}
+                ON {relationship_table}.child_id = traverse.{pk_name}
+            WHERE 1 = 1
+        )
+        SELECT {pk_name} FROM traverse
+        WHERE depth <= %(max_depth)s
+        GROUP BY {pk_name}
+        ORDER BY MAX(depth) DESC, {pk_name} ASC
+        """,
+        query_parameters,
+    )
+    return _ordered_filter(Field.objects, "pk", pks)

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from copy import deepcopy
 from datetime import datetime, date
 from decimal import Decimal
 from random import randrange, randint, sample
@@ -54,6 +55,7 @@ from .dependencies.exceptions import (
     SelfReferenceFieldDependencyError,
     CircularFieldDependencyError,
 )
+from .dependencies.handler import FieldDependencyHandler
 from .dependencies.types import OptionalFieldDependencies
 from .exceptions import (
     LinkRowTableNotInSameDatabase,
@@ -93,6 +95,7 @@ from .models import (
     Field,
 )
 from .registries import FieldType, field_type_registry
+from ..formula.formula_field_refresher import recreate_formula_field_if_needed
 
 
 class TextFieldMatchingRegexFieldType(FieldType, ABC):
@@ -2226,3 +2229,100 @@ class FormulaFieldType(FieldType):
             return True
         else:
             return False
+
+    def row_of_dependency_created(
+        self,
+        field,
+        starting_row,
+        updated_fields_collector,
+        via_path_to_starting_table,
+    ):
+        self.row_of_dependency_updated(
+            field, starting_row, updated_fields_collector, via_path_to_starting_table
+        )
+
+    def row_of_dependency_updated(
+        self,
+        field,
+        starting_row,
+        updated_fields_collector,
+        via_path_to_starting_table,
+    ):
+        if len(via_path_to_starting_table) > 0:
+            update_statement = (
+                FormulaHandler.baserow_expression_to_update_django_expression(
+                    field.cached_typed_internal_expression,
+                    updated_fields_collector.get_model(field.table),
+                )
+            )
+            updated_fields_collector.add_field_with_pending_update_statement(
+                field,
+                update_statement,
+                via_path=via_path_to_starting_table,
+                starting_row_id=starting_row.id,
+            )
+        super().row_of_dependency_updated(
+            field, starting_row, updated_fields_collector, via_path_to_starting_table
+        )
+
+    def row_of_dependency_deleted(
+        self,
+        field,
+        starting_row,
+        updated_fields_collector,
+        via_path_to_starting_table,
+    ):
+        self.row_of_dependency_updated(
+            field, starting_row, updated_fields_collector, via_path_to_starting_table
+        )
+
+    def field_dependency_created(self, field, created_field, updated_fields_collector):
+        old_field = deepcopy(field)
+        self._update_formula_field(field, old_field, updated_fields_collector)
+        super().field_dependency_created(field, created_field, updated_fields_collector)
+
+    def field_dependency_updated(
+        self, field, updated_field, updated_old_field, updated_fields_collector
+    ):
+        old_field = deepcopy(field)
+
+        old_name = updated_old_field.name
+        new_name = updated_field.name
+        if old_name != new_name:
+            field.formula = FormulaHandler.rename_field_references_in_formula_string(
+                field.formula, {old_name: new_name}
+            )
+        self._update_formula_field(
+            field,
+            old_field,
+            updated_fields_collector,
+        )
+        super().field_dependency_updated(
+            field, updated_field, updated_old_field, updated_fields_collector
+        )
+
+    def field_dependency_deleted(self, field, deleted_field, updated_fields_collector):
+        old_field = deepcopy(field)
+        self._update_formula_field(field, old_field, updated_fields_collector)
+        super().field_dependency_deleted(field, deleted_field, updated_fields_collector)
+
+    def after_import_serialized(self, field, updated_fields_collector):
+        field.save(recalculate=True, field_lookup_cache=updated_fields_collector)
+        super().after_import_serialized(field, updated_fields_collector)
+
+    def _update_formula_field(self, field, old_field, updated_fields_collector):
+        from baserow.contrib.database.views.handler import ViewHandler
+
+        field.save(field_lookup_cache=updated_fields_collector)
+        recreate_formula_field_if_needed(field, old_field)
+        ViewHandler().field_type_changed(field)
+        update_statement = (
+            FormulaHandler.baserow_expression_to_update_django_expression(
+                field.cached_typed_internal_expression,
+                updated_fields_collector.get_model(field.table),
+            )
+        )
+        updated_fields_collector.add_field_with_pending_update_statement(
+            field,
+            update_statement,
+        )

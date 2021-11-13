@@ -13,6 +13,7 @@ from baserow.contrib.database.views.handler import ViewHandler
 from baserow.core.trash.handler import TrashHandler
 from baserow.core.utils import extract_allowed, set_allowed_attrs
 from .dependencies.handler import FieldDependencyHandler
+from .dependencies.update_collector import CachingFieldUpdateCollector
 from .field_cache import FieldCache
 from .exceptions import (
     PrimaryFieldAlreadyExists,
@@ -209,10 +210,11 @@ class FieldHandler:
         field_type.after_create(instance, to_model, user, connection, before)
 
         updated_fields = (
-            FieldDependencyHandler.update_field_dependency_graph_after_field_change(
-                instance, field_lookup_cache=field_lookup_cache
+            FieldDependencyHandler.update_graph_after_field_created(
+                instance, field_lookup_cache
             )
         )
+
         for field, related_fields in updated_fields.get_updated_fields_per_table():
             field_created.send(
                 self,
@@ -398,11 +400,8 @@ class FieldHandler:
             before,
         )
         updated_fields = (
-            FieldDependencyHandler.update_field_dependency_graph_after_field_change(
-                field,
-                old_field,
-                rename_only=set(field_values.keys()) == {"name"},
-                field_lookup_cache=field_lookup_cache,
+            FieldDependencyHandler.update_graph_after_field_updated(
+                field, old_field, field_lookup_cache=field_lookup_cache
             )
         )
 
@@ -632,7 +631,7 @@ class FieldHandler:
             field.save(field_lookup_cache=field_lookup_cache)
 
             updated_fields = (
-                FieldDependencyHandler.update_field_dependency_graph_after_field_change(
+                FieldDependencyHandler.update_graph_after_field_created(
                     field, field_lookup_cache=field_lookup_cache
                 )
             )

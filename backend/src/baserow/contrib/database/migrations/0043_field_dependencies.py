@@ -13,68 +13,25 @@ def reverse(apps, schema_editor):
     pass
 
 
-def get_or_create_node(field, FieldDependencyNode):
-    if hasattr(field, "fieldnode"):
-        return field.fieldnode
-    else:
-        fieldnode, _ = FieldDependencyNode.objects.get_or_create(
-            field_id=field.id, table=field.table
-        )
-        field.fieldnode = fieldnode
-        return fieldnode
-
-
-def _get_or_create_node_from_name(referenced_field_name, table, FieldDependencyNode):
-    try:
-        referenced_field = table.field_set.filter(trashed=False).get(
-            name=referenced_field_name
-        )
-    except ObjectDoesNotExist:
-        referenced_field = None
-    if referenced_field is not None:
-        referenced_field_dependency_node = get_or_create_node(
-            referenced_field, FieldDependencyNode
-        )
-        return referenced_field_dependency_node
-    else:
-        return _construct_broken_reference_node(
-            referenced_field_name, table, FieldDependencyNode
-        )
-
-
-def _construct_broken_reference_node(referenced_field_name, table, FieldDependencyNode):
-    node, _ = FieldDependencyNode.objects.get_or_create(
-        table=table,
-        broken_reference_field_name=referenced_field_name,
-    )
-    return node
-
-
 # noinspection PyPep8Naming
 def forward(apps, schema_editor):
+    Field = apps.get_model("database", "Field")
     FormulaField = apps.get_model("database", "FormulaField")
-    FieldDependencyEdge = apps.get_model("database", "FieldDependencyEdge")
-    FieldDependencyNode = apps.get_model("database", "FieldDependencyNode")
+    FieldDependency = apps.get_model("database", "FieldDependency")
     LinkRowField = apps.get_model("database", "LinkRowField")
 
-    _build_graph_from_scratch(
-        FieldDependencyEdge, FieldDependencyNode, FormulaField, LinkRowField
-    )
-    _calculate_all_formula_internal_fields_in_order(FormulaField, FieldDependencyNode)
+    _build_graph_from_scratch(FieldDependency, FormulaField, LinkRowField, Field)
+    _calculate_all_formula_internal_fields_in_order(FormulaField)
 
 
 # noinspection PyPep8Naming
-def _build_graph_from_scratch(
-    FieldDependencyEdge, FieldDependencyNode, FormulaField, LinkRowField
-):
+def _build_graph_from_scratch(FieldDependency, FormulaField, LinkRowField, Field):
     for link_row in LinkRowField.objects.filter(trashed=False).all():
-        link_row_node = get_or_create_node(link_row, FieldDependencyNode)
         related_primary_field = next(
             f for f in link_row.link_row_table.field_set.all() if f.primary
         )
-        primary_node = get_or_create_node(related_primary_field, FieldDependencyNode)
-        FieldDependencyEdge.objects.create(
-            parent=primary_node, via=link_row, child=link_row_node
+        FieldDependency.objects.create(
+            dependency=link_row, via=link_row, dependant=related_primary_field
         )
 
     for formula in FormulaField.objects.filter(trashed=False).all():
@@ -84,27 +41,25 @@ def _build_graph_from_scratch(
         )
 
         table = formula.table
-        field_node = get_or_create_node(formula, FieldDependencyNode)
         for new_dependency_field_name in dependency_field_names:
-            referenced_field_dependency_node = _get_or_create_node_from_name(
-                new_dependency_field_name,
-                table,
-                FieldDependencyNode,
-            )
-            FieldDependencyEdge.objects.create(
-                parent=referenced_field_dependency_node, child=field_node
-            )
+            try:
+                FieldDependency.objects.create(
+                    dependency=table.field_set.get(name=new_dependency_field_name),
+                    depedant=formula,
+                )
+            except Field.DoesNotExist:
+                FieldDependency.objects.create(
+                    depedant=formula,
+                    broken_reference_field_name=new_dependency_field_name,
+                )
 
 
 # noinspection PyPep8Naming
-def _calculate_all_formula_internal_fields_in_order(FormulaField, FieldDependencyNode):
+def _calculate_all_formula_internal_fields_in_order(FormulaField):
     already_fixed_fields = set()
     for formula in FormulaField.objects.filter(trashed=False).all():
         if formula not in already_fixed_fields:
-            field_node = get_or_create_node(formula, FieldDependencyNode)
-            _recursively_setup_parents(
-                FormulaField, FieldDependencyNode, already_fixed_fields, field_node
-            )
+            _recursively_setup_parents(FormulaField, already_fixed_fields, formula)
             _setup_and_save_formula_field_internals(already_fixed_fields, formula)
     for formula in FormulaField.objects.filter(trashed=True).all():
         formula.internal_formula = formula.formula
@@ -113,24 +68,16 @@ def _calculate_all_formula_internal_fields_in_order(FormulaField, FieldDependenc
 
 
 # noinspection PyPep8Naming
-def _recursively_setup_parents(
-    FormulaField, FieldDependencyNode, already_fixed_fields, field_node
-):
-    for parent_node in field_node.parents.all():
-        if hasattr(parent_node, "field"):
-            try:
-                formula_field = FormulaField.objects.get(id=parent_node.field_id)
-                _recursively_setup_parents(
-                    FormulaField,
-                    FieldDependencyNode,
-                    already_fixed_fields,
-                    get_or_create_node(formula_field, FieldDependencyNode),
-                )
-                _setup_and_save_formula_field_internals(
-                    already_fixed_fields, formula_field
-                )
-            except FormulaField.DoesNotExist:
-                pass
+def _recursively_setup_parents(FormulaField, already_fixed_fields, field):
+    for dependency in field.dependencies.all():
+        try:
+            formula_field = FormulaField.objects.get(id=dependency.id)
+            _recursively_setup_parents(
+                FormulaField, already_fixed_fields, formula_field
+            )
+            _setup_and_save_formula_field_internals(already_fixed_fields, formula_field)
+        except FormulaField.DoesNotExist:
+            pass
 
 
 def _setup_and_save_formula_field_internals(already_fixed_fields, formula_field):

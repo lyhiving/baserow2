@@ -70,7 +70,7 @@ class BulkMultiTableFormulaFieldRefresher(FieldGraphDependencyVisitor):
             old_field = deepcopy(field)
             field.save(field_lookup_cache=self.updated_fields_collector)
             if self.recreate_database_columns:
-                _recreate_field_if_required(field, old_field)
+                recreate_formula_field_if_needed(field, old_field)
                 ViewHandler().field_type_changed(field)
             self.updated_fields_collector.add_updated_field(field)
 
@@ -127,7 +127,7 @@ def _check_if_formula_type_change_requires_drop_recreate(
     return new_type.should_recreate_when_old_type_was(old_type)
 
 
-def _recreate_field_if_required(
+def recreate_formula_field_if_needed(
     field,
     old_field,
 ):

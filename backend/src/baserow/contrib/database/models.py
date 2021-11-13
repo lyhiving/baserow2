@@ -24,7 +24,7 @@ from .fields.models import (
 from .tokens.models import Token, TokenPermission
 from baserow.contrib.database.fields.dependencies.models import (
     FieldDependencyNode,
-    FieldDependencyEdge,
+    FieldDependency,
 )
 
 __all__ = [
@@ -49,7 +49,7 @@ __all__ = [
     "Token",
     "TokenPermission",
     "FieldDependencyNode",
-    "FieldDependencyEdge",
+    "FieldDependency",
 ]
 
 
