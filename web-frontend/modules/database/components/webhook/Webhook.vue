@@ -1,76 +1,82 @@
 <template>
-  <div>
-    <div class="webhook" :class="{ 'webhook--open': isExpanded }">
-      <div class="webhook__head">
-        <div class="webhook__head-left">
-          <div class="webhook__head-name">
-            {{
-              !webhook.active ? `${webhook.name} - Deactivated` : webhook.name
-            }}
-          </div>
-          <div class="webhook__head-details">
-            <div class="webhook__head-details-target">
-              {{ webhook.url }}
-            </div>
-            <a href="#" class="webhook__head-toggle" @click="toggleExpand()">
-              {{ $t('webhook.details') }}
-              <i
-                class="fas webhook__head-toggle-icon"
-                :class="{
-                  'fa-chevron-down': !isExpanded,
-                  'fa-chevron-up': isExpanded,
-                }"
-              ></i>
-            </a>
-          </div>
+  <div class="webhook" :class="{ 'webhook--open': isExpanded }">
+    <div class="webhook__head">
+      <div class="webhook__head-left">
+        <div class="webhook__head-name">
+          {{ webhook.name
+          }}<template v-if="!webhook.active"> - deactivated</template>
         </div>
-        <div class="webhook__head-right">
-          <div class="webhook__head-trigger">
-            {{
-              $tc('webhook.triggerDescription', calculateNumberOfEvents, {
-                count: calculateNumberOfEvents,
-              })
-            }}
+        <div class="webhook__head-details">
+          <div class="webhook__head-details-target">
+            {{ webhook.url }}
           </div>
-          <div class="webhook__head-call">
-            <div class="webhook__head-date">
-              {{ $t('webhook.lastCall', { lastCallTime: lastCall }) }}
-            </div>
-            <span class="webhook__head-call-state" :class="lastStatusClass">{{
-              lastStatus
-            }}</span>
-          </div>
+          <a href="#" class="webhook__head-toggle" @click="toggleExpand()">
+            {{ $t('webhook.details') }}
+            <i
+              class="fas webhook__head-toggle-icon"
+              :class="{
+                'fa-chevron-down': !isExpanded,
+                'fa-chevron-up': isExpanded,
+              }"
+            ></i>
+          </a>
         </div>
       </div>
-      <div class="webhook__body">
-        <Tabs>
-          <Tab title="Edit">
-            <update-webhook-context :webhook="webhook" :table="table" />
-          </Tab>
-          <Tab title="Call log">
-            <p v-if="webhook.calls.length <= 0">{{ $t('webhook.noCalls') }}</p>
-            <div v-for="call in webhook.calls" :key="call.id">
-              <webhook-call :call="call" />
-            </div>
-          </Tab>
-        </Tabs>
+      <div class="webhook__head-right">
+        <div class="webhook__head-trigger">
+          {{
+            $tc('webhook.triggerDescription', calculateNumberOfEvents, {
+              count: calculateNumberOfEvents,
+            })
+          }}
+        </div>
+        <div class="webhook__head-call">
+          <div class="webhook__head-date">
+            {{ $t('webhook.lastCall', { lastCallTime }) }}
+          </div>
+          <span
+            class="webhook__head-call-state"
+            :class="{
+              'webhook__head-call-state--ok': lastCallOk,
+              'webhook__head-call-state--error': !lastCallOk,
+            }"
+            >{{ lastCallStatusDescription }}</span
+          >
+        </div>
       </div>
+    </div>
+    <div class="webhook__body">
+      <Tabs>
+        <Tab title="Edit">
+          <UpdateWebhook
+            :webhook="webhook"
+            :table="table"
+            @updated="$emit('updated', $event)"
+          />
+        </Tab>
+        <Tab title="Call log">
+          <p v-if="webhook.calls.length <= 0">{{ $t('webhook.noCalls') }}</p>
+          <WebhookCall
+            v-for="call in webhook.calls"
+            :key="call.id"
+            :call="call"
+          />
+        </Tab>
+      </Tabs>
     </div>
   </div>
 </template>
 
 <script>
 import moment from '@baserow/modules/core/moment'
-import Tabs from '@baserow/modules/core/components/Tabs.vue'
-import Tab from '@baserow/modules/core/components/Tab.vue'
-import UpdateWebhookContext from './UpdateWebhookContext.vue'
-import WebhookCall from './WebhookCall.vue'
-import webhook from '@baserow/modules/database/mixins/webhook'
+import Tabs from '@baserow/modules/core/components/Tabs'
+import Tab from '@baserow/modules/core/components/Tab'
+import UpdateWebhook from '@baserow/modules/database/components/webhook/UpdateWebhook'
+import WebhookCall from '@baserow/modules/database/components/webhook/WebhookCall'
 
 export default {
   name: 'Webhook',
-  components: { Tabs, Tab, UpdateWebhookContext, WebhookCall },
-  mixins: [webhook],
+  components: { Tabs, Tab, UpdateWebhook, WebhookCall },
   props: {
     webhook: {
       type: Object,
@@ -88,14 +94,10 @@ export default {
   },
   computed: {
     lastCallEvent() {
-      const calls = this.$props.webhook.calls
-      if (calls.length > 0) {
-        return calls[0]
-      } else {
-        return null
-      }
+      const calls = this.webhook.calls
+      return calls.length > 0 ? calls[4] : null
     },
-    lastCall() {
+    lastCallTime() {
       if (this.lastCallEvent) {
         return moment(this.lastCallEvent.called_time).format(
           'YYYY-MM-DD HH:mm:ss'
@@ -104,32 +106,36 @@ export default {
         return this.$t('webhook.noCalls')
       }
     },
-    lastStatus() {
-      if (this.lastCallEvent) {
-        return this.statusDescription(this.lastCallEvent.status_code)
-      } else {
-        return ''
-      }
+    lastCallOk() {
+      return (
+        this.lastCallEvent !== null &&
+        this.lastCallEvent.response_status >= 200 &&
+        this.lastCallEvent.response_status <= 299
+      )
     },
-    lastStatusClass() {
-      if (this.lastCallEvent) {
-        if (
-          this.lastCallEvent.status_code >= 200 &&
-          this.lastCallEvent.status_code <= 299
-        ) {
-          return 'webhook__head-call-state--ok'
-        } else {
-          return 'webhook__head-call-state--error'
-        }
-      } else {
+    lastCallStatusDescription() {
+      const call = this.lastCallEvent
+
+      if (call === null) {
         return ''
       }
+
+      let description = ''
+      if (call.response_status !== null) {
+        description += call.response_status + ' '
+      }
+
+      description += this.lastCallOk
+        ? this.$t('webhook.status.statusOK')
+        : this.$t('webhook.status.statusNotOK')
+
+      return description
     },
     calculateNumberOfEvents() {
-      if (this.$props.webhook.include_all_events) {
+      if (this.webhook.include_all_events) {
         return 0
       } else {
-        return this.$props.webhook.events.length
+        return this.webhook.events.length
       }
     },
   },
@@ -147,7 +153,7 @@ export default {
     "webhook": {
       "details": "details",
       "lastCall": "Last call: {lastCallTime}",
-      "noCalls": "Not called yet.",
+      "noCalls": "This webhook has not yet made any calls.",
       "triggerDescription": "Sends on every event | Sends on {count} event | Send on {count} events"
     }
   },

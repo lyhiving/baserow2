@@ -153,13 +153,13 @@ export default {
   webhook: {
     request: 'Request',
     response: 'Response',
-    successfullyUpdated: 'Webhook succesfully updated.',
+    successfullyUpdated: 'Webhook successfully updated.',
     status: {
       noStatus: 'NO STATUS',
       statusOK: 'OK',
       statusNotOK: 'NOT OK',
     },
-    events: {
+    eventType: {
       rowCreated: 'When a row is created',
       rowUpdated: 'When a row is updated',
       rowDeleted: 'When a row is deleted',

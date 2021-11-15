@@ -1,7 +1,7 @@
 <template>
   <div>
     <Error :error="error" />
-    <webhook-form ref="form" :table="table" :create="true" @submitted="submit">
+    <WebhookForm ref="form" :table="table" :create="true" @submitted="submit">
       <div class="actions">
         <div class="align-right">
           <button
@@ -13,16 +13,17 @@
           </button>
         </div>
       </div>
-    </webhook-form>
+    </WebhookForm>
   </div>
 </template>
 
 <script>
-import WebhookForm from '@baserow/modules/database/components/webhook/WebhookForm'
 import error from '@baserow/modules/core/mixins/error'
+import WebhookForm from '@baserow/modules/database/components/webhook/WebhookForm'
+import WebhookService from '@baserow/modules/database/services/webhook'
 
 export default {
-  name: 'CreateWebhookContext',
+  name: 'CreateWebhook',
   components: { WebhookForm },
   mixins: [error],
   props: {
@@ -39,15 +40,18 @@ export default {
   methods: {
     async submit(values) {
       this.loading = true
-      const table = this.table
+
       try {
-        await this.$store.dispatch('webhook/create', { table, values })
-        this.loading = false
-        this.$emit('created')
+        const { data } = await WebhookService(this.$client).create(
+          this.table.id,
+          values
+        )
+        this.$emit('created', data)
       } catch (error) {
-        this.loading = false
         this.handleError(error)
       }
+
+      this.loading = false
     },
   },
 }

@@ -1,16 +1,18 @@
 <template>
-  <div v-if="renderList" class="webhook__list">
+  <div class="webhook__list">
     <p v-if="webhooks.length === 0" class="margin-top-2">
       {{ $t('webhookList.noWebhooksMessage') }}
     </p>
-    <div v-for="webhook in webhooks" :key="webhook.id">
-      <webhook :webhook="webhook" :table="table" />
-    </div>
+    <Webhook
+      v-for="webhook in webhooks"
+      :key="webhook.id"
+      :webhook="webhook"
+      :table="table"
+    />
   </div>
 </template>
 
 <script>
-import { mapState } from 'vuex'
 import Webhook from './Webhook.vue'
 
 export default {
@@ -23,18 +25,10 @@ export default {
       type: Object,
       required: true,
     },
-    renderList: {
-      type: Boolean,
+    webhooks: {
+      type: Array,
       required: true,
     },
-  },
-  computed: mapState({
-    webhooks: (state) => state.webhook.items,
-  }),
-  async created() {
-    await this.$store.dispatch('webhook/fetchAll', this.$props.table, {
-      root: true,
-    })
   },
 }
 </script>

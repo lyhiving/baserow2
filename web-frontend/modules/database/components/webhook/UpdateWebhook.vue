@@ -1,7 +1,7 @@
 <template>
   <div>
     <Error :error="error" />
-    <webhook-form
+    <WebhookForm
       ref="form"
       :table="table"
       :default-values="webhook"
@@ -11,16 +11,16 @@
       <div class="actions">
         <a
           class="button button--primary button--error"
-          @click="deleteWebhook()"
+          @click="$refs.deleteWebhookModal.show()"
         >
           {{ $t('action.delete') }}
         </a>
         <div class="align-right">
-          <p v-if="loadedSuccessfully" class="color-success">
+          <p v-if="saved" class="color-success">
             <strong>{{ $t('webhook.successfullyUpdated') }}</strong>
           </p>
           <button
-            v-if="!loadedSuccessfully"
+            v-if="!saved"
             class="button button--primary"
             :class="{ 'button--loading': loading }"
             :disabled="loading"
@@ -29,22 +29,19 @@
           </button>
         </div>
       </div>
-      <delete-webhook-modal
-        ref="deleteWebhookModal"
-        :webhook="webhook"
-        :table="table"
-      />
-    </webhook-form>
+      <DeleteWebhookModal ref="deleteWebhookModal" :webhook="webhook" />
+    </WebhookForm>
   </div>
 </template>
 
 <script>
-import WebhookForm from '@baserow/modules/database/components/webhook/WebhookForm'
-import DeleteWebhookModal from '@baserow/modules/database/components/webhook/DeleteWebhookModal.vue'
 import error from '@baserow/modules/core/mixins/error'
+import WebhookForm from '@baserow/modules/database/components/webhook/WebhookForm'
+import DeleteWebhookModal from '@baserow/modules/database/components/webhook/DeleteWebhookModal'
+import WebhookService from '@baserow/modules/database/services/webhook'
 
 export default {
-  name: 'UpdateWebhookContext',
+  name: 'UpdateWebhook',
   components: { WebhookForm, DeleteWebhookModal },
   mixins: [error],
   props: {
@@ -60,29 +57,25 @@ export default {
   data() {
     return {
       loading: false,
-      loadedSuccessfully: false,
+      saved: false,
     }
   },
   methods: {
-    deleteWebhook() {
-      this.$refs.deleteWebhookModal.show()
-    },
     handleFormChange() {
-      this.loadedSuccessfully = false
+      this.saved = false
     },
     async submit(values) {
+      this.hideError()
       this.loading = true
-      const table = this.table
-      const webhook = this.webhook
+
       try {
-        await this.$store.dispatch('webhook/update', { table, webhook, values })
-        this.loading = false
-        this.loadedSuccessfully = true
+        await WebhookService(this.$client).update(this.webhook.id, values)
+        this.saved = true
       } catch (error) {
-        this.loading = false
         this.handleError(error)
-        this.$refs.form.reset()
       }
+
+      this.loading = false
     },
   },
 }

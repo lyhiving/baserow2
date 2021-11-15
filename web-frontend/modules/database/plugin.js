@@ -49,6 +49,11 @@ import {
   XMLImporterType,
   JSONImporterType,
 } from '@baserow/modules/database/importerTypes'
+import {
+  RowCreatedWebhookEventType,
+  RowUpdatedWebhookEventType,
+  RowDeletedWebhookEventType,
+} from '@baserow/modules/database/webhookEventTypes'
 import { APITokenSettingsType } from '@baserow/modules/database/settingsTypes'
 
 import tableStore from '@baserow/modules/database/store/table'
@@ -56,7 +61,6 @@ import viewStore from '@baserow/modules/database/store/view'
 import fieldStore from '@baserow/modules/database/store/field'
 import gridStore from '@baserow/modules/database/store/view/grid'
 import formStore from '@baserow/modules/database/store/view/form'
-import webhookStore from '@baserow/modules/database/store/webhook'
 
 import { registerRealtimeEvents } from '@baserow/modules/database/realtime'
 import { CSVTableExporterType } from '@baserow/modules/database/exporterTypes'
@@ -104,7 +108,6 @@ export default (context) => {
   store.registerModule('page/view/form', formStore)
   store.registerModule('template/view/grid', gridStore)
   store.registerModule('template/view/form', formStore)
-  store.registerModule('webhook', webhookStore)
 
   app.$registry.register('application', new DatabaseApplicationType(context))
   app.$registry.register('view', new GridViewType(context))
@@ -175,6 +178,18 @@ export default (context) => {
   app.$registry.register('importer', new JSONImporterType(context))
   app.$registry.register('settings', new APITokenSettingsType(context))
   app.$registry.register('exporter', new CSVTableExporterType(context))
+  app.$registry.register(
+    'webhookEvent',
+    new RowCreatedWebhookEventType(context)
+  )
+  app.$registry.register(
+    'webhookEvent',
+    new RowUpdatedWebhookEventType(context)
+  )
+  app.$registry.register(
+    'webhookEvent',
+    new RowDeletedWebhookEventType(context)
+  )
 
   // Text functions
   app.$registry.register('formula_function', new BaserowUpper())

@@ -151,19 +151,29 @@
   @include absolute(0, 0, 0, auto);
 }
 
+.webhook__code-with-dropdown {
+  position: relative;
+}
+
+.webhook__code-dropdown {
+  z-index: 1;
+
+  @include absolute(20px, 20px, auto, auto);
+}
+
 .webhook__code-container {
   position: relative;
   padding: 10px;
   width: 100%;
-  height: 100%;
-  min-height: 250px;
+  min-height: 100px;
+  max-height: 250px;
   min-width: 0;
   background-color: $color-neutral-100;
   overflow: auto;
-}
 
-.webhook__code-dropdown {
-  @include absolute(20px, 20px, auto, auto);
+  &.webhook__code-container--fixed-height {
+    height: 250px;
+  }
 }
 
 .webhook__code {
@@ -256,8 +266,7 @@
 .webhook__call-body {
   display: none;
   width: 100%;
-  padding: 16px 0 24px 0;
-  max-height: 280px;
+  padding: 16px 0 0 0;
 
   .webhook__call--open & {
     display: flex;

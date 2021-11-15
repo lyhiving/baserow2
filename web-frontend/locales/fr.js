@@ -161,7 +161,7 @@ export default {
       statusOK: '@TODO',
       statusNotOK: '@TODO',
     },
-    events: {
+    eventType: {
       rowCreated: '@TODO',
       rowUpdated: '@TODO',
       rowDeleted: '@TODO',

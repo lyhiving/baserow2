@@ -1,25 +1,25 @@
 export default (client) => {
   return {
     fetchAll(tableId) {
-      return client.get(`/database/tables/${tableId}/webhooks/`)
+      return client.get(`/database/webhooks/table/${tableId}/`)
     },
     create(tableId, values) {
-      return client.post(`/database/tables/${tableId}/webhooks/`, values)
+      return client.post(`/database/webhooks/table/${tableId}/`, values)
     },
-    get(tableId, webhookId) {
-      return client.get(`/database/tables/${tableId}/webhooks/${webhookId}/`)
+    get(webhookId) {
+      return client.get(`/database/webhooks/${webhookId}/`)
     },
-    update(tableId, webhookId, values) {
-      return client.patch(
-        `/database/tables/${tableId}/webhooks/${webhookId}/`,
+    update(webhookId, values) {
+      return client.patch(`/database/webhooks/${webhookId}/`, values)
+    },
+    delete(webhookId) {
+      return client.delete(`/database/webhooks/${webhookId}/`)
+    },
+    testCall(tableId, values) {
+      return client.post(
+        `/database/webhooks/table/${tableId}/test-call/`,
         values
       )
-    },
-    delete(tableId, webhookId) {
-      return client.delete(`/database/tables/${tableId}/webhooks/${webhookId}/`)
-    },
-    call(tableId, values) {
-      return client.post(`/database/tables/${tableId}/webhooks/call/`, values)
     },
   }
 }

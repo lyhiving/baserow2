@@ -11,6 +11,7 @@
               v-model="values.name"
               class="input"
               :class="{ 'input--error': $v.values.name.$error }"
+              @blur="$v.values.name.$touch()"
             />
             <div v-if="$v.values.name.$error" class="error">
               {{ $t('error.requiredField') }}
@@ -30,20 +31,20 @@
           </div>
         </div>
       </div>
-      <div class="col" :class="{ 'col-6': !create, 'col-12': create }">
+      <div class="col col-6">
         <div class="control">
           <label class="control__label">
             {{ $t('webhookForm.inputLabels.userFieldNames') }}
           </label>
           <div class="control__elements">
             <Checkbox v-model="values.use_user_field_names">{{
-              values.use_user_field_names
-                ? $t('webhookForm.checkbox.sendUserFieldNames')
-                : $t('webhookForm.checkbox.sendFieldIDs')
+              $t('webhookForm.checkbox.sendUserFieldNames')
             }}</Checkbox>
           </div>
         </div>
       </div>
+    </div>
+    <div class="row">
       <div class="col col-4">
         <div class="control">
           <div class="control__label">
@@ -51,8 +52,8 @@
           </div>
           <div class="control__elements">
             <Dropdown v-model="values.request_method">
-              <DropdownItem name="POST" value="POST"></DropdownItem>
               <DropdownItem name="GET" value="GET"></DropdownItem>
+              <DropdownItem name="POST" value="POST"></DropdownItem>
               <DropdownItem name="PATCH" value="PATCH"></DropdownItem>
               <DropdownItem name="PUT" value="PUT"></DropdownItem>
               <DropdownItem name="DELETE" value="DELETE"></DropdownItem>
@@ -70,6 +71,7 @@
               v-model="values.url"
               class="input"
               :class="{ 'input--error': $v.values.url.$error }"
+              @blur="$v.values.url.$touch()"
             />
             <div v-if="$v.values.url.$error" class="error">
               {{ $t('webhookForm.errors.urlField') }}
@@ -83,22 +85,28 @@
         {{ $t('webhookForm.inputLabels.events') }}
       </label>
       <div class="control__elements">
-        <Radio v-model="radio" value="all" @input="triggerAllEvents">{{
+        <Radio v-model="values.include_all_events" :value="true">{{
           $t('webhookForm.radio.allEvents')
         }}</Radio>
-        <Radio v-model="radio" value="custom" @input="selectSingleEvent">
+        <Radio v-model="values.include_all_events" :value="false">
           {{ $t('webhookForm.radio.customEvents') }}
         </Radio>
-        <div v-if="radio === 'custom'" class="webhook__types">
-          <Checkbox v-model="events.rowCreated" class="webhook__type">{{
-            $t('webhook.events.rowCreated')
-          }}</Checkbox>
-          <Checkbox v-model="events.rowUpdated" class="webhook__type">{{
-            $t('webhook.events.rowUpdated')
-          }}</Checkbox>
-          <Checkbox v-model="events.rowDeleted" class="webhook__type">{{
-            $t('webhook.events.rowDeleted')
-          }}</Checkbox>
+        <div v-if="!values.include_all_events" class="webhook__types">
+          <Checkbox
+            v-for="webhookEvent in webhookEventTypes"
+            :key="webhookEvent.type"
+            :value="values.events.includes(webhookEvent.type)"
+            class="webhook__type"
+            @input="
+              $event
+                ? values.events.push(webhookEvent.type)
+                : values.events.splice(
+                    values.events.indexOf(webhookEvent.type),
+                    1
+                  )
+            "
+            >{{ webhookEvent.getName() }}</Checkbox
+          >
         </div>
       </div>
     </div>
@@ -108,101 +116,105 @@
       </div>
       <div class="control__elements">
         <div
-          v-for="(input, index) in defaultHeaders"
-          :key="`headerInput-${index}`"
+          v-for="(header, index) in headers.concat({
+            name: '',
+            value: '',
+          })"
+          :key="`header-input-${index}`"
           class="webhook__header"
         >
           <div class="webhook__header-row">
             <input
-              v-model="input.header"
+              v-model="header.name"
               class="input webhook__header-key"
-              :disabled="true"
+              :class="{
+                'input--error':
+                  !lastHeader(index) && $v.headers.$each[index].name.$error,
+              }"
+              placeholder="Name"
+              @input="lastHeader(index) && addHeader(header.name, header.value)"
+              @blur="
+                !lastHeader(index) && $v.headers.$each[index].name.$touch()
+              "
             />
             <input
-              v-model="input.value"
+              v-model="header.value"
               class="input webhook__header-value"
-              :disabled="true"
+              :class="{
+                'input--error':
+                  !lastHeader(index) && $v.headers.$each[index].value.$error,
+              }"
+              placeholder="Value"
+              @input="lastHeader(index) && addHeader(header.name, header.value)"
+              @blur="
+                !lastHeader(index) && $v.headers.$each[index].value.$touch()
+              "
             />
+            <a
+              v-if="!lastHeader(index)"
+              class="button button--error webhook__header-delete"
+              @click="removeHeader(index)"
+            >
+              <i class="fas fa-trash button__icon"></i>
+            </a>
           </div>
         </div>
-        <div v-if="values.headers.length > 0">
-          <div
-            v-for="(input, index) in values.headers"
-            :key="`headerInput-${index}`"
-            class="webhook__header"
-          >
-            <div class="webhook__header-row">
-              <input
-                v-model="input.header"
-                class="input webhook__header-key"
-                placeholder="Header"
-                @input="handleHeaderInputChange(index)"
-              />
-              <input
-                v-model="input.value"
-                class="input webhook__header-value"
-                placeholder="Value"
-                @input="handleHeaderInputChange(index)"
-              />
-              <a
-                v-if="!lastHeaderElement(index)"
-                href="#"
-                class="button button--error webhook__header-delete"
-                @click="removeHeaderField(index)"
-              >
-                <i class="fas fa-trash button__icon"></i>
-              </a>
-            </div>
-          </div>
-          <div v-if="areHeadersInvalid" class="webhook__header-row">
-            <div class="error">
-              {{ $t('webhookForm.errors.invalidHeaders') }}
-            </div>
-          </div>
+        <div v-if="$v.headers.$anyError" class="error">
+          {{ $t('webhookForm.errors.invalidHeaders') }}
         </div>
       </div>
     </div>
     <div class="control">
-      <WebhookExample
-        ref="webhookExample"
-        :user-field-names="values.use_user_field_names"
-      />
+      <div class="control__label">
+        {{ $t('webhookForm.inputLabels.example') }}
+      </div>
+      <div class="control__elements">
+        <div class="webhook__code-with-dropdown">
+          <div class="webhook__code-dropdown">
+            <Dropdown
+              v-model="exampleWebhookEventType"
+              class="dropdown--floating-left"
+            >
+              <DropdownItem
+                v-for="webhookEvent in webhookEventTypes"
+                :key="webhookEvent.type"
+                :name="webhookEvent.getName()"
+                :value="webhookEvent.type"
+              ></DropdownItem>
+            </Dropdown>
+          </div>
+          <div class="webhook__code-container">
+            <pre
+              class="webhook__code"
+            ><code>{{ JSON.stringify(testExample, null, 4)}}</code></pre>
+          </div>
+        </div>
+      </div>
     </div>
-    <a href="#" class="button button--ghost" @click="emitWebhookTrigger()">{{
+    <a class="button button--ghost" @click="openTestModal()">{{
       $t('webhookForm.triggerButton')
     }}</a>
     <slot></slot>
-    <trigger-webhook-modal
-      ref="triggerWebhookModal"
-      :error="error"
-      :request="trigger.request"
-      :response="trigger.response"
-      :status="trigger.status"
-      :is-loading="trigger.isLoading"
-      @retry="emitWebhookTrigger()"
-      @cancel="cancelTriggerModal()"
-    />
+    <TestWebhookModal ref="testModal" />
   </form>
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 import { required } from 'vuelidate/lib/validators'
 
 import form from '@baserow/modules/core/mixins/form'
 import error from '@baserow/modules/core/mixins/error'
-import Checkbox from '@baserow/modules/core/components/Checkbox.vue'
-import Radio from '@baserow/modules/core/components/Radio.vue'
-import WebhookExample from './WebhookExample.vue'
-import TriggerWebhookModal from './TriggerWebhookModal.vue'
-import WebhookService from '@baserow/modules/database/services/webhook'
+import Checkbox from '@baserow/modules/core/components/Checkbox'
+import Radio from '@baserow/modules/core/components/Radio'
+import TestWebhookModal from '@baserow/modules/database/components/webhook/TestWebhookModal'
 
 export default {
   name: 'WebhookForm',
   components: {
     Checkbox,
     Radio,
-    WebhookExample,
-    TriggerWebhookModal,
+    TestWebhookModal,
   },
   mixins: [form, error],
   props: {
@@ -234,174 +246,107 @@ export default {
         use_user_field_names: true,
         url: '',
         request_method: 'POST',
-        headers: [{ header: '', value: '' }],
+        include_all_events: true,
+        events: [],
       },
-      defaultHeaders: [{ header: 'Content-type', value: 'application/json' }],
-      radio: 'all',
-      events: {
-        rowCreated: false,
-        rowUpdated: false,
-        rowDeleted: false,
-      },
-      eventsMapping: {
-        rowCreated: 'row.created',
-        rowUpdated: 'row.updated',
-        rowDeleted: 'row.deleted',
-      },
-      trigger: {
-        response: '',
-        request: '',
-        status: 0,
-        isLoading: false,
-      },
-      areHeadersInvalid: false,
+      headers: [],
+      exampleWebhookEventType: '',
     }
   },
-  created() {
-    if (!this.$props.create) {
-      if (this.defaultValues.include_all_events) {
-        this.radio = 'all'
-      } else {
-        this.radio = 'custom'
-        this.defaultValues.events.forEach((event) => {
-          for (const [key, value] of Object.entries(this.eventsMapping)) {
-            if (value === event.event_type) {
-              this.events[key] = true
-            }
-          }
-        })
+  computed: {
+    webhookEventTypes() {
+      return this.$registry.getAll('webhookEvent')
+    },
+    /**
+     * Generates an example payload of the webhook event based on the chosen webhook
+     * event type.
+     */
+    testExample() {
+      if (this.exampleWebhookEventType === '') {
+        return {}
       }
+
+      const rowExample = {
+        id: 0,
+        order: '1.00000000000000000000',
+      }
+      this.fields.forEach((field) => {
+        const fieldType = this.$registry.get('field', field.type)
+        const empty = fieldType.getEmptyValue(field)
+        rowExample[
+          this.values.use_user_field_names ? field.name : `field_${field.id}`
+        ] = empty
+      })
+      const webhookEvent = this.$registry.get(
+        'webhookEvent',
+        this.exampleWebhookEventType
+      )
+      return webhookEvent.getExamplePayload(this.table, rowExample)
+    },
+    ...mapGetters({
+      fields: 'field/getAllWithPrimary',
+    }),
+  },
+  created() {
+    const keys = Object.keys(this.webhookEventTypes)
+    if (keys.length > 0) {
+      this.exampleWebhookEventType = this.webhookEventTypes[keys[0]].type
     }
+
+    Object.keys(this.defaultValues.headers).forEach((name) => {
+      this.headers.push({
+        name,
+        value: this.defaultValues.headers[name],
+      })
+    })
   },
   validations: {
     values: {
       name: { required },
       url: { required },
     },
+    headers: {
+      $each: {
+        name: { required },
+        value: { required },
+      },
+    },
   },
   methods: {
-    resetTriggerState() {
-      this.trigger = {
-        response: '',
-        request: '',
-        status: 0,
-        isLoading: false,
-      }
-    },
-    async emitWebhookTrigger() {
-      // reset triggerState
-      const selectedEvent = this.$refs.webhookExample.selectedEvent
-      const eventType = this.eventsMapping[selectedEvent]
-      this.resetTriggerState()
-      this.hideError()
-      this.trigger.isLoading = true
-      const { id } = this.$props.table
-      this.$v.$touch()
-      const isFormValid = this.isFormValid()
-      if (!isFormValid) {
-        return
-      }
-      const formData = this.getFormValues()
-      const requestObject = {
-        event_type: eventType,
-        webhook: formData,
-      }
-      this.$refs.triggerWebhookModal.show()
-      try {
-        const data = await WebhookService(this.$client).call(id, requestObject)
-        this.trigger.isLoading = false
-        const { request, response } = data.data
-        const statusCode = data.data.status_code
-        this.trigger.request = request
-        this.trigger.response = response
-        this.trigger.status = statusCode
-      } catch (e) {
-        this.trigger.isLoading = false
-        this.handleError(e)
-      }
-    },
-    cancelTriggerModal() {
-      this.resetTriggerState()
-      this.$refs.triggerWebhookModal.hide()
-    },
-    handleHeaderInputChange(index) {
-      if (this.lastHeaderElement(index)) {
-        this.addHeaderField()
-      }
-    },
-    triggerAllEvents(val) {
-      if (val) {
-        this.showIndividualEvents = false
-        this.resetSelectedEvents()
-      }
-    },
-    selectSingleEvent(val) {
-      if (val) {
-        this.values.include_all_events = false
-      }
-    },
-    resetSelectedEvents() {
-      for (const [key] of Object.entries(this.events)) {
-        this.events[key] = false
-      }
-    },
-    addHeaderField() {
-      this.values.headers.push({ header: '', value: '' })
-    },
-    removeHeaderField(index) {
-      this.values.headers.splice(index, 1)
-    },
-    lastHeaderElement(index) {
-      return index + 1 === this.values.headers.length
-    },
-    firstHeaderElement(index) {
-      return index === 0
-    },
-    createEventsList() {
-      const list = []
-      for (const [key, value] of Object.entries(this.events)) {
-        if (value) {
-          list.push(this.eventsMapping[key])
-        }
-      }
-      return list
-    },
-    validateHeaders() {
-      // Check if there is a key-value pair where
-      // the header is set but value is empty.
-      this.resetHeaderError()
-      this.values.headers.forEach((item, index) => {
-        if (item.header.length > 0 && item.value.length < 2) {
-          this.areHeadersInvalid = true
-        }
+    prepareHeaders(headers) {
+      const preparedHeaders = {}
+      headers.forEach((header) => {
+        preparedHeaders[header.name] = header.value
       })
-    },
-    resetHeaderError() {
-      this.areHeadersInvalid = false
-    },
-    getHeaderValues() {
-      // remove empty headers and values
-      const result = this.values.headers.filter((item) => {
-        const bothNotEmpty = item.header !== '' && item.values !== ''
-        const headerNotEmpty = item.header !== ''
-        return bothNotEmpty || headerNotEmpty
-      })
-      return result
-    },
-    isFormValid() {
-      this.validateHeaders()
-      return !this.areHeadersInvalid && !this.$v.$invalid
+      return preparedHeaders
     },
     getFormValues() {
-      const headers = this.getHeaderValues()
-      const valuesCopy = Object.assign({}, this.values)
-      delete valuesCopy.events
-      if (this.radio === 'custom') {
-        const events = this.createEventsList()
-        return { ...valuesCopy, include_all_events: false, events, headers }
-      } else {
-        return { ...valuesCopy, include_all_events: true, headers }
+      const values = form.methods.getFormValues.call(this)
+      values.headers = this.prepareHeaders(this.headers)
+      return values
+    },
+    openTestModal() {
+      // The form must be valid we can show the test modal.
+      if (!this.isFormValid()) {
+        this.$v.$touch()
+        return
       }
+
+      const values = this.getFormValues()
+      this.$refs.testModal.show(
+        this.table.id,
+        this.exampleWebhookEventType,
+        values
+      )
+    },
+    addHeader(name, value) {
+      this.headers.push({ name, value })
+    },
+    removeHeader(index) {
+      this.headers.splice(index, 1)
+    },
+    lastHeader(index) {
+      return index === this.headers.length
     },
   },
 }
@@ -418,15 +363,15 @@ export default {
         "status": "Status",
         "userFieldNames": "User field names",
         "events": "Which events should trigger this webhook?",
-        "headers": "Additional headers"
+        "headers": "Additional headers",
+        "example": "Example payload"
       },
       "errors": {
         "urlField": "This field is required and needs to be a valid url.",
-        "invalidHeaders": "You cannot set a header without a value."
+        "invalidHeaders": "One of the headers is invalid."
       },
       "checkbox": {
         "sendUserFieldNames": "Send user field names",
-        "sendFieldIDs": "Send field ids",
         "statusActive": "Active"
       },
       "radio": {
@@ -445,7 +390,8 @@ export default {
         "status": "@TODO",
         "userFieldNames": "@TODO",
         "events": "@TODO",
-        "headers": "@TODO"
+        "headers": "@TODO",
+        "example": "@TODO"
       },
       "errors": {
         "urlField": "@TODO",

@@ -4,7 +4,7 @@
       <li
         v-for="(tab, index) in tabs"
         :key="tab.title"
-        class="tabs_item"
+        class="tabs__item"
         :class="{ 'tabs__item--active': index == selectedIndex }"
         @click="selectTab(index)"
       >

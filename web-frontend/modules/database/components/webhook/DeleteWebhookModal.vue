@@ -27,17 +27,13 @@
 <script>
 import modal from '@baserow/modules/core/mixins/modal'
 import error from '@baserow/modules/core/mixins/error'
-import { notifyIf } from '@baserow/modules/core/utils/error'
+import WebhookService from '@baserow/modules/database/services/webhook'
 
 export default {
   name: 'DeleteViewModal',
   mixins: [modal, error],
   props: {
     webhook: {
-      type: Object,
-      required: true,
-    },
-    table: {
       type: Object,
       required: true,
     },
@@ -50,15 +46,15 @@ export default {
   methods: {
     async deleteWebhook() {
       this.loading = true
-      const table = this.table
-      const webhook = this.webhook
+
       try {
-        await this.$store.dispatch('webhook/delete', { table, webhook })
-        this.loading = false
+        await WebhookService(this.$client).delete(this.webhook.id)
+        this.$emit('deleted', this.webhook)
       } catch (error) {
-        this.loading = false
-        notifyIf(error, 'webhook')
+        this.handleError(error)
       }
+
+      this.loading = false
     },
   },
 }
