@@ -1,6 +1,6 @@
 from typing import Type, Dict, Set, Optional
 
-from django.db.models import Model, Expression
+from django.db.models import Model, Expression, Q
 
 from baserow.contrib.database.fields.dependencies.types import FieldDependencies
 from baserow.contrib.database.fields.field_cache import FieldCache
@@ -25,11 +25,13 @@ from baserow.contrib.database.formula.types.formula_type import BaserowFormulaTy
 from baserow.contrib.database.formula.types.formula_types import BASEROW_FORMULA_TYPES
 from baserow.contrib.database.formula.types.typer import (
     calculate_typed_expression,
+    recreate_formula_field_if_needed,
 )
 from baserow.contrib.database.formula.types.visitors import (
     FunctionsUsedVisitor,
     FieldReferenceExtractingVisitor,
 )
+from baserow.core.db import LockedAtomicTransaction
 
 
 def _expression_requires_refresh_after_insert(expression: BaserowExpression):
@@ -65,6 +67,8 @@ class FormulaHandler:
     Contains all the methods used to interact with formulas and formula fields in
     Baserow.
     """
+
+    BASEROW_FORMULA_VERSION = 2
 
     @classmethod
     def baserow_expression_to_update_django_expression(
@@ -164,9 +168,6 @@ class FormulaHandler:
     @classmethod
     def get_field_dependencies_from_expression(cls, expression) -> FieldDependencies:
         """
-        WARNING: This function is directly used by migration code. Please ensure
-        backwards compatability.
-
         Helper method that returns a the field dependencies of a given expression.
 
         :param expression: The expression to calculate field dependencies for.
@@ -194,9 +195,6 @@ class FormulaHandler:
     @classmethod
     def raw_formula_to_untyped_expression(cls, formula_string):
         """
-        WARNING: This function is directly used by migration code. Please ensure
-        backwards compatability.
-
         Converts the provided formula string to an untyped BaserowExpression which is
         an intermediate representation of the formula consisting of a tree of python
         objects. This form is much easier to inspect, transform and perform calculations
@@ -290,6 +288,7 @@ class FormulaHandler:
         expression_type = expression.expression_type
 
         formula_field.internal_formula = str(expression)
+        formula_field.version = cls.BASEROW_FORMULA_VERSION
         expression_type.persist_onto_formula_field(formula_field)
         formula_field.requires_refresh_after_insert = (
             _expression_requires_refresh_after_insert(expression)
@@ -310,3 +309,56 @@ class FormulaHandler:
         """
 
         return get_parse_tree_for_formula(formula)
+
+    @classmethod
+    def recalculate_formulas_according_to_version(cls):
+        from baserow.contrib.database.fields.models import FormulaField
+
+        field_lookup_cache = FieldCache()
+        already_recalculated = set()
+
+        def _recalculate_depth_first(f):
+            recalculated_dependant = False
+            if f in already_recalculated:
+                return True
+            for dep in f.field_dependencies.all():
+                recalculated_dependant = (
+                    recalculated_dependant or _recalculate_depth_first(dep)
+                )
+
+            f = f.specific
+
+            if isinstance(f, FormulaField) and (
+                f.version != cls.BASEROW_FORMULA_VERSION or recalculated_dependant
+            ):
+                field.save(
+                    field_lookup_cache=field_lookup_cache, raise_if_invalid=False
+                )
+                recalculated_dependant = True
+                already_recalculated.add(f)
+            return recalculated_dependant
+
+        with LockedAtomicTransaction(FormulaField):
+            if FormulaField.objects.filter(
+                ~Q(version=cls.BASEROW_FORMULA_VERSION)
+            ).exists():
+                for field in FormulaField.objects.all():
+                    _recalculate_depth_first(field)
+
+                FormulaField.objects.update(
+                    version=cls.BASEROW_FORMULA_VERSION,
+                )
+
+    @classmethod
+    def recalculate_formula_and_get_update_expression(
+        cls, field, old_field, field_cache
+    ):
+        from baserow.contrib.database.views.handler import ViewHandler
+
+        field.save(field_lookup_cache=field_cache)
+        recreate_formula_field_if_needed(field, old_field)
+        ViewHandler().field_type_changed(field)
+        return FormulaHandler.baserow_expression_to_update_django_expression(
+            field.cached_typed_internal_expression,
+            field_cache.get_model(field.table),
+        )

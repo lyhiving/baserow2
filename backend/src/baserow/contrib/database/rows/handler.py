@@ -366,14 +366,19 @@ class RowHandler:
         values["order"] = self.get_order_before_row(before, model)
         instance = model.objects.create(**values)
 
+        for name, value in manytomany_values.items():
+            getattr(instance, name).set(value)
+
         if model.fields_requiring_refresh_after_insert():
             instance.save()
             instance.refresh_from_db(
                 fields=model.fields_requiring_refresh_after_insert()
             )
 
-        for name, value in manytomany_values.items():
-            getattr(instance, name).set(value)
+        updated_fields = [field["field"] for field in model._field_objects.values()]
+        FieldDependencyHandler.update_dependant_rows_after_row_created(
+            instance, updated_fields
+        )
 
         return instance
 
@@ -466,7 +471,9 @@ class RowHandler:
 
             row.save()
 
-            FieldDependencyHandler.refresh_all_dependant_rows(row.id, updated_fields)
+            FieldDependencyHandler.update_dependant_rows_after_row_update(
+                row, updated_fields, apply_updates=True
+            )
 
             # We need to refresh here as ExpressionFields might have had their values
             # updated. Django does not support UPDATE .... RETURNING and so we need to
@@ -567,7 +574,9 @@ class RowHandler:
 
         TrashHandler.trash(user, group, table.database, row, parent_id=table.id)
         updated_fields = [field["field"] for field in model._field_objects.values()]
-        FieldDependencyHandler.refresh_all_dependant_rows(row.id, updated_fields)
+        FieldDependencyHandler.update_dependant_rows_after_row_deleted(
+            row, updated_fields
+        )
 
         row_deleted.send(
             self,

@@ -18,14 +18,22 @@ class FieldCache:
             self.cached_field_by_name_per_table = (
                 existing_cache.cached_field_by_name_per_table
             )
+            self.model_cache = existing_cache.model_cache
         else:
             self.cached_field_by_name_per_table = {}
+            self.model_cache = {}
 
     def cache_field(self, field):
         if not field.trashed:
             table_id = field.table_id
             self.cached_field_by_name_per_table.setdefault(table_id, {})
             self.cached_field_by_name_per_table[table_id][field.name] = field
+
+    def get_model(self, table):
+        table_id = table.id
+        if table_id not in self.model_cache:
+            self.model_cache[table_id] = table.get_model()
+        return self.model_cache[table_id]
 
     def lookup_specific(self, non_specific_field):
         try:

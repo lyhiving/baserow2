@@ -1,188 +1,37 @@
-from typing import Optional, List, Iterable
+from typing import Optional, List
 
 from baserow.contrib.database.fields.dependencies.depedency_rebuilder import (
-    FieldDependencyRebuildingVisitor,
     rebuild_field_dependencies,
     update_fields_with_broken_references,
     check_for_circular,
 )
+from baserow.contrib.database.fields.dependencies.models import FieldDependency
 from baserow.contrib.database.fields.dependencies.update_collector import (
     CachingFieldUpdateCollector,
 )
-from baserow.contrib.database.fields.dependencies.visitors import (
-    FieldGraphDependencyVisitor,
-    FieldGraphRenamingVisitor,
-)
 from baserow.contrib.database.fields.field_cache import FieldCache
-from baserow.contrib.database.fields.models import Field
-from baserow.contrib.database.formula import (
-    BulkMultiTableFormulaFieldRefresher,
-)
-from baserow.contrib.database.fields.dependencies.models import FieldDependency
+from baserow.contrib.database.fields.models import Field, LinkRowField
 from baserow.core.trash.handler import TrashHandler
 
 
-def _visit_all_dependencies_breadth_first(
-    starting_path: List[str],
-    starting_dependencies: Iterable[FieldDependency],
-    visitors: List[FieldGraphDependencyVisitor],
-    field_lookup_cache: FieldCache,
-):
-    """
-    Given some starting dependencies in the field graph this runs the visitors over each
-    dependency.
-    Each visitor can choose to continue visiting down the graph to the next of
-    set dependencies or not.
+def _dependant_fields(field_or_fields, field_cache, via_path=None):
+    if via_path is None:
+        via_path = []
+    if not isinstance(field_or_fields, list):
+        fields = [field_or_fields]
+    else:
+        fields = field_or_fields
+    from baserow.contrib.database.fields.registries import field_type_registry
 
-    Dependencies will be visited breadth first. This means given a field graph that
-    looks like:
-
-    X
-    │ <- Starting Dependency (X<-A, meaning field A depends on field X)
-    A (1)
-    ├─ B (2)
-    │  ├─ D (4)
-    │  ├─ E (5)
-    │
-    ├─ C (3)
-    │  ├─ F (6)
-    │  ├─ G (7)
-
-    Starting with the starting dependency of X<-A this function will visit the
-    dependencies in the following order: X<-A, A<-B, A<-C, B<-D, B<-E, C<-F, C<-G.
-
-    This is done because imagine we have a field dependency graph that looks like a
-    diamond:
-    X
-    │ <- Starting dependency (X<-A, meaning field A depends on field X)
-    A (1)
-    ├─ B (2)
-    │  ├─ D (3 paths, 5 paths)
-    │  │
-    ├─ C (4)
-
-    This means field D depends on field B and C, and both B and C depend on A.
-    If we did instead a depth first traversal we would calculate in this order:
-    X<-A, A<-B, B<-D, A<-C which would result in D have incorrect values as it depends
-    on C but C had not yet been visited when D was visited.
-
-    :param starting_dependencies: The dependenies to start traversing the field graph.
-    :param visitors: The starting visitors which will visit the starting_edges and
-        then depending on each visitor will continue or not visiting further edges.
-    :param field_lookup_cache: A cache used to lookup fields from the database.
-    """
-
-    deps_with_paths = [(e, starting_path) for e in starting_dependencies]
-    while len(deps_with_paths) > 0:
-        dependency, path = deps_with_paths.pop(0)
-        specific_dependant_field = field_lookup_cache.lookup_specific(
-            dependency.dependant.field
-        )
-        if dependency.dependency.field is not None:
-            specific_dependency_field = field_lookup_cache.lookup_specific(
-                dependency.dependency.field
-            )
-        else:
-            specific_dependency_field = None
-
-        if dependency.via:
-            path = [dependency.via.db_column] + path
-
-        from baserow.contrib.database.fields.registries import field_type_registry
-
-        field_type = field_type_registry.get_by_model(specific_dependant_field)
-        for v in visitors:
-            if v.accepts(field_type):
-                v.visit_field_dependency(
-                    specific_dependant_field,
-                    specific_dependency_field,
-                    dependency.via,
-                    path,
-                )
-        deps_with_paths += [
-            (d, path) for d in specific_dependant_field.dependants.all()
-        ]
-
-
-def _get_direct_descendants_and_break_dependencies(field):
-    dependants_qs = field.field_dependants()
-    direct_dependants = list(dependants_qs)
-    dependants_qs.update(dependency=None, broken_reference_field_name=field.name)
-    return direct_dependants
-
-
-def _visit_all_dependencies(
-    visitors: List[FieldGraphDependencyVisitor],
-    field: Optional[Field] = None,
-    old_field: Optional[Field] = None,
-    starting_edges: Optional[List[FieldDependency]] = None,
-    field_lookup_cache=None,
-):
-    if field_lookup_cache is None:
-        field_lookup_cache = FieldCache()
-
-    if field is not None:
-        field = field_lookup_cache.lookup_specific(field)
-        from baserow.contrib.database.fields.registries import field_type_registry
-
-        field_type = field_type_registry.get_by_model(field)
-        for v in visitors:
-            if v.accepts(field_type):
-                v.visit_starting_field(field, old_field)
-
-    if starting_edges is None:
-        starting_edges = field.field_dependants()
-
-    _visit_all_dependencies_breadth_first(
-        [],
-        starting_edges,
-        visitors,
-        field_lookup_cache,
-    )
-
-    for v in visitors:
-        v.after_graph_visit()
-
-
-def _field_deleted_visitors(updated_fields: CachingFieldUpdateCollector):
-    return [
-        FieldDependencyRebuildingVisitor(updated_fields, rebuild_first_children=True),
-        BulkMultiTableFormulaFieldRefresher(
-            updated_fields,
-            recalculate_internal_formulas=True,
-            refresh_row_values=True,
-        ),
-    ]
-
-
-def _field_changed_visitors(
-    changed_field: Optional[Field],
-    old_changed_field: Optional[Field],
-    rename_only: bool,
-    updated_fields: CachingFieldUpdateCollector,
-):
-    visitors = []
-    if changed_field is not None and old_changed_field is not None:
-        old_name = old_changed_field.name
-        new_name = changed_field.name
-        if old_name != new_name:
-            visitors.append(
-                FieldGraphRenamingVisitor(updated_fields, old_name, new_name)
-            )
-    # No need to bother doing any value refreshing/dependency rebuilding if only the
-    # name has changed.
-    if not rename_only:
-        visitors += [
-            FieldDependencyRebuildingVisitor(
-                updated_fields, rebuild_first_children=True
-            ),
-            BulkMultiTableFormulaFieldRefresher(
-                updated_fields,
-                recalculate_internal_formulas=True,
-                refresh_row_values=True,
-            ),
-        ]
-    return visitors
+    for field in fields:
+        for field_dependency in field.dependants.select_related("dependant").all():
+            dependant_field = field_cache.lookup_specific(field_dependency.dependant)
+            dependant_field_type = field_type_registry.get_by_model(dependant_field)
+            if field_dependency.via is not None:
+                new_via_path = via_path + [field_dependency.via]
+            else:
+                new_via_path = via_path
+            yield dependant_field, dependant_field_type, new_via_path
 
 
 class FieldDependencyHandler:
@@ -198,17 +47,23 @@ class FieldDependencyHandler:
             deletion.
         """
 
-        direct_descendants = _get_direct_descendants_and_break_dependencies(field)
+        field_update_collector = CachingFieldUpdateCollector()
+        dependant_fields = list(_dependant_fields(field, field_update_collector))
+        field.dependants.update(dependency=None, broken_reference_field_name=field.name)
 
         field.delete()
 
-        updated_fields = CachingFieldUpdateCollector()
-        _visit_all_dependencies(
-            _field_deleted_visitors(updated_fields),
-            starting_edges=direct_descendants,
-            field_lookup_cache=updated_fields,
-        )
-        return updated_fields
+        for (
+            dependant_field,
+            dependant_field_type,
+            via_path,
+        ) in dependant_fields:
+            dependant_field_type.field_dependency_deleted(
+                dependant_field, field, via_path, field_update_collector
+            )
+        field_update_collector.apply_updates()
+
+        return field_update_collector
 
     @classmethod
     def trash_and_update_dependencies(
@@ -225,128 +80,80 @@ class FieldDependencyHandler:
             deletion.
         """
 
-        direct_descendants_edges = _get_direct_descendants_and_break_dependencies(field)
+        field_update_collector = CachingFieldUpdateCollector()
+        dependant_fields = list(_dependant_fields(field, field_update_collector))
+        field.dependants.update(dependency=None, broken_reference_field_name=field.name)
+        if isinstance(field, LinkRowField):
+            FieldDependency.objects.filter(via=field).delete()
 
         TrashHandler.trash(requesting_user, group, field.table.database, field)
 
-        updated_fields = CachingFieldUpdateCollector()
-        updated_fields.add_updated_field(field)
-        _visit_all_dependencies(
-            _field_deleted_visitors(updated_fields),
-            starting_edges=direct_descendants_edges,
-            field_lookup_cache=updated_fields,
-        )
-        return updated_fields
+        field_update_collector.add_updated_field(field)
+        for (
+            dependant_field,
+            dependant_field_type,
+            path_to_dependant,
+        ) in dependant_fields:
+            dependant_field_type.field_dependency_deleted(
+                dependant_field,
+                field,
+                path_to_dependant,
+                field_update_collector,
+            )
+        field_update_collector.apply_updates()
+
+        return field_update_collector
 
     @classmethod
-    def refresh_all_dependant_rows(
-        cls, changed_row_id: int, updated_fields: List[Field]
+    def update_dependants_after_field_updated(
+        cls,
+        updated_field,
+        old_updated_field,
+        field_cache=None,
+        update_collector=None,
+        via_path=None,
+        apply_updates=False,
     ):
-        """
-        Given a single row has had some fields updated this function will go through
-        all dependant fields and refresh their row values accordingly.
-
-        :param updated_fields: The list of fields which changed in the row.
-        :param changed_row_id: The id of the row which changed.
-        """
-
-        updated_fields_collector = CachingFieldUpdateCollector()
-        starting_edges = []
-        for field in updated_fields:
-            starting_edges += field.field_dependants()
-
-        _visit_all_dependencies(
-            [
-                BulkMultiTableFormulaFieldRefresher(
-                    updated_fields_collector,
-                    refresh_row_values=True,
-                    recalculate_internal_formulas=False,
-                    starting_row_id=changed_row_id,
-                ),
-            ],
-            starting_edges=starting_edges,
-            field_lookup_cache=updated_fields_collector,
-        )
-
-    @classmethod
-    def update_graph_after_field_updated(
-        cls, updated_field, old_updated_field, field_cache
-    ):
-        from baserow.contrib.database.fields.registries import field_type_registry
-
-        field_update_collector = CachingFieldUpdateCollector(field_cache)
-        cls.update_fields_with_broken_references(updated_field)
-        cls.rebuild_dependencies(updated_field, field_update_collector)
-        for dep in updated_field.dependants_joined_with_depedant_field():
-            dependant_field = field_update_collector.lookup_specific(dep.depedant)
-            dependant_field_type = field_type_registry.get_by_model(dependant_field)
+        if update_collector is None:
+            update_collector = CachingFieldUpdateCollector(field_cache)
+        update_fields_with_broken_references(updated_field)
+        update_collector.add_updated_field(updated_field)
+        cls.rebuild_dependencies(updated_field, update_collector)
+        for (
+            dependant_field,
+            dependant_field_type,
+            path_to_dependant,
+        ) in _dependant_fields(updated_field, update_collector, via_path):
             dependant_field_type.field_dependency_updated(
                 dependant_field,
                 updated_field,
                 old_updated_field,
+                path_to_dependant,
+                update_collector,
+            )
+        if apply_updates:
+            update_collector.apply_updates()
+        return update_collector
+
+    @classmethod
+    def update_dependants_after_field_created(cls, created_field, field_cache):
+        field_update_collector = CachingFieldUpdateCollector(field_cache)
+        update_fields_with_broken_references(created_field)
+        field_update_collector.add_updated_field(created_field)
+        cls.rebuild_dependencies(created_field, field_update_collector)
+        for (
+            dependant_field,
+            dependant_field_type,
+            path_to_dependant,
+        ) in _dependant_fields(created_field, field_update_collector):
+            dependant_field_type.field_dependency_created(
+                dependant_field,
+                created_field,
+                path_to_dependant,
                 field_update_collector,
             )
-        field_update_collector.apply_field_updates()
+        field_update_collector.apply_updates()
         return field_update_collector
-
-    @classmethod
-    def update_graph_after_field_created(cls, created_field, field_cache):
-        from baserow.contrib.database.fields.registries import field_type_registry
-
-        field_update_collector = CachingFieldUpdateCollector(field_cache)
-        cls.update_fields_with_broken_references(created_field)
-        cls.rebuild_dependencies(created_field, field_update_collector)
-        for dep in created_field.dependants_joined_with_depedant_field():
-            dependant_field = field_update_collector.lookup_specific(dep.depedant)
-            dependant_field_type = field_type_registry.get_by_model(dependant_field)
-            dependant_field_type.field_dependency_created(
-                dependant_field, created_field, field_update_collector
-            )
-        field_update_collector.apply_field_updates()
-        return field_update_collector
-
-    @classmethod
-    def update_field_dependency_graph_after_field_change(
-        cls,
-        changed_field: Optional[Field] = None,
-        old_changed_field: Optional[Field] = None,
-        rename_only: bool = False,
-        field_lookup_cache: FieldCache = None,
-    ) -> CachingFieldUpdateCollector:
-        """
-        Will do all required field graph operations after a field has changed in some
-        way.
-
-        :param changed_field: The updated/created/restored field instance.
-        :param old_changed_field: If there was a previous version of the field this
-            should be it.
-        :param rename_only: If it is known that the only thing that has changed about
-            the field is it's name then set this to True to optimize the resulting
-            graph update.
-        :param field_lookup_cache: If a field cache has already been made and populated
-            provide it here and the field graph will continue to use it.
-        :return: A collection of all fields that updated as a result of the field graph
-            update.
-        :raises CircularFieldDependencyError:
-        :raises SelfReferenceFieldDependencyError:
-        """
-
-        updated_fields = CachingFieldUpdateCollector(field_lookup_cache)
-
-        if changed_field is not None:
-            fixed_some_fields = update_fields_with_broken_references(changed_field)
-            if fixed_some_fields:
-                rename_only = False
-
-        _visit_all_dependencies(
-            _field_changed_visitors(
-                changed_field, old_changed_field, rename_only, updated_fields
-            ),
-            field=changed_field,
-            old_field=old_changed_field,
-            field_lookup_cache=updated_fields,
-        )
-        return updated_fields
 
     @classmethod
     def get_same_table_dependencies(cls, field: Field) -> List[Field]:
@@ -358,7 +165,11 @@ class FieldDependencyHandler:
         :return: A list of specific field instances.
         """
 
-        return [dep.dependency.specific for dep in field.field_dependencies(via=False)]
+        # TODO does using the lookup cache make sense here?
+        return [
+            dep.specific
+            for dep in field.field_dependencies.filter(table=field.table).all()
+        ]
 
     @classmethod
     def check_for_circular_references(
@@ -387,5 +198,50 @@ class FieldDependencyHandler:
         rebuild_field_dependencies(field, field_lookup_cache)
 
     @classmethod
-    def update_fields_with_broken_references(cls, field):
-        update_fields_with_broken_references(field)
+    def update_dependant_rows_after_row_update(
+        cls,
+        row,
+        updated_fields,
+        via_path=None,
+        field_update_collector=None,
+        apply_updates=False,
+    ):
+
+        if field_update_collector is None:
+            field_update_collector = CachingFieldUpdateCollector(starting_row_id=row.id)
+
+        if via_path is None:
+            via_path = []
+        for updated_field, field_type, path in _dependant_fields(
+            updated_fields, field_update_collector, via_path
+        ):
+            field_type.row_of_dependency_updated(
+                updated_field, row, field_update_collector, path
+            )
+        if apply_updates:
+            field_update_collector.apply_updates()
+        return field_update_collector
+
+    @classmethod
+    def update_dependant_rows_after_row_created(cls, row, updated_fields):
+        field_update_collector = CachingFieldUpdateCollector(starting_row_id=row.id)
+        for updated_field, field_type, path in _dependant_fields(
+            updated_fields, field_update_collector
+        ):
+            field_type.row_of_dependency_created(
+                updated_field, row, field_update_collector, path
+            )
+        field_update_collector.apply_updates()
+        return field_update_collector
+
+    @classmethod
+    def update_dependant_rows_after_row_deleted(cls, row, updated_fields):
+        field_update_collector = CachingFieldUpdateCollector(starting_row_id=row.id)
+        for updated_field, field_type, path in _dependant_fields(
+            updated_fields, field_update_collector
+        ):
+            field_type.row_of_dependency_deleted(
+                updated_field, row, field_update_collector, path
+            )
+        field_update_collector.apply_updates()
+        return field_update_collector

@@ -67,6 +67,10 @@ if [ "$SYNC_TEMPLATES_ON_STARTUP" = "true" ] ; then
   echo "python /baserow/backend/src/baserow/manage.py sync_templates"
   python /baserow/backend/src/baserow/manage.py sync_templates
 fi
+if [ "$UPDATE_FORMULAS_ON_STARTUP" = "true" ] ; then
+  echo "python /baserow/backend/src/baserow/manage.py update_formulas"
+  python /baserow/backend/src/baserow/manage.py update_formulas
+fi
 }
 
 case "$1" in

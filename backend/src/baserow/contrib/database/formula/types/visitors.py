@@ -67,9 +67,6 @@ class FieldReferenceExtractingVisitor(
     BaserowFormulaASTVisitor[UnTyped, FieldDependencies]
 ):
     """
-    WARNING: This visitor is directly used by migration code. Please ensure
-    backwards compatability.
-
     Calculates and returns all the field dependencies that the baserow expression has.
     """
 

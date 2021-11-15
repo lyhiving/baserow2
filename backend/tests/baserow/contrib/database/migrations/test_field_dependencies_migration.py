@@ -6,12 +6,14 @@ from django.db import DEFAULT_DB_ALIAS
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 
-
 # noinspection PyPep8Naming
+from baserow.contrib.database.formula import FormulaHandler
+
+
 @pytest.mark.django_db
 def test_forwards_migration(data_fixture, transactional_db):
     migrate_from = [("database", "0042_add_other_trashed_indexes")]
-    migrate_to = [("database", "0044_not_null_internal_formula_fields")]
+    migrate_to = [("database", "0043_field_dependencies")]
 
     old_state = migrate(migrate_from)
 
@@ -58,6 +60,7 @@ def test_forwards_migration(data_fixture, transactional_db):
     )
 
     new_state = migrate(migrate_to)
+    FormulaHandler.recalculate_formulas_according_to_version()
     NewFormulaField = new_state.apps.get_model("database", "FormulaField")
 
     new_formula_field = NewFormulaField.objects.get(id=formula_field.id)
@@ -71,11 +74,6 @@ def test_forwards_migration(data_fixture, transactional_db):
     assert new_unknown_field.internal_formula == f"field('trashed')"
     assert new_unknown_field.formula_type == "invalid"
 
-    FieldDependencyNode = new_state.apps.get_model("database", "FieldDependencyNode")
-    FieldDependencyEdge = new_state.apps.get_model("database", "FieldDependencyEdge")
-    assert FieldDependencyNode.objects.count() == 5
-    assert FieldDependencyEdge.objects.count() == 3
-
     # We need to apply the latest migration otherwise other tests might fail.
     call_command("migrate", verbosity=0, database=DEFAULT_DB_ALIAS)
 
@@ -83,7 +81,7 @@ def test_forwards_migration(data_fixture, transactional_db):
 # noinspection PyPep8Naming
 @pytest.mark.django_db
 def test_backwards_migration(data_fixture, transactional_db):
-    migrate_from = [("database", "0044_not_null_internal_formula_fields")]
+    migrate_from = [("database", "0043_field_dependencies")]
     migrate_to = [("database", "0042_add_other_trashed_indexes")]
 
     old_state = migrate(migrate_from)
@@ -103,6 +101,7 @@ def test_backwards_migration(data_fixture, transactional_db):
         internal_formula="something",
         requires_refresh_after_insert=False,
         content_type_id=content_type_id,
+        version=2,
         order=0,
         name="a",
     )
@@ -113,6 +112,7 @@ def test_backwards_migration(data_fixture, transactional_db):
         internal_formula="something",
         requires_refresh_after_insert=False,
         content_type_id=content_type_id,
+        version=2,
         order=0,
         name="b",
     )

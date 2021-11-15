@@ -205,6 +205,16 @@ def test_can_change_formula_type_breaking_other_fields(data_fixture):
     second_formula_field = handler.create_field(
         user=user, table=table, type_name="formula", name="2", formula="field('1')+1"
     )
+    assert list(
+        second_formula_field.field_dependencies.values_list("id", flat=True)
+    ) == [first_formula_field.id]
+    assert list(first_formula_field.dependant_fields.values_list("id", flat=True)) == [
+        second_formula_field.id
+    ]
+    assert (
+        second_formula_field.dependencies.first().dependency.specific
+        == first_formula_field
+    )
     handler.update_field(
         user=user, field=first_formula_field, new_type_name="formula", formula="'a'"
     )

@@ -1,21 +1,15 @@
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple
 
+from baserow.contrib.database.fields import models as field_models
 from baserow.contrib.database.fields.dependencies.exceptions import (
     CircularFieldDependencyError,
     SelfReferenceFieldDependencyError,
 )
-from baserow.contrib.database.fields.dependencies.update_collector import (
-    CachingFieldUpdateCollector,
-)
-from baserow.contrib.database.fields.dependencies.visitors import (
-    FieldGraphDependencyVisitor,
-)
-from baserow.contrib.database.fields.field_cache import FieldCache
-from baserow.contrib.database.fields import models as field_models
+from baserow.contrib.database.fields.dependencies.models import FieldDependency
 from baserow.contrib.database.fields.dependencies.models import (
     will_cause_circular_dep,
 )
-from baserow.contrib.database.fields.dependencies.models import FieldDependency
+from baserow.contrib.database.fields.field_cache import FieldCache
 from baserow.contrib.database.table import models as table_models
 
 
@@ -29,54 +23,20 @@ def update_fields_with_broken_references(field: "field_models.Field"):
     """
 
     broken_dependencies_fixed_by_fields_name = FieldDependency.objects.filter(
-        child__table=field.table,
+        dependant__table=field.table,
         broken_reference_field_name=field.name,
     )
     updated_deps = []
     for dep in broken_dependencies_fixed_by_fields_name:
-        if not will_cause_circular_dep(dep.child, field):
-            dep.parent = field
+        if not will_cause_circular_dep(dep.dependant, field):
+            dep.dependency = field
             dep.broken_reference_field_name = None
             updated_deps.append(dep)
     FieldDependency.objects.bulk_update(
-        updated_deps, ["parent", "broken_reference_field_name"]
+        updated_deps, ["dependency", "broken_reference_field_name"]
     )
 
     return len(updated_deps) > 0
-
-
-class FieldDependencyRebuildingVisitor(FieldGraphDependencyVisitor):
-    def __init__(
-        self,
-        updated_fields_collector: CachingFieldUpdateCollector,
-        rebuild_all_children: bool = False,
-        rebuild_first_children: bool = False,
-    ):
-        super().__init__(updated_fields_collector)
-        self.rebuild_first_children = rebuild_first_children
-        self.rebuild_all_children = rebuild_all_children
-        if rebuild_first_children and rebuild_all_children:
-            raise ValueError("Cannot rebuild only the first and all children")
-
-    def visit_starting_field(
-        self,
-        starting_field: "field_models.Field",
-        old_starting_field: Optional["field_models.Field"],
-    ):
-        rebuild_field_dependencies(starting_field, self.updated_fields_collector)
-        self.updated_fields_collector.add_updated_field(starting_field)
-
-    def visit_field_dependency(
-        self,
-        child_field: "field_models.Field",
-        parent_field: "field_models.Field",
-        via_field: Optional["field_models.Field"],
-        path_to_starting_field: List[str],
-    ):
-        if self.rebuild_all_children or self.rebuild_first_children:
-            rebuild_field_dependencies(child_field, self.updated_fields_collector)
-            self.updated_fields_collector.add_updated_field(child_field)
-        return self.rebuild_all_children
 
 
 def _add_graph_dependency_raising_if_circular(
@@ -129,9 +89,10 @@ def _add_dep_with_via(
                 via=via_field,
             )
         else:
-            # Depend directly on the via field also so if it is renamed or changes
-            # we get notified.
-            _create_dependency_raising_if_circular(field, via_field)
+            if field.id != via_field.id:
+                # Depend directly on the via field also so if it is renamed or changes
+                # we get notified.
+                _create_dependency_raising_if_circular(field, via_field)
             _create_dependency_raising_if_circular(
                 field, target_field, via_field=via_field
             )
@@ -190,7 +151,7 @@ def rebuild_field_dependencies(
         field_instance, field_lookup_cache
     )
     if field_dependencies is not None:
-        field_dependencies.dependencies.delete()
+        FieldDependency.objects.filter(dependant=field_instance).delete()
         for dependency in field_dependencies:
             _add_dependency(field_instance, dependency, field_lookup_cache)
 

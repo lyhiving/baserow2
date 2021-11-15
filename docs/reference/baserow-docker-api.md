@@ -123,6 +123,8 @@ Backend configuration:
 - `SYNC_TEMPLATES_ON_STARTUP` (default `true`) : When `true` on backend server startup
   it will run the baserow management command `sync_templates` which loads any templates
   found in `./backend/templates` into Baserow.
+- `UPDATE_FORMULAS_ON_STARTUP` (default `true`) : When `true` on backend server startup 
+  it will ensure all formulas are upgraded or downgraded to the servers formula version.
 
 Pass through variables:
 

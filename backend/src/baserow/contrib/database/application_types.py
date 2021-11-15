@@ -3,7 +3,6 @@ from django.db import connection
 from django.urls import path, include
 
 from baserow.contrib.database.api.serializers import DatabaseSerializer
-from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
 from baserow.contrib.database.fields.dependencies.update_collector import (
     CachingFieldUpdateCollector,
 )
@@ -137,11 +136,10 @@ class DatabaseApplicationType(ApplicationType):
 
                 if field_object:
                     table["_field_objects"].append(field_object)
-                    all_fields.append(field_object)
+                    all_fields.append((field_type, field_object))
 
         updated_fields_collector = CachingFieldUpdateCollector()
-        for field in all_fields:
-            field_type = field_type_registry.get(field["type"])
+        for field_type, field in all_fields:
             field_type.after_import_serialized(field, updated_fields_collector)
 
         # Now that the all tables and fields exist, we can create the views and create

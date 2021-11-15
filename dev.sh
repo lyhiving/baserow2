@@ -99,6 +99,7 @@ migrate=true
 sync_templates=true
 exit_if_other_owners_found=true
 delete_db_volume=false
+update_formulas=true
 while true; do
 case "${1:-noneleft}" in
     dont_migrate)
@@ -227,6 +228,18 @@ else
 # Because of the defaults set in the docker-compose file we need to explicitly turn
 # this off as just not setting it will get the default "true" value.
 export SYNC_TEMPLATES_ON_STARTUP="false"
+fi
+else
+  echo "./dev.sh Using the already set value for the env variable SYNC_TEMPLATES_ON_STARTUP = $SYNC_TEMPLATES_ON_STARTUP"
+fi
+
+if [[ -z "${UPDATE_FORMULAS_ON_STARTUP:-}" ]]; then
+if [ "$update_formulas" = true ] ; then
+export UPDATE_FORMULAS_ON_STARTUP="true"
+else
+# Because of the defaults set in the docker-compose file we need to explicitly turn
+# this off as just not setting it will get the default "true" value.
+export UPDATE_FORMULAS_ON_STARTUP="false"
 fi
 else
   echo "./dev.sh Using the already set value for the env variable SYNC_TEMPLATES_ON_STARTUP = $SYNC_TEMPLATES_ON_STARTUP"

@@ -119,19 +119,6 @@ class Field(
         kwargs.pop("raise_if_invalid", None)
         super().save(*args, **kwargs)
 
-    def field_dependencies(self, via=True):
-        return (
-            self.dependencies.filter(dependency__isnull=False, via__isnull=not via)
-            .select_related("dependency")
-            .all()
-        )
-
-    def field_dependants(self):
-        return self.dependants.select_related("depending_field").all()
-
-    def dependants_joined_with_dependant_field(self):
-        return self.dependants.select_related("depending_field").all()
-
 
 class AbstractSelectOption(ParentFieldTrashableModelMixin, models.Model):
     value = models.CharField(max_length=255, blank=True)
@@ -310,6 +297,7 @@ class PhoneNumberField(Field):
 class FormulaField(Field):
     formula = models.TextField()
     internal_formula = models.TextField()
+    version = models.IntegerField()
     requires_refresh_after_insert = models.BooleanField()
     old_formula_with_field_by_id = models.TextField(null=True, blank=True)
     error = models.TextField(null=True, blank=True)

@@ -35,9 +35,6 @@ from baserow.contrib.database.formula.ast.tree import (
     BaserowExpression,
 )
 from baserow.contrib.database.formula.exceptions import BaserowFormulaException
-from baserow.contrib.database.formula.formula_field_refresher import (
-    BulkMultiTableFormulaFieldRefresher,
-)
 from baserow.contrib.database.formula.handler import FormulaHandler
 from baserow.contrib.database.formula.parser.exceptions import (
     MaximumFormulaSizeError,
@@ -78,7 +75,6 @@ __all__ = [
     BaserowFormulaVisitor,
     BaserowFormula,
     BaserowFormulaSyntaxError,
-    BulkMultiTableFormulaFieldRefresher,
     BASEROW_FORMULA_TYPE_ALLOWED_FIELDS,
     BASEROW_FORMULA_TYPE_CHOICES,
 ]

@@ -151,8 +151,8 @@ class RowTrashableItemType(TrashableItemType):
         table = self.get_parent(trashed_item, trash_entry.parent_trash_item_id)
 
         model = table.get_model()
-        FieldDependencyHandler.refresh_all_dependant_rows(
-            trashed_item.id, [f["field"] for f in model._field_objects.values()]
+        FieldDependencyHandler.update_dependant_rows_after_row_created(
+            trashed_item, [f["field"] for f in model._field_objects.values()]
         )
         row_created.send(
             self,
