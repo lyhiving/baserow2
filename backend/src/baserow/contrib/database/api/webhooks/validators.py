@@ -5,36 +5,27 @@ from advocate.connection import (
     UnacceptableAddressException,
     validating_create_connection,
 )
+
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
+
 from rest_framework import serializers
 
-
-def validate_events_data(data):
-    """
-    This function makes sure that if there is the key 'include_all_events' present in a
-    dictionary and it is 'False' there needs to be an events dictionary also present.
-    Raises DRF ValidationError it the events dictionary is not present.
-    """
-
-    data_dict = dict(data)
-    data_keys = data.keys()
-    include_all_events = data_dict.get("include_all_events", None)
-
-    if include_all_events is None:
-        # in this case we will set the default value of 'True'
-        # hence no further validation needs to take place
-        return data
-
-    if not include_all_events and "events" not in data_keys:
-        raise serializers.ValidationError("events must be provided")
-    return data
+from baserow.contrib.database.webhooks.validators import (
+    header_name_validator,
+    header_value_validator,
+)
 
 
-def url_validation(value):
+def url_validation(value: str) -> str:
     """
     This is a custom url validation, needed in order to make sure that users will not
-    enter a url which could be in the network of where baserow is running.
-    It makes use of the advocate libraries own address validation.
+    enter a url which could be in the network of where baserow is running. It makes
+    use of the advocate libraries own address validation.
+
+    :param value: The URL that must be validated.
+    :raises serializers.ValidationError: When the provided URL is not valid.
+    :return: The provided URL if valid.
     """
 
     # in case we run the develop server we want to allowe every url.
@@ -62,22 +53,32 @@ def url_validation(value):
         raise serializers.ValidationError(detail="Not a valid url", code="invalid_url")
 
 
-def http_header_validation(value):
+def http_header_validation(headers: dict) -> dict:
     """
-    This http header validation helper makes sure that we don't receive duplicate
-    headers or that someone is trying to override the default 'content-type' header.
+    Validates the provided headers. If a key or value is invalid, a validation error
+    will be raised.
+
+    :param headers: A dictionary where the key is the header name and the value the
+        value.
+    :raises serializers.ValidationError: When the provided URL is not valid.
+    :return: The provided headers if they are valid.
     """
 
-    headers = [x["header"].strip().lower().capitalize() for x in value]
+    for name, value in headers.items():
+        try:
+            header_name_validator(name)
+        except DjangoValidationError:
+            raise serializers.ValidationError(
+                detail=f"The provided header name {name} is invalid.",
+                code="invalid_http_header_name",
+            )
 
-    if len(headers) != len(set(headers)):
-        raise serializers.ValidationError(
-            detail="Please provide unambigous headers", code="ambigous_headers"
-        )
+        try:
+            header_value_validator(value)
+        except DjangoValidationError:
+            raise serializers.ValidationError(
+                detail=f"The provided header value {value} is invalid.",
+                code="invalid_http_header_value",
+            )
 
-    if "content-type" in headers:
-        raise serializers.ValidationError(
-            detail="You cannot override content-type", code="wrong_header"
-        )
-
-    return value
+    return headers

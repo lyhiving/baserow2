@@ -1,38 +1,108 @@
 from django.conf import settings
 
 from baserow.config.celery import app
-from .exceptions import TableWebhookCannotBeCalled, TableWebhookDoesNotExist
 
 
-@app.task(bind=True, max_retries=settings.WEBHHOKS_MAX_RETRIES_PER_CALL)
-def call_webhook(self, **kwargs):
+@app.task(bind=True, max_retries=settings.WEBHOOKS_MAX_RETRIES_PER_CALL)
+def call_webhook(
+    self,
+    webhook_id: int,
+    event_id: str,
+    event_type: str,
+    method: str,
+    url: str,
+    headers: dict,
+    payload: dict,
+    **kwargs: dict
+):
+    """
+    This task should be called asynchronously when the webhook call must be trigged.
+    All the raw values should be provided as argument. If the call fails for whatever
+    reason, it tries again until the max retries have been reached.
+
+    :param webhook_id: The id of the webhook related to the call.
+    :param event_id: A unique event id that can used as id for the table webhook call
+        model.
+    :param event_type: The event type related to the webhook trigger.
+    :param method: The request method the must be used.
+    :param url: The URL can must be called.
+    :param headers: The additional headers that must be added to the request. The key
+        is the name and the value is the value.
+    :param payload: The JSON serializable payload that must be used as request body.
+
+    :return:
+    """
+
+    from django.utils import timezone
+    from requests import RequestException
+    from advocate import UnacceptableAddressException
+
     from .handler import WebhookHandler
+    from .models import TableWebhook, TableWebhookCall
 
-    webhook_handler = WebhookHandler()
-    webhook_id = kwargs.get("webhook_id")
-    payload = kwargs.get("payload")
-    event_id = kwargs.get("event_id")
-    event_type = kwargs.get("event_type")
+    handler = WebhookHandler()
 
     try:
-        webhook_handler.call_from_task(webhook_id, payload, event_id, event_type)
-    except TableWebhookCannotBeCalled as exc:
-        if self.request.retries < settings.WEBHHOKS_MAX_RETRIES_PER_CALL:
-            self.retry(exc=exc, countdown=2 ** self.request.retries)
-        else:
-            try:
-                if (
-                    webhook_handler.get_trigger_count(webhook_id)
-                    < settings.WEBHOOKS_MAX_CONSECUTIVE_TRIGGER_FAILURES
-                ):
-                    webhook_handler.increment_failed_trigger(webhook_id)
-                    return
-                else:
-                    webhook_handler.deactivate_webhook(webhook_id)
-                    return
-            except TableWebhookDoesNotExist:
-                return
-    except TableWebhookDoesNotExist:
+        webhook = TableWebhook.objects.select_for_update().get(id=webhook_id)
+    except TableWebhook.DoesNotExist:
+        # If the webhook has been deleted while executing, we don't want to continue
+        # trying to call the URL because we can't update the state of the webhook.
         return
 
-    webhook_handler.reset_failed_trigger(webhook_id)
+    request = None
+    response = None
+    success = False
+    error = ""
+
+    try:
+        response = handler.make_request(method, url, headers, payload)
+        request = response.request
+        success = response.ok
+    except RequestException as exception:
+        request = exception.request
+        response = exception.response
+        error = str(exception)
+    except UnacceptableAddressException as exception:
+        error = str(exception)
+
+    TableWebhookCall.objects.update_or_create(
+        id=event_id,
+        event_type=event_type,
+        webhook=webhook,
+        defaults={
+            "called_time": timezone.now(),
+            "called_url": url,
+            "request": handler.format_request(request) if request is not None else None,
+            "response": handler.format_response(response)
+            if response is not None
+            else None,
+            "response_status": response.status_code if response is not None else None,
+            "error": error,
+        },
+    )
+    handler.clean_webhook_calls(webhook)
+
+    if success:
+        if webhook.failed_triggers != 0:
+            webhook.failed_triggers = 0
+            webhook.save()
+    else:
+        if self.request.retries < settings.WEBHOOKS_MAX_RETRIES_PER_CALL:
+            # If the task is still operating within the max retries per call limit,
+            # then we want to retry the task with an exponential backoff.
+            self.retry(countdown=2 ** self.request.retries)
+        elif (
+            webhook.failed_triggers < settings.WEBHOOKS_MAX_CONSECUTIVE_TRIGGER_FAILURES
+        ):
+            # If the task has reached the maximum amount of call, we're going to give
+            # up and increase the total failed triggers of the webook if we're still
+            # operating within the limits of the max consecutive trigger failures.
+            webhook.failed_triggers += 1
+            webhook.save()
+        else:
+            # If webhook has reached the maximum amount of failed triggers,
+            # we're going to deactivate it because we can reasonable assume that the
+            # target doesn't work anymore. At this point we've tried 8 * 10 times.
+            # The user manually active it again if he wishes.
+            webhook.active = False
+            webhook.save()

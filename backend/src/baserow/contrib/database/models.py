@@ -24,7 +24,7 @@ from .fields.models import (
 from .tokens.models import Token, TokenPermission
 from .webhooks.models import (
     TableWebhook,
-    TableWebhookEvents,
+    TableWebhookEvent,
     TableWebhookCall,
     TableWebhookHeader,
 )
@@ -51,7 +51,7 @@ __all__ = [
     "Token",
     "TokenPermission",
     "TableWebhook",
-    "TableWebhookEvents",
+    "TableWebhookEvent",
     "TableWebhookHeader",
     "TableWebhookCall",
 ]

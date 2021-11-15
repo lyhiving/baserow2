@@ -238,6 +238,7 @@ SPECTACULAR_SETTINGS = {
         {"name": "Database table form view"},
         {"name": "Database table rows"},
         {"name": "Database table export"},
+        {"name": "Database table webhooks"},
         {"name": "Database tokens"},
         {"name": "Admin"},
     ],
@@ -355,6 +356,6 @@ FILE_UPLOAD_PERMISSIONS = None
 MAX_FORMULA_STRING_LENGTH = 10000
 
 WEBHOOKS_MAX_CONSECUTIVE_TRIGGER_FAILURES = 8
-WEBHHOKS_MAX_RETRIES_PER_CALL = 8
+WEBHOOKS_MAX_RETRIES_PER_CALL = 8
 WEBHOOKS_MAX_PER_TABLE = 20
 WEBHOOKS_MAX_CALL_LOG_ENTRIES = 10

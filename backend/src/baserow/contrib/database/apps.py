@@ -199,7 +199,7 @@ class DatabaseConfig(AppConfig):
 
         register_formula_functions(formula_function_registry)
 
-        from .webhooks.webhook_event_types import (
+        from .rows.webhook_event_types import (
             RowCreatedEventType,
             RowUpdatedEventType,
             RowDeletedEventType,

@@ -1,17 +1,17 @@
 import uuid
 
 from django.dispatch.dispatcher import Signal
+from django.core.exceptions import ImproperlyConfigured
+from django.db import transaction
 
-from baserow.contrib.database.api.rows.serializers import (
-    RowSerializer,
-    get_row_serializer_class,
-)
-from baserow.contrib.database.webhooks.handler import WebhookHandler
+from baserow.contrib.database.table.models import Table
 from baserow.core.registry import (
     ModelRegistryMixin,
     Registry,
     Instance,
 )
+
+
 from .tasks import call_webhook
 
 
@@ -28,47 +28,95 @@ class WebhookEventType(Instance):
     task that will do the actuall call to the endpoint.
     """
 
+    signal = None
+
     def __init__(self):
         if not isinstance(self.signal, Signal):
-            raise Exception
+            raise ImproperlyConfigured(
+                "The `signal` property must be set on webhook event types."
+            )
 
-        self.connect_to_signal()
         super().__init__()
-
-    def connect_to_signal(self):
         self.signal.connect(self.listener)
 
-    def get_payload(self, **kwargs):
-        model = kwargs.get("model")
-        table = kwargs.get("table")
-        row = kwargs.get("row")
-        user_field_names = kwargs.get("user_field_names", True)
-        serialized_row = get_row_serializer_class(
-            model, RowSerializer, is_response=True, user_field_names=user_field_names
-        )(row).data
-        payload = {
-            "table_id": table.id,
-            "row_id": row.id,
+    def get_payload(self, event_id, webhook, **kwargs):
+        """
+        The default payload of the event type. This method can be overwritten in
+        favor of additional values must be included in the payload.
+
+        :param event_id: The unique uuid event id.
+        :param webhook: The webhook object related to call.
+        :param kwargs: Additional kwargs related to the signal arguments.
+        :return: A JSON serializable dict containing the base payload.
+        """
+
+        return {
+            "table_id": webhook.table_id,
+            "event_id": event_id,
             "event_type": self.type,
-            "values": serialized_row,
         }
 
-        return payload
+    def get_table_object(self, **kwargs: dict) -> Table:
+        """
+        By default we expect the `table` instance to be in the payload of the signal.
+        This method must be overwritten if the table can be extracted in a different
+        from.
 
-    def listener(self, **kwargs):
-        table_id = kwargs.get("table").id
+        :param kwargs: The arguments of the signal.
+        :return: The extracted table object.
+        """
+
+        table = kwargs.get("table", None)
+
+        if not isinstance(table, Table):
+            raise ValueError(
+                "Could not extract the table object from the payload of the signal. "
+                "Please overwrite the `get_table_object` method."
+            )
+
+        return table
+
+    def listener(self, **kwargs: dict):
+        """
+        The method that is called when the signal is triggered. By default it will
+        wait for the transition to commit to call the `listener_after_commit` method.
+
+        By default it will
+        figure out which webhooks need to be called and will trigger the async task
+        that will actually do so.
+
+        :param kwargs: The arguments of the signal.
+        """
+
+        transaction.on_commit(lambda: self.listener_after_commit(**kwargs))
+
+    def listener_after_commit(self, **kwargs):
+        """
+        Called after the signal is triggered and the transaction commits. By default it
+        will figure out which webhooks need to be called and will trigger the async task
+        that will actually do so.
+
+        :param kwargs: The arguments of the signal.
+        """
+
+        from baserow.contrib.database.webhooks.handler import WebhookHandler
+
+        table = self.get_table_object(**kwargs)
         webhook_handler = WebhookHandler()
-        webhooks = webhook_handler.find_webhooks_to_call(table_id, self.type)
+        webhooks = webhook_handler.find_webhooks_to_call(table.id, self.type)
         event_id = uuid.uuid4()
         for webhook in webhooks:
-            payload = self.get_payload(
-                user_field_names=webhook.use_user_field_names, **kwargs
-            )
+            payload = self.get_payload(event_id, webhook, **kwargs)
+            headers = webhook.header_dict
+            headers.update(**webhook_handler.get_headers(self.type, event_id))
             call_webhook.delay(
                 webhook_id=webhook.id,
-                payload=payload,
                 event_id=event_id,
                 event_type=self.type,
+                method=webhook.request_method,
+                url=webhook.url,
+                headers=headers,
+                payload=payload,
             )
 
 

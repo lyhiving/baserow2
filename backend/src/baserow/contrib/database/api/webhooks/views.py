@@ -5,36 +5,36 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from requests import RequestException
+from advocate import UnacceptableAddressException
+
 from baserow.api.decorators import map_exceptions, validate_body
 from baserow.api.errors import ERROR_USER_NOT_IN_GROUP
 from baserow.api.schemas import get_error_schema
 from baserow.contrib.database.api.tables.errors import ERROR_TABLE_DOES_NOT_EXIST
-from baserow.contrib.database.api.tokens.authentications import TokenAuthentication
 from baserow.contrib.database.api.webhooks.errors import (
-    ERROR_TABLE_WEBHOOK_ALREADY_EXISTS,
     ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST,
     ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED,
 )
-from baserow.contrib.database.table.exceptions import TableDoesNotExist
-from baserow.contrib.database.table.handler import TableHandler
 from baserow.contrib.database.webhooks.exceptions import (
-    TableWebhookAlreadyExists,
     TableWebhookDoesNotExist,
     TableWebhookMaxAllowedCountExceeded,
 )
 from baserow.contrib.database.webhooks.handler import WebhookHandler
+from baserow.contrib.database.webhooks.models import TableWebhook
+from baserow.contrib.database.table.exceptions import TableDoesNotExist
+from baserow.contrib.database.table.handler import TableHandler
 from baserow.core.exceptions import UserNotInGroup
 from .serializers import (
     TableWebhookCreateRequestSerializer,
-    TableWebhookManualCallRequestSerializer,
-    TableWebhookManualCallResponseSerializer,
-    TableWebhookResultSerializer,
+    TableWebhookSerializer,
     TableWebhookUpdateRequestSerializer,
+    TableWebhookTestCallRequestSerializer,
+    TableWebhookTestCallResponseSerializer,
 )
 
 
 class TableWebhooksView(APIView):
-    authentication_classes = APIView.authentication_classes + [TokenAuthentication]
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
@@ -43,14 +43,17 @@ class TableWebhooksView(APIView):
                 name="table_id",
                 location=OpenApiParameter.PATH,
                 type=OpenApiTypes.INT,
-                description="The ID of the table for which to retrieve the webhooks.",
+                description="Returns only webhooks of the table related to this value.",
             ),
         ],
         tags=["Database table webhooks"],
         operation_id="list_database_table_webhooks",
-        description="Lists all the webhooks for the given table.",
+        description=(
+            "Lists all webhooks of the table related to the provided `table_id` if the "
+            "user has access to the related database group."
+        ),
         responses={
-            200: TableWebhookResultSerializer(many=True),
+            200: TableWebhookSerializer(many=True),
             400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
         },
@@ -62,16 +65,14 @@ class TableWebhooksView(APIView):
         }
     )
     def get(self, request, table_id):
-        """
-        Lists all the webhooks of a given table.
-        """
+        """Lists all the webhooks of a given table."""
 
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
         webhooks = webhook_handler.get_all_table_webhooks(
             table=table, user=request.user
         )
-        return Response(TableWebhookResultSerializer(webhooks, many=True).data)
+        return Response(TableWebhookSerializer(webhooks, many=True).data)
 
     @extend_schema(
         parameters=[
@@ -79,16 +80,21 @@ class TableWebhooksView(APIView):
                 name="table_id",
                 location=OpenApiParameter.PATH,
                 type=OpenApiTypes.INT,
-                description="The ID of the table for which the webhook shall be "
-                "created.",
+                description=(
+                    "Creates a webhook for the table related to the provided value."
+                ),
             ),
         ],
         tags=["Database table webhooks"],
         operation_id="create_database_table_webhook",
-        description="Create a webhook for a given table.",
+        description=(
+            "Creates a new webhook for the table related to the provided `table_id` "
+            "parameter if the authorized user has access to the related database "
+            "group."
+        ),
         request=TableWebhookCreateRequestSerializer(),
         responses={
-            200: TableWebhookResultSerializer(),
+            200: TableWebhookSerializer(),
             400: get_error_schema(
                 ["ERROR_USER_NOT_IN_GROUP", "ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED"]
             ),
@@ -101,165 +107,153 @@ class TableWebhooksView(APIView):
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
             TableWebhookMaxAllowedCountExceeded: ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED,
-            TableWebhookAlreadyExists: ERROR_TABLE_WEBHOOK_ALREADY_EXISTS,
         }
     )
     @validate_body(TableWebhookCreateRequestSerializer)
     def post(self, request, data, table_id):
-        """
-        Creates a new webhook for a given table.
-        """
+        """Creates a new webhook for a given table."""
 
         table = TableHandler().get_table(table_id)
         webhook_handler = WebhookHandler()
-        events = data.pop("events", None)
-        headers = data.pop("headers", None)
         webhook = webhook_handler.create_table_webhook(
-            table=table, user=request.user, events=events, headers=headers, **data
+            user=request.user, table=table, **data
         )
-        return Response(TableWebhookResultSerializer(webhook).data)
+        return Response(TableWebhookSerializer(webhook).data)
 
 
 class TableWebhookView(APIView):
+    permission_classes = (IsAuthenticated,)
+
     @extend_schema(
         parameters=[
-            OpenApiParameter(
-                name="table_id",
-                location=OpenApiParameter.PATH,
-                type=OpenApiTypes.INT,
-                description="The ID of the table for which to retrieve the webhook.",
-            ),
             OpenApiParameter(
                 name="webhook_id",
                 location=OpenApiParameter.PATH,
                 type=OpenApiTypes.INT,
-                description="The ID of the webhook that shall be retrieved.",
+                description="Returns the webhook related to the provided value.",
             ),
         ],
         tags=["Database table webhooks"],
         operation_id="get_database_table_webhook",
-        description="Returns an existing, single webhook.",
+        description=(
+            "Returns the existing webhook if the authorized user has access to the "
+            "related database group."
+        ),
         responses={
-            200: TableWebhookResultSerializer(),
+            200: TableWebhookSerializer(),
             400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
-            404: get_error_schema(
-                ["ERROR_TABLE_DOES_NOT_EXIST", "ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST"]
-            ),
+            404: get_error_schema(["ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST"]),
         },
     )
     @map_exceptions(
         {
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
-            TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
             TableWebhookDoesNotExist: ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST,
         }
     )
-    def get(self, request, table_id, webhook_id):
-        table = TableHandler().get_table(table_id)
-        webhook_handler = WebhookHandler()
-        webhook = webhook_handler.get_table_webhook(
-            webhook_id=webhook_id, table=table, user=request.user
-        )
-        return Response(TableWebhookResultSerializer(webhook).data)
+    def get(self, request, webhook_id):
+        webhook = WebhookHandler().get_table_webhook(request.user, webhook_id)
+        return Response(TableWebhookSerializer(webhook).data)
 
     @extend_schema(
         parameters=[
             OpenApiParameter(
-                name="table_id",
-                location=OpenApiParameter.PATH,
-                type=OpenApiTypes.INT,
-                description="The ID of the table under which the webhook was created.",
-            ),
-            OpenApiParameter(
                 name="webhook_id",
                 location=OpenApiParameter.PATH,
                 type=OpenApiTypes.INT,
-                description="The ID of the webhook that shall be updated.",
+                description="Updates the webhook related to the provided value.",
             ),
         ],
         tags=["Database table webhooks"],
         operation_id="update_database_table_webhook",
-        description="Update a specific table webhook.",
-        request=TableWebhookCreateRequestSerializer(),
+        description=(
+            "Updates the existing view if the authorized user has access to the "
+            "related database group."
+        ),
+        request=TableWebhookUpdateRequestSerializer(),
         responses={
-            200: TableWebhookResultSerializer(),
+            200: TableWebhookSerializer(),
             400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
-            404: get_error_schema(
-                ["ERROR_TABLE_DOES_NOT_EXIST", "ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST"]
-            ),
+            404: get_error_schema(["ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST"]),
         },
     )
     @validate_body(TableWebhookUpdateRequestSerializer)
     @map_exceptions(
         {
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
-            TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
             TableWebhookDoesNotExist: ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST,
         }
     )
-    def patch(self, request, data, table_id, webhook_id):
-        table = TableHandler().get_table(table_id)
-        webhook_handler = WebhookHandler()
-        webhook = webhook_handler.update_table_webhook(
-            webhook_id=webhook_id, table=table, user=request.user, data=data
+    @transaction.atomic
+    def patch(self, request, data, webhook_id):
+        handler = WebhookHandler()
+        webhook = handler.get_table_webhook(
+            request.user,
+            webhook_id,
+            base_queryset=TableWebhook.objects.select_for_update(),
         )
-        return Response(TableWebhookResultSerializer(webhook).data)
+        webhook = handler.update_table_webhook(
+            user=request.user, webhook=webhook, **data
+        )
+        return Response(TableWebhookSerializer(webhook).data)
 
     @extend_schema(
         parameters=[
-            OpenApiParameter(
-                name="table_id",
-                location=OpenApiParameter.PATH,
-                type=OpenApiTypes.INT,
-                description="The ID of the table under which the webhook was created.",
-            ),
             OpenApiParameter(
                 name="webhook_id",
                 location=OpenApiParameter.PATH,
                 type=OpenApiTypes.INT,
-                description="The ID of the webhook that shall be deleted.",
+                description="Deletes the webhook related to the provided value.",
             ),
         ],
         tags=["Database table webhooks"],
         operation_id="delete_database_table_webhook",
-        description="Delete a specific table webhook.",
+        description=(
+            "Deletes the existing webhook if the authorized user has access to the "
+            "related database's group."
+        ),
         request=TableWebhookCreateRequestSerializer(),
         responses={
             400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
-            404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
+            404: get_error_schema(["ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST"]),
         },
     )
     @map_exceptions(
         {
             UserNotInGroup: ERROR_USER_NOT_IN_GROUP,
-            TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
+            TableWebhookDoesNotExist: ERROR_TABLE_WEBHOOK_DOES_NOT_EXIST,
         }
     )
-    def delete(self, request, table_id, webhook_id):
-        table = TableHandler().get_table(table_id)
-        webhook_handler = WebhookHandler()
-        webhook_handler.delete_table_webhook(
-            webhook_id=webhook_id, table=table, user=request.user
+    @transaction.atomic
+    def delete(self, request, webhook_id):
+        handler = WebhookHandler()
+        webhook = handler.get_table_webhook(
+            request.user,
+            webhook_id,
+            base_queryset=TableWebhook.objects.select_for_update(),
         )
-        return Response(data="OK", status=200)
+        handler.delete_table_webhook(webhook=webhook, user=request.user)
+        return Response(status=204)
 
 
-class TableWebhookCallView(APIView):
+class TableWebhookTestCallView(APIView):
+    permission_classes = (IsAuthenticated,)
+
     @extend_schema(
         parameters=[
             OpenApiParameter(
                 name="table_id",
                 location=OpenApiParameter.PATH,
                 type=OpenApiTypes.INT,
-                description="The ID of the table under which the webhook was created.",
+                description="The ID of the table.",
             ),
         ],
         tags=["Database table webhooks"],
-        operation_id="call_database_table_webhook",
-        description="Manually calls a webhook.",
-        request=TableWebhookCreateRequestSerializer(),
+        operation_id="test_call_database_table_webhook",
+        description=("@TODO"),
+        request=TableWebhookTestCallRequestSerializer,
         responses={
-            200: TableWebhookManualCallResponseSerializer(),
+            200: TableWebhookTestCallResponseSerializer(),
             400: get_error_schema(["ERROR_USER_NOT_IN_GROUP"]),
             404: get_error_schema(["ERROR_TABLE_DOES_NOT_EXIST"]),
         },
@@ -270,9 +264,16 @@ class TableWebhookCallView(APIView):
             TableDoesNotExist: ERROR_TABLE_DOES_NOT_EXIST,
         }
     )
-    @validate_body(TableWebhookManualCallRequestSerializer)
+    @validate_body(TableWebhookTestCallRequestSerializer)
     def post(self, request, data, table_id):
         table = TableHandler().get_table(table_id)
-        webhook_handler = WebhookHandler()
-        data = webhook_handler.test_call(table, request.user, **data)
-        return Response(TableWebhookManualCallResponseSerializer(data).data)
+
+        try:
+            response = WebhookHandler().trigger_test_call(request.user, table, **data)
+            data = {"response": response}
+        except RequestException as exception:
+            data = {"request": exception.request}
+        except UnacceptableAddressException:
+            data = {}
+
+        return Response(TableWebhookTestCallResponseSerializer(data).data)
