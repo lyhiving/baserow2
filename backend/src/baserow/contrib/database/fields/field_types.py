@@ -55,7 +55,6 @@ from .dependencies.exceptions import (
     SelfReferenceFieldDependencyError,
     CircularFieldDependencyError,
 )
-from .dependencies.handler import FieldDependencyHandler
 from .dependencies.types import OptionalFieldDependencies
 from .exceptions import (
     LinkRowTableNotInSameDatabase,

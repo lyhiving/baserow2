@@ -11,8 +11,7 @@ from baserow.contrib.database.fields.dependencies.visitors import (
     FieldGraphDependencyVisitor,
 )
 from baserow.contrib.database.fields.field_cache import FieldCache
-from baserow.contrib.database.fields.models import Field
-from baserow.contrib.database.fields.registries import field_type_registry
+from baserow.contrib.database.fields import models as field_models
 from baserow.contrib.database.fields.dependencies.models import (
     will_cause_circular_dep,
 )
@@ -20,7 +19,7 @@ from baserow.contrib.database.fields.dependencies.models import FieldDependency
 from baserow.contrib.database.table import models as table_models
 
 
-def update_fields_with_broken_references(field: Field):
+def update_fields_with_broken_references(field: "field_models.Field"):
     """
     Checks to see if there are any fields which should now depend on `field` if it's
     name has changed to match a broken reference.
@@ -60,16 +59,18 @@ class FieldDependencyRebuildingVisitor(FieldGraphDependencyVisitor):
             raise ValueError("Cannot rebuild only the first and all children")
 
     def visit_starting_field(
-        self, starting_field: Field, old_starting_field: Optional[Field]
+        self,
+        starting_field: "field_models.Field",
+        old_starting_field: Optional["field_models.Field"],
     ):
         rebuild_field_dependencies(starting_field, self.updated_fields_collector)
         self.updated_fields_collector.add_updated_field(starting_field)
 
     def visit_field_dependency(
         self,
-        child_field: Field,
-        parent_field: Field,
-        via_field: Optional[Field],
+        child_field: "field_models.Field",
+        parent_field: "field_models.Field",
+        via_field: Optional["field_models.Field"],
         path_to_starting_field: List[str],
     ):
         if self.rebuild_all_children or self.rebuild_first_children:
@@ -79,7 +80,7 @@ class FieldDependencyRebuildingVisitor(FieldGraphDependencyVisitor):
 
 
 def _add_graph_dependency_raising_if_circular(
-    field: Field,
+    field: "field_models.Field",
     dependency_field_name: str,
     field_lookup_cache: FieldCache,
     via_field_name: Optional[str] = None,
@@ -102,7 +103,7 @@ def _add_graph_dependency_raising_if_circular(
 
 
 def _add_dep_with_via(
-    field: Field,
+    field: "field_models.Field",
     dependency_field_name: str,
     table: "table_models.Table",
     via_field_name: str,
@@ -137,9 +138,9 @@ def _add_dep_with_via(
 
 
 def _create_dependency_raising_if_circular(
-    field: Field,
-    dependency_field: Field,
-    via_field: Optional[Field] = None,
+    field: "field_models.Field",
+    dependency_field: "field_models.Field",
+    via_field: Optional["field_models.Field"] = None,
 ):
     if not will_cause_circular_dep(field, dependency_field):
         FieldDependency.objects.create(
@@ -182,6 +183,8 @@ def rebuild_field_dependencies(
         fields referenced by any provided field dependencies.
     """
 
+    from baserow.contrib.database.fields.registries import field_type_registry
+
     field_type = field_type_registry.get_by_model(field_instance)
     field_dependencies = field_type.get_field_dependencies(
         field_instance, field_lookup_cache
@@ -196,6 +199,8 @@ def check_for_circular(
     field_instance,
     field_lookup_cache: FieldCache,
 ):
+    from baserow.contrib.database.fields.registries import field_type_registry
+
     field_type = field_type_registry.get_by_model(field_instance)
     field_dependencies = field_type.get_field_dependencies(
         field_instance, field_lookup_cache

@@ -2,8 +2,6 @@ from django.conf import settings
 from django.db import models
 from django.db.models import When, Case
 
-from baserow.contrib.database.fields.models import Field
-
 
 class FieldDependency(models.Model):
     """
@@ -73,6 +71,8 @@ def will_cause_circular_dep(from_field, to_field):
 
 
 def get_all_field_dependencies(field):
+    from baserow.contrib.database.fields.models import Field
+
     # TODO include copyright notice from dag
     query_parameters = {
         "pk": field.pk,

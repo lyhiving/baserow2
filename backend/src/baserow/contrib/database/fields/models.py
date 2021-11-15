@@ -12,7 +12,6 @@ from baserow.contrib.database.formula import (
     BASEROW_FORMULA_TYPE_CHOICES,
     FormulaHandler,
 )
-from baserow.contrib.database.fields.dependencies.models import FieldDependencyNode
 from baserow.contrib.database.mixins import ParentFieldTrashableModelMixin
 from baserow.core.mixins import (
     OrderableMixin,
@@ -71,6 +70,13 @@ class Field(
         related_name="database_fields",
         on_delete=models.SET(get_default_field_content_type),
     )
+    field_dependencies = models.ManyToManyField(
+        "self",
+        related_name="dependant_fields",
+        through="FieldDependency",
+        through_fields=("dependant", "dependency"),
+        symmetrical=False,
+    )
 
     class Meta:
         ordering = (
@@ -121,6 +127,9 @@ class Field(
         )
 
     def field_dependants(self):
+        return self.dependants.select_related("depending_field").all()
+
+    def dependants_joined_with_dependant_field(self):
         return self.dependants.select_related("depending_field").all()
 
 

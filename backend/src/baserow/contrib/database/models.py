@@ -23,7 +23,6 @@ from .fields.models import (
 )
 from .tokens.models import Token, TokenPermission
 from baserow.contrib.database.fields.dependencies.models import (
-    FieldDependencyNode,
     FieldDependency,
 )
 
@@ -48,7 +47,6 @@ __all__ = [
     "PhoneNumberField",
     "Token",
     "TokenPermission",
-    "FieldDependencyNode",
     "FieldDependency",
 ]
 

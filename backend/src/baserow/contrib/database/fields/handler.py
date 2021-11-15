@@ -209,10 +209,8 @@ class FieldHandler:
 
         field_type.after_create(instance, to_model, user, connection, before)
 
-        updated_fields = (
-            FieldDependencyHandler.update_graph_after_field_created(
-                instance, field_lookup_cache
-            )
+        updated_fields = FieldDependencyHandler.update_graph_after_field_created(
+            instance, field_lookup_cache
         )
 
         for field, related_fields in updated_fields.get_updated_fields_per_table():
@@ -399,10 +397,8 @@ class FieldHandler:
             altered_column,
             before,
         )
-        updated_fields = (
-            FieldDependencyHandler.update_graph_after_field_updated(
-                field, old_field, field_lookup_cache=field_lookup_cache
-            )
+        updated_fields = FieldDependencyHandler.update_graph_after_field_updated(
+            field, old_field, field_cache=field_lookup_cache
         )
 
         for field, related_fields in updated_fields.get_updated_fields_per_table():
@@ -630,10 +626,8 @@ class FieldHandler:
             field_lookup_cache = FieldCache()
             field.save(field_lookup_cache=field_lookup_cache)
 
-            updated_fields = (
-                FieldDependencyHandler.update_graph_after_field_created(
-                    field, field_lookup_cache=field_lookup_cache
-                )
+            updated_fields = FieldDependencyHandler.update_graph_after_field_created(
+                field, field_cache=field_lookup_cache
             )
             for field, related_fields in updated_fields.get_updated_fields_per_table():
                 field_restored.send(

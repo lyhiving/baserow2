@@ -1,7 +1,5 @@
 from typing import Optional, List, Iterable
 
-from django.db import transaction
-
 from baserow.contrib.database.fields.dependencies.depedency_rebuilder import (
     FieldDependencyRebuildingVisitor,
     rebuild_field_dependencies,
@@ -17,7 +15,6 @@ from baserow.contrib.database.fields.dependencies.visitors import (
 )
 from baserow.contrib.database.fields.field_cache import FieldCache
 from baserow.contrib.database.fields.models import Field
-from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.formula import (
     BulkMultiTableFormulaFieldRefresher,
 )
@@ -91,6 +88,8 @@ def _visit_all_dependencies_breadth_first(
         if dependency.via:
             path = [dependency.via.db_column] + path
 
+        from baserow.contrib.database.fields.registries import field_type_registry
+
         field_type = field_type_registry.get_by_model(specific_dependant_field)
         for v in visitors:
             if v.accepts(field_type):
@@ -124,6 +123,8 @@ def _visit_all_dependencies(
 
     if field is not None:
         field = field_lookup_cache.lookup_specific(field)
+        from baserow.contrib.database.fields.registries import field_type_registry
+
         field_type = field_type_registry.get_by_model(field)
         for v in visitors:
             if v.accepts(field_type):
@@ -269,33 +270,40 @@ class FieldDependencyHandler:
 
     @classmethod
     def update_graph_after_field_updated(
-        cls, updated_field, old_updated_field, field_lookup_cache
+        cls, updated_field, old_updated_field, field_cache
     ):
-        updated_fields = CachingFieldUpdateCollector(field_lookup_cache)
+        from baserow.contrib.database.fields.registries import field_type_registry
+
+        field_update_collector = CachingFieldUpdateCollector(field_cache)
         cls.update_fields_with_broken_references(updated_field)
-        cls.rebuild_dependencies(updated_field, updated_fields)
-        for dep in updated_field.field_dependants():
-            dependant_field = dep.depedant
+        cls.rebuild_dependencies(updated_field, field_update_collector)
+        for dep in updated_field.dependants_joined_with_depedant_field():
+            dependant_field = field_update_collector.lookup_specific(dep.depedant)
             dependant_field_type = field_type_registry.get_by_model(dependant_field)
             dependant_field_type.field_dependency_updated(
-                dependant_field, updated_field, old_updated_field, updated_fields
+                dependant_field,
+                updated_field,
+                old_updated_field,
+                field_update_collector,
             )
-        updated_fields.apply_field_updates()
-        return updated_fields
+        field_update_collector.apply_field_updates()
+        return field_update_collector
 
     @classmethod
-    def update_graph_after_field_created(cls, created_field, field_lookup_cache):
-        updated_fields = CachingFieldUpdateCollector(field_lookup_cache)
+    def update_graph_after_field_created(cls, created_field, field_cache):
+        from baserow.contrib.database.fields.registries import field_type_registry
+
+        field_update_collector = CachingFieldUpdateCollector(field_cache)
         cls.update_fields_with_broken_references(created_field)
-        cls.rebuild_dependencies(created_field, updated_fields)
-        for dep in created_field.field_dependants():
-            dependant_field = dep.depedant
+        cls.rebuild_dependencies(created_field, field_update_collector)
+        for dep in created_field.dependants_joined_with_depedant_field():
+            dependant_field = field_update_collector.lookup_specific(dep.depedant)
             dependant_field_type = field_type_registry.get_by_model(dependant_field)
             dependant_field_type.field_dependency_created(
-                dependant_field, created_field, updated_fields
+                dependant_field, created_field, field_update_collector
             )
-        updated_fields.apply_field_updates()
-        return updated_fields
+        field_update_collector.apply_field_updates()
+        return field_update_collector
 
     @classmethod
     def update_field_dependency_graph_after_field_change(
