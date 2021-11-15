@@ -146,13 +146,13 @@ class TableWebhookSerializer(serializers.ModelSerializer):
 class TableWebhookTestCallRequestSerializer(serializers.ModelSerializer):
     event_type = serializers.ChoiceField(
         choices=webhook_event_type_registry.get_types(),
-        help_text="The event type that must be used for the test call."
+        help_text="The event type that must be used for the test call.",
     )
     headers = serializers.DictField(
         required=False,
         validators=[http_header_validation],
         help_text="The additional headers as an object where the key is the name and "
-                  "the value the value.",
+        "the value the value.",
     )
 
     class Meta:
