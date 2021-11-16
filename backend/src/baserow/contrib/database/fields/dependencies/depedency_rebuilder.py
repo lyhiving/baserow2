@@ -13,6 +13,14 @@ from baserow.contrib.database.fields.field_cache import FieldCache
 from baserow.contrib.database.table import models as table_models
 
 
+def break_dependencies_for_field(field):
+    from baserow.contrib.database.fields.models import LinkRowField
+
+    field.dependants.update(dependency=None, broken_reference_field_name=field.name)
+    if isinstance(field, LinkRowField):
+        field.vias.update(dependency=None, broken_reference_field_name=field.name)
+
+
 def update_fields_with_broken_references(field: "field_models.Field"):
     """
     Checks to see if there are any fields which should now depend on `field` if it's

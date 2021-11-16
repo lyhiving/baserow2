@@ -4,10 +4,11 @@ from baserow.contrib.database.fields.dependencies.depedency_rebuilder import (
     rebuild_field_dependencies,
     update_fields_with_broken_references,
     check_for_circular,
+    break_dependencies_for_field,
 )
 from baserow.contrib.database.fields.dependencies.models import FieldDependency
 from baserow.contrib.database.fields.field_cache import FieldCache
-from baserow.contrib.database.fields.models import Field, LinkRowField
+from baserow.contrib.database.fields.models import Field
 
 
 class FieldDependencyHandler:
@@ -53,13 +54,7 @@ class FieldDependencyHandler:
     def rebuild_dependencies(cls, field, field_cache):
         FieldDependency.objects.filter(dependant=field).delete()
         if field.trashed:
-            field.dependants.update(
-                dependency=None, broken_reference_field_name=field.name
-            )
-            if isinstance(field, LinkRowField):
-                field.vias.update(
-                    dependency=None, broken_reference_field_name=field.name
-                )
+            break_dependencies_for_field(field)
         else:
             update_fields_with_broken_references(field)
             rebuild_field_dependencies(field, field_cache)

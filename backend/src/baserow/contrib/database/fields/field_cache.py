@@ -21,20 +21,20 @@ class FieldCache:
         existing_model: Optional[Type[Model]] = None,
     ):
         if existing_cache is not None:
-            self.cached_field_by_name_per_table = (
-                existing_cache.cached_field_by_name_per_table
+            self._cached_field_by_name_per_table = (
+                existing_cache._cached_field_by_name_per_table
             )
-            self.model_cache = existing_cache.model_cache
+            self._model_cache = existing_cache._model_cache
         else:
-            self.cached_field_by_name_per_table = defaultdict(dict)
-            self.model_cache = {}
+            self._cached_field_by_name_per_table = defaultdict(dict)
+            self._model_cache = {}
 
         if existing_model is not None:
             self.cache_model(existing_model)
 
     # noinspection PyUnresolvedReferences,PyProtectedMember
     def cache_model(self, model: Type[Model]):
-        self.model_cache[model._table_id] = model
+        self._model_cache[model._table_id] = model
         self.cache_model_fields(model)
 
     # noinspection PyUnresolvedReferences,PyProtectedMember
@@ -44,13 +44,13 @@ class FieldCache:
 
     def get_model(self, table):
         table_id = table.id
-        if table_id not in self.model_cache:
-            self.model_cache[table_id] = table.get_model()
-        return self.model_cache[table_id]
+        if table_id not in self._model_cache:
+            self._model_cache[table_id] = table.get_model()
+        return self._model_cache[table_id]
 
     def cache_field(self, field):
         if not field.trashed:
-            cached_fields = self.cached_field_by_name_per_table[field.table_id]
+            cached_fields = self._cached_field_by_name_per_table[field.table_id]
 
             try:
                 specific_field = field.specific
@@ -64,7 +64,7 @@ class FieldCache:
 
     def lookup_specific(self, non_specific_field):
         try:
-            return self.cached_field_by_name_per_table[non_specific_field.table_id][
+            return self._cached_field_by_name_per_table[non_specific_field.table_id][
                 non_specific_field.name
             ]
         except KeyError:
@@ -72,7 +72,7 @@ class FieldCache:
 
     def lookup_by_name(self, table, field_name: str):
         try:
-            return self.cached_field_by_name_per_table[table.id][field_name]
+            return self._cached_field_by_name_per_table[table.id][field_name]
         except KeyError:
             try:
                 return self.cache_field(table.field_set.get(name=field_name))
