@@ -122,7 +122,7 @@ class Field(
             dependant_field = field_cache.lookup_specific(field_dependency.dependant)
             dependant_field_type = field_type_registry.get_by_model(dependant_field)
             if field_dependency.via is not None:
-                via_path = [field_dependency.via] + (starting_via_path or [])
+                via_path = (starting_via_path or []) + [field_dependency.via]
             else:
                 via_path = starting_via_path
             result.append((dependant_field, dependant_field_type, via_path))

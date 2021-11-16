@@ -1,9 +1,63 @@
 from collections import defaultdict
 from typing import Optional
 
+from baserow.contrib.database.fields.dependencies.exceptions import InvalidViaPath
 from baserow.contrib.database.fields.field_cache import FieldCache
 from baserow.contrib.database.fields.signals import field_updated
 from baserow.contrib.database.table.models import GeneratedTableModel
+
+
+class PathedUpdateStatementCollector:
+    def __init__(self, table, field_cache):
+        self.update_statements = {}
+        self.table = table
+        self.sub_paths = {}
+        self.field_cache = field_cache
+
+    def add_update_statement(
+        self, field, update_statement, path_from_starting_table=None
+    ):
+        if not path_from_starting_table:
+            if self.table != field.table:
+                raise InvalidViaPath()
+            self.update_statements[field.db_column] = update_statement
+        else:
+            next_via_field_link = path_from_starting_table[0]
+            if next_via_field_link.link_row_table != self.table:
+                raise InvalidViaPath()
+            next_link_db_column = next_via_field_link.db_column
+            if next_link_db_column not in self.sub_paths:
+                self.sub_paths[next_link_db_column] = PathedUpdateStatementCollector(
+                    next_via_field_link.table,
+                    self.field_cache,
+                )
+            self.sub_paths[next_link_db_column].add_update_statement(
+                field, update_statement, path_from_starting_table[1:]
+            )
+
+    def execute_all(self, starting_row_id=None, path_to_starting_table=None):
+        path_to_starting_table = path_to_starting_table or []
+        self._execute_pending_update_statements(path_to_starting_table, starting_row_id)
+        for sub_path_column_name, sub_path in self.sub_paths.items():
+            sub_path.execute_all(
+                starting_row_id=starting_row_id,
+                path_to_starting_table=[sub_path_column_name] + path_to_starting_table,
+            )
+
+    def _execute_pending_update_statements(
+        self, path_to_starting_table, starting_row_id
+    ):
+        model = self.field_cache.get_model(self.table)
+        qs = model.objects_and_trash
+        if starting_row_id is not None:
+            if len(path_to_starting_table) == 0:
+                path_to_starting_table_id_column = "id"
+            else:
+                path_to_starting_table_id_column = (
+                    "__".join(path_to_starting_table) + "__id"
+                )
+            qs = qs.filter(**{path_to_starting_table_id_column: starting_row_id})
+        qs.update(**self.update_statements)
 
 
 class CachingFieldUpdateCollector(FieldCache):
@@ -25,12 +79,9 @@ class CachingFieldUpdateCollector(FieldCache):
         self._starting_row_id = starting_row_id
         self._starting_table = starting_table
 
-        self._update_statements_per_path = {
-            "updates": {},
-            "table": starting_table,
-            "path": [],
-            "sub_paths": {},
-        }
+        self._update_statement_collector = PathedUpdateStatementCollector(
+            self._starting_table, self
+        )
 
     def add_field_with_pending_update_statement(
         self,
@@ -39,18 +90,12 @@ class CachingFieldUpdateCollector(FieldCache):
         via_path=None,
     ):
         self._updated_fields_per_table[field.table_id][field.id] = field
-        d = self._update_statements_per_path
-        path = []
-        for p in via_path or []:
-            path = [p.db_column] + path
-            d = d["sub_paths"].setdefault(
-                p.db_column,
-                {"updates": {}, "table": field.table, "path": path, "sub_paths": {}},
-            )
-        d["updates"][field.db_column] = update_statement
+        self._update_statement_collector.add_update_statement(
+            field, update_statement, via_path
+        )
 
     def apply_updates(self):
-        self._apply_updates()
+        self._update_statement_collector.execute_all(self._starting_row_id)
         return self._for_table(self._starting_table)
 
     def send_additional_field_updated_signals(self):
@@ -72,21 +117,3 @@ class CachingFieldUpdateCollector(FieldCache):
 
     def _for_table(self, table):
         return list(self._updated_fields_per_table.get(table.id, {}).values())
-
-    def _apply_updates(self):
-        pending = [self._update_statements_per_path]
-        while len(pending) > 0:
-            current = pending.pop(0)
-            updates = current["updates"]
-            if updates.keys():
-                model = self.get_model(current["table"])
-                qs = model.objects_and_trash
-                path = "__".join(current["path"])
-                if self._starting_row_id is not None:
-                    if path == "":
-                        id_path = "id"
-                    else:
-                        id_path = path + "__id"
-                    qs = qs.filter(**{id_path: self._starting_row_id})
-                qs.update(**updates)
-            pending += current["sub_paths"].values()

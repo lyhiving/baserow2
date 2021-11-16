@@ -4,3 +4,7 @@ class CircularFieldDependencyError(Exception):
 
 class SelfReferenceFieldDependencyError(Exception):
     pass
+
+
+class InvalidViaPath(Exception):
+    pass
