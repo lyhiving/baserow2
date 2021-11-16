@@ -1,4 +1,8 @@
 from django.apps import AppConfig
+from django.conf import settings
+from django.db.backends.signals import connection_created
+from django.db.models.signals import post_migrate, pre_migrate
+from django.dispatch import receiver
 
 from baserow.core.registries import (
     plugin_registry,
@@ -202,6 +206,10 @@ class DatabaseConfig(AppConfig):
         # which need to be filled first.
         import baserow.contrib.database.ws.signals  # noqa: F403, F401
 
-        from baserow.contrib.database.formula import FormulaHandler
 
-        FormulaHandler.recalculate_formulas_according_to_version()
+# noinspection PyUnusedLocal
+@receiver(post_migrate)
+def post_migrate(sender, **kwargs):
+    from baserow.contrib.database.formula import FormulaHandler
+
+    FormulaHandler.recalculate_formulas_according_to_version()

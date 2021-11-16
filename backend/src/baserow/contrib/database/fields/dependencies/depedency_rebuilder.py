@@ -14,6 +14,12 @@ from baserow.contrib.database.table import models as table_models
 
 
 def break_dependencies_for_field(field):
+    """
+    Given a specific field ensures no fields depend on it any more, and if they do
+    those dependencies are set to be broken and only reference the field name.
+
+    :param field: The field whose dependants will have their relationships broken for.
+    """
     from baserow.contrib.database.fields.models import LinkRowField
 
     field.dependants.update(dependency=None, broken_reference_field_name=field.name)
