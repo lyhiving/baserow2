@@ -299,7 +299,13 @@ class WebhookHandler:
         else:
             from advocate import request
 
-        return request(method, url, headers=headers, json=payload)
+        return request(
+            method,
+            url,
+            headers=headers,
+            json=payload,
+            timeout=settings.WEBHOOKS_REQUEST_TIMEOUT_SECONDS,
+        )
 
     def get_headers(self, event_type: str, event_id: str):
         """Returns the default headers that must be added to every request."""
