@@ -79,6 +79,10 @@ export default {
         )
         this.saved = true
         this.$emit('updated', data)
+
+        setTimeout(() => {
+          this.saved = false
+        }, 5000)
       } catch (error) {
         this.handleError(error)
       }

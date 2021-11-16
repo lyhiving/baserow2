@@ -95,7 +95,7 @@ export default {
   computed: {
     lastCallEvent() {
       const calls = this.webhook.calls
-      return calls.length > 0 ? calls[4] : null
+      return calls.length > 0 ? calls[0] : null
     },
     lastCallTime() {
       if (this.lastCallEvent) {
