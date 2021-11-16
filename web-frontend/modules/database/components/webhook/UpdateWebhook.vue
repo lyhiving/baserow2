@@ -29,7 +29,11 @@
           </button>
         </div>
       </div>
-      <DeleteWebhookModal ref="deleteWebhookModal" :webhook="webhook" />
+      <DeleteWebhookModal
+        ref="deleteWebhookModal"
+        :webhook="webhook"
+        @deleted="$emit('deleted', $event)"
+      />
     </WebhookForm>
   </div>
 </template>
@@ -69,8 +73,12 @@ export default {
       this.loading = true
 
       try {
-        await WebhookService(this.$client).update(this.webhook.id, values)
+        const { data } = await WebhookService(this.$client).update(
+          this.webhook.id,
+          values
+        )
         this.saved = true
+        this.$emit('updated', data)
       } catch (error) {
         this.handleError(error)
       }

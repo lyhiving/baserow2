@@ -8,6 +8,8 @@
       :key="webhook.id"
       :webhook="webhook"
       :table="table"
+      @updated="$emit('updated', $event)"
+      @deleted="$emit('deleted', $event)"
     />
   </div>
 </template>
@@ -37,7 +39,7 @@ export default {
 {
   "en": {
     "webhookList": {
-      "noWebhooksMessage": "You have not created any webhooks yet. Webhooks can be used in order to inform 3rd party systems about a row in Baserow being created, updated or deleted."
+      "noWebhooksMessage": "You have not created any webhooks yet. Webhooks can be used in order to inform 3rd party systems when a row in Baserow has been created, updated or deleted."
     }
   },
   "fr": {

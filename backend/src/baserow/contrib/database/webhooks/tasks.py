@@ -101,9 +101,10 @@ def call_webhook(
                 webhook.failed_triggers
                 < settings.WEBHOOKS_MAX_CONSECUTIVE_TRIGGER_FAILURES
             ):
-                # If the task has reached the maximum amount of call, we're going to give
-                # up and increase the total failed triggers of the webook if we're still
-                # operating within the limits of the max consecutive trigger failures.
+                # If the task has reached the maximum amount of call, we're going to
+                # give up and increase the total failed triggers of the webook if
+                # we're still operating within the limits of the max consecutive
+                # trigger failures.
                 webhook.failed_triggers += 1
                 webhook.save()
             else:

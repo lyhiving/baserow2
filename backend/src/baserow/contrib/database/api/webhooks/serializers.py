@@ -132,6 +132,7 @@ class TableWebhookSerializer(serializers.ModelSerializer):
             "name",
             "include_all_events",
             "failed_triggers",
+            "active",
         ]
 
     @extend_schema_field(OpenApiTypes.OBJECT)

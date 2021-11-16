@@ -61,6 +61,7 @@ def test_list_webhooks(api_client, data_fixture):
     assert response_json[0]["failed_triggers"] == 0
     assert response_json[0]["events"] == []
     assert response_json[0]["headers"] == {"Baserow-add-1": "Value 1"}
+    assert response_json[0]["active"] is True
     del response_json[0]["calls"][0]["called_time"]
     assert response_json[0]["calls"][0] == {
         "id": str(call_1.id),

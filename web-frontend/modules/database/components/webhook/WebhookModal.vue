@@ -21,6 +21,7 @@
         :table="table"
         :webhooks="webhooks"
         @updated="updated"
+        @deleted="deleted"
       />
       <CreateWebhook
         v-else-if="state === 'create'"
@@ -84,7 +85,13 @@ export default {
     updated(webhook) {
       const index = this.webhooks.findIndex((w) => w.id === webhook.id)
       if (index > -1) {
-        this.webhooks[index] = webhook
+        Object.assign(this.webhooks[index], webhook)
+      }
+    },
+    deleted(webhook) {
+      const index = this.webhooks.findIndex((w) => w.id === webhook.id)
+      if (index > -1) {
+        this.webhooks.splice(index, 1)
       }
     },
   },

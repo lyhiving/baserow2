@@ -3,8 +3,7 @@
     <div class="webhook__head">
       <div class="webhook__head-left">
         <div class="webhook__head-name">
-          {{ webhook.name
-          }}<template v-if="!webhook.active"> - deactivated</template>
+          {{ webhook.name }}
         </div>
         <div class="webhook__head-details">
           <div class="webhook__head-details-target">
@@ -52,6 +51,7 @@
             :webhook="webhook"
             :table="table"
             @updated="$emit('updated', $event)"
+            @deleted="$emit('deleted', $event)"
           />
         </Tab>
         <Tab title="Call log">
@@ -153,8 +153,8 @@ export default {
     "webhook": {
       "details": "details",
       "lastCall": "Last call: {lastCallTime}",
-      "noCalls": "This webhook has not yet made any calls.",
-      "triggerDescription": "Sends on every event | Sends on {count} event | Send on {count} events"
+      "noCalls": "No calls made",
+      "triggerDescription": "Triggers on every event | Triggers on {count} event | Triggers on {count} events"
     }
   },
   "fr": {

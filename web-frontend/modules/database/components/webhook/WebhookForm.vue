@@ -1,5 +1,22 @@
 <template>
   <form @submit.prevent="submit" @input="$emit('formchange')">
+    <div
+      v-if="!values.active"
+      class="alert alert--simple alert--primary alert--has-icon"
+    >
+      <div class="alert__icon">
+        <i class="fas fa-exclamation"></i>
+      </div>
+      <div class="alert__title">{{ $t('webhookForm.deactivated.title') }}</div>
+      <p class="alert__content">
+        {{ $t('webhookForm.deactivated.content') }}
+      </p>
+      <a
+        class="button button--ghost margin-top-1"
+        @click="values.active = true"
+        >{{ $t('webhookForm.deactivated.activate') }}</a
+      >
+    </div>
     <div class="row">
       <div class="col col-12">
         <div class="control">
@@ -19,19 +36,7 @@
           </div>
         </div>
       </div>
-      <div v-if="!create" class="col col-4">
-        <div class="control">
-          <label class="control__label">
-            {{ $t('webhookForm.inputLabels.status') }}
-          </label>
-          <div class="control__elements">
-            <Checkbox v-model="values.active">{{
-              $t('webhookForm.checkbox.statusActive')
-            }}</Checkbox>
-          </div>
-        </div>
-      </div>
-      <div class="col col-6">
+      <div class="col col-12">
         <div class="control">
           <label class="control__label">
             {{ $t('webhookForm.inputLabels.userFieldNames') }}
@@ -43,8 +48,6 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="row">
       <div class="col col-4">
         <div class="control">
           <div class="control__label">
@@ -222,11 +225,6 @@ export default {
       type: Object,
       required: true,
     },
-    create: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
   },
   data() {
     return {
@@ -293,12 +291,17 @@ export default {
       this.exampleWebhookEventType = this.webhookEventTypes[keys[0]].type
     }
 
-    Object.keys(this.defaultValues.headers).forEach((name) => {
-      this.headers.push({
-        name,
-        value: this.defaultValues.headers[name],
+    // If an headers object is provided as default value, we need to populate the
+    // internal headers representation that can be edited by this form. When the form
+    // is submitted, it will be converted to the correct structure.
+    if (this.defaultValues.headers) {
+      Object.keys(this.defaultValues.headers).forEach((name) => {
+        this.headers.push({
+          name,
+          value: this.defaultValues.headers[name],
+        })
       })
-    })
+    }
   },
   validations: {
     values: {
@@ -307,8 +310,16 @@ export default {
     },
     headers: {
       $each: {
-        name: { required },
-        value: { required },
+        name: {
+          required,
+          valid(value) {
+            const regex = /[^:\\s][^:\\r\\n]*$/
+            return !!value.match(regex)
+          },
+        },
+        value: {
+          required,
+        },
       },
     },
   },
@@ -360,7 +371,6 @@ export default {
         "name": "Name",
         "requestMethod": "Method",
         "url": "URL",
-        "status": "Status",
         "userFieldNames": "User field names",
         "events": "Which events should trigger this webhook?",
         "headers": "Additional headers",
@@ -371,14 +381,18 @@ export default {
         "invalidHeaders": "One of the headers is invalid."
       },
       "checkbox": {
-        "sendUserFieldNames": "Send user field names",
-        "statusActive": "Active"
+        "sendUserFieldNames": "Use field name instead of id"
       },
       "radio": {
         "allEvents": "Send me everything",
         "customEvents": "Let me select individual events"
       },
-      "triggerButton": "Trigger test webhook"
+      "triggerButton": "Trigger test webhook",
+      "deactivated": {
+        "title": "Webhook is deactivated",
+        "content": "This webhook has been deactivated because there have been too many consecutive failures. Please check the call log for more details. Click on the button below to activate it again. Don't forgot to save the webhook after activating.",
+        "activate": "Activate"
+      }
     }
   },
   "fr": {
@@ -387,7 +401,6 @@ export default {
         "name": "@TODO",
         "requestMethod": "@TODO",
         "url": "@TODO",
-        "status": "@TODO",
         "userFieldNames": "@TODO",
         "events": "@TODO",
         "headers": "@TODO",
@@ -398,15 +411,18 @@ export default {
         "invalidHeaders": "@TODO"
       },
       "checkbox": {
-        "sendUserFieldNames": "@TODO",
-        "sendFieldIDs": "@TODO",
-        "statusActive": "@TODO"
+        "sendUserFieldNames": "@TODO"
       },
       "radio": {
         "allEvents": "@TODO",
         "customEvents": "@TODO"
       },
-      "triggerButton": "@TODO"
+      "triggerButton": "@TODO",
+      "deactivated": {
+        "title": "@TODO",
+        "content": "@TODO",
+        "activate": "@TODO"
+      }
     }
   }
 }
