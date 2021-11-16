@@ -170,7 +170,7 @@ class RowTrashableItemType(TrashableItemType):
                     update_collector,
                     path_to_starting_table,
                 )
-        update_collector.apply_updates()
+        update_collector.apply_updates_returning_updated_fields_in_start_table()
         row_created.send(
             self,
             row=trashed_item,

@@ -2196,17 +2196,6 @@ class FormulaFieldType(FieldType):
             field, used_cached_attrs=False
         )
 
-    def after_dependency_rename(self, field_instance, old_name, new_name, via_field):
-        updated_formula = FormulaHandler.rename_field_references_in_formula_string(
-            field_instance.formula,
-            {old_name: new_name},
-            via_field.name if via_field is not None else None,
-        )
-        field_instance.formula = updated_formula
-        # The internal formula directly references database columns which will not have
-        # changed as a result of a rename hence we don't need to do any recalculation.
-        field_instance.save(recalculate=False)
-
     def get_field_dependencies(
         self, field_instance, field_lookup_cache
     ) -> OptionalFieldDependencies:
@@ -2237,7 +2226,10 @@ class FormulaFieldType(FieldType):
         via_path_to_starting_table,
     ):
         self.row_of_dependency_updated(
-            field, starting_row, update_collector, via_path_to_starting_table
+            field,
+            starting_row,
+            update_collector,
+            via_path_to_starting_table,
         )
 
     def row_of_dependency_updated(
@@ -2257,10 +2249,13 @@ class FormulaFieldType(FieldType):
             update_collector.add_field_with_pending_update_statement(
                 field,
                 update_statement,
-                via_path=via_path_to_starting_table,
+                via_path_to_starting_table=via_path_to_starting_table,
             )
         super().row_of_dependency_updated(
-            field, starting_row, update_collector, via_path_to_starting_table
+            field,
+            starting_row,
+            update_collector,
+            via_path_to_starting_table,
         )
 
     def row_of_dependency_deleted(
@@ -2271,15 +2266,18 @@ class FormulaFieldType(FieldType):
         via_path_to_starting_table,
     ):
         self.row_of_dependency_updated(
-            field, starting_row, update_collector, via_path_to_starting_table
+            field,
+            starting_row,
+            update_collector,
+            via_path_to_starting_table,
         )
 
     def field_dependency_created(
-        self, field, created_field, via_path, update_collector
+        self, field, created_field, via_path_to_starting_table, update_collector
     ):
         old_field = deepcopy(field)
         self._update_formula_after_dependency_change(
-            field, old_field, update_collector, via_path
+            field, old_field, update_collector, via_path_to_starting_table
         )
 
     def field_dependency_updated(
@@ -2287,7 +2285,7 @@ class FormulaFieldType(FieldType):
         field,
         updated_field,
         updated_old_field,
-        via_path,
+        via_path_to_starting_table,
         update_collector,
     ):
         old_field = deepcopy(field)
@@ -2299,24 +2297,26 @@ class FormulaFieldType(FieldType):
                 field.formula, {old_name: new_name}
             )
         self._update_formula_after_dependency_change(
-            field, old_field, update_collector, via_path
+            field, old_field, update_collector, via_path_to_starting_table
         )
 
     # noinspection PyMethodMayBeStatic
     def _update_formula_after_dependency_change(
-        self, field, old_field, update_collector, via_path
+        self, field, old_field, update_collector, via_path_to_starting_table
     ):
         expr = FormulaHandler.recalculate_formula_and_get_update_expression(
             field, old_field, update_collector
         )
         update_collector.add_field_with_pending_update_statement(
-            field, expr, via_path=via_path
+            field, expr, via_path_to_starting_table=via_path_to_starting_table
         )
         for (
             dependant_field,
             dependant_field_type,
             path_to_starting_table,
-        ) in field.dependant_fields_with_types(update_collector, via_path):
+        ) in field.dependant_fields_with_types(
+            update_collector, via_path_to_starting_table
+        ):
             dependant_field_type.field_dependency_updated(
                 dependant_field,
                 field,
@@ -2326,11 +2326,11 @@ class FormulaFieldType(FieldType):
             )
 
     def field_dependency_deleted(
-        self, field, deleted_field, via_path, update_collector
+        self, field, deleted_field, via_path_to_starting_table, update_collector
     ):
         old_field = deepcopy(field)
         self._update_formula_after_dependency_change(
-            field, old_field, update_collector, via_path
+            field, old_field, update_collector, via_path_to_starting_table
         )
 
     def after_create(self, field, model, user, connection, before):

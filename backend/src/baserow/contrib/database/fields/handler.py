@@ -213,7 +213,7 @@ class FieldHandler:
         for (
             dependant_field,
             dependant_field_type,
-            via_path,
+            via_path_to_starting_table,
         ) in instance.dependant_fields_with_types(field_cache=update_collector):
             FieldDependencyHandler.rebuild_dependencies(
                 dependant_field, update_collector
@@ -221,11 +221,13 @@ class FieldHandler:
             dependant_field_type.field_dependency_created(
                 dependant_field,
                 instance,
-                via_path,
+                via_path_to_starting_table,
                 update_collector,
             )
 
-        updated_fields = update_collector.apply_updates()
+        updated_fields = (
+            update_collector.apply_updates_returning_updated_fields_in_start_table()
+        )
         field_created.send(
             self,
             field=instance,
@@ -416,7 +418,7 @@ class FieldHandler:
         for (
             dependant_field,
             dependant_field_type,
-            via_path,
+            via_path_to_starting_table,
         ) in field.dependant_fields_with_types(field_cache=update_collector):
             FieldDependencyHandler.rebuild_dependencies(
                 dependant_field, update_collector
@@ -425,11 +427,13 @@ class FieldHandler:
                 dependant_field,
                 field,
                 old_field,
-                via_path,
+                via_path_to_starting_table,
                 update_collector,
             )
 
-        updated_fields = update_collector.apply_updates()
+        updated_fields = (
+            update_collector.apply_updates_returning_updated_fields_in_start_table()
+        )
         field_updated.send(
             self,
             field=field,
@@ -478,7 +482,7 @@ class FieldHandler:
         for (
             dependant_field,
             dependant_field_type,
-            via_path,
+            via_path_to_starting_table,
         ) in dependant_fields:
             FieldDependencyHandler.rebuild_dependencies(
                 dependant_field, update_collector
@@ -486,10 +490,12 @@ class FieldHandler:
             dependant_field_type.field_dependency_deleted(
                 dependant_field,
                 field,
-                via_path,
+                via_path_to_starting_table,
                 update_collector,
             )
-        updated_fields = update_collector.apply_updates()
+        updated_fields = (
+            update_collector.apply_updates_returning_updated_fields_in_start_table()
+        )
         field_deleted.send(
             self,
             field_id=field.id,
@@ -676,7 +682,7 @@ class FieldHandler:
             for (
                 dependant_field,
                 dependant_field_type,
-                via_path,
+                via_path_to_starting_table,
             ) in field.dependant_fields_with_types(update_collector):
                 FieldDependencyHandler.rebuild_dependencies(
                     dependant_field, update_collector
@@ -684,10 +690,12 @@ class FieldHandler:
                 dependant_field_type.field_dependency_created(
                     dependant_field,
                     field,
-                    via_path,
+                    via_path_to_starting_table,
                     update_collector,
                 )
-            updated_fields = update_collector.apply_updates()
+            updated_fields = (
+                update_collector.apply_updates_returning_updated_fields_in_start_table()
+            )
             field_restored.send(
                 self, field=field, user=None, related_fields=updated_fields
             )

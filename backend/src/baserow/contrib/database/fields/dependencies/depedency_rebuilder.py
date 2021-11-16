@@ -20,6 +20,7 @@ def break_dependencies_for_field(field):
 
     :param field: The field whose dependants will have their relationships broken for.
     """
+
     from baserow.contrib.database.fields.models import LinkRowField
 
     field.dependants.update(dependency=None, broken_reference_field_name=field.name)
@@ -71,14 +72,14 @@ def _add_graph_dependency_raising_if_circular(
                 dependant=field, broken_reference_field_name=dependency_field_name
             )
         else:
-            _create_dependency_raising_if_circular(field, dependency_field)
+            _add_normal_dependency(field, dependency_field)
     else:
-        _add_dep_with_via(
+        _add_via_dependency(
             field, dependency_field_name, table, via_field_name, field_lookup_cache
         )
 
 
-def _add_dep_with_via(
+def _add_via_dependency(
     field: "field_models.Field",
     dependency_field_name: str,
     table: "table_models.Table",
@@ -88,7 +89,7 @@ def _add_dep_with_via(
     via_field = field_lookup_cache.lookup_by_name(table, via_field_name)
     if via_field is None:
         # We are depending on a non existent via field so we have no idea what the
-        # target table is. Just create a single broken node for the via field and
+        # target table is. Just create a single broken dependency to the via field and
         # depend on that.
         FieldDependency.objects.create(
             dependant=field, broken_reference_field_name=via_field_name
@@ -108,13 +109,11 @@ def _add_dep_with_via(
             if field.id != via_field.id:
                 # Depend directly on the via field also so if it is renamed or changes
                 # we get notified.
-                _create_dependency_raising_if_circular(field, via_field)
-            _create_dependency_raising_if_circular(
-                field, target_field, via_field=via_field
-            )
+                _add_normal_dependency(field, via_field)
+            _add_normal_dependency(field, target_field, via_field=via_field)
 
 
-def _create_dependency_raising_if_circular(
+def _add_normal_dependency(
     field: "field_models.Field",
     dependency_field: "field_models.Field",
     via_field: Optional["field_models.Field"] = None,

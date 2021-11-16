@@ -19,7 +19,9 @@ def test_can_add_fields_with_update_statements_in_same_starting_table(
 
     update_collector = CachingFieldUpdateCollector(field.table)
     update_collector.add_field_with_pending_update_statement(field, Value("other"))
-    updated_fields = update_collector.apply_updates()
+    updated_fields = (
+        update_collector.apply_updates_returning_updated_fields_in_start_table()
+    )
 
     assert updated_fields == [field]
     row.refresh_from_db()
@@ -39,7 +41,9 @@ def test_can_add_fields_in_same_starting_table_with_row_filter(
         field.table, starting_row_id=row_a.id
     )
     update_collector.add_field_with_pending_update_statement(field, Value("other"))
-    updated_fields = update_collector.apply_updates()
+    updated_fields = (
+        update_collector.apply_updates_returning_updated_fields_in_start_table()
+    )
 
     assert updated_fields == [field]
     row_a.refresh_from_db()
@@ -90,14 +94,16 @@ def test_can_only_trigger_update_for_rows_joined_to_a_starting_row_across_a_m2m(
     update_collector.add_field_with_pending_update_statement(
         first_table_primary_field,
         Value("other"),
-        via_path=[link_row_field],
+        via_path_to_starting_table=[link_row_field],
     )
     # Cache the models so we are only asserting about the update queries
     update_collector.cache_model(first_table.get_model())
     update_collector.cache_model(second_table.get_model())
     # Only one field was updated so only one update statement is expected
     with django_assert_num_queries(1):
-        updated_fields = update_collector.apply_updates()
+        updated_fields = (
+            update_collector.apply_updates_returning_updated_fields_in_start_table()
+        )
 
     # No field in the starting table (second_table) was updated
     assert updated_fields == []
@@ -159,19 +165,24 @@ def test_can_trigger_update_for_rows_joined_to_a_starting_row_across_a_m2m_and_b
     update_collector.add_field_with_pending_update_statement(
         first_table_primary_field,
         Value("other"),
-        via_path=[link_row_field],
+        via_path_to_starting_table=[link_row_field],
     )
     update_collector.add_field_with_pending_update_statement(
         second_table_primary_field,
         Value("other"),
-        via_path=[link_row_field, link_row_field.link_row_related_field],
+        via_path_to_starting_table=[
+            link_row_field,
+            link_row_field.link_row_related_field,
+        ],
     )
     # Cache the models so we are only asserting about the update queries
     update_collector.cache_model(first_table.get_model())
     update_collector.cache_model(second_table.get_model())
     # Two fields were updated with an update statement for each table
     with django_assert_num_queries(2):
-        updated_fields = update_collector.apply_updates()
+        updated_fields = (
+            update_collector.apply_updates_returning_updated_fields_in_start_table()
+        )
 
     assert updated_fields == [second_table_primary_field]
     first_table_1_row.refresh_from_db()
@@ -241,17 +252,20 @@ def test_update_statements_at_the_same_path_node_are_grouped_into_one(
     update_collector.add_field_with_pending_update_statement(
         first_table_primary_field,
         Value("other"),
-        via_path=[link_row_field],
+        via_path_to_starting_table=[link_row_field],
     )
     update_collector.add_field_with_pending_update_statement(
         first_table_other_field,
         Value("updated"),
-        via_path=[link_row_field],
+        via_path_to_starting_table=[link_row_field],
     )
     update_collector.add_field_with_pending_update_statement(
         second_table_primary_field,
         Value("other"),
-        via_path=[link_row_field, link_row_field.link_row_related_field],
+        via_path_to_starting_table=[
+            link_row_field,
+            link_row_field.link_row_related_field,
+        ],
     )
     # Cache the models so we are only asserting about the update queries
     update_collector.cache_model(first_table.get_model())
@@ -259,7 +273,9 @@ def test_update_statements_at_the_same_path_node_are_grouped_into_one(
     # Three fields were updated but two are in the same path node (same table) and so
     # only one update per table expected
     with django_assert_num_queries(2):
-        updated_fields = update_collector.apply_updates()
+        updated_fields = (
+            update_collector.apply_updates_returning_updated_fields_in_start_table()
+        )
 
     assert updated_fields == [second_table_primary_field]
     first_table_1_row.refresh_from_db()

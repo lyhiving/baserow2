@@ -50,7 +50,16 @@ class FieldDependencyHandler:
         check_for_circular(field, field_lookup_cache)
 
     @classmethod
-    def rebuild_dependencies(cls, field, field_cache):
+    def rebuild_dependencies(cls, field, field_cache: FieldCache):
+        """
+        Deletes all existing dependencies for field and rebuilds them based off its
+        field_type.get_field_dependencies. If the field is trashed will instead break
+        any dependant relationships to the field.
+
+        :param field: The field to rebuild its field dependencies for.
+        :param field_cache: A field cache which will be used to lookup fields.
+        """
+
         FieldDependency.objects.filter(dependant=field).delete()
         if field.trashed:
             break_dependencies_for_field(field)

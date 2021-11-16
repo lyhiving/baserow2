@@ -114,7 +114,9 @@ class Field(
 
         return name
 
-    def dependant_fields_with_types(self, field_cache, starting_via_path=None):
+    def dependant_fields_with_types(
+        self, field_cache, starting_via_path_to_starting_table=None
+    ):
         from baserow.contrib.database.fields.registries import field_type_registry
 
         result = []
@@ -122,10 +124,14 @@ class Field(
             dependant_field = field_cache.lookup_specific(field_dependency.dependant)
             dependant_field_type = field_type_registry.get_by_model(dependant_field)
             if field_dependency.via is not None:
-                via_path = (starting_via_path or []) + [field_dependency.via]
+                via_path_to_starting_table = (
+                    starting_via_path_to_starting_table or []
+                ) + [field_dependency.via]
             else:
-                via_path = starting_via_path
-            result.append((dependant_field, dependant_field_type, via_path))
+                via_path_to_starting_table = starting_via_path_to_starting_table
+            result.append(
+                (dependant_field, dependant_field_type, via_path_to_starting_table)
+            )
         return result
 
     def save(self, *args, **kwargs):
