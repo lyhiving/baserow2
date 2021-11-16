@@ -201,3 +201,7 @@ class DatabaseConfig(AppConfig):
         # The signals must always be imported last because they use the registries
         # which need to be filled first.
         import baserow.contrib.database.ws.signals  # noqa: F403, F401
+
+        from baserow.contrib.database.formula import FormulaHandler
+
+        FormulaHandler.recalculate_formulas_according_to_version()
