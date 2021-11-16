@@ -87,11 +87,11 @@ class BaserowFieldReferenceVisitor(BaserowFormulaVisitor):
 # noinspection PyPep8Naming
 def _build_graph_from_scratch(FieldDependency, FormulaField, LinkRowField, Field):
     for link_row in LinkRowField.objects.filter(trashed=False).all():
-        related_primary_field = next(
-            f for f in link_row.link_row_table.field_set.all() if f.primary
-        )
+        related_primary_field = link_row.link_row_table.field_set.filter(
+            trashed=False
+        ).get(primary=True)
         FieldDependency.objects.create(
-            dependency=link_row, via=link_row, dependant=related_primary_field
+            dependant=link_row, via=link_row, dependency=related_primary_field
         )
 
     for formula in FormulaField.objects.filter(trashed=False).all():
@@ -101,7 +101,9 @@ def _build_graph_from_scratch(FieldDependency, FormulaField, LinkRowField, Field
         for new_dependency_field_name in dependency_field_names:
             try:
                 FieldDependency.objects.create(
-                    dependency=table.field_set.get(name=new_dependency_field_name),
+                    dependency=table.field_set.filter(trashed=False).get(
+                        name=new_dependency_field_name
+                    ),
                     dependant=formula,
                 )
             except Field.DoesNotExist:
