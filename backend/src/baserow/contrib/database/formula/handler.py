@@ -292,9 +292,6 @@ class FormulaHandler:
         cls, formula_field, field_lookup_cache
     ):
         """
-        WARNING: This function is directly used by migration code. Please ensure
-        backwards compatability when adding fields etc.
-
         For the provided formula field this function recalculates all of the required
         internal attributes given the user supplied ones have already been set on
         the instance.
@@ -336,6 +333,13 @@ class FormulaHandler:
 
     @classmethod
     def recalculate_formulas_according_to_version(cls):
+        """
+        Ensures all formulas are updated to the latest formula version being used by
+        the code. Essentially recalculates the internal formula attributes in dependency
+        order if the version of the formula in the database does not match this classes
+        BASEROW_FORMULA_VERSION attribute.
+        """
+
         from baserow.contrib.database.fields.models import FormulaField
 
         field_lookup_cache = FieldCache()
@@ -358,6 +362,19 @@ class FormulaHandler:
     def recalculate_formula_and_get_update_expression(
         cls, field, old_field, field_cache
     ):
+        """
+        Recalculates the internal formula attributes and given its old field instance
+        recreates the actual database column if the formula type has changed
+        appropriately.
+
+        :param field: An updated formula field instance.
+        :param old_field: The old version of the formula field instance before any
+            changes.
+        :param field_cache: A field cache which will be used to lookup fields from.
+        :return: An expression which can be used to update the formulas database column
+            to be correct.
+        """
+
         from baserow.contrib.database.views.handler import ViewHandler
 
         field.save(field_lookup_cache=field_cache)
