@@ -177,27 +177,31 @@ def check_for_circular(
     )
     if field_dependencies is not None:
         for dependency in field_dependencies:
-            if isinstance(dependency, Tuple):
-                (
-                    via_field_name,
-                    dependency,
-                ) = dependency
-                via_field = field_lookup_cache.lookup_by_name(
-                    field_instance.table, via_field_name
-                )
-                if via_field is not None:
-                    dependency_field = field_lookup_cache.lookup_by_name(
-                        via_field.link_row_table, dependency
-                    )
-                else:
-                    dependency_field = None
-            else:
-                dependency_field = field_lookup_cache.lookup_by_name(
-                    field_instance.table, dependency
-                )
+            dependency_field = _get_dependency_field(
+                dependency, field_instance, field_lookup_cache
+            )
+            if dependency_field is not None:
+                if field_instance.name == dependency_field.name:
+                    raise SelfReferenceFieldDependencyError()
 
-            if field_instance.name == dependency_field.name:
-                raise SelfReferenceFieldDependencyError()
+                if will_cause_circular_dep(field_instance, dependency_field):
+                    raise CircularFieldDependencyError()
 
-            if will_cause_circular_dep(field_instance, dependency_field):
-                raise CircularFieldDependencyError()
+
+def _get_dependency_field(dependency, field_instance, field_lookup_cache):
+    if isinstance(dependency, Tuple):
+        (
+            via_field_name,
+            dependency,
+        ) = dependency
+        via_field = field_lookup_cache.lookup_by_name(
+            field_instance.table, via_field_name
+        )
+        if via_field is not None:
+            return field_lookup_cache.lookup_by_name(
+                via_field.link_row_table, dependency
+            )
+        else:
+            return None
+    else:
+        return field_lookup_cache.lookup_by_name(field_instance.table, dependency)
