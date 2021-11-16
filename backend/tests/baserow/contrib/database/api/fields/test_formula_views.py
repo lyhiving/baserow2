@@ -7,6 +7,8 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
+from baserow.contrib.database.fields.handler import FieldHandler
+
 
 @pytest.mark.django_db
 def test_altering_value_of_referenced_field(
@@ -1094,6 +1096,61 @@ def test_type_endpoint_returns_error_for_non_formula_field(
     response_json = response.json()
     assert response.status_code == HTTP_404_NOT_FOUND
     assert response_json["error"] == "ERROR_FIELD_DOES_NOT_EXIST"
+
+
+@pytest.mark.django_db
+def test_type_endpoint_returns_error_for_self_reference(
+    data_fixture, api_client, django_assert_num_queries
+):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    response = api_client.post(
+        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
+        {"name": "formula", "type": "formula", "formula": "'a'"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    assert response.status_code == 200, response.json()
+    formula_field_id = response.json()["id"]
+
+    response = api_client.post(
+        reverse(
+            "api:database:formula:type_formula", kwargs={"field_id": formula_field_id}
+        ),
+        {f"formula": "field('formula')"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response_json["error"] == "ERROR_FIELD_SELF_REFERENCE"
+
+
+@pytest.mark.django_db
+def test_type_endpoint_returns_error_for_circular_reference(
+    data_fixture, api_client, django_assert_num_queries
+):
+    user, token = data_fixture.create_user_and_token()
+    table = data_fixture.create_database_table(user=user)
+    handler = FieldHandler()
+    first_formula = handler.create_field(
+        user, table, "formula", formula="1", name="first"
+    )
+    handler.create_field(
+        user, table, "formula", formula="field('first')", name="second"
+    )
+
+    response = api_client.post(
+        reverse(
+            "api:database:formula:type_formula", kwargs={"field_id": first_formula.id}
+        ),
+        {f"formula": "field('second')"},
+        format="json",
+        HTTP_AUTHORIZATION=f"JWT {token}",
+    )
+    response_json = response.json()
+    assert response.status_code == HTTP_400_BAD_REQUEST
+    assert response_json["error"] == "ERROR_FIELD_CIRCULAR_REFERENCE"
 
 
 @pytest.mark.django_db

@@ -317,7 +317,10 @@ class FieldFixtures:
         if "requires_refresh_after_insert" not in kwargs:
             kwargs["requires_refresh_after_insert"] = False
 
-        field = FormulaField.objects.create(**kwargs)
+        recalculate = kwargs.pop("recalculate", True)
+
+        field = FormulaField(**kwargs)
+        field.save(recalculate=recalculate)
 
         if create_field:
             self.create_model_field(kwargs["table"], field)

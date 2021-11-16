@@ -18,7 +18,9 @@ def break_dependencies_for_field(field):
 
     field.dependants.update(dependency=None, broken_reference_field_name=field.name)
     if isinstance(field, LinkRowField):
-        field.vias.update(dependency=None, broken_reference_field_name=field.name)
+        field.vias.update(
+            dependency=None, broken_reference_field_name=field.name, via=None
+        )
 
 
 def update_fields_with_broken_references(field: "field_models.Field"):

@@ -34,6 +34,28 @@ from baserow.contrib.database.formula.types.visitors import (
 from baserow.core.db import LockedAtomicTransaction
 
 
+def _recalculate_depth_first(f, already_recalculated, field_lookup_cache):
+    from baserow.contrib.database.fields.models import FormulaField
+
+    recalculated_dependant = False
+    if f.id in already_recalculated:
+        return True
+    for dep in f.field_dependencies.all():
+        recalculated_dependant = recalculated_dependant or _recalculate_depth_first(
+            dep, already_recalculated, field_lookup_cache
+        )
+
+    f = field_lookup_cache.lookup_specific(f)
+
+    if isinstance(f, FormulaField) and (
+        f.version != FormulaHandler.BASEROW_FORMULA_VERSION or recalculated_dependant
+    ):
+        f.save(field_lookup_cache=field_lookup_cache, raise_if_invalid=False)
+        recalculated_dependant = True
+        already_recalculated.add(f.id)
+    return recalculated_dependant
+
+
 def _expression_requires_refresh_after_insert(expression: BaserowExpression):
     """
     WARNING: This function is directly used by migration code. Please ensure
@@ -319,33 +341,14 @@ class FormulaHandler:
         field_lookup_cache = FieldCache()
         already_recalculated = set()
 
-        def _recalculate_depth_first(f):
-            recalculated_dependant = False
-            if f in already_recalculated:
-                return True
-            for dep in f.field_dependencies.all():
-                recalculated_dependant = (
-                    recalculated_dependant or _recalculate_depth_first(dep)
-                )
-
-            f = f.specific
-
-            if isinstance(f, FormulaField) and (
-                f.version != cls.BASEROW_FORMULA_VERSION or recalculated_dependant
-            ):
-                field.save(
-                    field_lookup_cache=field_lookup_cache, raise_if_invalid=False
-                )
-                recalculated_dependant = True
-                already_recalculated.add(f)
-            return recalculated_dependant
-
         with LockedAtomicTransaction(FormulaField):
             if FormulaField.objects.filter(
                 ~Q(version=cls.BASEROW_FORMULA_VERSION)
             ).exists():
                 for field in FormulaField.objects.all():
-                    _recalculate_depth_first(field)
+                    _recalculate_depth_first(
+                        field, already_recalculated, field_lookup_cache
+                    )
 
                 FormulaField.objects.update(
                     version=cls.BASEROW_FORMULA_VERSION,
