@@ -215,6 +215,9 @@ class FieldHandler:
             dependant_field_type,
             via_path,
         ) in instance.dependant_fields_with_types(field_cache=update_collector):
+            FieldDependencyHandler.rebuild_dependencies(
+                dependant_field, update_collector
+            )
             dependant_field_type.field_dependency_created(
                 dependant_field,
                 instance,
@@ -415,6 +418,9 @@ class FieldHandler:
             dependant_field_type,
             via_path,
         ) in field.dependant_fields_with_types(field_cache=update_collector):
+            FieldDependencyHandler.rebuild_dependencies(
+                dependant_field, update_collector
+            )
             dependant_field_type.field_dependency_updated(
                 dependant_field,
                 field,
@@ -474,6 +480,9 @@ class FieldHandler:
             dependant_field_type,
             via_path,
         ) in dependant_fields:
+            FieldDependencyHandler.rebuild_dependencies(
+                dependant_field, update_collector
+            )
             dependant_field_type.field_dependency_deleted(
                 dependant_field,
                 field,
@@ -669,6 +678,9 @@ class FieldHandler:
                 dependant_field_type,
                 via_path,
             ) in field.dependant_fields_with_types(update_collector):
+                FieldDependencyHandler.rebuild_dependencies(
+                    dependant_field, update_collector
+                )
                 dependant_field_type.field_dependency_created(
                     dependant_field,
                     field,
