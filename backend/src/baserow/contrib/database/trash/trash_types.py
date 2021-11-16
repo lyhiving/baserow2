@@ -2,7 +2,9 @@ from typing import Optional, Any, List
 
 from django.db import connection
 
-from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
+from baserow.contrib.database.fields.dependencies.update_collector import (
+    CachingFieldUpdateCollector,
+)
 from baserow.contrib.database.fields.handler import FieldHandler
 from baserow.contrib.database.fields.models import Field
 from baserow.contrib.database.fields.registries import field_type_registry
@@ -104,7 +106,7 @@ class FieldTrashableItemType(TrashableItemType):
             model_field = from_model._meta.get_field(field.db_column)
             schema_editor.remove_field(from_model, model_field)
 
-        FieldDependencyHandler.permanently_delete_and_update_dependencies(field)
+        field.delete()
 
         # After the field is deleted we are going to to call the after_delete method of
         # the field type because some instance cleanup might need to happen.
@@ -151,9 +153,24 @@ class RowTrashableItemType(TrashableItemType):
         table = self.get_parent(trashed_item, trash_entry.parent_trash_item_id)
 
         model = table.get_model()
-        FieldDependencyHandler.update_dependant_rows_after_row_created(
-            trashed_item, [f["field"] for f in model._field_objects.values()]
+
+        update_collector = CachingFieldUpdateCollector(
+            table, existing_model=model, starting_row_id=trashed_item.id
         )
+        updated_fields = [f["field"] for f in model._field_objects.values()]
+        for field in updated_fields:
+            for (
+                dependant_field,
+                dependant_field_type,
+                path_to_starting_table,
+            ) in field.dependant_fields_with_types(update_collector):
+                dependant_field_type.row_of_dependency_created(
+                    dependant_field,
+                    trashed_item,
+                    update_collector,
+                    path_to_starting_table,
+                )
+        update_collector.apply_updates()
         row_created.send(
             self,
             row=trashed_item,

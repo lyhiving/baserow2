@@ -567,18 +567,18 @@ class FieldType(
 
         return field
 
-    def after_import_serialized(self, field, updated_fields_collector):
+    def after_import_serialized(self, field, field_cache):
         from baserow.contrib.database.fields.dependencies.handler import (
             FieldDependencyHandler,
         )
 
-        FieldDependencyHandler.rebuild_dependencies(field, updated_fields_collector)
-        for dependant_field in field.dependant_fields.all():
-            dependant_field = updated_fields_collector.lookup_specific(dependant_field)
-            field_type = field_type_registry.get_by_model(dependant_field)
-            field_type.after_import_serialized(
-                dependant_field, updated_fields_collector
-            )
+        FieldDependencyHandler.rebuild_dependencies(field, field_cache)
+        for (
+            dependant_field,
+            dependant_field_type,
+            _,
+        ) in field.dependant_fields_with_types(field_cache):
+            dependant_field_type.after_import_serialized(dependant_field, field_cache)
 
     def get_export_serialized_value(self, row, field_name, cache, files_zip, storage):
         """
@@ -801,57 +801,49 @@ class FieldType(
         self,
         field,
         starting_row,
-        updated_fields_collector,
+        update_collector,
         via_path_to_starting_table,
     ):
-        from baserow.contrib.database.fields.dependencies.handler import (
-            FieldDependencyHandler,
-        )
-
-        FieldDependencyHandler.update_dependant_rows_after_row_update(
-            field, field, via_path_to_starting_table, updated_fields_collector
+        self.row_of_dependency_updated(
+            field, starting_row, update_collector, via_path_to_starting_table
         )
 
     def row_of_dependency_updated(
         self,
         field,
         starting_row,
-        updated_fields_collector,
+        update_collector,
         via_path_to_starting_table,
     ):
-        from baserow.contrib.database.fields.dependencies.handler import (
-            FieldDependencyHandler,
-        )
-
-        FieldDependencyHandler.update_dependant_rows_after_row_update(
-            field, field, via_path_to_starting_table, updated_fields_collector
-        )
+        for (
+            dependant_field,
+            dependant_field_type,
+            path_to_starting_table,
+        ) in field.dependant_fields_with_types(
+            update_collector, via_path_to_starting_table
+        ):
+            dependant_field_type.row_of_dependency_updated(
+                dependant_field,
+                starting_row,
+                update_collector,
+                path_to_starting_table,
+            )
 
     def row_of_dependency_deleted(
         self,
         field,
         starting_row,
-        updated_fields_collector,
+        update_collector,
         via_path_to_starting_table,
     ):
-        from baserow.contrib.database.fields.dependencies.handler import (
-            FieldDependencyHandler,
-        )
-
-        FieldDependencyHandler.update_dependant_rows_after_row_update(
-            field, field, via_path_to_starting_table, updated_fields_collector
+        self.row_of_dependency_updated(
+            field, starting_row, update_collector, via_path_to_starting_table
         )
 
     def field_dependency_created(
-        self, field, created_field, via_path, updated_fields_collector
+        self, field, created_field, via_path, update_collector
     ):
-        from baserow.contrib.database.fields.dependencies.handler import (
-            FieldDependencyHandler,
-        )
-
-        FieldDependencyHandler.update_dependants_after_field_updated(
-            field, field, via_path=via_path, update_collector=updated_fields_collector
-        )
+        self.field_dependency_updated(field, field, field, via_path, update_collector)
 
     def field_dependency_updated(
         self,
@@ -859,26 +851,25 @@ class FieldType(
         updated_field,
         updated_old_field,
         via_path,
-        updated_fields_collector,
+        update_collector,
     ):
-        from baserow.contrib.database.fields.dependencies.handler import (
-            FieldDependencyHandler,
-        )
-
-        FieldDependencyHandler.update_dependants_after_field_updated(
-            field, field, via_path=via_path, update_collector=updated_fields_collector
-        )
+        for (
+            dependant_field,
+            dependant_field_type,
+            path_to_starting_table,
+        ) in field.dependant_fields_with_types(update_collector, via_path):
+            dependant_field_type.field_dependency_updated(
+                dependant_field,
+                field,
+                field,
+                path_to_starting_table,
+                update_collector,
+            )
 
     def field_dependency_deleted(
-        self, field, deleted_field, via_path, updated_fields_collector
+        self, field, deleted_field, via_path, update_collector
     ):
-        from baserow.contrib.database.fields.dependencies.handler import (
-            FieldDependencyHandler,
-        )
-
-        FieldDependencyHandler.update_dependants_after_field_updated(
-            field, field, via_path=via_path, update_collector=updated_fields_collector
-        )
+        self.field_dependency_updated(field, field, field, via_path, update_collector)
 
 
 class FieldTypeRegistry(

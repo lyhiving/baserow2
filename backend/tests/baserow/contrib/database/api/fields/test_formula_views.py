@@ -7,8 +7,6 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
 )
 
-from baserow.core.trash.handler import TrashHandler
-
 
 @pytest.mark.django_db
 def test_altering_value_of_referenced_field(
@@ -228,46 +226,6 @@ def test_trashing_child_field(api_client, data_fixture):
         "references the deleted or unknown field number"
         in response_json["related_fields"][0]["error"]
     )
-
-    response = api_client.get(
-        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {token}",
-    )
-    response_json = response.json()
-    assert response.status_code == HTTP_200_OK, response_json
-    assert "references the deleted or unknown field number" in response_json[0]["error"]
-
-
-@pytest.mark.django_db
-def test_perm_deleting_child_field(api_client, data_fixture):
-    user, token = data_fixture.create_user_and_token(
-        email="test@test.nl", password="password", first_name="Test1"
-    )
-    table, fields, rows = data_fixture.build_table(
-        columns=[("number", "number")], rows=[[1]], user=user
-    )
-    response = api_client.post(
-        reverse("api:database:fields:list", kwargs={"table_id": table.id}),
-        {"name": "Formula", "type": "formula", "formula": "field('number')+1"},
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {token}",
-    )
-    response_json = response.json()
-    assert response.status_code == HTTP_200_OK, response_json
-    formula_field_id = response_json["id"]
-
-    response = api_client.get(
-        reverse("api:database:rows:list", kwargs={"table_id": table.id}),
-        {},
-        format="json",
-        HTTP_AUTHORIZATION=f"JWT {token}",
-    )
-    response_json = response.json()
-    assert response_json["count"] == 1
-    assert response_json["results"][0][f"field_{formula_field_id}"] == "2"
-
-    TrashHandler.permanently_delete(fields[0])
 
     response = api_client.get(
         reverse("api:database:fields:list", kwargs={"table_id": table.id}),

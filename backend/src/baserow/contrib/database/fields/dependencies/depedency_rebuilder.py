@@ -151,7 +151,6 @@ def rebuild_field_dependencies(
         field_instance, field_lookup_cache
     )
     if field_dependencies is not None:
-        FieldDependency.objects.filter(dependant=field_instance).delete()
         for dependency in field_dependencies:
             _add_dependency(field_instance, dependency, field_lookup_cache)
 

@@ -48,18 +48,6 @@ def setup_interesting_test_table(data_fixture, user_kwargs=None):
     )
     name_to_field_id = {}
     i = 0
-    for field_type_name, all_possible_kwargs in all_possible_kwargs_per_type.items():
-        for kwargs in all_possible_kwargs:
-            field = handler.create_field(
-                user=user,
-                table=table,
-                type_name=field_type_name,
-                order=i,
-                **kwargs,
-            )
-            i += 1
-            name_to_field_id[kwargs["name"]] = field.id
-    row_handler = RowHandler()
     other_table_primary_text_field = data_fixture.create_text_field(
         table=link_table, name="text_field", primary=True
     )
@@ -76,6 +64,18 @@ def setup_interesting_test_table(data_fixture, user_kwargs=None):
         name="file_field",
         primary=True,
     )
+    for field_type_name, all_possible_kwargs in all_possible_kwargs_per_type.items():
+        for kwargs in all_possible_kwargs:
+            field = handler.create_field(
+                user=user,
+                table=table,
+                type_name=field_type_name,
+                order=i,
+                **kwargs,
+            )
+            i += 1
+            name_to_field_id[kwargs["name"]] = field.id
+    row_handler = RowHandler()
 
     model = table.get_model()
     datetime = _parse_datetime("2020-02-01 01:23")

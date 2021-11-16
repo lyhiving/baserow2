@@ -6,7 +6,6 @@ from django.db import transaction
 from django.db.models import Max, F
 from django.db.models.fields.related import ManyToManyField
 
-from baserow.contrib.database.fields.dependencies.handler import FieldDependencyHandler
 from baserow.contrib.database.fields.models import Field
 from baserow.core.trash.handler import TrashHandler
 from baserow.core.utils import split_comma_separated_string
@@ -18,6 +17,7 @@ from .signals import (
     row_updated,
     row_deleted,
 )
+from ..fields.dependencies.update_collector import CachingFieldUpdateCollector
 
 
 class RowHandler:
@@ -376,9 +376,19 @@ class RowHandler:
             )
 
         updated_fields = [field["field"] for field in model._field_objects.values()]
-        FieldDependencyHandler.update_dependant_rows_after_row_created(
-            instance, updated_fields
+        update_collector = CachingFieldUpdateCollector(
+            table, starting_row_id=instance.id, existing_model=model
         )
+        for field in updated_fields:
+            for (
+                dependant_field,
+                dependant_field_type,
+                path_to_starting_table,
+            ) in field.dependant_fields_with_types(update_collector):
+                dependant_field_type.row_of_dependency_created(
+                    dependant_field, instance, update_collector, path_to_starting_table
+                )
+        update_collector.apply_updates()
 
         return instance
 
@@ -471,10 +481,19 @@ class RowHandler:
 
             row.save()
 
-            FieldDependencyHandler.update_dependant_rows_after_row_update(
-                row, updated_fields, apply_updates=True
+            update_collector = CachingFieldUpdateCollector(
+                table, starting_row_id=row.id, existing_model=model
             )
-
+            for field in updated_fields:
+                for (
+                    dependant_field,
+                    dependant_field_type,
+                    path_to_starting_table,
+                ) in field.dependant_fields_with_types(update_collector):
+                    dependant_field_type.row_of_dependency_updated(
+                        dependant_field, row, update_collector, path_to_starting_table
+                    )
+            update_collector.apply_updates()
             # We need to refresh here as ExpressionFields might have had their values
             # updated. Django does not support UPDATE .... RETURNING and so we need to
             # query for the rows updated values instead.
@@ -574,9 +593,19 @@ class RowHandler:
 
         TrashHandler.trash(user, group, table.database, row, parent_id=table.id)
         updated_fields = [field["field"] for field in model._field_objects.values()]
-        FieldDependencyHandler.update_dependant_rows_after_row_deleted(
-            row, updated_fields
+        update_collector = CachingFieldUpdateCollector(
+            table, starting_row_id=row.id, existing_model=model
         )
+        for field in updated_fields:
+            for (
+                dependant_field,
+                dependant_field_type,
+                path_to_starting_table,
+            ) in field.dependant_fields_with_types(update_collector):
+                dependant_field_type.row_of_dependency_deleted(
+                    dependant_field, row, update_collector, path_to_starting_table
+                )
+        update_collector.apply_updates()
 
         row_deleted.send(
             self,

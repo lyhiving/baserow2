@@ -13,6 +13,7 @@ from baserow.contrib.database.views.handler import ViewHandler
 from baserow.core.trash.handler import TrashHandler
 from baserow.core.utils import extract_allowed, set_allowed_attrs
 from .dependencies.handler import FieldDependencyHandler
+from .dependencies.update_collector import CachingFieldUpdateCollector
 from .exceptions import (
     PrimaryFieldAlreadyExists,
     CannotDeletePrimaryField,
@@ -25,7 +26,6 @@ from .exceptions import (
     InvalidBaserowFieldName,
     MaxFieldNameLengthExceeded,
 )
-from .field_cache import FieldCache
 from .models import Field, SelectOption
 from .registries import field_type_registry, field_converter_registry
 from .signals import field_created, field_updated, field_deleted, field_restored
@@ -195,8 +195,9 @@ class FieldHandler:
         instance = model_class(
             table=table, order=last_order, primary=primary, **field_values
         )
-        field_lookup_cache = FieldCache()
-        instance.save(field_lookup_cache=field_lookup_cache, raise_if_invalid=True)
+        update_collector = CachingFieldUpdateCollector(table)
+        instance.save(field_lookup_cache=update_collector, raise_if_invalid=True)
+        FieldDependencyHandler.rebuild_dependencies(instance, update_collector)
 
         # Add the field to the table schema.
         with connection.schema_editor() as schema_editor:
@@ -208,21 +209,31 @@ class FieldHandler:
 
         field_type.after_create(instance, to_model, user, connection, before)
 
-        updated_fields = FieldDependencyHandler.update_dependants_after_field_created(
-            instance, field_lookup_cache
-        )
-
-        for field, related_fields in updated_fields.get_updated_fields_per_table():
-            field_created.send(
-                self,
-                field=field,
-                user=user,
-                related_fields=related_fields,
-                type_name=type_name,
+        update_collector.cache_model_fields(to_model)
+        for (
+            dependant_field,
+            dependant_field_type,
+            via_path,
+        ) in instance.dependant_fields_with_types(field_cache=update_collector):
+            dependant_field_type.field_dependency_created(
+                dependant_field,
+                instance,
+                via_path,
+                update_collector,
             )
 
+        updated_fields = update_collector.apply_updates()
+        field_created.send(
+            self,
+            field=instance,
+            user=user,
+            related_fields=updated_fields,
+            type_name=type_name,
+        )
+        update_collector.send_additional_field_updated_signals()
+
         if return_updated_fields:
-            return instance, updated_fields.for_table(instance.table)
+            return instance, updated_fields
         else:
             return instance
 
@@ -295,8 +306,9 @@ class FieldHandler:
         before = field_type.before_update(old_field, field_values, user)
 
         field = set_allowed_attrs(field_values, allowed_fields, field)
-        field_lookup_cache = FieldCache()
-        field.save(field_lookup_cache=field_lookup_cache, raise_if_invalid=True)
+        update_collector = CachingFieldUpdateCollector(field.table)
+        field.save(field_lookup_cache=update_collector, raise_if_invalid=True)
+        FieldDependencyHandler.rebuild_dependencies(field, update_collector)
         # If no converter is found we are going to convert to field using the
         # lenient schema editor which will alter the field's type and set the data
         # value to null if it can't be converted.
@@ -396,20 +408,32 @@ class FieldHandler:
             altered_column,
             before,
         )
-        updated_fields = FieldDependencyHandler.update_dependants_after_field_updated(
-            field, old_field, field_cache=field_lookup_cache, apply_updates=True
-        )
 
-        for field, related_fields in updated_fields.get_updated_fields_per_table():
-            field_updated.send(
-                self,
-                field=field,
-                related_fields=related_fields,
-                user=user,
+        update_collector.cache_model_fields(to_model)
+        for (
+            dependant_field,
+            dependant_field_type,
+            via_path,
+        ) in field.dependant_fields_with_types(field_cache=update_collector):
+            dependant_field_type.field_dependency_updated(
+                dependant_field,
+                field,
+                old_field,
+                via_path,
+                update_collector,
             )
 
+        updated_fields = update_collector.apply_updates()
+        field_updated.send(
+            self,
+            field=field,
+            related_fields=updated_fields,
+            user=user,
+        )
+        update_collector.send_additional_field_updated_signals()
+
         if return_updated_fields:
-            return field, updated_fields.for_table(field.table)
+            return field, updated_fields
         else:
             return field
 
@@ -438,19 +462,34 @@ class FieldHandler:
             )
 
         field = field.specific
-        updated_fields = FieldDependencyHandler.trash_and_update_dependencies(
-            user, group, field
-        )
-        for field, related_fields in updated_fields.get_updated_fields_per_table():
-            field_deleted.send(
-                self,
-                field_id=field.id,
-                field=field,
-                related_fields=related_fields,
-                user=user,
-            )
 
-        return updated_fields.for_table(field.table)
+        update_collector = CachingFieldUpdateCollector(field.table)
+        dependant_fields = field.dependant_fields_with_types(
+            field_cache=update_collector
+        )
+        TrashHandler.trash(user, group, field.table.database, field)
+        FieldDependencyHandler.rebuild_dependencies(field, update_collector)
+        for (
+            dependant_field,
+            dependant_field_type,
+            via_path,
+        ) in dependant_fields:
+            dependant_field_type.field_dependency_deleted(
+                dependant_field,
+                field,
+                via_path,
+                update_collector,
+            )
+        updated_fields = update_collector.apply_updates()
+        field_deleted.send(
+            self,
+            field_id=field.id,
+            field=field,
+            related_fields=updated_fields,
+            user=user,
+        )
+        update_collector.send_additional_field_updated_signals()
+        return updated_fields
 
     def update_field_select_options(self, user, field, select_options):
         """
@@ -622,18 +661,25 @@ class FieldHandler:
             field = field.specific
             field.name = field.name
             field.trashed = False
-            field_lookup_cache = FieldCache()
-            field.save(field_lookup_cache=field_lookup_cache)
-
-            updated_fields = (
-                FieldDependencyHandler.update_dependants_after_field_created(
-                    field, field_cache=field_lookup_cache
+            update_collector = CachingFieldUpdateCollector(field.table)
+            field.save(field_lookup_cache=update_collector)
+            FieldDependencyHandler.rebuild_dependencies(field, update_collector)
+            for (
+                dependant_field,
+                dependant_field_type,
+                via_path,
+            ) in field.dependant_fields_with_types(update_collector):
+                dependant_field_type.field_dependency_created(
+                    dependant_field,
+                    field,
+                    via_path,
+                    update_collector,
                 )
+            updated_fields = update_collector.apply_updates()
+            field_restored.send(
+                self, field=field, user=None, related_fields=updated_fields
             )
-            for field, related_fields in updated_fields.get_updated_fields_per_table():
-                field_restored.send(
-                    self, field=field, user=None, related_fields=related_fields
-                )
+            update_collector.send_additional_field_updated_signals()
         except Exception as e:
             # Restoring a field could result in various errors such as a circular
             # dependency appearing in the field dep graph. Allow the field type to

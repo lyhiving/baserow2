@@ -681,7 +681,9 @@ def run_export_job_with_mock_storage(
 def setup_testing_table(data_fixture):
     user = data_fixture.create_user()
     table = data_fixture.create_database_table(user=user)
-    text_field = data_fixture.create_text_field(table=table, name="text_field", order=0)
+    text_field = data_fixture.create_text_field(
+        table=table, name="text_field", order=0, primary=True
+    )
     option_field = data_fixture.create_single_select_field(
         table=table,
         name="option_field",

@@ -1,6 +1,8 @@
-from typing import Optional
+from collections import defaultdict
+from typing import Optional, Type
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Model
 
 
 class FieldCache:
@@ -13,21 +15,32 @@ class FieldCache:
     Trashed fields are excluded from the cache.
     """
 
-    def __init__(self, existing_cache: Optional["FieldCache"] = None):
+    def __init__(
+        self,
+        existing_cache: Optional["FieldCache"] = None,
+        existing_model: Optional[Type[Model]] = None,
+    ):
         if existing_cache is not None:
             self.cached_field_by_name_per_table = (
                 existing_cache.cached_field_by_name_per_table
             )
             self.model_cache = existing_cache.model_cache
         else:
-            self.cached_field_by_name_per_table = {}
+            self.cached_field_by_name_per_table = defaultdict(dict)
             self.model_cache = {}
 
-    def cache_field(self, field):
-        if not field.trashed:
-            table_id = field.table_id
-            self.cached_field_by_name_per_table.setdefault(table_id, {})
-            self.cached_field_by_name_per_table[table_id][field.name] = field
+        if existing_model is not None:
+            self.cache_model(existing_model)
+
+    # noinspection PyUnresolvedReferences,PyProtectedMember
+    def cache_model(self, model: Type[Model]):
+        self.model_cache[model._table_id] = model
+        self.cache_model_fields(model)
+
+    # noinspection PyUnresolvedReferences,PyProtectedMember
+    def cache_model_fields(self, model: Type[Model]):
+        for field_object in model._field_objects.values():
+            self.cache_field(field_object["field"])
 
     def get_model(self, table):
         table_id = table.id
@@ -35,31 +48,33 @@ class FieldCache:
             self.model_cache[table_id] = table.get_model()
         return self.model_cache[table_id]
 
+    def cache_field(self, field):
+        if not field.trashed:
+            cached_fields = self.cached_field_by_name_per_table[field.table_id]
+
+            try:
+                specific_field = field.specific
+            except ObjectDoesNotExist:
+                return None
+
+            cached_fields[field.name] = specific_field
+            return specific_field
+        else:
+            return None
+
     def lookup_specific(self, non_specific_field):
         try:
             return self.cached_field_by_name_per_table[non_specific_field.table_id][
                 non_specific_field.name
             ]
         except KeyError:
-            try:
-                field = non_specific_field.specific
-                if field.trashed:
-                    return None
-                self.cache_field(field)
-                return field
-            except ObjectDoesNotExist:
-                return None
+            return self.cache_field(non_specific_field)
 
     def lookup_by_name(self, table, field_name: str):
         try:
             return self.cached_field_by_name_per_table[table.id][field_name]
         except KeyError:
             try:
-                field = table.field_set.get(name=field_name).specific
-                if field.trashed:
-                    # Inside migrations field_set wont be using the non trashed manager.
-                    return None
-                self.cache_field(field)
-                return field
+                return self.cache_field(table.field_set.get(name=field_name))
             except ObjectDoesNotExist:
                 return None

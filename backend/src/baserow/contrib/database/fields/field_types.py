@@ -55,7 +55,6 @@ from .dependencies.exceptions import (
     SelfReferenceFieldDependencyError,
     CircularFieldDependencyError,
 )
-from .dependencies.handler import FieldDependencyHandler
 from .dependencies.types import OptionalFieldDependencies
 from .exceptions import (
     LinkRowTableNotInSameDatabase,
@@ -1291,11 +1290,15 @@ class LinkRowFieldType(FieldType):
         return [field.link_row_related_field]
 
     def get_field_dependencies(self, field_instance, field_lookup_cache):
-        try:
+        primary_related_field = field_instance.get_related_primary_field()
+        if primary_related_field is not None:
             return [
-                (field_instance.name, field_instance.get_related_primary_field().name)
+                (
+                    field_instance.name,
+                    primary_related_field.name,
+                )
             ]
-        except StopIteration:
+        else:
             return []
 
 
@@ -2230,63 +2233,53 @@ class FormulaFieldType(FieldType):
         self,
         field,
         starting_row,
-        updated_fields_collector,
+        update_collector,
         via_path_to_starting_table,
     ):
         self.row_of_dependency_updated(
-            field, starting_row, updated_fields_collector, via_path_to_starting_table
+            field, starting_row, update_collector, via_path_to_starting_table
         )
 
     def row_of_dependency_updated(
         self,
         field,
         starting_row,
-        updated_fields_collector,
+        update_collector,
         via_path_to_starting_table,
     ):
-        if len(via_path_to_starting_table) > 0:
+        if via_path_to_starting_table is None or len(via_path_to_starting_table) > 0:
             update_statement = (
                 FormulaHandler.baserow_expression_to_update_django_expression(
                     field.cached_typed_internal_expression,
-                    updated_fields_collector.get_model(field.table),
+                    update_collector.get_model(field.table),
                 )
             )
-            updated_fields_collector.add_field_with_pending_update_statement(
+            update_collector.add_field_with_pending_update_statement(
                 field,
                 update_statement,
                 via_path=via_path_to_starting_table,
-                starting_row_id=starting_row.id,
             )
         super().row_of_dependency_updated(
-            field, starting_row, updated_fields_collector, via_path_to_starting_table
+            field, starting_row, update_collector, via_path_to_starting_table
         )
 
     def row_of_dependency_deleted(
         self,
         field,
         starting_row,
-        updated_fields_collector,
+        update_collector,
         via_path_to_starting_table,
     ):
         self.row_of_dependency_updated(
-            field, starting_row, updated_fields_collector, via_path_to_starting_table
+            field, starting_row, update_collector, via_path_to_starting_table
         )
 
     def field_dependency_created(
-        self, field, created_field, via_path, updated_fields_collector
+        self, field, created_field, via_path, update_collector
     ):
         old_field = deepcopy(field)
-        expr = FormulaHandler.recalculate_formula_and_get_update_expression(
-            field, old_field, updated_fields_collector
-        )
-        updated_fields_collector.add_field_with_pending_update_statement(
-            field, expr, via_path=via_path
-        )
-        FieldDependencyHandler.update_dependants_after_field_updated(
-            field,
-            old_field,
-            via_path=via_path,
-            update_collector=updated_fields_collector,
+        self._update_formula_after_dependency_change(
+            field, old_field, update_collector, via_path
         )
 
     def field_dependency_updated(
@@ -2295,7 +2288,7 @@ class FormulaFieldType(FieldType):
         updated_field,
         updated_old_field,
         via_path,
-        updated_fields_collector,
+        update_collector,
     ):
         old_field = deepcopy(field)
 
@@ -2305,36 +2298,39 @@ class FormulaFieldType(FieldType):
             field.formula = FormulaHandler.rename_field_references_in_formula_string(
                 field.formula, {old_name: new_name}
             )
-        expr = FormulaHandler.recalculate_formula_and_get_update_expression(
-            field, old_field, updated_fields_collector
-        )
-        updated_fields_collector.add_field_with_pending_update_statement(
-            field, expr, via_path=via_path
-        )
-        FieldDependencyHandler.update_dependants_after_field_updated(
-            field,
-            old_field,
-            via_path=via_path,
-            update_collector=updated_fields_collector,
+        self._update_formula_after_dependency_change(
+            field, old_field, update_collector, via_path
         )
 
+    # noinspection PyMethodMayBeStatic
+    def _update_formula_after_dependency_change(
+        self, field, old_field, update_collector, via_path
+    ):
+        expr = FormulaHandler.recalculate_formula_and_get_update_expression(
+            field, old_field, update_collector
+        )
+        update_collector.add_field_with_pending_update_statement(
+            field, expr, via_path=via_path
+        )
+        for (
+            dependant_field,
+            dependant_field_type,
+            path_to_starting_table,
+        ) in field.dependant_fields_with_types(update_collector, via_path):
+            dependant_field_type.field_dependency_updated(
+                dependant_field,
+                field,
+                old_field,
+                path_to_starting_table,
+                update_collector,
+            )
+
     def field_dependency_deleted(
-        self, field, deleted_field, via_path, updated_fields_collector
+        self, field, deleted_field, via_path, update_collector
     ):
         old_field = deepcopy(field)
-        update_expression = (
-            FormulaHandler.recalculate_formula_and_get_update_expression(
-                field, old_field, field_cache=updated_fields_collector
-            )
-        )
-        updated_fields_collector.add_field_with_pending_update_statement(
-            field, update_expression, via_path=via_path
-        )
-        FieldDependencyHandler.update_dependants_after_field_updated(
-            field,
-            old_field,
-            via_path=via_path,
-            update_collector=updated_fields_collector,
+        self._update_formula_after_dependency_change(
+            field, old_field, update_collector, via_path
         )
 
     def after_create(self, field, model, user, connection, before):
@@ -2343,7 +2339,6 @@ class FormulaFieldType(FieldType):
         with the already existing source_field_name column.
         """
 
-        model = field.table.get_model()
         expr = FormulaHandler.baserow_expression_to_update_django_expression(
             field.cached_typed_internal_expression, model
         )
@@ -2360,12 +2355,11 @@ class FormulaFieldType(FieldType):
         altered_column,
         before,
     ):
-        model = to_field.table.get_model()
         expr = FormulaHandler.baserow_expression_to_update_django_expression(
-            to_field.cached_typed_internal_expression, model
+            to_field.cached_typed_internal_expression, to_model
         )
-        model.objects_and_trash.all().update(**{f"{to_field.db_column}": expr})
+        to_model.objects_and_trash.all().update(**{f"{to_field.db_column}": expr})
 
-    def after_import_serialized(self, field, updated_fields_collector):
-        field.save(recalculate=True, field_lookup_cache=updated_fields_collector)
-        super().after_import_serialized(field, updated_fields_collector)
+    def after_import_serialized(self, field, field_cache):
+        field.save(recalculate=True, field_lookup_cache=field_cache)
+        super().after_import_serialized(field, field_cache)

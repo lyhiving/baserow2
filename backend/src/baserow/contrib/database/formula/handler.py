@@ -266,7 +266,9 @@ class FormulaHandler:
             )
 
     @classmethod
-    def recalculate_internal_formula_fields(cls, formula_field, field_lookup_cache):
+    def recalculate_formula_field_cached_properties(
+        cls, formula_field, field_lookup_cache
+    ):
         """
         WARNING: This function is directly used by migration code. Please ensure
         backwards compatability when adding fields etc.

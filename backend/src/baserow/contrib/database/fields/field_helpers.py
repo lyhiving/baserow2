@@ -13,7 +13,7 @@ def construct_all_possible_field_kwargs(
     kwarg dicts, one for each interesting possible 'subtype' of the field.
     """
     all_interesting_field_kwargs = {
-        "text": [{"name": "text"}],
+        "text": [{"name": "text", "primary": True}],
         "long_text": [{"name": "long_text"}],
         "url": [{"name": "url"}],
         "email": [{"name": "email"}],

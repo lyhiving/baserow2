@@ -58,7 +58,7 @@ class Field(
 
     table = models.ForeignKey("database.Table", on_delete=models.CASCADE)
     order = models.PositiveIntegerField(help_text="Lowest first.")
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, db_index=True)
     primary = models.BooleanField(
         default=False,
         help_text="Indicates if the field is a primary field. If `true` the field "
@@ -113,6 +113,20 @@ class Field(
             name = f"field_{name}"
 
         return name
+
+    def dependant_fields_with_types(self, field_cache, starting_via_path=None):
+        from baserow.contrib.database.fields.registries import field_type_registry
+
+        result = []
+        for field_dependency in self.dependants.select_related("dependant").all():
+            dependant_field = field_cache.lookup_specific(field_dependency.dependant)
+            dependant_field_type = field_type_registry.get_by_model(dependant_field)
+            if field_dependency.via is not None:
+                via_path = [field_dependency.via] + (starting_via_path or [])
+            else:
+                via_path = starting_via_path
+            result.append((dependant_field, dependant_field_type, via_path))
+        return result
 
     def save(self, *args, **kwargs):
         kwargs.pop("field_lookup_cache", None)
@@ -258,9 +272,10 @@ class LinkRowField(Field):
         return last_id + 1
 
     def get_related_primary_field(self):
-        return next(
-            f for f in self.link_row_table.field_set.all() if f.primary
-        ).specific
+        try:
+            return self.link_row_table.field_set.get(primary=True)
+        except Field.DoesNotExist:
+            return None
 
 
 class EmailField(Field):
@@ -350,7 +365,7 @@ class FormulaField(Field):
         if hasattr(self, "cached_untyped_expression"):
             # noinspection PyPropertyAccess
             del self.cached_untyped_expression
-        expression = FormulaHandler.recalculate_internal_formula_fields(
+        expression = FormulaHandler.recalculate_formula_field_cached_properties(
             self, field_lookup_cache
         )
         expression_type = expression.expression_type
