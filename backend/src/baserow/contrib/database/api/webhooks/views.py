@@ -245,12 +245,17 @@ class TableWebhookTestCallView(APIView):
                 name="table_id",
                 location=OpenApiParameter.PATH,
                 type=OpenApiTypes.INT,
-                description="The ID of the table.",
+                description="The id of the table that must be tested.",
             ),
         ],
         tags=["Database table webhooks"],
         operation_id="test_call_database_table_webhook",
-        description=("@TODO"),
+        description=(
+            "This endpoint triggers a test call based on the provided data if the "
+            "user has access to the group related to the table. The test call will be "
+            "made immediately and a copy of the request, response and status will be "
+            "included in the response."
+        ),
         request=TableWebhookTestCallRequestSerializer,
         responses={
             200: TableWebhookTestCallResponseSerializer(),

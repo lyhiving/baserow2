@@ -3,12 +3,13 @@ import responses
 
 from celery.exceptions import Retry
 from django.test import override_settings
+from django.db import transaction
 
 from baserow.contrib.database.webhooks.models import TableWebhookCall
 from baserow.contrib.database.webhooks.tasks import call_webhook
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 @responses.activate
 @override_settings(
     WEBHOOKS_MAX_RETRIES_PER_CALL=1, WEBHOOKS_MAX_CONSECUTIVE_TRIGGER_FAILURES=1
@@ -37,6 +38,7 @@ def test_call_webhook(data_fixture):
             headers={"Baserow-header-1": "Value 1"},
             payload={"type": "row.created"},
         )
+        transaction.commit()
 
     assert TableWebhookCall.objects.all().count() == 1
     created_call = TableWebhookCall.objects.all().first()

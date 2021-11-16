@@ -28,7 +28,9 @@ class TableWebhook(CreatedAndUpdatedOnMixin, models.Model):
         help_text="Indicates whether the field names must be used as payload key "
         "instead of the id.",
     )
-    url = models.URLField(help_text="The URL must call when the webhook is triggered.")
+    url = models.URLField(
+        help_text="The URL that must call when the webhook is " "triggered."
+    )
     request_method = models.CharField(
         max_length=10,
         choices=WebhookRequestMethods.choices,
@@ -78,10 +80,10 @@ class TableWebhookCall(models.Model):
     called_time = models.DateTimeField(null=True)
     called_url = models.URLField()
     request = models.TextField(
-        null=True, help_text="A text copy of the request headers and body"
+        null=True, help_text="A text copy of the request headers and body."
     )
     response = models.TextField(
-        null=True, help_text="A copy of the response headers and body if present."
+        null=True, help_text="A text copy of the response headers and body."
     )
     response_status = models.IntegerField(
         null=True, help_text="The HTTP response status code."

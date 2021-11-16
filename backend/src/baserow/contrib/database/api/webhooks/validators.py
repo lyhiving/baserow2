@@ -28,7 +28,7 @@ def url_validation(value: str) -> str:
     :return: The provided URL if valid.
     """
 
-    # in case we run the develop server we want to allowe every url.
+    # in case we run the develop server we want to allow every url.
     if settings.DEBUG is True:
         return value
 

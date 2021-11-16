@@ -1,7 +1,7 @@
 .webhook {
   border: solid 1px $color-neutral-200;
   border-radius: 6px;
-  margin: 20px 0;
+  margin-top: 20px;
   overflow: hidden;
 }
 
@@ -189,7 +189,7 @@
   }
 }
 
-.webhook__call {
+.webhook__call:not(:last-child) {
   margin-bottom: 16px;
 }
 

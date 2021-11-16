@@ -18,14 +18,14 @@ from .tasks import call_webhook
 class WebhookEventType(Instance):
     """
     This class represents a custom webhook event type that can be added to the webhook
-    event type registry.
-    Each registered event type needs to set a django signal on which it will listen on.
-    Upon initialization the webhook event type will connect to the django signal.
+    event type registry. Each registered event type needs to set a django signal on
+    which it will listen on. Upon initialization the webhook event type will connect
+    to the django signal.
 
     The 'listener' function will be called for every received signal. The listener will
     generate a unique ID for every received signal, find all webhooks that need to be
     called and subsequently generates the payload for every webhook and runs a celery
-    task that will do the actuall call to the endpoint.
+    task that will do the actually call to the endpoint.
     """
 
     signal = None
@@ -80,10 +80,6 @@ class WebhookEventType(Instance):
         """
         The method that is called when the signal is triggered. By default it will
         wait for the transition to commit to call the `listener_after_commit` method.
-
-        By default it will
-        figure out which webhooks need to be called and will trigger the async task
-        that will actually do so.
 
         :param kwargs: The arguments of the signal.
         """

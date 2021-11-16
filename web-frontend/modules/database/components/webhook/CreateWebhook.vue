@@ -1,7 +1,7 @@
 <template>
   <div>
     <Error :error="error" />
-    <WebhookForm ref="form" :table="table" :create="true" @submitted="submit">
+    <WebhookForm ref="form" :table="table" @submitted="submit">
       <div class="actions">
         <div class="align-right">
           <button
@@ -19,6 +19,7 @@
 
 <script>
 import error from '@baserow/modules/core/mixins/error'
+import { ResponseErrorMessage } from '@baserow/modules/core/plugins/clientHandler'
 import WebhookForm from '@baserow/modules/database/components/webhook/WebhookForm'
 import WebhookService from '@baserow/modules/database/services/webhook'
 
@@ -48,7 +49,14 @@ export default {
         )
         this.$emit('created', data)
       } catch (error) {
-        this.handleError(error)
+        this.handleError(error, 'webhook', {
+          ERROR_TABLE_WEBHOOK_MAX_LIMIT_EXCEEDED: new ResponseErrorMessage(
+            this.$t('createWebhook.errorTableWebhookMaxLimitExceededTitle'),
+            this.$t(
+              'createWebhook.errorTableWebhookMaxLimitExceededDescription'
+            )
+          ),
+        })
       }
 
       this.loading = false
@@ -56,3 +64,20 @@ export default {
   },
 }
 </script>
+
+<i18n>
+{
+  "en": {
+    "createWebhook": {
+      "errorTableWebhookMaxLimitExceededTitle": "Max webhooks exceeded",
+      "errorTableWebhookMaxLimitExceededDescription": "Can't create the webhook becuase the maximum amount of webhooks per table has been exceeded."
+    }
+  },
+  "fr": {
+    "createWebhook": {
+      "errorTableWebhookMaxLimitExceededTitle": "@TODO",
+      "errorTableWebhookMaxLimitExceededDescription": "@TODO"
+    }
+  }
+}
+</i18n>

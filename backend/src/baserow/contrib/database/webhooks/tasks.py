@@ -30,8 +30,6 @@ def call_webhook(
     :param headers: The additional headers that must be added to the request. The key
         is the name and the value is the value.
     :param payload: The JSON serializable payload that must be used as request body.
-
-    :return:
     """
 
     from django.utils import timezone
@@ -88,29 +86,32 @@ def call_webhook(
         )
         handler.clean_webhook_calls(webhook)
 
-        if success:
-            if webhook.failed_triggers != 0:
-                webhook.failed_triggers = 0
-                webhook.save()
-        else:
-            if self.request.retries < settings.WEBHOOKS_MAX_RETRIES_PER_CALL:
-                # If the task is still operating within the max retries per call limit,
-                # then we want to retry the task with an exponential backoff.
-                self.retry(countdown=2 ** self.request.retries)
-            elif (
-                webhook.failed_triggers
-                < settings.WEBHOOKS_MAX_CONSECUTIVE_TRIGGER_FAILURES
-            ):
-                # If the task has reached the maximum amount of call, we're going to
-                # give up and increase the total failed triggers of the webook if
-                # we're still operating within the limits of the max consecutive
-                # trigger failures.
-                webhook.failed_triggers += 1
-                webhook.save()
-            else:
-                # If webhook has reached the maximum amount of failed triggers,
-                # we're going to deactivate it because we can reasonable assume that the
-                # target doesn't work anymore. At this point we've tried 8 * 10 times.
-                # The user manually active it again if he wishes.
-                webhook.active = False
-                webhook.save()
+        if success and webhook.failed_triggers != 0:
+            # If the call was successful and failed triggers had been increased in
+            # the past, we can safely reset it to 0 again to prevent deactivation of
+            # the webhook.
+            webhook.failed_triggers = 0
+            webhook.save()
+        elif not success and (
+            webhook.failed_triggers < settings.WEBHOOKS_MAX_CONSECUTIVE_TRIGGER_FAILURES
+        ):
+            # If the task has reached the maximum amount of failed calls, we're going to
+            # give up and increase the total failed triggers of the webhook if we're
+            # still operating within the limits of the max consecutive trigger failures.
+            webhook.failed_triggers += 1
+            webhook.save()
+        elif not success:
+            # If webhook has reached the maximum amount of failed triggers,
+            # we're going to deactivate it because we can reasonable assume that the
+            # target doesn't listen anymore. At this point we've tried 8 * 10 times.
+            # The user can manually activate it again when it's fixed.
+            webhook.active = False
+            webhook.save()
+
+    # This part must be outside of the transaction block, otherwise it could cause
+    # the transaction to rollback when the retry exception is raised, and we don't want
+    # that to happen.
+    if not success and self.request.retries < settings.WEBHOOKS_MAX_RETRIES_PER_CALL:
+        # If the task is still operating within the max retries per call limit,
+        # then we want to retry the task with an exponential backoff.
+        self.retry(countdown=2 ** self.request.retries)

@@ -1,6 +1,6 @@
 <template>
   <Modal :tiny="true">
-    <div class="webhook__test-title">{{ $t('triggerWebhookModal.title') }}</div>
+    <div class="webhook__test-title">{{ $t('testWebhookModal.title') }}</div>
     <Error :error="error" />
     <div v-if="isLoading" class="loading"></div>
     <div v-else-if="!error.visible">
@@ -79,7 +79,7 @@ export default {
     },
     statusDescription() {
       if (this.statusCode === null) {
-        return this.$t('triggerWebhookModal.unreachable')
+        return this.$t('testWebhookModal.unreachable')
       } else if (this.ok) {
         return `${this.statusCode} ${this.$t('webhook.status.statusOK')}`
       } else {
@@ -123,13 +123,13 @@ export default {
 <i18n>
 {
   "en": {
-    "triggerWebhookModal": {
+    "testWebhookModal": {
       "title": "Test webhook",
       "unreachable": "Server unreachable"
     }
   },
   "fr": {
-    "triggerWebhookModal": {
+    "testWebhookModal": {
       "title": "@TODO",
       "unreachable": "@TODO"
     }

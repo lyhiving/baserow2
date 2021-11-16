@@ -21,7 +21,7 @@ export class WebhookEventType extends Registerable {
   }
 
   /**
-   * @TODO docs
+   * Should return an object containing an example of the webhook event type payload.
    */
   getExamplePayload(table, rowExample) {
     return {

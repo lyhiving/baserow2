@@ -47,7 +47,8 @@ class Migration(migrations.Migration):
                 (
                     "url",
                     models.URLField(
-                        help_text="The URL must call when the webhook is triggered."
+                        help_text="The URL that must call when the webhook is "
+                                  "triggered."
                     ),
                 ),
                 (
@@ -187,14 +188,14 @@ class Migration(migrations.Migration):
                 (
                     "request",
                     models.TextField(
-                        help_text="A text copy of the request headers and body",
+                        help_text="A text copy of the request headers and body.",
                         null=True,
                     ),
                 ),
                 (
                     "response",
                     models.TextField(
-                        help_text="A copy of the response headers and body if present.",
+                        help_text="A text copy of the response headers and body.",
                         null=True,
                     ),
                 ),

@@ -23,8 +23,7 @@ class TableWebhookCreateRequestSerializer(serializers.ModelSerializer):
     events = serializers.ListField(
         required=False,
         child=serializers.ChoiceField(choices=webhook_event_type_registry.get_types()),
-        help_text="A list containing the webhook events that will trigger this "
-        "webhook.",
+        help_text="A list containing the events that will trigger this webhook.",
     )
     headers = serializers.DictField(
         required=False,
@@ -34,7 +33,7 @@ class TableWebhookCreateRequestSerializer(serializers.ModelSerializer):
     )
     url = serializers.URLField(
         validators=[url_validation],
-        help_text="The URL must call when the webhook is triggered.",
+        help_text="The URL that must call when the webhook is triggered.",
     )
 
     class Meta:
@@ -54,8 +53,7 @@ class TableWebhookUpdateRequestSerializer(serializers.ModelSerializer):
     events = serializers.ListField(
         required=False,
         child=serializers.ChoiceField(choices=webhook_event_type_registry.get_types()),
-        help_text="A list containing the webhook events that will trigger this "
-        "webhook.",
+        help_text="A list containing the events that will trigger this webhook.",
     )
     headers = serializers.DictField(
         required=False,
@@ -66,7 +64,7 @@ class TableWebhookUpdateRequestSerializer(serializers.ModelSerializer):
     url = serializers.URLField(
         required=False,
         validators=[url_validation],
-        help_text="The URL must call when the webhook is triggered.",
+        help_text="The URL that must call when the webhook is triggered.",
     )
 
     class Meta:
@@ -106,8 +104,7 @@ class TableWebhookCallSerializer(serializers.ModelSerializer):
 
 class TableWebhookSerializer(serializers.ModelSerializer):
     events = serializers.SerializerMethodField(
-        help_text="A list containing the webhook events that will trigger this "
-        "webhook.",
+        help_text="A list containing the events that will trigger this webhook.",
     )
     headers = serializers.SerializerMethodField(
         help_text="The additional headers as an object where the key is the name and "
@@ -169,10 +166,10 @@ class TableWebhookTestCallRequestSerializer(serializers.ModelSerializer):
 
 class TableWebhookTestCallResponseSerializer(serializers.Serializer):
     request = serializers.SerializerMethodField(
-        help_text="A text copy of the request headers and body"
+        help_text="A text copy of the request headers and body."
     )
     response = serializers.SerializerMethodField(
-        help_text="A copy of the response headers and body if present."
+        help_text="A text copy of the response headers and body."
     )
     status_code = serializers.SerializerMethodField(
         help_text="The HTTP response status code."
