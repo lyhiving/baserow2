@@ -22,7 +22,6 @@ class FieldDependencyHandler:
         :return: A list of specific field instances.
         """
 
-        # TODO does using the lookup cache make sense here?
         return [
             dep.specific
             for dep in field.field_dependencies.filter(table=field.table).all()
