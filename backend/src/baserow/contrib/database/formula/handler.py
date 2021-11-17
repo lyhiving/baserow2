@@ -345,18 +345,24 @@ class FormulaHandler:
         field_lookup_cache = FieldCache()
         already_recalculated = set()
 
-        with LockedAtomicTransaction(FormulaField):
-            if FormulaField.objects.filter(
+        def formulas_need_update():
+            return FormulaField.objects.filter(
                 ~Q(version=cls.BASEROW_FORMULA_VERSION)
-            ).exists():
-                for field in FormulaField.objects.all():
-                    _recalculate_depth_first(
-                        field, already_recalculated, field_lookup_cache
-                    )
+            ).exists()
 
-                FormulaField.objects.update(
-                    version=cls.BASEROW_FORMULA_VERSION,
-                )
+        if formulas_need_update():
+            with LockedAtomicTransaction(FormulaField):
+                # Another worker might have gotten the lock first and already done
+                # the update so we recheck once we have the lock.
+                if formulas_need_update():
+                    for field in FormulaField.objects.all():
+                        _recalculate_depth_first(
+                            field, already_recalculated, field_lookup_cache
+                        )
+
+                    FormulaField.objects.update(
+                        version=cls.BASEROW_FORMULA_VERSION,
+                    )
 
     @classmethod
     def recalculate_formula_and_get_update_expression(

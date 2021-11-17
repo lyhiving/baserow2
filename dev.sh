@@ -99,7 +99,6 @@ migrate=true
 sync_templates=true
 exit_if_other_owners_found=true
 delete_db_volume=false
-update_formulas=true
 while true; do
 case "${1:-noneleft}" in
     dont_migrate)

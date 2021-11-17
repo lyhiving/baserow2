@@ -1,6 +1,6 @@
 from django.apps import AppConfig
-from django.db.models.signals import post_migrate
-from django.dispatch import receiver
+from django.conf import settings
+from django.core.exceptions import FieldDoesNotExist
 
 from baserow.core.registries import (
     plugin_registry,
@@ -204,10 +204,22 @@ class DatabaseConfig(AppConfig):
         # which need to be filled first.
         import baserow.contrib.database.ws.signals  # noqa: F403, F401
 
+        self._safely_update_formula_versions()
 
-# noinspection PyUnusedLocal
-@receiver(post_migrate)
-def post_migrate(sender, **kwargs):
-    from baserow.contrib.database.formula import FormulaHandler
+    # noinspection PyPep8Naming
+    def _safely_update_formula_versions(self):
+        # app.ready will be called for management commands also, we only want to
+        # execute the following hook when we are starting the django server as
+        # otherwise backwards migrations etc will crash because of this.
+        if not settings.IN_MANAGEMENT_COMMAND and settings.UPDATE_FORMULAS_ON_STARTUP:
+            from baserow.contrib.database.formula import FormulaHandler
 
-    FormulaHandler.recalculate_formulas_according_to_version()
+            try:
+                FormulaField = self.get_model("database", "FormulaField")
+                # noinspection PyProtectedMember
+                FormulaField._meta.get_field("version")
+                FormulaHandler.recalculate_formulas_according_to_version()
+            except (LookupError, FieldDoesNotExist):
+                # We are starting up a version of baserow before formulas with versions
+                # existed, there is nothing to do.
+                pass
