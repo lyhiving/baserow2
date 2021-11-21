@@ -330,7 +330,6 @@ class Table(
         attribute_names=False,
         manytomany_models=None,
         typed_table=None,
-        managed=False,
     ) -> GeneratedTableModel:
         """
         Generates a temporary Django model based on available fields that belong to
@@ -359,10 +358,6 @@ class Table(
             here to prevent any retyping calculations. Or instead false can be provided
             to prevent any automatic typing operations what so ever.
         :type Union[bool, Optional[TypedBaserowTable]]
-        :param managed: Whether the created model should be managed by Django or not.
-            Only in very specific limited situations should this be enabled as
-            generally Baserow itself manages most aspects of returned generated models.
-        :type managed: bool
         :return: The generated model.
         :rtype: Model
         """
@@ -378,7 +373,7 @@ class Table(
             "Meta",
             (),
             {
-                "managed": managed,
+                "managed": False,
                 "db_table": self.get_database_table_name(),
                 "app_label": app_label,
                 "ordering": ["order", "id"],
