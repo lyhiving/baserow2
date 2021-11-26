@@ -252,6 +252,9 @@ export default {
       this.$emit('dragging', { field, event })
     },
     getSortIndicator(field, index) {
+      if (field == null) {
+        return ''
+      }
       return this.$registry
         .get('field', field.type)
         .getSortIndicator(field, this.$registry)[index]

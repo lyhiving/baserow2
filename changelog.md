@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+* Fixed frontend errors occurring sometimes when mass deleting and restoring sorted 
+  fields
+
 ## Released (2021-11-25)
 
 * Fix trashing tables and related link fields causing the field dependency graph to 
