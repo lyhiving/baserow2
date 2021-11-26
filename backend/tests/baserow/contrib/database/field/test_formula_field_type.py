@@ -1124,12 +1124,8 @@ def test_cannot_create_view_filter_or_sort_on_invalid_field(data_fixture):
     option_field = data_fixture.create_single_select_field(
         table=table, name="option_field", order=1
     )
-    option_a = data_fixture.create_select_option(
-        field=option_field, value="A", color="blue"
-    )
-    option_b = data_fixture.create_select_option(
-        field=option_field, value="B", color="red"
-    )
+    data_fixture.create_select_option(field=option_field, value="A", color="blue")
+    data_fixture.create_select_option(field=option_field, value="B", color="red")
     single_select_formula_field = FieldHandler().create_field(
         user=user,
         table=table,
