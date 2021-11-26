@@ -11,7 +11,7 @@ from baserow.contrib.database.fields.dependencies.update_collector import (
 from baserow.contrib.database.fields.field_cache import FieldCache
 from baserow.contrib.database.fields.field_types import FormulaFieldType
 from baserow.contrib.database.fields.handler import FieldHandler
-from baserow.contrib.database.fields.models import FormulaField
+from baserow.contrib.database.fields.models import FormulaField, LookupField
 from baserow.contrib.database.fields.registries import field_type_registry
 from baserow.contrib.database.formula import (
     BaserowFormulaInvalidType,
@@ -1111,38 +1111,69 @@ def test_can_insert_and_update_rows_with_formula_referencing_single_select(
 @pytest.mark.django_db
 def test_cannot_create_view_filter_or_sort_on_invalid_field(data_fixture):
     user = data_fixture.create_user()
-    table = data_fixture.create_database_table(user=user)
+    table, other_table, link = data_fixture.create_two_linked_tables(user=user)
     grid_view = data_fixture.create_grid_view(user, table=table)
     first_formula_field = FieldHandler().create_field(
         user, table, "formula", formula="1", name="source"
     )
-    formula_field_referencing_first_field = FieldHandler().create_field(
+    broken_formula_field = FieldHandler().create_field(
         user, table, "formula", formula="field('source')", name="a"
     )
-
     FieldHandler().delete_field(user, first_formula_field)
 
-    formula_field_referencing_first_field = FormulaField.objects.get(
-        id=formula_field_referencing_first_field.id
+    option_field = data_fixture.create_single_select_field(
+        table=table, name="option_field", order=1
     )
-    assert formula_field_referencing_first_field.formula_type == "invalid"
+    option_a = data_fixture.create_select_option(
+        field=option_field, value="A", color="blue"
+    )
+    option_b = data_fixture.create_select_option(
+        field=option_field, value="B", color="red"
+    )
+    single_select_formula_field = FieldHandler().create_field(
+        user=user,
+        table=table,
+        type_name="formula",
+        name="2",
+        formula="field('option_field')",
+    )
+    lookup_field = FieldHandler().create_field(
+        user=user,
+        table=table,
+        type_name="lookup",
+        name="lookup",
+        through_field_name=link.name,
+        target_field_name="primary",
+    )
 
-    for view_filter_type in view_filter_type_registry.get_all():
-        with pytest.raises(ViewFilterTypeNotAllowedForField):
-            ViewHandler().create_filter(
-                user,
-                grid_view,
-                formula_field_referencing_first_field,
-                view_filter_type.type,
-                "",
-            )
+    broken_formula_field = FormulaField.objects.get(id=broken_formula_field.id)
+    single_select_formula_field = FormulaField.objects.get(
+        id=single_select_formula_field.id
+    )
+    lookup_field = LookupField.objects.get(id=lookup_field.id)
+    assert broken_formula_field.formula_type == "invalid"
+    assert single_select_formula_field.formula_type == "single_select"
+    assert lookup_field.formula_type == "array"
 
-    with pytest.raises(ViewSortFieldNotSupported):
-        ViewHandler().create_sort(
-            user, grid_view, formula_field_referencing_first_field, SORT_ORDER_ASC
-        )
+    fields_which_cant_yet_be_sorted_or_filtered = [
+        broken_formula_field,
+        single_select_formula_field,
+        lookup_field,
+    ]
+    for field in fields_which_cant_yet_be_sorted_or_filtered:
+        for view_filter_type in view_filter_type_registry.get_all():
+            with pytest.raises(ViewFilterTypeNotAllowedForField):
+                ViewHandler().create_filter(
+                    user,
+                    grid_view,
+                    field,
+                    view_filter_type.type,
+                    "",
+                )
 
-    with pytest.raises(ViewSortFieldNotSupported):
-        ViewHandler().create_sort(
-            user, grid_view, formula_field_referencing_first_field, SORT_ORDER_DESC
-        )
+    for field in fields_which_cant_yet_be_sorted_or_filtered:
+        with pytest.raises(ViewSortFieldNotSupported):
+            ViewHandler().create_sort(user, grid_view, field, SORT_ORDER_ASC)
+
+        with pytest.raises(ViewSortFieldNotSupported):
+            ViewHandler().create_sort(user, grid_view, field, SORT_ORDER_DESC)
