@@ -56,7 +56,7 @@ backend-pytest:
     - make install-dependencies
     - make install-dev-dependencies
     - export PYTHONPATH=$CI_PROJECT_DIR/backend/src:$CI_PROJECT_DIR/premium/backend/src
-    - make test
+    - make test-parallel
 
 backend-setup:
   stage: build
