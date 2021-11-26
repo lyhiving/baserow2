@@ -210,7 +210,7 @@ export class FieldType extends Registerable {
   /**
    * Indicates whether or not it is possible to sort in a view.
    */
-  getCanSortInView() {
+  getCanSortInView(field) {
     return true
   }
 
@@ -225,7 +225,6 @@ export class FieldType extends Registerable {
     super(...args)
     this.type = this.getType()
     this.iconClass = this.getIconClass()
-    this.canSortInView = this.getCanSortInView()
     this.canBePrimaryField = this.getCanBePrimaryField()
     this.isReadOnly = this.getIsReadOnly()
 
@@ -258,7 +257,6 @@ export class FieldType extends Registerable {
       type: this.type,
       iconClass: this.iconClass,
       name: this.getName(),
-      canSortInView: this.canSortInView,
       isReadOnly: this.isReadOnly,
     }
   }
@@ -667,7 +665,7 @@ export class LinkRowFieldType extends FieldType {
     return []
   }
 
-  getCanSortInView() {
+  getCanSortInView(field) {
     return false
   }
 
@@ -1471,7 +1469,7 @@ export class FileFieldType extends FieldType {
     return []
   }
 
-  getCanSortInView() {
+  getCanSortInView(field) {
     return false
   }
 
@@ -1892,7 +1890,7 @@ export class FormulaFieldType extends FieldType {
   static compatibleWithFormulaTypes(...formulaTypeStrings) {
     return (field) => {
       return (
-        (field.type === this.getType() || field.type === 'lookup') &&
+        field.type === this.getType() &&
         formulaTypeStrings.includes(field.formula_type)
       )
     }
@@ -2018,6 +2016,11 @@ export class FormulaFieldType extends FieldType {
 
   canBeReferencedByFormulaField() {
     return true
+  }
+
+  getCanSortInView(field) {
+    const subType = this.app.$registry.get('formula_type', field.formula_type)
+    return subType.getCanSortInView()
   }
 }
 

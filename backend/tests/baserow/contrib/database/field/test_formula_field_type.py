@@ -22,7 +22,13 @@ from baserow.contrib.database.formula import (
 from baserow.contrib.database.formula.ast.tree import BaserowFunctionDefinition
 from baserow.contrib.database.formula.registries import formula_function_registry
 from baserow.contrib.database.rows.handler import RowHandler
+from baserow.contrib.database.views.exceptions import (
+    ViewFilterTypeNotAllowedForField,
+    ViewSortFieldNotSupported,
+)
 from baserow.contrib.database.views.handler import ViewHandler
+from baserow.contrib.database.views.models import SORT_ORDER_ASC, SORT_ORDER_DESC
+from baserow.contrib.database.views.registries import view_filter_type_registry
 
 
 @pytest.mark.django_db
@@ -406,7 +412,6 @@ def test_recalculate_formulas_according_to_version(
 def test_can_update_lookup_field_value(
     data_fixture, api_client, django_assert_num_queries
 ):
-
     user, token = data_fixture.create_user_and_token()
     table = data_fixture.create_database_table(user=user)
     table2 = data_fixture.create_database_table(user=user, database=table.database)
@@ -627,7 +632,6 @@ def test_nested_lookup_with_formula(
 def test_can_delete_lookup_field_value(
     data_fixture, api_client, django_assert_num_queries
 ):
-
     user, token = data_fixture.create_user_and_token()
     table = data_fixture.create_database_table(user=user)
     table2 = data_fixture.create_database_table(user=user, database=table.database)
@@ -733,7 +737,6 @@ def test_can_delete_lookup_field_value(
 def test_can_delete_double_link_lookup_field_value(
     data_fixture, api_client, django_assert_num_queries
 ):
-
     user, token = data_fixture.create_user_and_token()
     table = data_fixture.create_database_table(user=user)
     table2 = data_fixture.create_database_table(user=user, database=table.database)
@@ -1103,3 +1106,43 @@ def test_can_insert_and_update_rows_with_formula_referencing_single_select(
     row.refresh_from_db()
     result = getattr(row, f"field_{formula_field.id}")
     assert result is None
+
+
+@pytest.mark.django_db
+def test_cannot_create_view_filter_or_sort_on_invalid_field(data_fixture):
+    user = data_fixture.create_user()
+    table = data_fixture.create_database_table(user=user)
+    grid_view = data_fixture.create_grid_view(user, table=table)
+    first_formula_field = FieldHandler().create_field(
+        user, table, "formula", formula="1", name="source"
+    )
+    formula_field_referencing_first_field = FieldHandler().create_field(
+        user, table, "formula", formula="field('source')", name="a"
+    )
+
+    FieldHandler().delete_field(user, first_formula_field)
+
+    formula_field_referencing_first_field = FormulaField.objects.get(
+        id=formula_field_referencing_first_field.id
+    )
+    assert formula_field_referencing_first_field.formula_type == "invalid"
+
+    for view_filter_type in view_filter_type_registry.get_all():
+        with pytest.raises(ViewFilterTypeNotAllowedForField):
+            ViewHandler().create_filter(
+                user,
+                grid_view,
+                formula_field_referencing_first_field,
+                view_filter_type.type,
+                "",
+            )
+
+    with pytest.raises(ViewSortFieldNotSupported):
+        ViewHandler().create_sort(
+            user, grid_view, formula_field_referencing_first_field, SORT_ORDER_ASC
+        )
+
+    with pytest.raises(ViewSortFieldNotSupported):
+        ViewHandler().create_sort(
+            user, grid_view, formula_field_referencing_first_field, SORT_ORDER_DESC
+        )

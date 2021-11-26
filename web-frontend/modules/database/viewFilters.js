@@ -937,7 +937,13 @@ export class EmptyViewFilterType extends ViewFilterType {
       'single_select',
       'multiple_select',
       'phone_number',
-      'formula',
+      FormulaFieldType.compatibleWithFormulaTypes(
+        'text',
+        'char',
+        'boolean',
+        'date',
+        'number'
+      ),
     ]
   }
 
@@ -985,7 +991,13 @@ export class NotEmptyViewFilterType extends ViewFilterType {
       'single_select',
       'multiple_select',
       'phone_number',
-      'formula',
+      FormulaFieldType.compatibleWithFormulaTypes(
+        'text',
+        'char',
+        'boolean',
+        'date',
+        'number'
+      ),
     ]
   }
 
